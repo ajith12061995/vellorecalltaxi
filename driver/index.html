@@ -11,6 +11,8 @@
 <link rel="apple-touch-icon" href="../icon-192.png">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="../maps-config.js"></script>
+<script>(function(){if(!window.GMAPS_KEY)return;var l='ta';try{var s=JSON.parse(localStorage.getItem('vctd')||'{}');if(s.lang)l=s.lang}catch(e){}document.write('<script src="https://maps.googleapis.com/maps/api/js?key='+encodeURIComponent(window.GMAPS_KEY)+'&libraries=places&language='+l+'&region=IN&v=weekly"><\/script>')})();</script>
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{height:100%}body{margin:0;font-family:system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('../vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
@@ -441,6 +443,12 @@ details.faq p{margin:0;padding:0 14px 14px;color:var(--muted);font-size:14px;lin
 .lfleet{position:relative;display:block;width:26px;height:26px;border-radius:50%;border:2.5px solid #fff;font:800 11px/21px sans-serif;text-align:center;box-shadow:0 2px 5px rgba(0,0,0,.3);box-sizing:border-box}
 .lfleet b{position:absolute;left:28px;top:3px;background:#fff;color:#13284F;font:700 10.5px/14px sans-serif;padding:1px 4px;border-radius:4px;white-space:nowrap;box-shadow:0 1px 3px rgba(0,0,0,.2)}
 
+
+.mapwrap .gmap{bottom:22px}
+.minimap .gmap,.omap .gmap{bottom:0}
+.gsat{margin:0 0 12px 12px;height:34px;padding:0 12px;border-radius:10px;border:0;background:#fff;color:#13284F;font:700 12.5px system-ui,sans-serif;box-shadow:0 2px 6px rgba(0,0,0,.25);cursor:pointer}
+.gsat.on{background:#13284F;color:#FFD84D}
+
 /* placeholder pages */
 .soon{border:1px dashed var(--line);border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:8px;background:var(--surface-2)}
 .soon ul{margin:0;padding-left:18px;display:grid;gap:4px}
@@ -767,10 +775,10 @@ const MAPCFG={
   route:'https://router.project-osrm.org/route/v1/driving/'
 };
 const LF=window.L&&window.L.map?window.L:null;
-const REALMAP=!!LF&&/^https?:/.test(location.protocol);
+const REALMAP=(!!LF||!!(window.GMAPS_KEY&&window.google&&window.google.maps))&&/^https?:/.test(location.protocol);
 const zFromS=s=>Math.max(3,Math.min(19,Math.log2(s*360/256)));
 const sFromZ=z=>256*Math.pow(2,z)/360;
-function makeMap(cv,o={}){return REALMAP?makeLeafletMap(cv,o):makeCanvasMap(cv,o)}
+function makeMap(cv,o={}){return GMAP()?makeGoogleMap(cv,o):(LF&&REALMAP)?makeLeafletMap(cv,o):makeCanvasMap(cv,o)}
 function makeLeafletMap(cv,o={}){
   const host=document.createElement('div');host.className='map lmap';cv.replaceWith(host);
   const m=LF.map(host,{zoomControl:false,zoomSnap:.25,attributionControl:true}).setView([P.home.lat,P.home.lon],14);
@@ -779,21 +787,22 @@ function makeLeafletMap(cv,o={}){
   if(o.scale)LF.control.scale({imperial:false,position:'bottomleft'}).addTo(m);
   const ic=(html,w,h,ax,ay)=>LF.divIcon({className:'lmk',html,iconSize:[w,h],iconAnchor:[ax,ay]});
   const pinI=col=>ic(`<svg class="lpin" width="30" height="40" viewBox="0 0 46 60"><path d="M23 58C23 58 4 36 4 22a19 19 0 0138 0c0 14-19 36-19 36z" fill="${col}" stroke="#fff" stroke-width="3"/><circle cx="23" cy="22" r="8" fill="#FFD84D"/></svg>`,30,40,15,39);
-  const pins=[];let me=null,drv=null,ln=null,ln2=null;const fleet={};
+  const pins=[];let me=null,acc=null,drv=null,ln=null,ln2=null;const fleet={};
   const userMoved={v:false};
   m.on('movestart',e=>{o.onStart&&o.onStart()});
-  m.on('moveend',()=>{const c=m.getCenter();o.onEnd&&o.onEnd({lat:c.lat,lon:c.lng})});
+  m.on('moveend',()=>{if(!alive())return;const c=m.getCenter();o.onEnd&&o.onEnd({lat:c.lat,lon:c.lng})});
   function setPins(list){
     while(pins.length>list.length)m.removeLayer(pins.pop());
     list.forEach((p,i)=>{if(!pins[i]){pins[i]=LF.marker([p.lat,p.lon],{icon:pinI(p.col),interactive:false,keyboard:false}).addTo(m);pins[i]._col=p.col}
       else{pins[i].setLatLng([p.lat,p.lon]);if(pins[i]._col!==p.col){pins[i].setIcon(pinI(p.col));pins[i]._col=p.col}}});
   }
   function sync(){
-    if(!document.body.contains(host)){clearInterval(tk);m.remove();return}
+    if(!alive()){clearInterval(tk);try{m.off();m.stop();m.remove()}catch(e){}return}
     const list=(o.pins||[]).slice();
     if(o.path&&o.path.length){const a=P[o.path[0]],b=P[o.path[o.path.length-1]];if(a)list.push({lat:a.lat,lon:a.lon,col:'#1E8A5A'});if(b&&o.path.length>1)list.push({lat:b.lat,lon:b.lon,col:'#13284F'})}
     setPins(list.filter(p=>p&&p.lat!=null));
-    if(!o.driver&&!o.fleet&&P.home){if(!me)me=LF.marker([P.home.lat,P.home.lon],{icon:ic('<i class="lme"></i>',18,18,9,9),interactive:false,keyboard:false}).addTo(m);else me.setLatLng([P.home.lat,P.home.lon])}
+    if(!o.driver&&!o.fleet&&P.home){if(!me)me=LF.marker([P.home.lat,P.home.lon],{icon:ic('<i class="lme"></i>',18,18,9,9),interactive:false,keyboard:false}).addTo(m);else me.setLatLng([P.home.lat,P.home.lon]);
+      if(P.home.acc){if(!acc)acc=LF.circle([P.home.lat,P.home.lon],{radius:P.home.acc,stroke:false,fillColor:'#2C5196',fillOpacity:.14,interactive:false}).addTo(m);else{acc.setLatLng([P.home.lat,P.home.lon]);acc.setRadius(P.home.acc)}}}
     const lc=o.line?o.line():(o.path&&o.path.length>1?o.path.map(k=>P[k]).filter(Boolean):null);
     if(lc&&lc.length>1){const ll=lc.map(p=>[p.lat,p.lon]);if(!ln){ln=LF.polyline(ll,{color:'#1E3A6E',weight:6,opacity:.9}).addTo(m);ln2=LF.polyline(ll,{color:'#FFD84D',weight:2.5,dashArray:'2 9'}).addTo(m)}else{ln.setLatLngs(ll);ln2.setLatLngs(ll)}}
     else if(ln){m.removeLayer(ln);m.removeLayer(ln2);ln=ln2=null}
@@ -808,14 +817,15 @@ function makeLeafletMap(cv,o={}){
         else{fleet[k].setLatLng([f.lat,f.lon]);if(fleet[k]._h!==html){fleet[k].setIcon(ic(html,26,26,13,13));fleet[k]._h=html}}});
       Object.keys(fleet).forEach(k=>{if(!seen[k]){m.removeLayer(fleet[k]);delete fleet[k]}})}
   }
-  const tk=setInterval(sync,500);setTimeout(()=>{m.invalidateSize();sync()},60);
+  const alive=()=>document.body.contains(host);
+  const tk=setInterval(sync,500);setTimeout(()=>{if(alive()){m.invalidateSize();sync()}},60);
   const api={
     cam:{get s(){return sFromZ(m.getZoom())},get lat(){return m.getCenter().lat},get lon(){return m.getCenter().lng}},
     fit(pts,pad=40,top=0){pts=(pts||[]).filter(p=>p&&p.lat!=null);if(!pts.length)return;if(pts.length===1){m.setView([pts[0].lat,pts[0].lon],16);return}
-      setTimeout(()=>{m.invalidateSize();m.fitBounds(LF.latLngBounds(pts.map(p=>[p.lat,p.lon])),{paddingTopLeft:[pad,pad+top],paddingBottomRight:[pad,pad+24],maxZoom:17})},70)},
-    flyTo(lat,lon,s){m.flyTo([lat,lon],zFromS(s),{duration:.6})},
-    zoomBy(f){m.setZoom(m.getZoom()+Math.log2(f))},
-    setView(lat,lon,s){m.setView([lat,lon],zFromS(s),{animate:false})},
+      setTimeout(()=>{if(!alive())return;m.invalidateSize();m.fitBounds(LF.latLngBounds(pts.map(p=>[p.lat,p.lon])),{paddingTopLeft:[pad,pad+top],paddingBottomRight:[pad,pad+24],maxZoom:17})},70)},
+    flyTo(lat,lon,s){if(alive())m.flyTo([lat,lon],zFromS(s),{duration:.6})},
+    zoomBy(f){if(alive())m.setZoom(m.getZoom()+Math.log2(f))},
+    setView(lat,lon,s){if(alive())m.setView([lat,lon],zFromS(s),{animate:false})},
     center(){const c=m.getCenter();return{lat:c.lat,lon:c.lng}},
     leaflet:m
   };
@@ -832,6 +842,7 @@ if(REALMAP){route=function(from,to){const a=P[from],b=P[to];if(!a||!b||a.lat==nu
   return{path:[from,to],km:Math.max(1.2,hav(a,b)*1.35),pts:[{lat:a.lat,lon:a.lon},{lat:b.lat,lon:b.lon}]}}}
 async function fetchRoute(a,b,k){
   ROUTEC[k]={pending:true};
+  if(GMAP()){try{ROUTEC[k]=await gRoute(a,b);document.dispatchEvent(new CustomEvent('route-ready',{detail:k}));return}catch(e){}}
   try{const r=await fetch(`${MAPCFG.route}${a.lon},${a.lat};${b.lon},${b.lat}?overview=full&geometries=geojson`);const j=await r.json();const rt=j.routes&&j.routes[0];if(!rt)throw 0;
     let pts=rt.geometry.coordinates.map(c=>({lat:c[1],lon:c[0]}));if(pts.length>400){const st=Math.ceil(pts.length/400);pts=pts.filter((p,i)=>i%st===0||i===pts.length-1)}
     ROUTEC[k]={km:Math.max(1,rt.distance/1000),pts}}
@@ -843,12 +854,104 @@ async function fetchRoute(a,b,k){
 const GEOC={};let GEOLAST=0;
 async function revGeo(lat,lon){
   const k=lat.toFixed(4)+','+lon.toFixed(4)+S.lang;if(GEOC[k])return GEOC[k];
+  if(GMAP()){try{const g=await gRevGeo(lat,lon);if(g){GEOC[k]=g;return g}}catch(e){}}
   const wait=Math.max(0,1100-(Date.now()-GEOLAST));if(wait)await new Promise(r=>setTimeout(r,wait));GEOLAST=Date.now();
   try{const r=await fetch(`${MAPCFG.reverse}?format=jsonv2&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1&accept-language=${S.lang==='ta'?'ta,en':'en'}`);const j=await r.json();
     const a=j.address||{};const main=j.name||a.amenity||a.shop||a.building||a.house_number&&a.road&&(a.house_number+', '+a.road)||a.road||a.neighbourhood||a.suburb||'';
     const area=[a.road&&a.road!==main?a.road:'',a.suburb||a.neighbourhood||a.village||a.hamlet||'',a.city||a.town||a.county||''].filter(Boolean).slice(0,2).join(', ');
     const g={ta:main||area||'',en:main||area||'',sub:area};if(!g.ta)return null;GEOC[k]=g;return g}catch(e){return null}
 }
+
+
+/* ---------- Google Maps (used when a key is set in maps-config.js); OpenStreetMap stays as fallback ---------- */
+let GFAIL=false;
+window.gm_authFailure=function(){GFAIL=true;try{toast(S.lang==='ta'?'Google Maps key வேலை செய்யல. இலவச map காட்டுறோம்':'Google Maps key rejected. Showing the free map')}catch(e){}};
+const GMAP=()=>!GFAIL&&!!(window.GMAPS_KEY&&window.google&&window.google.maps&&window.google.maps.Map);
+const gIcon=(svg,w,h,ax,ay)=>({url:'data:image/svg+xml;charset=UTF-8,'+encodeURIComponent(svg),scaledSize:new google.maps.Size(w,h),anchor:new google.maps.Point(ax,ay)});
+const gPinSvg=col=>`<svg xmlns="http://www.w3.org/2000/svg" width="46" height="60" viewBox="0 0 46 60"><path d="M23 58C23 58 4 36 4 22a19 19 0 0138 0c0 14-19 36-19 36z" fill="${col}" stroke="#fff" stroke-width="3"/><circle cx="23" cy="22" r="8" fill="#FFD84D"/></svg>`;
+function bearing(a,b){const r=Math.PI/180,y=Math.sin((b.lon-a.lon)*r)*Math.cos(b.lat*r),x=Math.cos(a.lat*r)*Math.sin(b.lat*r)-Math.sin(a.lat*r)*Math.cos(b.lat*r)*Math.cos((b.lon-a.lon)*r);return(Math.atan2(y,x)/r+360)%360}
+function makeGoogleMap(cv,o={}){
+  const g=google.maps;const host=document.createElement('div');host.className='map lmap gmap';cv.replaceWith(host);
+  const m=new g.Map(host,{center:{lat:P.home.lat,lng:P.home.lon},zoom:15,disableDefaultUI:true,clickableIcons:false,gestureHandling:'greedy',keyboardShortcuts:false});
+  if(o.sat!==false&&!o.fleet){const b=document.createElement('button');b.className='gsat';b.type='button';b.textContent=S.lang==='ta'?'செயற்கைக்கோள்':'Satellite';
+    b.onclick=()=>{const sat=m.getMapTypeId()!=='hybrid';m.setMapTypeId(sat?'hybrid':'roadmap');b.textContent=sat?(S.lang==='ta'?'சாதாரண map':'Map'):(S.lang==='ta'?'செயற்கைக்கோள்':'Satellite');b.classList.toggle('on',sat)};
+    m.controls[g.ControlPosition.LEFT_BOTTOM].push(b)}
+  let dragging=false;
+  m.addListener('dragstart',()=>{dragging=true;o.onStart&&o.onStart()});
+  m.addListener('zoom_changed',()=>{o.onStart&&o.onStart()});
+  m.addListener('idle',()=>{dragging=false;const c=m.getCenter();o.onEnd&&o.onEnd({lat:c.lat(),lon:c.lng()})});
+  const pins=[];let me=null,acc=null,drv=null,ln=null,ln2=null;const fleet={};
+  function setPins(list){
+    while(pins.length>list.length)pins.pop().setMap(null);
+    list.forEach((p,i)=>{if(!pins[i]){pins[i]=new g.Marker({map:m,position:{lat:p.lat,lng:p.lon},icon:gIcon(gPinSvg(p.col),30,40,15,39),clickable:false,zIndex:200});pins[i]._col=p.col}
+      else{pins[i].setPosition({lat:p.lat,lng:p.lon});if(pins[i]._col!==p.col){pins[i].setIcon(gIcon(gPinSvg(p.col),30,40,15,39));pins[i]._col=p.col}}});
+  }
+  function sync(){
+    if(!document.body.contains(host)){clearInterval(tk);return}
+    const list=(o.pins||[]).slice();
+    if(o.path&&o.path.length){const a=P[o.path[0]],b=P[o.path[o.path.length-1]];if(a)list.push({lat:a.lat,lon:a.lon,col:'#1E8A5A'});if(b&&o.path.length>1)list.push({lat:b.lat,lon:b.lon,col:'#13284F'})}
+    setPins(list.filter(p=>p&&p.lat!=null));
+    if(!o.driver&&!o.fleet&&P.home){const pos={lat:P.home.lat,lng:P.home.lon};
+      if(!me){me=new g.Marker({map:m,position:pos,clickable:false,zIndex:150,icon:{path:g.SymbolPath.CIRCLE,scale:8,fillColor:'#2C5196',fillOpacity:1,strokeColor:'#fff',strokeWeight:3}});
+        acc=new g.Circle({map:m,center:pos,radius:P.home.acc||0,strokeOpacity:0,fillColor:'#2C5196',fillOpacity:.14,clickable:false})}
+      else{me.setPosition(pos);acc.setCenter(pos);acc.setRadius(P.home.acc||0)}}
+    const lc=o.line?o.line():(o.path&&o.path.length>1?o.path.map(k=>P[k]).filter(Boolean):null);
+    if(lc&&lc.length>1){const path=lc.map(p=>({lat:p.lat,lng:p.lon}));
+      if(!ln){ln=new g.Polyline({map:m,path,strokeColor:'#1E3A6E',strokeWeight:6,strokeOpacity:.9,clickable:false,zIndex:50});
+        ln2=new g.Polyline({map:m,path,strokeOpacity:0,clickable:false,zIndex:51,icons:[{icon:{path:'M 0,-1 0,1',strokeOpacity:1,strokeColor:'#FFD84D',scale:2},offset:'0',repeat:'12px'}]})}
+      else{ln.setPath(path);ln2.setPath(path)}}
+    else if(ln){ln.setMap(null);ln2.setMap(null);ln=ln2=null}
+    const d=o.driver?o.driver():null;
+    if(d&&d.lat!=null){const rot=d.nlat!=null&&(d.nlat!==d.lat||d.nlon!==d.lon)?bearing(d,{lat:d.nlat,lon:d.nlon}):(drv&&drv._rot)||0;
+      const icon={path:g.SymbolPath.FORWARD_CLOSED_ARROW,scale:6,fillColor:'#13284F',fillOpacity:1,strokeColor:'#FFD84D',strokeWeight:2,rotation:rot};
+      if(!drv){drv=new g.Marker({map:m,position:{lat:d.lat,lng:d.lon},icon,clickable:false,zIndex:300});}else{drv.setPosition({lat:d.lat,lng:d.lon});if(Math.abs((drv._rot||0)-rot)>2)drv.setIcon(icon)}drv._rot=rot}
+    else if(drv){drv.setMap(null);drv=null}
+    if(o.fleet){const seen={};o.fleet().forEach(f=>{const k=f.label+f.tag;seen[k]=1;
+        const icon={path:g.SymbolPath.CIRCLE,scale:12,fillColor:f.col,fillOpacity:1,strokeColor:'#fff',strokeWeight:2.5};
+        const label={text:f.tag,color:f.col==='#F5B400'?'#13284F':'#fff',fontWeight:'800',fontSize:'11px'};
+        if(!fleet[k])fleet[k]=new g.Marker({map:m,position:{lat:f.lat,lng:f.lon},icon,label,title:f.label,zIndex:100});
+        else{fleet[k].setPosition({lat:f.lat,lng:f.lon});fleet[k].setIcon(icon)}});
+      Object.keys(fleet).forEach(k=>{if(!seen[k]){fleet[k].setMap(null);delete fleet[k]}})}
+  }
+  const tk=setInterval(sync,500);setTimeout(sync,30);
+  return{
+    cam:{get s(){return sFromZ(m.getZoom()||15)},get lat(){return m.getCenter().lat()},get lon(){return m.getCenter().lng()}},
+    fit(pts,pad=40,top=0){pts=(pts||[]).filter(p=>p&&p.lat!=null);if(!pts.length)return;if(pts.length===1){m.setCenter({lat:pts[0].lat,lng:pts[0].lon});m.setZoom(17);return}
+      const b=new g.LatLngBounds();pts.forEach(p=>b.extend({lat:p.lat,lng:p.lon}));setTimeout(()=>{m.fitBounds(b,{top:pad+top,bottom:pad+24,left:pad,right:pad});const z=m.getZoom();if(z>17)m.setZoom(17)},60)},
+    flyTo(lat,lon,s){m.panTo({lat,lng:lon});m.setZoom(Math.round(zFromS(s)))},
+    zoomBy(f){m.setZoom((m.getZoom()||15)+Math.round(Math.log2(f)))},
+    setView(lat,lon,s){m.setCenter({lat,lng:lon});m.setZoom(Math.round(zFromS(s)))},
+    center(){const c=m.getCenter();return{lat:c.lat(),lon:c.lng()}},
+    gmap:m
+  };
+}
+function decodePoly(str){let i=0,lat=0,lng=0;const out=[];while(i<str.length){let b,s=0,r=0;do{b=str.charCodeAt(i++)-63;r|=(b&31)<<s;s+=5}while(b>=32);lat+=(r&1)?~(r>>1):(r>>1);s=0;r=0;do{b=str.charCodeAt(i++)-63;r|=(b&31)<<s;s+=5}while(b>=32);lng+=(r&1)?~(r>>1):(r>>1);out.push({lat:lat/1e5,lon:lng/1e5})}return out}
+async function gRoute(a,b){
+  const r=await fetch('https://routes.googleapis.com/directions/v2:computeRoutes',{method:'POST',headers:{'Content-Type':'application/json','X-Goog-Api-Key':window.GMAPS_KEY,'X-Goog-FieldMask':'routes.distanceMeters,routes.duration,routes.polyline.encodedPolyline'},
+    body:JSON.stringify({origin:{location:{latLng:{latitude:a.lat,longitude:a.lon}}},destination:{location:{latLng:{latitude:b.lat,longitude:b.lon}}},travelMode:'DRIVE',routingPreference:'TRAFFIC_UNAWARE'})});
+  const j=await r.json();const rt=j.routes&&j.routes[0];if(!rt||!rt.distanceMeters)throw new Error('no-route');
+  return{km:Math.max(1,rt.distanceMeters/1000),pts:decodePoly(rt.polyline.encodedPolyline)};
+}
+const PLUSCODE=/^[23456789CFGHJMPQRVWX]{4,8}\+[23456789CFGHJMPQRVWX]{2,3}/;
+async function gRevGeo(lat,lon){
+  const r=await new google.maps.Geocoder().geocode({location:{lat,lng:lon},language:S.lang==='ta'?'ta':'en'});
+  const res=(r&&r.results)||[];if(!res.length)return null;
+  const best=res.find(x=>x.types.some(t=>['point_of_interest','establishment','premise','street_address','subpremise'].includes(t)))||res[0];
+  const comp=t=>{const c=best.address_components.find(a=>a.types.includes(t));return c?c.long_name:''};
+  const parts=best.formatted_address.split(',').map(s=>s.trim()).filter(p=>p&&!PLUSCODE.test(p));
+  const main=parts[0]||comp('route')||comp('sublocality')||'';
+  const area=[comp('sublocality_level_1')||comp('sublocality')||comp('neighborhood'),comp('locality')].filter(x=>x&&x!==main).join(', ');
+  return main?{ta:main,en:main,sub:area}:null;
+}
+let GSESS=null;
+async function gSuggest(q,near){
+  const {AutocompleteSuggestion,AutocompleteSessionToken}=await google.maps.importLibrary('places');
+  if(!GSESS)GSESS=new AutocompleteSessionToken();
+  const {suggestions}=await AutocompleteSuggestion.fetchAutocompleteSuggestions({input:q,sessionToken:GSESS,includedRegionCodes:['in'],language:S.lang==='ta'?'ta':'en',
+    locationBias:{center:{lat:near.lat,lng:near.lon},radius:30000}});
+  return(suggestions||[]).filter(s=>s.placePrediction).map(s=>{const p=s.placePrediction;return{name:(p.mainText&&p.mainText.text)||p.text.text,sub:(p.secondaryText&&p.secondaryText.text)||'',pred:p}});
+}
+async function gPick(x){const place=x.pred.toPlace();await place.fetchFields({fields:['location']});GSESS=null;return{lat:place.location.lat(),lon:place.location.lng()}}
 
 
 /* ================= VELLORE CALL TAXI — DRIVER APP ================= */
@@ -1289,7 +1392,7 @@ setInterval(()=>{if(CL&&S.online)pushLive(true)},20000);
 function startGeo(){
   if(GEO!=null||!navigator.geolocation)return;
   GEO=navigator.geolocation.watchPosition(p=>{POS={lat:p.coords.latitude,lon:p.coords.longitude};pushLive(false)},
-    ()=>toast(L('Location அனுமதி கொடுங்க. இல்லைனா customer-க்கு உங்க வண்டி தெரியாது','Allow location so customers can see your vehicle')),{enableHighAccuracy:true,maximumAge:5000,timeout:20000});
+    ()=>toast(L('Location அனுமதி கொடுங்க. இல்லைனா customer-க்கு உங்க வண்டி தெரியாது','Allow location so customers can see your vehicle')),{enableHighAccuracy:true,maximumAge:0,timeout:20000});
 }
 function stopGeo(){if(GEO!=null){navigator.geolocation.clearWatch(GEO);GEO=null}}
 function beep(){try{const a=new (window.AudioContext||window.webkitAudioContext)();[0,.35,.7].forEach(t=>{const o=a.createOscillator(),g=a.createGain();o.frequency.value=880;o.connect(g);g.connect(a.destination);g.gain.setValueAtTime(.25,a.currentTime+t);g.gain.exponentialRampToValueAtTime(.001,a.currentTime+t+.3);o.start(a.currentTime+t);o.stop(a.currentTime+t+.3)})}catch(e){}try{navigator.vibrate&&navigator.vibrate([300,150,300])}catch(e){}}
