@@ -595,7 +595,7 @@ function login(){
   <div class="body pad"><label class="muted" for="ph" style="font-weight:600">${t('phone')}</label>
    <div class="field"><span class="cc">+91</span><input id="ph" inputmode="numeric" maxlength="10" autocomplete="tel" value="${S.phone}" placeholder="98765 43210"></div>
    <div class="err" id="e"></div><div style="flex:1"></div>
-   <button class="btn" id="go" ${S.phone.length===10?'':'disabled'}>${t('getOtp')}</button><p class="fine muted">${t('terms')}</p></div></section>`,()=>{
+   <button class="btn" id="go" ${S.phone.length===10?'':'disabled'}>${t('getOtp')}</button><p class="fine muted"><a href="https://ajith12061995.github.io/vellorecalltaxi/privacy/" target="_blank" rel="noopener" style="color:inherit">${t('terms')}</a></p></div></section>`,()=>{
     const ph=document.getElementById('ph'),b=document.getElementById('go');
     ph.oninput=()=>{ph.value=ph.value.replace(/\D/g,'').slice(0,10);b.disabled=ph.value.length!==10;document.getElementById('e').textContent=''};
     b.onclick=()=>{if(!/^[6-9]\d{9}$/.test(ph.value)){document.getElementById('e').textContent=t('phoneErr');return}S.phone=ph.value;save();
@@ -814,7 +814,7 @@ function profile(){
     <button class="row" id="th"><span class="ic">${dark?'☾':'☀'}</span><div><b>${t('theme')}</b><small>${dark?'On':'Off'}</small></div></button>
     <button class="row" id="rq"><span class="ic">${I.chat}</span><div><b>${L('என் requests & உதவி','My requests & help')}</b><small>${TIX.length} ${L('requests','requests')}</small></div></button>
     <button class="row" id="lo"><span class="ic" style="color:var(--danger)">⏻</span><div><b style="color:var(--danger)">${t('logout')}</b><small>+91 ${S.phone}</small></div></button></div>
-    <p class="fine muted">Vellore Call Taxi · Customer app v0.5 (demo)</p></div>`),()=>{
+    <p class="fine muted"><a href="https://ajith12061995.github.io/vellorecalltaxi/privacy/" target="_blank" rel="noopener" style="color:inherit">${L('தனியுரிமை & விதிமுறைகள்','Privacy & Terms')}</a> · Vellore Call Taxi · Customer app v0.5</p></div>`),()=>{
     bindNav();
     document.getElementById('lg').onclick=()=>{S.lang=S.lang==='ta'?'en':'ta';save();profile()};
     document.getElementById('th').onclick=()=>{document.documentElement.dataset.theme=dark?'light':'dark';profile()};

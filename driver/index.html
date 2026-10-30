@@ -1311,7 +1311,7 @@ function profileTab(){
       <button class="row" id="th"><span class="ic">☾</span><div><b>Dark mode</b><small>${document.documentElement.dataset.theme==='dark'?'On':'Off'}</small></div></button>
       ${CL?'':`<button class="row" id="sw"><span class="ic">${I.navHome}</span><div><b>${L('வேற வண்டி (demo)','Switch vehicle (demo)')}</b><small>${L('Owner assign பண்றது','Assigned by owner')}</small></div></button>`}
       <button class="row" id="lo"><span class="ic" style="color:var(--danger)">⏻</span><div><b style="color:var(--danger)">Logout</b><small>+91 ${S.phone}</small></div></button></div>
-    <p class="fine muted">Vellore Call Taxi · Driver app v0.1 (demo)</p></div>`),()=>{
+    <p class="fine muted"><a href="https://ajith12061995.github.io/vellorecalltaxi/privacy/#drivers" target="_blank" rel="noopener" style="color:inherit">${L('தனியுரிமை & விதிமுறைகள்','Privacy & Terms')}</a> · Vellore Call Taxi · Driver app v0.1</p></div>`),()=>{
     bindNav();
     document.getElementById('lg').onclick=()=>{S.lang=S.lang==='ta'?'en':'ta';save();profileTab()};
     document.getElementById('th').onclick=()=>{const r=document.documentElement;r.dataset.theme=r.dataset.theme==='dark'?'light':'dark';profileTab()};
