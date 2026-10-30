@@ -237,7 +237,7 @@ function status(){
 (async function(){
   setLang();app.innerHTML=`<p style="text-align:center;color:var(--mut)">${L('ஏத்துது…','Loading…')}</p>`;
   CL=await window.CLOUD_READY;if(!CL){go('offline');return}F=CL.fs;
-  const u=await CL.waitUser();if(u)await afterLogin();else go('login');
+  const u=await CL.waitUser();if(u&&u.phoneNumber)await afterLogin();else go('login');
 })();
 </script>
 </body>

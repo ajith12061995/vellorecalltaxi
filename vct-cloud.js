@@ -3,6 +3,7 @@
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
 import {
   getAuth, RecaptchaVerifier, signInWithPhoneNumber, onAuthStateChanged, signOut,
+  GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult,
 } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
 import {
   getFirestore, doc, getDoc, getDocs, setDoc, updateDoc, addDoc, deleteDoc,
@@ -21,6 +22,8 @@ function recaptchaBox() {
   if (!el) { el = document.createElement('div'); el.id = 'vct-recaptcha'; el.style.cssText = 'position:fixed;left:0;bottom:0;z-index:99'; document.body.appendChild(el); }
   return el;
 }
+
+getRedirectResult(auth).catch(() => {});
 
 const toMs = (v) => (v && typeof v.toMillis === 'function') ? v.toMillis() : (typeof v === 'number' ? v : 0);
 
@@ -44,6 +47,16 @@ const api = {
     const cred = await confirmation.confirm(code);
     return cred.user;
   },
+  // Sign in with Google (no SMS needed). Popup first; full-page redirect if the popup is blocked.
+  async googleLogin() {
+    const p = new GoogleAuthProvider(); p.setCustomParameters({ prompt: 'select_account' });
+    try { return (await signInWithPopup(auth, p)).user; }
+    catch (e) {
+      const c = (e && e.code) || '';
+      if (c === 'auth/popup-blocked' || c === 'auth/operation-not-supported-in-this-environment' || c === 'auth/web-storage-unsupported') { await signInWithRedirect(auth, p); return null; }
+      throw e;
+    }
+  },
   waitUser() {
     return new Promise((res) => { const off = onAuthStateChanged(auth, (u) => { off(); res(u); }); });
   },
@@ -60,6 +73,10 @@ const api = {
       'auth/network-request-failed': ['Internet இல்லை. Connection-ஐ பாருங்க', 'No internet. Check your connection'],
       'auth/captcha-check-failed': ['பாதுகாப்பு check தோல்வி. Page-ஐ refresh பண்ணுங்க', 'Security check failed. Refresh the page'],
       'permission-denied': ['அனுமதி இல்லை', 'Permission denied'],
+      'auth/popup-closed-by-user': ['Google login நிறுத்தப்பட்டது', 'Google sign-in was closed'],
+      'auth/cancelled-popup-request': ['Google login நிறுத்தப்பட்டது', 'Google sign-in was closed'],
+      'auth/operation-not-allowed': ['இந்த login முறை இன்னும் on பண்ணல (Firebase)', 'This sign-in method is not turned on yet (Firebase)'],
+      'auth/unauthorized-domain': ['இந்த website-க்கு அனுமதி இல்லை (Firebase)', 'This website is not authorised (Firebase)'],
     };
     const hit = m[c] || m[(c.split('/')[1] || '')];
     return hit ? (ta ? hit[0] : hit[1]) : (ta ? 'ஏதோ பிரச்சனை. மறுபடி முயற்சி பண்ணுங்க' : 'Something went wrong. Please try again') + (c ? ` (${c})` : '');
