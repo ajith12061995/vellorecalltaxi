@@ -19,7 +19,7 @@
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('../vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV='2026-10-30-4',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV='2026-10-30-5',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('/vellorecalltaxi/version.json',location.origin)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -1366,9 +1366,9 @@ function appsHtml(){const A=(DB.apps||[]).filter(a=>a.status==='pending');if(!CL
   return `<div class="sec"><h3>${L('புது Driver விண்ணப்பங்கள்','New driver applications')}</h3><span class="sample">${A.length}</span></div>
    <div class="cards" style="margin-bottom:18px">${A.length?A.map(a=>`<div class="scard"><div class="dtop"><span class="vi sm">${I[a.veh]||''}</span><div style="flex:1;min-width:0"><b>${esc(a.name||'')}</b><small>${esc(a.id)} · ${esc(a.plate||'')} · ${vname(a.veh)}</small></div><small class="muted">${ago(CL.toMs(a.submittedAt)||Date.now())}</small></div>
      <div class="dact"><button class="btn sm" data-av="${esc(a.id)}">${L('பார்த்து முடிவு செய்','Review')}</button></div></div>`).join('')
-     :`<div class="empty" style="padding:14px"><small class="muted">${L('காத்திருக்கும் விண்ணப்பம் இல்லை. Driver-களுக்கு இந்த link அனுப்புங்க:','No applications waiting. Send drivers this link:')}<br><b>ajith12061995.github.io/vellorecalltaxi/join/</b> <button class="linkbtn" data-cpj="1">Copy</button></small></div>`}</div>`}
+     :`<div class="empty" style="padding:14px"><small class="muted">${L('காத்திருக்கும் விண்ணப்பம் இல்லை. Driver-களுக்கு இந்த link அனுப்புங்க:','No applications waiting. Send drivers this link:')}<br><b>ajith12061995.github.io/vellorecalltaxi/driver/</b> <button class="linkbtn" data-cpj="1">Copy</button></small></div>`}</div>`}
 function bindApps(){
-  app.querySelectorAll('[data-cpj]').forEach(b=>b.onclick=()=>navigator.clipboard.writeText('https://ajith12061995.github.io/vellorecalltaxi/join/').then(()=>toast(L('Link copy ஆச்சு','Link copied'))).catch(()=>{}));
+  app.querySelectorAll('[data-cpj]').forEach(b=>b.onclick=()=>navigator.clipboard.writeText('https://ajith12061995.github.io/vellorecalltaxi/driver/').then(()=>toast(L('Link copy ஆச்சு','Link copied'))).catch(()=>{}));
   app.querySelectorAll('[data-av]').forEach(b=>b.onclick=()=>reviewApp((DB.apps||[]).find(a=>a.id===b.dataset.av)));
 }
 function reviewApp(a){if(!a)return;
@@ -1390,7 +1390,7 @@ function reviewApp(a){if(!a)return;
       bt.set(F().doc(CL.db,'drivers',a.id),{name:a.name,veh:a.veh||'auto',plate:a.plate||'',model:[a.brand,a.model].filter(Boolean).join(' ')+(a.year?' ('+a.year+')':'')||vname(a.veh),brand:a.brand||'',year:a.year||null,wallet:0,rating:5,online:false,blocked:false,
         docs:{dl:e.dl||null,ins:e.ins||null,permit:e.permit||null,fc:e.fc||null},dlNo:a.dlNo||'',ec:a.ecPhone?[{name:a.ecName||'',phone:a.ecPhone}]:[],pcc:(a.files||[]).includes('pcc'),fromApp:true,createdAt:ts(),updatedAt:ts()});
       bt.update(F().doc(CL.db,'driverApps',a.id),{status:'approved',note:'',decidedAt:ts(),decidedBy:CL.phone,updatedAt:ts()});
-      cw(bt.commit().then(()=>{close();toast(L(`${a.name} driver-ஆ சேர்க்கப்பட்டார். Driver link அனுப்புங்க`,`${a.name} is now a driver. Send them the driver link`))}))};
+      cw(bt.commit().then(()=>{close();toast(L(`${a.name} driver-ஆ சேர்க்கப்பட்டார். அவர் app தானா driver screen-க்கு மாறும்`,`${a.name} is now a driver. Their app switches over by itself`))}))};
     if(no)no.onclick=()=>{const r=prompt(L('என்ன திருத்தணும்? (driver-க்கு தெரியும்)','What should they fix? (the driver will see this)'),L('DL photo தெளிவா இல்லை','The licence photo is not clear'));if(r==null)return;
       cw(F().updateDoc(F().doc(CL.db,'driverApps',a.id),{status:'rejected',note:r.slice(0,200),decidedAt:ts(),decidedBy:CL.phone,updatedAt:ts()}).then(()=>{close();toast(L('திருப்பி அனுப்பியாச்சு','Sent back'))}))};
   });

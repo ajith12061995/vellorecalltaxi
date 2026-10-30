@@ -22,7 +22,7 @@
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('../vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV='2026-10-30-4',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV='2026-10-30-5',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('/vellorecalltaxi/version.json',location.origin)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -1029,7 +1029,7 @@ function splash(){
 }
 function login(){
   go(`<section class="screen"><div class="hero pad"><img src="https://ajith12061995.github.io/vellorecalltaxi/driver/icon-192.png" alt="" style="width:84px;height:84px;border-radius:20px;display:block;margin-bottom:12px;box-shadow:0 4px 14px rgba(0,0,0,.15)" onerror="this.remove()"><span class="mini">VCT DRIVER</span><h1>${L('வணக்கம் Driver!','Welcome, driver!')}</h1>
-    <p>${L('Owner உங்களை சேர்த்த நம்பர்ல login பண்ணுங்க','Log in with the number your owner registered')}</p>
+    <p>${L('உங்க நம்பர்ல login பண்ணுங்க. புது driver-னா சேர்வதற்கான form வரும்','Log in with your number. New drivers will see the sign-up form')}</p>
     <div class="lang2"><button data-l="ta" class="${S.lang==='ta'?'on':''}">தமிழ்</button><button data-l="en" class="${S.lang==='en'?'on':''}">English</button></div></div>
    <div class="body pad"><label class="muted" for="ph" style="font-weight:600">${L('மொபைல் நம்பர்','Mobile number')}</label>
     <div class="field"><span class="cc">+91</span><input id="ph" inputmode="numeric" maxlength="10" value="${S.phone}" placeholder="98765 43210"></div>
@@ -1381,8 +1381,10 @@ const ON_PAGES=/github\.io$/.test(location.hostname);
 const cloudP=(window.CLOUD_READY||Promise.resolve(null)).then(c=>{CL=c||null;return CL}).catch(()=>null);
 const F=()=>CL.fs;
 const ts=()=>F().serverTimestamp();
+const ON_PAGES_D=()=>/github\.io$/.test(location.hostname);
 function offlineD(){go(`<section class="screen"><div class="hero pad"><span class="mini">DRIVER APP</span><h1>${L('Internet இல்லை','You are offline')}</h1><p>${L('Connection-ஐ பார்த்துட்டு மறுபடி முயற்சி பண்ணுங்க.','Check your connection and try again.')}</p></div><div class="body pad"><div style="flex:1"></div><button class="btn" id="rl">${L('மறுபடி முயற்சி','Try again')}</button></div></section>`,()=>document.getElementById('rl').onclick=()=>location.reload())}
 function notDriver(){
+  if(ON_PAGES_D()){location.replace('join/');return}
   go(`<section class="screen"><div class="hero pad"><span class="mini">DRIVER APP</span><h1>${L('இந்த நம்பர் driver-ஆ சேர்க்கப்படல','This number is not registered as a driver')}</h1>
     <p>${esc(CL.phone||'')} · ${L('Owner-கிட்ட உங்க நம்பரை Office panel-ல சேர்க்க சொல்லுங்க.','Ask the owner to add your number in the office panel.')}</p></div>
    <div class="body pad"><div class="note">${L('புது driver-ஆ சேரணுமா? உங்க விவரம், documents upload பண்ணி office-க்கு அனுப்புங்க.','New here? Send your details and documents to our office.')}</div><a class="btn yellow" href="../join/" style="display:flex;align-items:center;justify-content:center;text-decoration:none">${L('Driver-ஆ சேர விண்ணப்பி','Apply to drive with us')}</a><div style="flex:1"></div><button class="btn ghost" id="lo2">${L('வேற நம்பர்ல login','Log in with another number')}</button></div></section>`,()=>document.getElementById('lo2').onclick=()=>{CL.logout().then(login)});
