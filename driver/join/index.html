@@ -55,6 +55,12 @@ input:focus{outline:none;border-color:var(--g2)}
 footer{text-align:center;color:var(--mut);font-size:13px;padding:6px 16px 30px}
 a{color:inherit}
 </style>
+<script>/* auto-update: reload when a newer version of the app is published */
+(function(){var APPV='2026-10-30-11',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+function chk(){try{fetch(new URL('/vellorecalltaxi/version.json',location.origin)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
+ if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
+ location.reload()}).catch(function(){})}catch(e){}}
+setTimeout(chk,3000);setInterval(chk,5*60*1000);document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible')chk()});})();</script>
 </head>
 <body>
 <header><div class="wrap">
@@ -74,7 +80,13 @@ const app=document.getElementById('app');let CL=null,F=null;
 function head(h,p){document.getElementById('h1').textContent=h;document.getElementById('hp').textContent=p||''}
 function setLang(){document.getElementById('lang').textContent=S.lang==='ta'?'English':'தமிழ்';document.getElementById('plink').textContent=L('தனியுரிமை & விதிமுறைகள்','Privacy & Terms');document.documentElement.lang=S.lang}
 document.getElementById('lang').onclick=()=>{S.lang=S.lang==='ta'?'en':'ta';try{localStorage.setItem('vctj',JSON.stringify({lang:S.lang}))}catch(e){}setLang();route()};
-let VIEW='login';function route(){({login,otp,form,status,offline}[VIEW]||login)()}
+let VIEW='login';function route(){({login,otp,form,status,offline,owner}[VIEW]||login)()}
+function owner(){head(L('வணக்கம் Owner!','Hello, owner!'),L('உங்க நம்பர் office நம்பர் — இந்த form driver-களுக்கு மட்டும்.','Your number is an office number — this form is only for drivers.'));
+  app.innerHTML=`<div class="card"><p style="margin:0 0 6px">${L('Driver-கள் app-ஐ எப்படி பார்ப்பாங்கன்னு demo-வில பார்க்கலாம். Demo-வில எதுவும் உண்மையா சேமிக்கப்படாது.','You can try the driver app in demo mode. Nothing is saved for real.')}</p>
+    <a class="btn y" href="../?demo=1" style="display:flex;align-items:center;justify-content:center;text-decoration:none">${L('Driver app demo பார்','Open the driver app demo')}</a>
+    <a class="btn ghost" href="../../office/" style="display:flex;align-items:center;justify-content:center;text-decoration:none">${L('Office panel-க்கு போ','Go to the office panel')}</a>
+    <button class="btn ghost" id="lo" style="border:0;font-size:14px">${L('வேற நம்பர்ல login','Use another number')}</button></div>`;
+  document.getElementById('lo').onclick=()=>CL.logout().then(()=>go('login'))}
 function go(v){VIEW=v;route();window.scrollTo(0,0)}
 
 function offline(){head(L('Internet இல்லை','You are offline'),L('Connection-ஐ பார்த்துட்டு மறுபடி முயற்சி பண்ணுங்க','Check your connection and try again'));
@@ -105,6 +117,7 @@ function otp(){
 }
 async function afterLogin(){
   S.phone=CL.phone.replace('+91','');
+  try{const st=await F.getDoc(F.doc(CL.db,'staff',CL.phone));if(st.exists()){go('owner');return}}catch(e){}
   try{const d=await F.getDoc(F.doc(CL.db,'drivers',CL.phone));if(d.exists()){S.app={status:'approved'};go('status');return}}catch(e){}
   try{const a=await F.getDoc(F.doc(CL.db,'driverApps',CL.phone));if(a.exists()){S.app=a.data();S.data=a.data();if(S.data.veh)S.veh=S.data.veh;go(S.app.status==='rejected'?'form':'status');return}}catch(e){}
   S.app=null;go('form');
