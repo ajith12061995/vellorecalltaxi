@@ -995,7 +995,10 @@ function go(html,after){cancelAnimationFrame(mapLoop);clearInterval(TK);clearTim
 function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(toast.h);toast.h=setTimeout(()=>el.classList.remove('show'),2600)}
 const isToday=ts=>new Date(ts).toDateString()===new Date().toDateString();
 const onMinutes=()=>Math.round((DS.onMs+(S.online?Date.now()-S.onSince:0))/6e4);
-function setOnline(v){if(v===S.online)return;if(v){S.onSince=Date.now()}else{DS.onMs+=Date.now()-S.onSince;saveDS()}S.online=v;if(CL)goLive(v)}
+function setOnline(v){if(v===S.online)return;if(v){S.onSince=Date.now()}else{DS.onMs+=Date.now()-S.onSince;saveDS()}S.online=v;if(CL)goLive(v);keepAwake(v)}
+/* keep the screen on while Online, so ride requests and live location keep working */
+let WL=null;async function keepAwake(on){try{if(on&&'wakeLock' in navigator){if(!WL||WL.released){WL=await navigator.wakeLock.request('screen')}}else if(!on&&WL){await WL.release();WL=null}}catch(e){}}
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&S.online)keepAwake(true)});
 
 /* slide-to-confirm */
 const slider=(id,label,cls='')=>`<div class="slide ${cls}" id="${id}"><span class="slabel">${label}</span><button class="knob" aria-label="${label}">${'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h13M13 6l6 6-6 6"/></svg>'}</button></div>`;
