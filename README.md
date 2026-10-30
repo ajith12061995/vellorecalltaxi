@@ -34,6 +34,10 @@ Live site: https://ajith12061995.github.io/vellorecalltaxi/
 | `staff` | Office logins |
 | `config/app` | Fares per vehicle, commission %, minimum wallet, owner UPI ID, office phone |
 
+## Maps
+
+On the live site the apps use real maps (Leaflet + OpenStreetMap tiles), Photon for place search, Nominatim for the address under a pinned point, and the OSRM demo server for road distance. All are free and can be withdrawn without notice, so for heavier use switch to a paid provider by changing the URLs in `MAPCFG` (inside each page's map section). When Leaflet can't load, the apps fall back to the drawn Vellore map.
+
 ## Testing without spending SMS
 
 Firebase console → Authentication → Phone → test numbers (code `123456`):

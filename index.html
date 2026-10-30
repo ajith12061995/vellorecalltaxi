@@ -9,6 +9,8 @@
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="icon" href="./icon-192.png">
 <link rel="apple-touch-icon" href="./icon-192.png">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{height:100%}body{margin:0;font-family:system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('./vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
@@ -426,6 +428,19 @@ details.faq p{margin:0;padding:0 14px 14px;color:var(--muted);font-size:14px;lin
 .eclist{display:flex;flex-wrap:wrap;gap:6px}
 .btn.dashed{background:var(--surface-2);color:var(--fg)!important;border:1.5px dashed var(--line)}
 
+
+.lmap{position:absolute;inset:0;z-index:0;background:var(--map-land)}
+.lmap .leaflet-bottom{margin-bottom:24px}
+.lmap .leaflet-control-attribution{font-size:10px;background:rgba(255,255,255,.85);color:#333}
+.lmk{background:none;border:0}
+.lpin{filter:drop-shadow(0 3px 3px rgba(0,0,0,.3))}
+.lme{display:block;width:18px;height:18px;border-radius:50%;background:#2C5196;border:3px solid #fff;box-shadow:0 0 0 7px rgba(44,81,150,.22);box-sizing:border-box}
+.lcar{width:36px;height:36px;display:flex;align-items:center;justify-content:center;transition:transform .4s}
+.lcar i{display:block;width:30px;height:18px;border-radius:6px;background:#13284F;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.35);position:relative}
+.lcar i::after{content:"";position:absolute;left:9px;top:2px;width:10px;height:10px;border-radius:2px;background:#FFD84D}
+.lfleet{position:relative;display:block;width:26px;height:26px;border-radius:50%;border:2.5px solid #fff;font:800 11px/21px sans-serif;text-align:center;box-shadow:0 2px 5px rgba(0,0,0,.3);box-sizing:border-box}
+.lfleet b{position:absolute;left:28px;top:3px;background:#fff;color:#13284F;font:700 10.5px/14px sans-serif;padding:1px 4px;border-radius:4px;white-space:nowrap;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+
 /* placeholder pages */
 .soon{border:1px dashed var(--line);border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:8px;background:var(--surface-2)}
 .soon ul{margin:0;padding-left:18px;display:grid;gap:4px}
@@ -640,7 +655,7 @@ const zoomCtl=bottom=>`<div class="zoomctl" style="bottom:${bottom}px"><button c
 function bindZoom(m){
   document.getElementById('zi').onclick=()=>m.zoomBy(2);
   document.getElementById('zo').onclick=()=>m.zoomBy(.5);
-  document.getElementById('loc').onclick=()=>m.flyTo(P.home.lat,P.home.lon,Math.max(m.cam.s,60000));
+  document.getElementById('loc').onclick=()=>{if(REALMAP)locateMe(true,()=>m.flyTo(P.home.lat,P.home.lon,Math.max(m.cam.s,60000)));m.flyTo(P.home.lat,P.home.lon,Math.max(m.cam.s,60000))};
 }
 
 
@@ -672,6 +687,7 @@ function home(){
      bindNav();
      const m=makeMap(document.getElementById('map'),{cars:!CL});
      m.fit(Object.keys(P).filter(k=>k!=='golden'&&!CUSTOM.includes(k)).map(k=>P[k]),30,60);
+     if(REALMAP){if(GOTPOS)m.setView(P.home.lat,P.home.lon,45000);locateMe()}
      bindZoom(m);
      document.getElementById('wh').onclick=()=>search();
      document.getElementById('pinchip').onclick=()=>picker('drop');
@@ -693,14 +709,14 @@ function search(){
      <button class="mic" id="mic" aria-label="Voice">${I.mic}</button></div></div>
    <div class="list pad" id="ls"></div></section>`,()=>{
     const ls=document.getElementById('ls'),dr=document.getElementById('dr');
-    const item=k=>`<button class="row" data-p="${k}"><span class="ic">${I[P[k].ic]}</span><div><b>${pn(k)}</b><small>${P[k].sub||''} · ${route(S.from,k).km.toFixed(1)} ${t('km')}</small></div></button>`;
+    const item=k=>`<button class="row" data-p="${k}"><span class="ic">${I[P[k].ic]}</span><div><b>${pn(k)}</b><small>${P[k].sub||''} · ${(REALMAP?hav(P[S.from],P[k])*1.35:route(S.from,k).km).toFixed(1)} ${t('km')}</small></div></button>`;
     const pinRow=`<button class="row onmap" id="onmap"><span class="ic">${I.pin}</span><div><b>${t('onMap')}</b><small>${t('onMapSub')}</small></div></button>`;
     const render=()=>{const q=dr.value.trim().toLowerCase();const keys=Object.keys(P).filter(k=>k!=='home'&&k!==S.from&&!CUSTOM.includes(k));
       if(!q){ls.innerHTML=`${pinRow}<div class="tagline">${t('fav')}</div>${['cmc','katpadi'].map(item).join('')}<div class="tagline">${t('popular')}</div>${keys.filter(k=>!['cmc','katpadi'].includes(k)).map(item).join('')}`}
       else{const mm=keys.filter(k=>(P[k].en+' '+P[k].ta+' '+(P[k].sub||'')).toLowerCase().includes(q));ls.innerHTML=pinRow+(mm.length?mm.map(item).join(''):`<p class="muted" style="padding:20px 0">${t('noMatch')}</p>`)}
       ls.querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>{S.dest=b.dataset.p;fareScreen()});
       document.getElementById('onmap').onclick=()=>picker('drop')};
-    dr.oninput=render;render();setTimeout(()=>dr.focus(),300);
+    dr.oninput=()=>{render();if(REALMAP)liveSearch(dr.value)};render();setTimeout(()=>dr.focus(),300);
     document.getElementById('pu').onclick=()=>picker('pick');
     document.getElementById('bk').onclick=home;document.getElementById('mic').onclick=voiceSheet;
   });
@@ -720,7 +736,8 @@ function picker(mode){
      <button class="btn ${isPick?'':'yellow'}" id="ok">${t(isPick?'confirmPick':'confirmDrop')}</button></div></section>`,()=>{
     const pin=document.getElementById('pin'),addr=document.getElementById('addr'),ok=document.getElementById('ok'),hint=document.getElementById('hint');
     let cur=null,touches=0;
-    const show=c=>{const d=describe(c.lat,c.lon);document.getElementById('at').textContent=d.title;document.getElementById('as').textContent=d.sub;addr.classList.remove('loading');cur=c;ok.disabled=false};
+    const show=c=>{const d=describe(c.lat,c.lon);document.getElementById('at').textContent=d.title;document.getElementById('as').textContent=d.sub;addr.classList.remove('loading');cur=c;ok.disabled=false;
+      if(REALMAP)revGeo(c.lat,c.lon).then(g=>{if(!g||cur!==c||!document.getElementById('at'))return;c.g=g;document.getElementById('at').textContent=g[S.lang];document.getElementById('as').textContent=g.sub||(c.lat.toFixed(5)+', '+c.lon.toFixed(5))})};
     const m=makeMap(document.getElementById('map'),{scale:true,hide:CUSTOM.filter(k=>!(isPick&&k==='drop'&&S.dest==='drop')),
       onStart(){pin.classList.add('lift');addr.classList.add('loading');ok.disabled=true;if(++touches>1)hint.classList.add('gone')},
       onEnd(c){pin.classList.remove('lift');show(c)}});
@@ -729,9 +746,9 @@ function picker(mode){
     bindZoom(m);
     document.getElementById('bk').onclick=search;
     ok.onclick=()=>{if(!cur)return;
-      if(isPick){setCustom('pick',cur);S.from='pick';S.dest&&P[S.dest]?fareScreen():search();return}
+      if(isPick){setCustom('pick',cur);geoName('pick',cur);S.from='pick';S.dest&&P[S.dest]?fareScreen():search();return}
       if(hav(cur,P[S.from])<.08){toast(t('tooClose'));return}
-      setCustom('drop',cur);S.dest='drop';fareScreen()};
+      setCustom('drop',cur);geoName('drop',cur);S.dest='drop';fareScreen()};
   });
 }
 
@@ -748,8 +765,8 @@ function fareScreen(){
      <div class="payrow"><button class="pay ${S.pay==='cash'?'sel':''}" data-pay="cash">${I.cash}${t('payCash')}</button><button class="pay ${S.pay==='upi'?'sel':''}" data-pay="upi">${I.upi}${t('payUpi')}</button>${CL?'':`<button class="pay ${S.pay==='wallet'?'sel':''}" data-pay="wallet">${I.navWallet.replace('<svg ','<svg width="18" height="18" ')}${inr(WAL.bal)}</button>`}</div>
      <p class="fine muted" style="margin:0"><button class="linkbtn" id="cp">% ${t('coupon')}</button> · ${t('fareNote')}</p>
      <button class="btn yellow" id="bookb"></button></div></section>`,()=>{
-    const m=makeMap(document.getElementById('map'),{path:r.path});
-    m.fit(r.path.map(k=>P[k]),46,64);
+    const m=makeMap(document.getElementById('map'),{path:r.path,line:r.pts?()=>r.pts:undefined});
+    m.fit(r.pts||r.path.map(k=>P[k]),46,64);
     const upd=()=>{const v=VEH.find(x=>x.id===S.veh);document.getElementById('bookb').textContent=`${S.when||ADV.includes(v.id)?L('Schedule பண்ணு','Schedule'):t('book')} ${v[S.lang]} · ₹${fare(v,r.km)}`};upd();
     app.querySelectorAll('.veh').forEach(b=>b.onclick=()=>{S.veh=b.dataset.v;app.querySelectorAll('.veh').forEach(x=>x.classList.toggle('sel',x===b));upd()});
     app.querySelectorAll('[data-pay]').forEach(b=>b.onclick=()=>{if(b.dataset.pay==='wallet'&&WAL.bal<fare(VEH.find(x=>x.id===S.veh),r.km)){toast(L(`Wallet-ல ${inr(WAL.bal)} தான் இருக்கு. பணம் சேர்க்கணும்`,`Only ${inr(WAL.bal)} in wallet. Add money first`));return}S.pay=b.dataset.pay;app.querySelectorAll('[data-pay]').forEach(x=>x.classList.toggle('sel',x===b))});
@@ -1584,7 +1601,7 @@ async function cloudBook(){
   if(S.pay==='wallet')S.pay='upi';
   const btn=document.getElementById('bookb');if(btn){btn.disabled=true;btn.textContent=L('Book ஆகுது…','Booking…')}
   const pin=String(1000+Math.floor(Math.random()*9000));
-  const trip=r.path.map(k=>({lat:P[k].lat,lon:P[k].lon}));
+  const trip=(r.pts||r.path.map(k=>P[k])).map(p=>({lat:p.lat,lon:p.lon}));
   const data={customerUid:CUID,custName:S.name,custPhone:'+91'+S.phone,src:'app',kind:'ride',from:placeOf(S.from),to:placeOf(S.dest),path:trip,
     veh:v.id,vehTa:v.ta,vehEn:v.en,km:+r.km.toFixed(1),base:v.base,fare:f,pay:S.pay,status:'searching',when:Date.now(),
     createdAt:F().serverTimestamp(),updatedAt:F().serverTimestamp()};
@@ -1693,6 +1710,33 @@ function upiLink(amt,ref){return `upi://pay?pa=${encodeURIComponent(CFG.upi)}&pn
 function realQr(el,amt,ref){if(!CFG.upi||!el)return;loadQrLib().then(()=>{el.innerHTML='';new window.QRCode(el,{text:upiLink(amt,ref),width:120,height:120,correctLevel:window.QRCode.CorrectLevel.M})}).catch(()=>{})}
 
 
+
+/* ---------- real-map helpers for the customer app ---------- */
+let GOTPOS=false,LOCATING=false,SRT=null;
+function locateMe(force,cb){
+  if(!REALMAP||!navigator.geolocation)return;if((GOTPOS||LOCATING)&&!force)return;LOCATING=true;
+  navigator.geolocation.getCurrentPosition(p=>{LOCATING=false;const first=!GOTPOS;GOTPOS=true;
+    P.home.lat=p.coords.latitude;P.home.lon=p.coords.longitude;P.home.ta='உங்க இடம்';P.home.en='Your location';
+    cb&&cb();
+    revGeo(P.home.lat,P.home.lon).then(g=>{if(g){P.home.ta=g.ta;P.home.en=g.en;P.home.sub=g.sub}if(first&&document.getElementById('wh'))home()});
+  },()=>{LOCATING=false;if(force)toast(L('Location அனுமதி கொடுங்க, அல்லது map-ல pin பண்ணுங்க','Allow location, or pin your pickup on the map'))},{enableHighAccuracy:true,timeout:15000,maximumAge:60000});
+}
+function geoName(k,c){if(c&&c.g){P[k].ta=c.g.ta;P[k].en=c.g.en;P[k].sub=c.g.sub}}
+function liveSearch(q){
+  clearTimeout(SRT);q=(q||'').trim();const old=document.getElementById('osr');if(q.length<3){if(old)old.remove();return}
+  SRT=setTimeout(async()=>{
+    try{const r=await fetch(`${MAPCFG.search}?q=${encodeURIComponent(q)}&lat=12.93&lon=79.14&limit=7&bbox=78.6,12.6,79.6,13.3`);const j=await r.json();
+      const ls=document.getElementById('ls'),dr=document.getElementById('dr');if(!ls||!dr||dr.value.trim()!==q)return;
+      const rows=(j.features||[]).map(f=>{const pr=f.properties||{},c=f.geometry.coordinates;const name=pr.name||(pr.housenumber&&pr.street?pr.housenumber+', '+pr.street:pr.street)||'';
+        const sub=[pr.street&&pr.street!==name?pr.street:'',pr.district||pr.locality||'',pr.city||pr.county||''].filter(Boolean).join(', ');return{name,sub,lat:c[1],lon:c[0]}}).filter(x=>x.name);
+      let box=document.getElementById('osr');if(!box){box=document.createElement('div');box.id='osr';ls.insertBefore(box,ls.children[1]||null)}
+      box.innerHTML=rows.length?`<div class="tagline">${L('வரைபடத்தில் கிடைத்தவை','Places on the map')}</div>`+rows.map((x,i)=>`<button class="row" data-g="${i}"><span class="ic">${I.pin}</span><div><b>${esc(x.name)}</b><small>${esc(x.sub)} · ${(hav(P[S.from],x)*1.35).toFixed(1)} ${t('km')}</small></div></button>`).join('')+`<p class="fine muted" style="margin:4px 0 0;text-align:left">Search: Photon · © OpenStreetMap</p>`:'';
+      box.querySelectorAll('[data-g]').forEach(b=>b.onclick=()=>{const x=rows[+b.dataset.g];setCustom('drop',{lat:x.lat,lon:x.lon});P.drop.ta=P.drop.en=x.name;P.drop.sub=x.sub;S.dest='drop';fareScreen()});
+    }catch(e){}
+  },450);
+}
+document.addEventListener('route-ready',()=>{if(document.getElementById('bookb')&&document.getElementById('vs')&&!document.querySelector('.modal'))fareScreen()});
+
 /* ---------- interactive Vellore map: drag, pinch, wheel, double-tap, fling ---------- */
 const AREAS=[
   {ta:'காட்பாடி',en:'Katpadi',lat:12.9690,lon:79.1440},{ta:'காந்தி நகர்',en:'Gandhi Nagar',lat:12.9550,lon:79.1390},
@@ -1709,7 +1753,7 @@ const CELL=.0011,LX=i=>i*CELL+(hsh(i,7)-.5)*CELL*.35,LY=j=>j*CELL*.9+(hsh(j,11)-
 const WB=(()=>{let sd=7;const r=()=>(sd=(sd*9301+49297)%233280)/233280;const a=[];for(let i=0;i<220;i++)a.push([79.06+r()*.14,12.86+r()*.14,.002+r()*.005,.0015+r()*.004]);return a})();
 const ramp=(v,a,b)=>Math.max(0,Math.min(1,(v-a)/(b-a)));
 
-function makeMap(cv,o={}){
+function makeCanvasMap(cv,o={}){
   const ctx=cv.getContext('2d'),dpr=Math.min(2,window.devicePixelRatio||1);
   const cam={lat:P.home.lat,lon:P.home.lon,s:20000},MIN=2500,MAX=700000;
   const clamp=s=>Math.max(MIN,Math.min(MAX,s));
@@ -1821,6 +1865,99 @@ function makeMap(cv,o={}){
   return{cam,fit,flyTo,zoomBy:f=>flyTo(cam.lat,cam.lon,cam.s*f,300),setView:(lat,lon,s)=>{cam.lat=lat;cam.lon=lon;cam.s=clamp(s)},center:()=>({lat:cam.lat,lon:cam.lon})};
 }
 
+
+
+/* ---------- real map on the live site: Leaflet + OpenStreetMap (drawn map stays as the offline / preview fallback) ---------- */
+const MAPCFG={
+  tiles:'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+  attr:'© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> · <a href="https://project-osrm.org/" target="_blank" rel="noopener">OSRM</a>',
+  search:'https://photon.komoot.io/api/',
+  reverse:'https://nominatim.openstreetmap.org/reverse',
+  route:'https://router.project-osrm.org/route/v1/driving/'
+};
+const LF=window.L&&window.L.map?window.L:null;
+const REALMAP=!!LF&&/^https?:/.test(location.protocol);
+const zFromS=s=>Math.max(3,Math.min(19,Math.log2(s*360/256)));
+const sFromZ=z=>256*Math.pow(2,z)/360;
+function makeMap(cv,o={}){return REALMAP?makeLeafletMap(cv,o):makeCanvasMap(cv,o)}
+function makeLeafletMap(cv,o={}){
+  const host=document.createElement('div');host.className='map lmap';cv.replaceWith(host);
+  const m=LF.map(host,{zoomControl:false,zoomSnap:.25,attributionControl:true}).setView([P.home.lat,P.home.lon],14);
+  m.attributionControl.setPrefix(false);
+  LF.tileLayer(MAPCFG.tiles,{maxZoom:19,attribution:MAPCFG.attr}).addTo(m);
+  if(o.scale)LF.control.scale({imperial:false,position:'bottomleft'}).addTo(m);
+  const ic=(html,w,h,ax,ay)=>LF.divIcon({className:'lmk',html,iconSize:[w,h],iconAnchor:[ax,ay]});
+  const pinI=col=>ic(`<svg class="lpin" width="30" height="40" viewBox="0 0 46 60"><path d="M23 58C23 58 4 36 4 22a19 19 0 0138 0c0 14-19 36-19 36z" fill="${col}" stroke="#fff" stroke-width="3"/><circle cx="23" cy="22" r="8" fill="#FFD84D"/></svg>`,30,40,15,39);
+  const pins=[];let me=null,drv=null,ln=null,ln2=null;const fleet={};
+  const userMoved={v:false};
+  m.on('movestart',e=>{o.onStart&&o.onStart()});
+  m.on('moveend',()=>{const c=m.getCenter();o.onEnd&&o.onEnd({lat:c.lat,lon:c.lng})});
+  function setPins(list){
+    while(pins.length>list.length)m.removeLayer(pins.pop());
+    list.forEach((p,i)=>{if(!pins[i]){pins[i]=LF.marker([p.lat,p.lon],{icon:pinI(p.col),interactive:false,keyboard:false}).addTo(m);pins[i]._col=p.col}
+      else{pins[i].setLatLng([p.lat,p.lon]);if(pins[i]._col!==p.col){pins[i].setIcon(pinI(p.col));pins[i]._col=p.col}}});
+  }
+  function sync(){
+    if(!document.body.contains(host)){clearInterval(tk);m.remove();return}
+    const list=(o.pins||[]).slice();
+    if(o.path&&o.path.length){const a=P[o.path[0]],b=P[o.path[o.path.length-1]];if(a)list.push({lat:a.lat,lon:a.lon,col:'#1E8A5A'});if(b&&o.path.length>1)list.push({lat:b.lat,lon:b.lon,col:'#13284F'})}
+    setPins(list.filter(p=>p&&p.lat!=null));
+    if(!o.driver&&!o.fleet&&P.home){if(!me)me=LF.marker([P.home.lat,P.home.lon],{icon:ic('<i class="lme"></i>',18,18,9,9),interactive:false,keyboard:false}).addTo(m);else me.setLatLng([P.home.lat,P.home.lon])}
+    const lc=o.line?o.line():(o.path&&o.path.length>1?o.path.map(k=>P[k]).filter(Boolean):null);
+    if(lc&&lc.length>1){const ll=lc.map(p=>[p.lat,p.lon]);if(!ln){ln=LF.polyline(ll,{color:'#1E3A6E',weight:6,opacity:.9}).addTo(m);ln2=LF.polyline(ll,{color:'#FFD84D',weight:2.5,dashArray:'2 9'}).addTo(m)}else{ln.setLatLngs(ll);ln2.setLatLngs(ll)}}
+    else if(ln){m.removeLayer(ln);m.removeLayer(ln2);ln=ln2=null}
+    const d=o.driver?o.driver():null;
+    if(d&&d.lat!=null){const ang=d.nlat!=null?Math.atan2(-(d.nlat-d.lat),(d.nlon-d.lon)*Math.cos(d.lat*Math.PI/180))*180/Math.PI:0;
+      if(!drv)drv=LF.marker([d.lat,d.lon],{icon:ic('<div class="lcar"><i></i></div>',36,36,18,18),interactive:false,keyboard:false,zIndexOffset:500}).addTo(m);else drv.setLatLng([d.lat,d.lon]);
+      const el=drv.getElement();if(el&&el.firstChild)el.firstChild.style.transform=`rotate(${ang}deg)`}
+    else if(drv){m.removeLayer(drv);drv=null}
+    if(o.fleet){const seen={};o.fleet().forEach(f=>{const k=f.label+f.tag;seen[k]=1;
+        const html=`<span class="lfleet" style="background:${f.col};color:${f.col==='#F5B400'?'#13284F':'#fff'}">${f.tag}<b>${f.label}</b></span>`;
+        if(!fleet[k]){fleet[k]=LF.marker([f.lat,f.lon],{icon:ic(html,26,26,13,13),keyboard:false}).addTo(m);fleet[k]._h=html}
+        else{fleet[k].setLatLng([f.lat,f.lon]);if(fleet[k]._h!==html){fleet[k].setIcon(ic(html,26,26,13,13));fleet[k]._h=html}}});
+      Object.keys(fleet).forEach(k=>{if(!seen[k]){m.removeLayer(fleet[k]);delete fleet[k]}})}
+  }
+  const tk=setInterval(sync,500);setTimeout(()=>{m.invalidateSize();sync()},60);
+  const api={
+    cam:{get s(){return sFromZ(m.getZoom())},get lat(){return m.getCenter().lat},get lon(){return m.getCenter().lng}},
+    fit(pts,pad=40,top=0){pts=(pts||[]).filter(p=>p&&p.lat!=null);if(!pts.length)return;if(pts.length===1){m.setView([pts[0].lat,pts[0].lon],16);return}
+      setTimeout(()=>{m.invalidateSize();m.fitBounds(LF.latLngBounds(pts.map(p=>[p.lat,p.lon])),{paddingTopLeft:[pad,pad+top],paddingBottomRight:[pad,pad+24],maxZoom:17})},70)},
+    flyTo(lat,lon,s){m.flyTo([lat,lon],zFromS(s),{duration:.6})},
+    zoomBy(f){m.setZoom(m.getZoom()+Math.log2(f))},
+    setView(lat,lon,s){m.setView([lat,lon],zFromS(s),{animate:false})},
+    center(){const c=m.getCenter();return{lat:c.lat,lon:c.lng}},
+    leaflet:m
+  };
+  return api;
+}
+
+/* real road distance (OSRM), cached; falls back to straight-line estimate */
+const ROUTEC={};
+const _graphRoute=route;
+const rKey=(a,b)=>a.lat.toFixed(5)+','+a.lon.toFixed(5)+'|'+b.lat.toFixed(5)+','+b.lon.toFixed(5);
+if(REALMAP){route=function(from,to){const a=P[from],b=P[to];if(!a||!b||a.lat==null||b.lat==null)return _graphRoute(from,to);
+  const k=rKey(a,b),c=ROUTEC[k];if(c&&c.km)return{path:[from,to],km:c.km,pts:c.pts,real:true};
+  if(!c)fetchRoute(a,b,k);
+  return{path:[from,to],km:Math.max(1.2,hav(a,b)*1.35),pts:[{lat:a.lat,lon:a.lon},{lat:b.lat,lon:b.lon}]}}}
+async function fetchRoute(a,b,k){
+  ROUTEC[k]={pending:true};
+  try{const r=await fetch(`${MAPCFG.route}${a.lon},${a.lat};${b.lon},${b.lat}?overview=full&geometries=geojson`);const j=await r.json();const rt=j.routes&&j.routes[0];if(!rt)throw 0;
+    let pts=rt.geometry.coordinates.map(c=>({lat:c[1],lon:c[0]}));if(pts.length>400){const st=Math.ceil(pts.length/400);pts=pts.filter((p,i)=>i%st===0||i===pts.length-1)}
+    ROUTEC[k]={km:Math.max(1,rt.distance/1000),pts}}
+  catch(e){ROUTEC[k]={km:Math.max(1.2,hav(a,b)*1.35),pts:[{lat:a.lat,lon:a.lon},{lat:b.lat,lon:b.lon}]}}
+  document.dispatchEvent(new CustomEvent('route-ready',{detail:k}));
+}
+
+/* address for a point (Nominatim, max 1 request per second, cached) */
+const GEOC={};let GEOLAST=0;
+async function revGeo(lat,lon){
+  const k=lat.toFixed(4)+','+lon.toFixed(4)+S.lang;if(GEOC[k])return GEOC[k];
+  const wait=Math.max(0,1100-(Date.now()-GEOLAST));if(wait)await new Promise(r=>setTimeout(r,wait));GEOLAST=Date.now();
+  try{const r=await fetch(`${MAPCFG.reverse}?format=jsonv2&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1&accept-language=${S.lang==='ta'?'ta,en':'en'}`);const j=await r.json();
+    const a=j.address||{};const main=j.name||a.amenity||a.shop||a.building||a.house_number&&a.road&&(a.house_number+', '+a.road)||a.road||a.neighbourhood||a.suburb||'';
+    const area=[a.road&&a.road!==main?a.road:'',a.suburb||a.neighbourhood||a.village||a.hamlet||'',a.city||a.town||a.county||''].filter(Boolean).slice(0,2).join(', ');
+    const g={ta:main||area||'',en:main||area||'',sub:area};if(!g.ta)return null;GEOC[k]=g;return g}catch(e){return null}
+}
 
 splash();
 </script>
