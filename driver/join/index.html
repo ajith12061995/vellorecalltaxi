@@ -69,7 +69,7 @@ const S={lang:'ta',phone:'',veh:'auto',files:{},data:{}};
 try{const s=JSON.parse(localStorage.getItem('vctj')||'{}');if(s.lang)S.lang=s.lang}catch(e){}
 const L=(ta,en)=>S.lang==='ta'?ta:en;
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const VEH=[['bike','பைக்','Bike'],['auto','ஆட்டோ','Auto'],['mini','Mini கார்','Mini car'],['sedan','Sedan கார்','Sedan'],['suv','SUV (Ertiga/Rumion)','SUV (Ertiga/Rumion)'],['psuv','Premium SUV (Innova)','Premium SUV (Innova)'],['trav','Traveller','Traveller'],['bus','Mini Bus','Mini Bus']];
+const VEH=[['bike','பைக்','Bike'],['auto','ஆட்டோ','Auto'],['mini','Mini கார்','Mini car'],['sedan','Sedan கார்','Sedan'],['suv','MPV (Ertiga/Rumion)','MPV (Ertiga/Rumion)'],['psuv','Premium MPV (Innova)','Premium MPV (Innova)'],['trav','Tempo Traveller / Maxi Cab','Tempo Traveller / Maxi Cab']];
 const app=document.getElementById('app');let CL=null,F=null;
 function head(h,p){document.getElementById('h1').textContent=h;document.getElementById('hp').textContent=p||''}
 function setLang(){document.getElementById('lang').textContent=S.lang==='ta'?'English':'தமிழ்';document.getElementById('plink').textContent=L('தனியுரிமை & விதிமுறைகள்','Privacy & Terms');document.documentElement.lang=S.lang}
@@ -142,7 +142,7 @@ const BRANDS={
   sedan:{'Maruti Suzuki':['Dzire','Ciaz'],'Hyundai':['Aura','Verna','Xcent'],'Honda':['Amaze','City'],'Toyota':['Etios'],'Tata':['Tigor','Tigor EV']},
   suv:{'Maruti Suzuki':['Ertiga','XL6'],'Toyota':['Rumion'],'Kia':['Carens'],'Renault':['Triber'],'Mahindra':['Marazzo','Bolero Neo']},
   psuv:{'Toyota':['Innova Crysta','Innova Hycross','Innova'],'Mahindra':['XUV700','Scorpio-N'],'Kia':['Carens','Carnival']},
-  trav:{'Force':['Traveller 12 seater','Traveller 17 seater','Urbania'],'Tata':['Winger']},
+  trav:{'Force':['Traveller 12 seater','Traveller 17 seater','Urbania','Trax Cruiser (Maxi Cab)'],'Tata':['Winger'],'Mahindra':['Tourister']},
   bus:{'Tata':['Starbus','LP 410'],'Eicher':['Skyline'],'Force':['Traveller 26 seater'],'Ashok Leyland':['Mitr','Sunshine']}};
 const OTHER='__other';
 const YEARS=(()=>{const y=new Date().getFullYear(),a=[];for(let i=y;i>=y-20;i--)a.push(i);return a})();

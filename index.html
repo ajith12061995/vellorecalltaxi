@@ -25,7 +25,7 @@
 .vt{flex:none;width:96px;display:flex;flex-direction:column;align-items:center;gap:4px;background:none;border:0;padding:0;scroll-snap-align:start;cursor:pointer;color:var(--fg)}
 .vt .im{position:relative;width:96px;height:62px;display:grid;place-items:center}.vt .im svg.vsvg{width:96px;height:58px;display:block}
 .vt .vb{position:absolute;top:2px;right:6px;width:22px;height:22px;border-radius:50%;background:#20262A;display:grid;place-items:center;box-shadow:0 1px 3px rgba(0,0,0,.3)}
-.vt b{font-size:13px;font-weight:600;padding:3px 12px;border-radius:999px;color:var(--muted);white-space:nowrap}
+.vt b{font-size:12.5px;font-weight:600;padding:3px 10px;border-radius:999px;color:var(--muted);text-align:center;line-height:1.2;max-width:104px}
 .vt.on b{background:var(--navy);color:#fff}.vt:active .im{transform:scale(.96)}
 .vsep{flex:none;width:1px;background:var(--line);margin:10px 4px 26px}
 
@@ -37,7 +37,7 @@
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('./vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV='2026-10-30-8',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV='2026-10-30-9',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('/vellorecalltaxi/version.json',location.origin)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -525,7 +525,7 @@ const I = {
 /* ---------- text: Tamil + English ---------- */
 const T = {
   ta:{tagline:'உங்க ஊர், உங்க டாக்ஸி',chooseLang:'மொழியை தேர்வு செய்யுங்க',langSub:'அப்புறம் Profile-ல மாத்திக்கலாம்',cont:'தொடரவும்',
-    loginH:'வணக்கம்! உள்ள வாங்க',loginP:'Bike முதல் Mini Bus வரை — ஒரே app-ல Vellore முழுக்க',phone:'மொபைல் நம்பர்',getOtp:'OTP அனுப்பு',terms:'தொடர்ந்தால் Terms & Privacy-க்கு ஒப்புக்கொள்கிறீர்கள்',
+    loginH:'வணக்கம்! உள்ள வாங்க',loginP:'Bike முதல் Maxi Cab வரை — ஒரே app-ல Vellore முழுக்க',phone:'மொபைல் நம்பர்',getOtp:'OTP அனுப்பு',terms:'தொடர்ந்தால் Terms & Privacy-க்கு ஒப்புக்கொள்கிறீர்கள்',
     phoneErr:'10 இலக்க நம்பர் கொடுங்க',otpH:'OTP கொடுங்க',otpP:'அனுப்பியது',change:'மாற்று',verify:'சரிபார்',otpErr:'OTP தவறு. மறுபடியும் முயற்சி பண்ணுங்க',resend:'மறுபடி அனுப்பு',
     demoOtp:'Demo OTP: 1234 — Firebase connect பண்ணும்போது உண்மையான SMS வரும்',nameH:'உங்க பேர் என்ன?',nameP:'Driver உங்களை இந்த பேர்ல கூப்பிடுவாங்க',name:'பெயர்',start:'ஆரம்பிக்கலாம்',
     morning:'காலை வணக்கம்',afternoon:'மதிய வணக்கம்',evening:'மாலை வணக்கம்',where:'எங்கே போகணும்?',nearby:'வண்டிகள் அருகில்',services:'சேவைகள்',
@@ -538,7 +538,7 @@ const T = {
     soonServ:'இந்த சேவை அடுத்த Step-ல வரும்',fav:'பிடித்த இடங்கள்',
     pinPick:'Pickup இடத்தை pin பண்ணுங்க',pinDrop:'போக வேண்டிய இடத்தை pin பண்ணுங்க',dropLbl:'Drop',near:'அருகில்',m:'மீ',confirmPick:'இங்கே Pickup பண்ணு',confirmDrop:'இந்த இடத்துக்கு போகணும்',onMap:'Map-ல exact இடத்தை pin பண்ணு',onMapSub:'Zoom பண்ணி வீட்டு வாசல் வரை சரியா காட்டலாம்',hint:'Map-ஐ நகர்த்துங்க · இரண்டு விரலால் zoom',tooClose:'Pickup-க்கும் Drop-க்கும் ரொம்ப கிட்ட இருக்கு',pinChip:'Map-ல pin',from:'ல இருந்து'},
   en:{tagline:'Your town, your taxi',chooseLang:'Choose your language',langSub:'You can change it later in Profile',cont:'Continue',
-    loginH:'Welcome! Let’s get you moving',loginP:'From bikes to mini buses — all of Vellore in one app',phone:'Mobile number',getOtp:'Send OTP',terms:'By continuing you agree to the Terms & Privacy',
+    loginH:'Welcome! Let’s get you moving',loginP:'From bikes to maxi cabs — all of Vellore in one app',phone:'Mobile number',getOtp:'Send OTP',terms:'By continuing you agree to the Terms & Privacy',
     phoneErr:'Enter a 10-digit number',otpH:'Enter the OTP',otpP:'Sent to',change:'Change',verify:'Verify',otpErr:'Wrong OTP. Please try again',resend:'Resend',
     demoOtp:'Demo OTP: 1234 — real SMS works once Firebase is connected',nameH:'What should we call you?',nameP:'Your driver will greet you by this name',name:'Name',start:'Let’s go',
     morning:'Good morning',afternoon:'Good afternoon',evening:'Good evening',where:'Where to?',nearby:'vehicles nearby',services:'Services',
@@ -582,10 +582,9 @@ const VEH=[
   {id:'auto',en:'Auto',ta:'ஆட்டோ',seats:3,base:40,per:16,eta:3},
   {id:'mini',en:'Mini',ta:'Mini கார்',seats:4,base:100,per:16,eta:4,models:'Swift · Wagon R'},
   {id:'sedan',en:'Sedan',ta:'Sedan கார்',seats:4,base:130,per:19,eta:5,models:'Dzire · Aura · Etios'},
-  {id:'suv',en:'SUV',ta:'SUV',seats:6,base:180,per:22,eta:6,models:'Ertiga · Rumion',tag:'7-seater'},
-  {id:'psuv',en:'Premium SUV',ta:'Premium SUV',seats:7,base:250,per:26,eta:8,models:'Innova Crysta · Hycross',tag:'Premium'},
-  {id:'trav',en:'Traveller',ta:'Traveller',seats:12,base:600,per:28,eta:25,models:'Tempo Traveller',tag:'12-seater'},
-  {id:'bus',en:'Mini Bus',ta:'Mini Bus',seats:24,base:1200,per:40,eta:40,models:'Mini bus · AC / Non-AC',tag:'24-seater'}
+  {id:'suv',en:'MPV',ta:'MPV',seats:6,base:180,per:22,eta:6,models:'Ertiga · Rumion',tag:'7-seater'},
+  {id:'psuv',en:'Premium MPV',ta:'Premium MPV',seats:7,base:250,per:26,eta:8,models:'Innova Crysta · Hycross',tag:'Premium'},
+  {id:'trav',en:'Tempo Traveller / Maxi Cab',ta:'Tempo Traveller / Maxi Cab',seats:12,base:600,per:28,eta:25,models:'Tempo Traveller · Maxi Cab',tag:'12-seater'}
 ];
 const fare=(v,km)=>Math.round((v.base+v.per*Math.max(0,km-1.5))/5)*5;
 
@@ -832,7 +831,7 @@ function fareScreen(){
     document.getElementById('cp').onclick=()=>toast('FIRST20 · AUTO15 · REFER');
     document.getElementById('edit').onclick=search;
     document.getElementById('bk').onclick=search;document.getElementById('bookb').onclick=()=>{const v=VEH.find(x=>x.id===S.veh);
-      if(ADV.includes(v.id)&&(!S.when||S.when<Date.now()+3*36e5)){pickWhen(180,ts=>{S.when=ts;fareScreen()},L('Traveller / Mini Bus-க்கு குறைந்தது 3 மணி நேரம் முன்னாடி book பண்ணணும்','Travellers and mini buses need at least 3 hours\u2019 notice'));return}
+      if(ADV.includes(v.id)&&(!S.when||S.when<Date.now()+3*36e5)){pickWhen(180,ts=>{S.when=ts;fareScreen()},L('Tempo Traveller / Maxi Cab-க்கு குறைந்தது 3 மணி நேரம் முன்னாடி book பண்ணணும்','Tempo Travellers and maxi cabs need at least 3 hours\u2019 notice'));return}
       if(S.when){if(S.pay==='wallet')S.pay='upi';confirmSchedule();return}if(CL)return cloudBook();startBooking()};
     document.getElementById('whenb').onclick=()=>pickWhen(ADV.includes(S.veh)?180:30,ts=>{S.when=ts;fareScreen()});
     const wx=document.getElementById('whenx');if(wx)wx.onclick=()=>{S.when=null;fareScreen()};
@@ -1374,7 +1373,7 @@ function rentalScreen(){
     app.querySelectorAll('[data-pay]').forEach(b=>b.onclick=()=>{S.pay=b.dataset.pay;rentalScreen()});
     document.getElementById('whenb').onclick=()=>pickWhen(ADV.includes(RS.veh)?180:30,ts=>{RS.when=ts;rentalScreen()});
     document.getElementById('rb').onclick=()=>{
-      if(ADV.includes(RS.veh)&&(!RS.when||RS.when<Date.now()+3*36e5)){pickWhen(180,ts=>{RS.when=ts;rentalScreen()},L('Traveller / Mini Bus-க்கு குறைந்தது 3 மணி நேரம் முன்னாடி book பண்ணணும்','Travellers and mini buses need at least 3 hours’ notice'));return}
+      if(ADV.includes(RS.veh)&&(!RS.when||RS.when<Date.now()+3*36e5)){pickWhen(180,ts=>{RS.when=ts;rentalScreen()},L('Tempo Traveller / Maxi Cab-க்கு குறைந்தது 3 மணி நேரம் முன்னாடி book பண்ணணும்','Tempo Travellers and maxi cabs need at least 3 hours’ notice'));return}
       saveUpcoming({kind:'rental',when:RS.when||Date.now()+10*60e3,from:{ta:P[S.from].ta,en:P[S.from].en},
         to:{ta:`${pk.h} மணி / ${pk.km} கி.மீ package`,en:`${pk.h} hr / ${pk.km} km package`},veh:{ta:v.ta,en:v.en,id:v.id},fare:price,km:pk.km,pay:S.pay==='wallet'?'upi':S.pay,
         note:{ta:`கூடுதல்: ₹${XKM[v.id]}/கி.மீ, ₹${XHR[v.id]}/மணி`,en:`Extra: ₹${XKM[v.id]}/km, ₹${XHR[v.id]}/hr`}});
@@ -1422,7 +1421,7 @@ function outScreen(){
     const ob=document.getElementById('ob');
     if(ob)ob.onclick=()=>{
       const minM=ADV.includes(OS.veh)?180:60;
-      if(!OS.when||OS.when<Date.now()+minM*6e4){pickWhen(minM,ts=>{OS.when=ts;outScreen()},ADV.includes(OS.veh)?L('Traveller / Mini Bus-க்கு குறைந்தது 3 மணி நேரம் முன்னாடி book பண்ணணும்','Travellers and mini buses need at least 3 hours’ notice'):L('Outstation-க்கு குறைந்தது 1 மணி நேரம் முன்னாடி book பண்ணுங்க','Book outstation at least 1 hour ahead'));return}
+      if(!OS.when||OS.when<Date.now()+minM*6e4){pickWhen(minM,ts=>{OS.when=ts;outScreen()},ADV.includes(OS.veh)?L('Tempo Traveller / Maxi Cab-க்கு குறைந்தது 3 மணி நேரம் முன்னாடி book பண்ணணும்','Tempo Travellers and maxi cabs need at least 3 hours’ notice'):L('Outstation-க்கு குறைந்தது 1 மணி நேரம் முன்னாடி book பண்ணுங்க','Book outstation at least 1 hour ahead'));return}
       const cc=CITIES[OS.city],vv=VEH.find(x=>x.id===OS.veh);
       saveUpcoming({kind:'outstation',when:OS.when,from:{ta:P[S.from].ta,en:P[S.from].en},
         to:OS.type==='one'?{ta:cc.ta,en:cc.en}:{ta:`${cc.ta} (போய் வர, ${OS.days} நாள்)`,en:`${cc.en} (round trip, ${OS.days} day${OS.days>1?'s':''})`},
@@ -1438,8 +1437,8 @@ const TNUM={'ஒன்று':1,'ஒரு':1,'ஒண்ணு':1,'இரண்�
 function parseVoice(raw){
   let s=' '+(raw||'').toLowerCase().replace(/[.,!?]/g,' ')+' ';const out={};
   const pick=list=>{for(const [id,ws] of list){const w=ws.find(w=>s.includes(w));if(w){s=s.replace(w,' ');return id}}return null};
-  out.veh=pick([['bus',['mini bus','minibus','மினி பஸ்','மினிபஸ்']],['trav',['traveller','traveler','tempo','டிராவலர்','டெம்போ','வேன்',' van ']],
-    ['psuv',['innova','crysta','hycross','இன்னோவா','premium','பிரீமியம்']],['suv',['suv','ertiga','எர்டிகா','7 seater','seven seater','எஸ்யூவி']],['sedan',['sedan','dzire','செடான்','கார்',' car ']],['mini',['mini','மினி','swift','wagon']],
+  out.veh=pick([['trav',['mini bus','minibus','மினி பஸ்','மினிபஸ்','maxi cab','maxi','மேக்ஸி']],['trav',['traveller','traveler','tempo','டிராவலர்','டெம்போ','வேன்',' van ']],
+    ['psuv',['innova','crysta','hycross','இன்னோவா','premium','பிரீமியம்','premium mpv']],['suv',['mpv','suv','ertiga','எர்டிகா','7 seater','seven seater','எஸ்யூவி']],['sedan',['sedan','dzire','செடான்','கார்',' car ']],['mini',['mini','மினி','swift','wagon']],
     ['auto',['auto','ஆட்டோ']],['bike',['bike','பைக்']]]);
   const ci=CITIES.findIndex(c=>s.includes(c.en.toLowerCase())||s.includes(c.ta));if(ci>=0)out.city=ci;
   out.dest=pick([['oldbus',['old bus','பழைய பஸ்','பழைய பேருந்து']],['newbus',['new bus','bus stand','busstand','பஸ் ஸ்டாண்ட்','பேருந்து நிலைய','புது பஸ்']],
@@ -1514,7 +1513,7 @@ const FAQ=[
  ['booking','Ride-ஐ எப்படி ரத்து செய்வது?','How do I cancel a ride?','Ride screen-ல "ரத்து செய்" அழுத்துங்க. Driver வர்றதுக்கு முன்னாடி ரத்து செய்தா கட்டணம் இல்லை.','Tap "Cancel ride" on the ride screen. It is free before the driver arrives.'],
  ['booking','Driver வரலைனா என்ன செய்வது?','My driver is not coming','ETA தாண்டியும் வரலைனா Chat அல்லது Call பண்ணுங்க. இல்லைனா ரத்து செய்து மறுபடி book பண்ணுங்க, கட்டணம் இல்லை.','If the ETA has passed, chat or call your driver. Or cancel for free and book again.'],
  ['booking','PIN எதுக்கு?','What is the ride PIN for?','நீங்க சரியான வண்டியில தான் ஏறுறீங்கன்னு உறுதி பண்ண. Driver-கிட்ட PIN சொன்னா தான் trip ஆரம்பிக்கும்.','It makes sure you board the right vehicle. The trip starts only after you tell the driver your PIN.'],
- ['booking','Traveller / Mini Bus எப்படி book பண்றது?','How do I book a Traveller or Mini Bus?','குறைந்தது 3 மணி நேரம் முன்னாடி Schedule, Rental அல்லது Outstation-ல book பண்ணுங்க.','Book at least 3 hours ahead through Schedule, Rental or Outstation.'],
+ ['booking','Tempo Traveller / Maxi Cab எப்படி book பண்றது?','How do I book a Tempo Traveller or Maxi Cab?','குறைந்தது 3 மணி நேரம் முன்னாடி Schedule, Rental அல்லது Outstation-ல book பண்ணுங்க.','Book at least 3 hours ahead through Schedule, Rental or Outstation.'],
  ['pay','கட்டணம் எப்படி கணக்கிடப்படுது?','How is my fare calculated?','அடிப்படை கட்டணம் + தூர கட்டணம். ஒவ்வொரு bill-லயும் விவரம் இருக்கு. Toll, parking தனி.','Base fare plus distance fare. Every bill shows the split. Toll and parking are extra.'],
  ['pay','UPI-ல இருந்து Cash-க்கு மாத்தலாமா?','Can I switch from UPI to cash?','ஆமா. பயணம் முடிஞ்ச bill screen-ல மாத்தலாம். Driver-உம் அவரோட app-ல confirm பண்ணலாம்.','Yes. Switch on the bill screen after the ride. Your driver can also confirm it in the driver app.'],
  ['pay','Wallet பணம் திரும்ப கிடைக்குமா?','Do I get wallet money back?','ரத்தான ride-க்கு Wallet-ல கழிச்ச பணம் திரும்ப Wallet-க்கே வரும்.','Money taken from your wallet for a cancelled ride goes back to your wallet.'],
