@@ -20,14 +20,15 @@
 <rect x="395" y="520" width="210" height="190" rx="40" fill="#2E3532"/>
 <!-- body -->
 <path d="M352 700 Q352 600 430 590 L570 590 Q648 600 648 700Z" fill="#0B4A36"/>
-<path d="M465 590 L500 640 L535 590Z" fill="#FFFFFF"/><path d="M492 600 L508 600 L514 690 L500 702 L486 690Z" fill="#FFC21A"/>
+<path d="M455 590 L500 646 L545 590Z" fill="#FFFFFF"/><path d="M478 590 L500 612 L522 590Z" fill="#E6ECE9"/><path d="M492 600 L508 600 L514 690 L500 702 L486 690Z" fill="#FFC21A"/>
 <!-- head -->
 <rect x="478" y="548" width="44" height="50" rx="16" fill="#A86F45"/>
 <ellipse cx="500" cy="510" rx="62" ry="70" fill="#C98B5B"/>
-<path d="M438 500 Q436 438 500 434 Q564 438 562 500 Q556 470 500 466 Q444 470 438 500Z" fill="#1F1712"/>
+<path d="M440 492 Q436 440 500 436 Q564 440 560 492 Q552 462 520 458 Q500 470 476 460 Q448 464 440 492Z" fill="#1F1712"/><path d="M440 492 L440 512 L446 512 L448 488Z M560 492 L560 512 L554 512 L552 488Z" fill="#1F1712"/>
 <circle cx="478" cy="512" r="7" fill="#3b2416"/><circle cx="522" cy="512" r="7" fill="#3b2416"/>
-<path d="M480 548 Q500 562 520 548" fill="none" stroke="#6b2e1f" stroke-width="6" stroke-linecap="round"/>
-<path d="M484 536 Q500 530 516 536" fill="none" stroke="#1F1712" stroke-width="6" stroke-linecap="round"/>
+<path d="M476 538 Q488 530 500 534 Q512 530 524 538 Q512 544 500 541 Q488 544 476 538Z" fill="#1F1712"/>
+<path d="M482 552 Q500 564 518 552" fill="none" stroke="#6b2e1f" stroke-width="6" stroke-linecap="round"/>
+<path d="M462 494 Q476 488 490 492 M510 492 Q524 488 538 494" fill="none" stroke="#1F1712" stroke-width="6" stroke-linecap="round"/>
 <!-- headset -->
 <path d="M432 512 Q430 432 500 428 Q570 432 568 512" fill="none" stroke="#121212" stroke-width="10"/>
 <rect x="420" y="496" width="22" height="40" rx="10" fill="#121212"/><rect x="558" y="496" width="22" height="40" rx="10" fill="#121212"/>
