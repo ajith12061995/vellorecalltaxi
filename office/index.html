@@ -19,7 +19,7 @@
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('../vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV='2026-10-30-2',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV='2026-10-30-3',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('/vellorecalltaxi/version.json',location.origin)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -1353,7 +1353,7 @@ function support(){
 }
 
 /* ---------- approvals ---------- */
-const DOCN={photo:['Photo','Photo'],dl:['ஓட்டுநர் உரிமம்','Driving licence'],rc:['RC','RC book'],ins:['Insurance','Insurance'],permit:['Permit','Permit'],fc:['FC','Fitness cert.']};
+const DOCN={photo:['Photo','Photo'],aadhaarF:['ஆதார் முன்','Aadhaar front'],aadhaarB:['ஆதார் பின்','Aadhaar back'],panF:['PAN','PAN'],dlF:['DL முன்','Licence front'],dlB:['DL பின்','Licence back'],dl:['ஓட்டுநர் உரிமம்','Driving licence'],rcF:['RC முன்','RC front'],rcB:['RC பின்','RC back'],rc:['RC','RC book'],ins:['Insurance','Insurance'],permit:['Permit','Permit'],fc:['FC','Fitness cert.']};
 function appsHtml(){const A=(DB.apps||[]).filter(a=>a.status==='pending');if(!CL)return '';
   return `<div class="sec"><h3>${L('புது Driver விண்ணப்பங்கள்','New driver applications')}</h3><span class="sample">${A.length}</span></div>
    <div class="cards" style="margin-bottom:18px">${A.length?A.map(a=>`<div class="scard"><div class="dtop"><span class="vi sm">${I[a.veh]||''}</span><div style="flex:1;min-width:0"><b>${esc(a.name||'')}</b><small>${esc(a.id)} · ${esc(a.plate||'')} · ${vname(a.veh)}</small></div><small class="muted">${ago(CL.toMs(a.submittedAt)||Date.now())}</small></div>
@@ -1366,7 +1366,7 @@ function bindApps(){
 function reviewApp(a){if(!a)return;
   const dd=t=>t?new Date(t).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}):'—',now=Date.now();
   modal(`<h3>${esc(a.name)} · ${esc(a.id)}</h3>
-    <div class="bill"><div><span>${L('வண்டி','Vehicle')}</span><b>${vname(a.veh)} · ${esc(a.plate)} ${a.model?'· '+esc(a.model):''}</b></div>
+    <div class="bill"><div><span>${L('வண்டி','Vehicle')}</span><b>${vname(a.veh)} · ${esc(a.plate)}</b></div><div><span>${L('நிறுவனம் / Model / வருஷம்','Brand / model / year')}</span><b>${esc([a.brand,a.model,a.year].filter(Boolean).join(' · ')||'—')}</b></div>
      <div><span>${L('உரிம எண்','Licence no.')}</span><b>${esc(a.dlNo||'—')}</b></div>
      <div><span>${L('அனுபவம் / பகுதி','Experience / area')}</span><b>${a.years||0} ${L('வருடம்','yrs')} · ${esc(a.area||'—')}</b></div>
      <div><span>${L('சொந்த வண்டியா','Own vehicle')}</span><b>${a.ownVehicle?L('ஆமா','Yes'):L('இல்லை','No')}</b></div>
@@ -1379,7 +1379,7 @@ function reviewApp(a){if(!a)return;
     const ok=m.querySelector('#apok'),no=m.querySelector('#apno');
     if(ok)ok.onclick=()=>{if(DB.drv.some(d=>d.id===a.id)){toast(L('இந்த நம்பர் ஏற்கனவே driver','This number is already a driver'));return}
       const D=365*864e5,n0=Date.now(),e=a.exp||{};const bt=F().writeBatch(CL.db);
-      bt.set(F().doc(CL.db,'drivers',a.id),{name:a.name,veh:a.veh||'auto',plate:a.plate||'',model:a.model||vname(a.veh),wallet:0,rating:5,online:false,blocked:false,
+      bt.set(F().doc(CL.db,'drivers',a.id),{name:a.name,veh:a.veh||'auto',plate:a.plate||'',model:[a.brand,a.model].filter(Boolean).join(' ')+(a.year?' ('+a.year+')':'')||vname(a.veh),brand:a.brand||'',year:a.year||null,wallet:0,rating:5,online:false,blocked:false,
         docs:{dl:e.dl||n0+D,rc:e.rc||n0+D,ins:e.ins||n0+D,permit:e.permit||n0+D,fc:e.fc||n0+D},dlNo:a.dlNo||'',fromApp:true,createdAt:ts(),updatedAt:ts()});
       bt.update(F().doc(CL.db,'driverApps',a.id),{status:'approved',note:'',decidedAt:ts(),decidedBy:CL.phone,updatedAt:ts()});
       cw(bt.commit().then(()=>{close();toast(L(`${a.name} driver-ஆ சேர்க்கப்பட்டார். Driver link அனுப்புங்க`,`${a.name} is now a driver. Send them the driver link`))}))};
