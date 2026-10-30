@@ -28,7 +28,7 @@
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('../vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV='2026-10-30-9',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV='2026-10-30-10',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('/vellorecalltaxi/version.json',location.origin)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -1399,13 +1399,28 @@ const ts=()=>F().serverTimestamp();
 const ON_PAGES_D=()=>/github\.io$/.test(location.hostname);
 function offlineD(){go(`<section class="screen"><div class="hero pad"><span class="mini">DRIVER APP</span><h1>${L('Internet இல்லை','You are offline')}</h1><p>${L('Connection-ஐ பார்த்துட்டு மறுபடி முயற்சி பண்ணுங்க.','Check your connection and try again.')}</p></div><div class="body pad"><div style="flex:1"></div><button class="btn" id="rl">${L('மறுபடி முயற்சி','Try again')}</button></div></section>`,()=>document.getElementById('rl').onclick=()=>location.reload())}
 function notDriver(){
-  if(ON_PAGES_D()){location.replace('join/');return}
+  F().getDoc(F().doc(CL.db,'staff',CL.phone)).then(st=>{if(st.exists())ownerD();else if(ON_PAGES_D())location.replace('join/');else notDriver2()}).catch(()=>{if(ON_PAGES_D())location.replace('join/');else notDriver2()});
+}
+function ownerD(){
+  go(`<section class="screen"><div class="hero pad"><span class="mini">VCT DRIVER</span><h1>${L('வணக்கம் Owner!','Hello, owner!')}</h1><p>${L('உங்க நம்பர் office நம்பர். Driver-கள் இந்த app-ஐ எப்படி பார்ப்பாங்கன்னு demo-வில பார்க்கலாம். Demo-வில எதுவும் உண்மையா சேமிக்கப்படாது.','Your number is an office number. You can try the driver app in demo mode — nothing is saved for real.')}</p></div>
+   <div class="body pad"><button class="btn yellow" id="dm">${L('Driver app demo பார்','Open the driver app demo')}</button><a class="btn ghost" href="../office/" style="display:flex;align-items:center;justify-content:center;text-decoration:none">${L('Office panel-க்கு போ','Go to the office panel')}</a><div style="flex:1"></div>
+   <button class="btn ghost" id="lo2" style="border:0">${L('வேற நம்பர்ல login','Log in with another number')}</button></div></section>`,()=>{
+    document.getElementById('dm').onclick=()=>{try{sessionStorage.setItem('vct_drv_demo','1')}catch(e){}location.reload()};
+    document.getElementById('lo2').onclick=()=>{CL.logout().then(login)}});
+}
+function notDriver2(){
   go(`<section class="screen"><div class="hero pad"><span class="mini">DRIVER APP</span><h1>${L('இந்த நம்பர் driver-ஆ சேர்க்கப்படல','This number is not registered as a driver')}</h1>
     <p>${esc(CL.phone||'')} · ${L('Owner-கிட்ட உங்க நம்பரை Office panel-ல சேர்க்க சொல்லுங்க.','Ask the owner to add your number in the office panel.')}</p></div>
    <div class="body pad"><div class="note">${L('புது driver-ஆ சேரணுமா? உங்க விவரம், documents upload பண்ணி office-க்கு அனுப்புங்க.','New here? Send your details and documents to our office.')}</div><a class="btn yellow" href="../join/" style="display:flex;align-items:center;justify-content:center;text-decoration:none">${L('Driver-ஆ சேர விண்ணப்பி','Apply to drive with us')}</a><div style="flex:1"></div><button class="btn ghost" id="lo2">${L('வேற நம்பர்ல login','Log in with another number')}</button></div></section>`,()=>document.getElementById('lo2').onclick=()=>{CL.logout().then(login)});
 }
+const DEMO_D=()=>{try{return sessionStorage.getItem('vct_drv_demo')==='1'}catch(e){return false}};
+function demoBar(){if(document.getElementById('demobar'))return;const d=document.createElement('div');d.id='demobar';
+  d.style.cssText='position:fixed;left:50%;transform:translateX(-50%);top:6px;z-index:9999;background:#121212;color:#FFC21A;font:700 12px system-ui;padding:6px 10px;border-radius:999px;display:flex;gap:10px;align-items:center;box-shadow:0 2px 8px rgba(0,0,0,.3)';
+  d.innerHTML=`DEMO · ${L('Owner பார்வை','Owner preview')} <button style="background:#FFC21A;color:#121212;border:0;border-radius:999px;padding:3px 10px;font:700 12px system-ui">${L('வெளியேறு','Exit')}</button>`;
+  d.querySelector('button').onclick=()=>{try{sessionStorage.removeItem('vct_drv_demo')}catch(e){}try{localStorage.removeItem('vctd')}catch(e){}location.reload()};document.body.appendChild(d)}
 async function cloudBootD(){
   const c=await cloudP;
+  if(DEMO_D()){CL=null;demoBar();if(!S.logged||!S.pid||S.pid==='cloud'){S.phone='9999999999';S.logged=true;S.pid=null;save();pickProfile();return true}return false}
   if(!c){if(ON_PAGES){offlineD();return true}return false}
   const u=await CL.waitUser();
   if(!u||!u.phoneNumber){login();return true}
