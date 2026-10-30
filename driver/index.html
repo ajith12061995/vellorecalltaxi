@@ -22,7 +22,7 @@
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('../vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV='2026-10-30-1',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV='2026-10-30-2',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('/vellorecalltaxi/version.json',location.origin)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -1384,7 +1384,7 @@ function offlineD(){go(`<section class="screen"><div class="hero pad"><span clas
 function notDriver(){
   go(`<section class="screen"><div class="hero pad"><span class="mini">DRIVER APP</span><h1>${L('இந்த நம்பர் driver-ஆ சேர்க்கப்படல','This number is not registered as a driver')}</h1>
     <p>${esc(CL.phone||'')} · ${L('Owner-கிட்ட உங்க நம்பரை Office panel-ல சேர்க்க சொல்லுங்க.','Ask the owner to add your number in the office panel.')}</p></div>
-   <div class="body pad"><div style="flex:1"></div><button class="btn" id="lo2">${L('வேற நம்பர்ல login','Log in with another number')}</button></div></section>`,()=>document.getElementById('lo2').onclick=()=>{CL.logout().then(login)});
+   <div class="body pad"><div class="note">${L('புது driver-ஆ சேரணுமா? உங்க விவரம், documents upload பண்ணி office-க்கு அனுப்புங்க.','New here? Send your details and documents to our office.')}</div><a class="btn yellow" href="../join/" style="display:flex;align-items:center;justify-content:center;text-decoration:none">${L('Driver-ஆ சேர விண்ணப்பி','Apply to drive with us')}</a><div style="flex:1"></div><button class="btn ghost" id="lo2">${L('வேற நம்பர்ல login','Log in with another number')}</button></div></section>`,()=>document.getElementById('lo2').onclick=()=>{CL.logout().then(login)});
 }
 async function cloudBootD(){
   const c=await cloudP;

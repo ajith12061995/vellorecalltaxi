@@ -101,6 +101,22 @@ service cloud.firestore {
       }
     }
 
+    // Driver applications from the "join" page — the applicant fills it, the owner approves
+    match /driverApps/{ph} {
+      allow read: if isStaff() || (signedIn() && phone() == ph);
+      allow create: if signedIn() && phone() == ph && request.resource.data.status == 'pending';
+      allow update: if isStaff()
+        || (signedIn() && phone() == ph && resource.data.status in ['pending', 'rejected']
+            && request.resource.data.status == 'pending');
+      allow delete: if isOwner();
+      match /files/{kind} {
+        allow read: if isStaff() || (signedIn() && phone() == ph);
+        allow create, update: if signedIn() && phone() == ph
+          && request.resource.data.data is string && request.resource.data.data.size() < 1000000;
+        allow delete: if isOwner();
+      }
+    }
+
     // Driver wallet recharge requests (UPI + UTR) — owner approves
     match /recharges/{id} {
       allow read: if isStaff() || (signedIn() && resource.data.driverPhone == phone());

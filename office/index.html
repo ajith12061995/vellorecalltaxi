@@ -19,7 +19,7 @@
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('../vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV='2026-10-30-1',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV='2026-10-30-2',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('/vellorecalltaxi/version.json',location.origin)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -1121,7 +1121,7 @@ function toast(msg){const el=document.getElementById('toast');el.textContent=msg
 function modal(html,bind){const m=document.createElement('div');m.className='modal';m.innerHTML=`<div class="card pad">${html}</div>`;document.body.appendChild(m);const close=()=>m.remove();m.onclick=e=>{if(e.target===m)close()};bind&&bind(m,close);return close}
 const SECS=()=>[['dash','navHome',L('இன்று','Today')],['book','navTrips','Bookings'],['drv','navMe','Drivers'],['sup','navHelp',L('உதவி','Support')],
   ...(S.role==='owner'?[['appr','navWallet',L('Approvals','Approvals')],['rep','navEarn',L('Reports','Reports')],['set','gear',L('Settings','Settings')]]:[])];
-function badge(k){if(k==='book')return DB.bk.filter(b=>b.status==='searching'||(b.status==='scheduled'&&!b.driver)).length;if(k==='sup')return DB.sup.filter(s=>s.status==='open').length;if(k==='appr')return DB.rch.filter(r=>r.status==='pending').length;return 0}
+function badge(k){if(k==='book')return DB.bk.filter(b=>b.status==='searching'||(b.status==='scheduled'&&!b.driver)).length;if(k==='sup')return DB.sup.filter(s=>s.status==='open').length;if(k==='appr')return DB.rch.filter(r=>r.status==='pending').length+(DB.apps||[]).filter(a=>a.status==='pending').length;return 0}
 function layout(){
   const secs=SECS();if(!secs.some(s=>s[0]===S.sec))S.sec='dash';
   const mob=secs.slice(0,4).concat([['more','more',L('மேலும்','More')]]);
@@ -1353,14 +1353,49 @@ function support(){
 }
 
 /* ---------- approvals ---------- */
+const DOCN={photo:['Photo','Photo'],dl:['ஓட்டுநர் உரிமம்','Driving licence'],rc:['RC','RC book'],ins:['Insurance','Insurance'],permit:['Permit','Permit'],fc:['FC','Fitness cert.']};
+function appsHtml(){const A=(DB.apps||[]).filter(a=>a.status==='pending');if(!CL)return '';
+  return `<div class="sec"><h3>${L('புது Driver விண்ணப்பங்கள்','New driver applications')}</h3><span class="sample">${A.length}</span></div>
+   <div class="cards" style="margin-bottom:18px">${A.length?A.map(a=>`<div class="scard"><div class="dtop"><span class="vi sm">${I[a.veh]||''}</span><div style="flex:1;min-width:0"><b>${esc(a.name||'')}</b><small>${esc(a.id)} · ${esc(a.plate||'')} · ${vname(a.veh)}</small></div><small class="muted">${ago(CL.toMs(a.submittedAt)||Date.now())}</small></div>
+     <div class="dact"><button class="btn sm" data-av="${esc(a.id)}">${L('பார்த்து முடிவு செய்','Review')}</button></div></div>`).join('')
+     :`<div class="empty" style="padding:14px"><small class="muted">${L('காத்திருக்கும் விண்ணப்பம் இல்லை. Driver-களுக்கு இந்த link அனுப்புங்க:','No applications waiting. Send drivers this link:')}<br><b>ajith12061995.github.io/vellorecalltaxi/join/</b> <button class="linkbtn" data-cpj="1">Copy</button></small></div>`}</div>`}
+function bindApps(){
+  app.querySelectorAll('[data-cpj]').forEach(b=>b.onclick=()=>navigator.clipboard.writeText('https://ajith12061995.github.io/vellorecalltaxi/join/').then(()=>toast(L('Link copy ஆச்சு','Link copied'))).catch(()=>{}));
+  app.querySelectorAll('[data-av]').forEach(b=>b.onclick=()=>reviewApp((DB.apps||[]).find(a=>a.id===b.dataset.av)));
+}
+function reviewApp(a){if(!a)return;
+  const dd=t=>t?new Date(t).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}):'—',now=Date.now();
+  modal(`<h3>${esc(a.name)} · ${esc(a.id)}</h3>
+    <div class="bill"><div><span>${L('வண்டி','Vehicle')}</span><b>${vname(a.veh)} · ${esc(a.plate)} ${a.model?'· '+esc(a.model):''}</b></div>
+     <div><span>${L('உரிம எண்','Licence no.')}</span><b>${esc(a.dlNo||'—')}</b></div>
+     <div><span>${L('அனுபவம் / பகுதி','Experience / area')}</span><b>${a.years||0} ${L('வருடம்','yrs')} · ${esc(a.area||'—')}</b></div>
+     <div><span>${L('சொந்த வண்டியா','Own vehicle')}</span><b>${a.ownVehicle?L('ஆமா','Yes'):L('இல்லை','No')}</b></div>
+     ${['dl','ins','permit','fc'].map(k=>`<div><span>${DOCN[k][S.lang==='ta'?0:1]} ${L('காலாவதி','expiry')}</span><b style="${a.exp&&a.exp[k]&&a.exp[k]-now<30*864e5?'color:var(--danger)':''}">${dd(a.exp&&a.exp[k])}</b></div>`).join('')}</div>
+    <div id="imgs" style="display:grid;grid-template-columns:1fr 1fr;gap:8px">${(a.files||[]).map(k=>`<a id="im_${k}" target="_blank" rel="noopener" style="display:block;border:1px solid var(--line);border-radius:10px;overflow:hidden;text-decoration:none;color:inherit"><div style="height:110px;display:grid;place-items:center;background:var(--surface-2)"><small class="muted">${L('ஏத்துது…','Loading…')}</small></div><small style="display:block;padding:4px 8px">${DOCN[k]?DOCN[k][S.lang==='ta'?0:1]:k}</small></a>`).join('')}</div>
+    <p class="muted" style="margin:0;font-size:12px">${L('Photo-வை தொட்டா பெருசா திறக்கும். Original document-ஐ நேர்ல ஒரு தடவை பார்த்துட்டு approve பண்றது நல்லது.','Tap a photo to open it full size. It’s best to see the original documents once in person before approving.')}</p>
+    ${S.role==='owner'?`<div class="two"><button class="btn" id="apok">✓ ${L('Approve','Approve')}</button><button class="btn ghost" id="apno" style="color:var(--danger)">${L('திருப்பி அனுப்பு','Send back')}</button></div>`:`<p class="muted">${L('Owner மட்டும் approve பண்ண முடியும்','Only the owner can approve')}</p>`}`,(m,close)=>{
+    (a.files||[]).forEach(k=>F().getDoc(F().doc(CL.db,'driverApps',a.id,'files',k)).then(s=>{const el=m.querySelector('#im_'+k);if(!el||!s.exists())return;const d=s.data().data;
+      el.firstChild.innerHTML=`<img src="${d}" alt="" style="width:100%;height:110px;object-fit:cover">`;el.onclick=e=>{e.preventDefault();const w=window.open('');if(w){w.document.write('<title>'+k+'</title><img src="'+d+'" style="max-width:100%">')}}}).catch(oerr));
+    const ok=m.querySelector('#apok'),no=m.querySelector('#apno');
+    if(ok)ok.onclick=()=>{if(DB.drv.some(d=>d.id===a.id)){toast(L('இந்த நம்பர் ஏற்கனவே driver','This number is already a driver'));return}
+      const D=365*864e5,n0=Date.now(),e=a.exp||{};const bt=F().writeBatch(CL.db);
+      bt.set(F().doc(CL.db,'drivers',a.id),{name:a.name,veh:a.veh||'auto',plate:a.plate||'',model:a.model||vname(a.veh),wallet:0,rating:5,online:false,blocked:false,
+        docs:{dl:e.dl||n0+D,rc:e.rc||n0+D,ins:e.ins||n0+D,permit:e.permit||n0+D,fc:e.fc||n0+D},dlNo:a.dlNo||'',fromApp:true,createdAt:ts(),updatedAt:ts()});
+      bt.update(F().doc(CL.db,'driverApps',a.id),{status:'approved',note:'',decidedAt:ts(),decidedBy:CL.phone,updatedAt:ts()});
+      cw(bt.commit().then(()=>{close();toast(L(`${a.name} driver-ஆ சேர்க்கப்பட்டார். Driver link அனுப்புங்க`,`${a.name} is now a driver. Send them the driver link`))}))};
+    if(no)no.onclick=()=>{const r=prompt(L('என்ன திருத்தணும்? (driver-க்கு தெரியும்)','What should they fix? (the driver will see this)'),L('DL photo தெளிவா இல்லை','The licence photo is not clear'));if(r==null)return;
+      cw(F().updateDoc(F().doc(CL.db,'driverApps',a.id),{status:'rejected',note:r.slice(0,200),decidedAt:ts(),decidedBy:CL.phone,updatedAt:ts()}).then(()=>{close();toast(L('திருப்பி அனுப்பியாச்சு','Sent back'))}))};
+  });
+}
 function approvals(){
   const pend=DB.rch.filter(r=>r.status==='pending'),done=DB.rch.filter(r=>r.status!=='pending');
   main().innerHTML=`${head(L('Wallet recharge approvals','Wallet recharge approvals'),L('Driver UPI-ல அனுப்பின பணம் உங்க account-ல வந்ததை பார்த்துட்டு approve பண்ணுங்க','Check the money reached your account before approving'))}
-   <div class="cards">${pend.length?pend.map(r=>{const d=drvById(r.driver);return `<div class="scard"><div class="dtop"><span class="vi sm">${I[d.veh]}</span><div style="flex:1;min-width:0"><b>${d[S.lang]}</b><small>${d.plate} · ${ago(r.date)}</small></div><b class="amtbig">${inr(r.amt)}</b></div>
+   ${appsHtml()}<div class="sec"><h3>${L('Wallet recharge','Wallet recharges')}</h3></div><div class="cards">${pend.length?pend.map(r=>{const d=drvById(r.driver);return `<div class="scard"><div class="dtop"><span class="vi sm">${I[d.veh]}</span><div style="flex:1;min-width:0"><b>${d[S.lang]}</b><small>${d.plate} · ${ago(r.date)}</small></div><b class="amtbig">${inr(r.amt)}</b></div>
      <div class="utr"><small>UTR</small><b>${esc(r.utr)}</b><button class="linkbtn" data-cp="${esc(r.utr)}">Copy</button></div>
      <div class="dact"><button class="btn sm" data-ok="${r.id}">${L('பணம் வந்தது — Approve','Received — approve')}</button><button class="linkbtn" data-no="${r.id}" style="color:var(--danger)">${L('நிராகரி','Reject')}</button></div></div>`}).join('')
      :`<div class="empty"><h3>${L('காத்திருக்கும் request இல்லை','No pending requests')}</h3></div>`}</div>
    ${done.length?`<div class="sec" style="margin-top:18px"><h3>${L('முன்னாடி','Earlier')}</h3></div><div class="table">${done.slice(0,20).map(r=>{const d=drvById(r.driver);return `<div class="tr t4"><span>${d?d[S.lang]:''}</span><span>${inr(r.amt)}</span><span>UTR ${esc(r.utr)}</span><span><em class="sst ${r.status==='approved'?'closed':'open'}">${r.status==='approved'?L('Approve ஆச்சு','Approved'):L('நிராகரிப்பு','Rejected')}</em></span></div>`}).join('')}</div>`:''}`;
+  bindApps();
   app.querySelectorAll('[data-cp]').forEach(b=>b.onclick=()=>navigator.clipboard.writeText(b.dataset.cp).then(()=>toast('UTR copied')).catch(()=>toast(b.dataset.cp)));
   app.querySelectorAll('[data-ok]').forEach(b=>b.onclick=()=>{const r=DB.rch.find(x=>x.id===b.dataset.ok),d=drvById(r.driver);if(CL){const bt=F().writeBatch(CL.db);bt.update(F().doc(CL.db,'recharges',r.id),{status:'approved',approvedAt:ts(),approvedBy:CL.phone});bt.update(F().doc(CL.db,'drivers',d.id),{wallet:F().increment(r.amt),updatedAt:ts()});cw(bt.commit().then(()=>toast(L(`${d.ta} wallet-ல ${inr(r.amt)} சேர்ந்தது`,`${inr(r.amt)} added to ${d.en}'s wallet`))));return}r.status='approved';d.wallet+=r.amt;log(`${d.ta} wallet +${inr(r.amt)} approve`,`${d.en} wallet +${inr(r.amt)} approved`);saveDB();show();toast(L(`${d.ta} wallet-ல ${inr(r.amt)} சேர்ந்தது`,`${inr(r.amt)} added to ${d.en}'s wallet`))});
   app.querySelectorAll('[data-no]').forEach(b=>b.onclick=()=>{const r=DB.rch.find(x=>x.id===b.dataset.no);if(CL){cw(F().updateDoc(F().doc(CL.db,'recharges',r.id),{status:'rejected',approvedAt:ts(),approvedBy:CL.phone}));toast(L('நிராகரிச்சாச்சு','Rejected'));return}r.status='rejected';saveDB();show();toast(L('நிராகரிச்சாச்சு. Driver-க்கு தகவல் போகும்','Rejected. The driver is informed'))});
@@ -1455,6 +1490,7 @@ function watchAll(){
   OUNS.push(F().onSnapshot(F().collection(CL.db,'drivers'),s=>{RAWD=s.docs.map(d=>({_id:d.id,...d.data()}));remap()},oerr));
   OUNS.push(F().onSnapshot(F().collection(CL.db,'live'),s=>{LIVE={};s.docs.forEach(d=>LIVE[d.id]=d.data());remap(true)},oerr));
   OUNS.push(F().onSnapshot(F().collection(CL.db,'recharges'),s=>{RAWR=s.docs.map(d=>({_id:d.id,...d.data()}));remap()},oerr));
+  OUNS.push(F().onSnapshot(F().collection(CL.db,'driverApps'),s=>{const before=(DB.apps||[]).filter(a=>a.status==='pending').length;DB.apps=s.docs.map(d=>({id:d.id,...d.data()})).sort((x,y)=>CL.toMs(y.submittedAt)-CL.toMs(x.submittedAt));const n=DB.apps.filter(a=>a.status==='pending').length;if(SEEN!==null&&n>before){chime();toast(L('புது driver விண்ணப்பம் வந்திருக்கு','New driver application'))}remap()},oerr));
   OUNS.push(F().onSnapshot(F().collection(CL.db,'tickets'),s=>{RAWT=s.docs.map(d=>({_id:d.id,...d.data()}));remap()},oerr));
   OUNS.push(F().onSnapshot(F().doc(CL.db,'config','app'),s=>{if(s.exists()){const d=s.data();
     Object.assign(DB.cfg,{comm:d.comm!=null?+d.comm:10,minbal:d.minbal!=null?+d.minbal:100,upi:d.upi||'',office:d.office||''});

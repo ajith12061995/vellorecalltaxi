@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="ta">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0B4A36">
+<meta name="robots" content="noindex">
+<title>Driver-ஆ சேருங்க · Vellore Taxi</title>
+<link rel="icon" type="image/png" href="../driver/icon-192.png?v=8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+Thambi+2:wght@600;700;800&family=Hind+Madurai:wght@400;500;600;700&display=swap">
+<script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
+<script type="module">import('../vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
+<style>
+:root{--g:#0B4A36;--g2:#12664A;--y:#FFC21A;--bg:#F5F7F2;--card:#fff;--fg:#10241B;--mut:#5B6B64;--line:#E1E8E4;--bad:#C23B3B;--ok:#1E8A5A}
+@media (prefers-color-scheme:dark){:root{--bg:#0A1712;--card:#11231C;--fg:#E8F2EC;--mut:#9DB3A9;--line:#23392F}}
+*{box-sizing:border-box}html,body{margin:0}
+body{background:var(--bg);color:var(--fg);font:16px/1.5 'Hind Madurai',system-ui,sans-serif;min-height:100vh}
+[hidden]{display:none!important}
+header{background:linear-gradient(160deg,var(--g),#073326);color:#fff;padding:20px 16px 26px;border-radius:0 0 26px 26px}
+.wrap{max-width:560px;margin:0 auto}
+.brand{display:flex;gap:12px;align-items:center}.brand img{width:52px;height:52px;border-radius:14px}
+.brand b{font:800 20px 'Baloo Thambi 2',sans-serif;color:var(--y);display:block;line-height:1.1}.brand small{color:#cfe3da}
+h1{font:800 26px/1.15 'Baloo Thambi 2',sans-serif;margin:16px 0 4px}header p{margin:0;color:#d8eadf}
+.lang{float:right;background:rgba(255,255,255,.14);border:0;color:#fff;border-radius:999px;padding:6px 12px;font:600 13px inherit;cursor:pointer}
+main{padding:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px;margin-bottom:14px}
+.card h2{font:700 18px 'Baloo Thambi 2',sans-serif;margin:0 0 10px;color:var(--g)}
+@media (prefers-color-scheme:dark){.card h2{color:var(--y)}}
+label{display:block;font-weight:600;font-size:14px;margin:12px 0 4px;color:var(--mut)}
+input[type=text],input[type=tel],input[type=date],input[inputmode]{width:100%;height:50px;border:1.5px solid var(--line);border-radius:14px;padding:0 14px;font:500 17px inherit;background:var(--card);color:var(--fg)}
+input:focus{outline:none;border-color:var(--g2)}
+.ph{display:flex;align-items:center;border:1.5px solid var(--line);border-radius:14px;height:50px;padding-left:14px;background:var(--card)}.ph b{color:var(--mut);margin-right:8px}.ph input{border:0;height:46px;padding-left:0}
+.chips{display:flex;flex-wrap:wrap;gap:8px}.chip{border:1.5px solid var(--line);background:var(--card);color:var(--fg);border-radius:999px;padding:8px 14px;font:600 14px inherit;cursor:pointer}
+.chip.on{background:var(--g);border-color:var(--g);color:#fff}
+.btn{width:100%;height:54px;border:0;border-radius:16px;background:var(--g);color:#fff;font:700 17px inherit;cursor:pointer;margin-top:14px}
+.btn.y{background:var(--y);color:#10241B}.btn.ghost{background:transparent;color:var(--g);border:1.5px solid var(--line)}
+.btn:disabled{opacity:.5}
+.err{color:var(--bad);font-size:14px;min-height:20px;margin-top:6px}
+.docs{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.doc{border:1.5px dashed var(--line);border-radius:14px;padding:10px;text-align:center;position:relative;cursor:pointer;background:var(--bg);min-height:126px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px}
+.doc.has{border-style:solid;border-color:var(--ok)}
+.doc img{width:100%;height:84px;object-fit:cover;border-radius:10px}
+.doc b{font-size:14px}.doc small{color:var(--mut);font-size:12px}
+.doc input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.doc .req{color:var(--bad)}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.note{background:rgba(255,194,26,.16);border-left:4px solid var(--y);border-radius:10px;padding:10px 12px;font-size:14px}
+.chk{display:flex;gap:10px;align-items:flex-start;margin-top:14px;font-size:14px}.chk input{width:22px;height:22px;margin-top:2px;flex:none}
+.status{text-align:center;padding:26px 16px}.status .ic{font-size:54px}
+.status h2{font:800 22px 'Baloo Thambi 2',sans-serif;margin:8px 0}
+.otp{display:flex;gap:8px;justify-content:center}.otp input{width:48px;height:56px;text-align:center;font:700 24px inherit;padding:0;border:1.5px solid var(--line);border-radius:14px;background:var(--card);color:var(--fg)}
+.prog{height:8px;background:var(--line);border-radius:6px;overflow:hidden;margin-top:12px}.prog i{display:block;height:100%;width:0;background:var(--y);transition:width .3s}
+footer{text-align:center;color:var(--mut);font-size:13px;padding:6px 16px 30px}
+a{color:inherit}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+  <button class="lang" id="lang" type="button">English</button>
+  <div class="brand"><img src="../driver/icon-192.png?v=8" alt=""><div><b>VCT Driver</b><small>Vellore Taxi</small></div></div>
+  <h1 id="h1"></h1><p id="hp"></p>
+</div></header>
+<main class="wrap" id="app"></main>
+<footer><a href="../privacy/#drivers" target="_blank" rel="noopener" id="plink"></a> · Vellore Taxi</footer>
+<script>
+const S={lang:'ta',phone:'',veh:'auto',files:{},data:{}};
+try{const s=JSON.parse(localStorage.getItem('vctj')||'{}');if(s.lang)S.lang=s.lang}catch(e){}
+const L=(ta,en)=>S.lang==='ta'?ta:en;
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const VEH=[['bike','பைக்','Bike'],['auto','ஆட்டோ','Auto'],['mini','Mini கார்','Mini car'],['sedan','Sedan கார்','Sedan'],['suv','SUV (Ertiga/Rumion)','SUV (Ertiga/Rumion)'],['psuv','Premium SUV (Innova)','Premium SUV (Innova)'],['trav','Traveller','Traveller'],['bus','Mini Bus','Mini Bus']];
+// documents: key, Tamil, English, required, has expiry
+const DOCS=[['photo','உங்க photo','Your photo',true,false],['dl','ஓட்டுநர் உரிமம் (DL)','Driving licence',true,true],['rc','RC புத்தகம்','RC book',true,false],
+  ['ins','Insurance','Insurance',true,true],['permit','Permit','Permit',false,true],['fc','FC','Fitness certificate',false,true]];
+const app=document.getElementById('app');let CL=null,F=null;
+function head(h,p){document.getElementById('h1').textContent=h;document.getElementById('hp').textContent=p||''}
+function setLang(){document.getElementById('lang').textContent=S.lang==='ta'?'English':'தமிழ்';document.getElementById('plink').textContent=L('தனியுரிமை & விதிமுறைகள்','Privacy & Terms');document.documentElement.lang=S.lang}
+document.getElementById('lang').onclick=()=>{S.lang=S.lang==='ta'?'en':'ta';try{localStorage.setItem('vctj',JSON.stringify({lang:S.lang}))}catch(e){}setLang();route()};
+let VIEW='login';function route(){({login,otp,form,status,offline}[VIEW]||login)()}
+function go(v){VIEW=v;route();window.scrollTo(0,0)}
+
+function offline(){head(L('Internet இல்லை','You are offline'),L('Connection-ஐ பார்த்துட்டு மறுபடி முயற்சி பண்ணுங்க','Check your connection and try again'));
+  app.innerHTML=`<button class="btn" id="rl">${L('மறுபடி முயற்சி','Try again')}</button>`;document.getElementById('rl').onclick=()=>location.reload()}
+
+function login(){
+  head(L('Vellore Taxi-ல Driver-ஆ சேருங்க','Join Vellore Taxi as a driver'),L('உங்க விவரம், documents upload பண்ணுங்க. Office பார்த்து approve பண்ணதும் ride எடுக்கலாம்.','Upload your details and documents. Once our office approves, you can start taking rides.'));
+  app.innerHTML=`<div class="card"><h2>${L('1. மொபைல் நம்பர்','1. Mobile number')}</h2>
+    <div class="ph"><b>+91</b><input id="ph" type="tel" inputmode="numeric" maxlength="10" autocomplete="tel" placeholder="98765 43210" value="${esc(S.phone)}"></div>
+    <div class="err" id="e"></div><button class="btn" id="go" disabled>${L('OTP அனுப்பு','Send OTP')}</button></div>
+    <div class="note">${L('உங்களுக்கு தேவையானவை: ஓட்டுநர் உரிமம், RC, Insurance, (இருந்தா) Permit, FC — எல்லாத்தையும் போன் camera-ல photo எடுத்தா போதும்.','Keep ready: driving licence, RC, insurance and, if you have them, permit and FC. Phone camera photos are fine.')}</div>`;
+  const ph=document.getElementById('ph'),b=document.getElementById('go');
+  const ok=()=>/^[6-9]\d{9}$/.test(ph.value);ph.oninput=()=>{ph.value=ph.value.replace(/\D/g,'').slice(0,10);b.disabled=!ok()};b.disabled=!ok();
+  b.onclick=async()=>{S.phone=ph.value;b.disabled=true;b.textContent=L('அனுப்புது…','Sending…');
+    try{await CL.sendOtp(S.phone);go('otp')}catch(e){document.getElementById('e').textContent=CL.errText(e,S.lang==='ta');b.disabled=false;b.textContent=L('OTP அனுப்பு','Send OTP')}};
+}
+function otp(){
+  head(L('OTP போடுங்க','Enter the OTP'),L(`+91 ${S.phone}-க்கு SMS-ல வந்த 6 இலக்க OTP`,`The 6-digit code sent to +91 ${S.phone}`));
+  app.innerHTML=`<div class="card"><div class="otp">${[0,1,2,3,4,5].map(i=>`<input id="o${i}" inputmode="numeric" autocomplete="${i?'off':'one-time-code'}">`).join('')}</div>
+    <div class="err" id="e" style="text-align:center"></div><button class="btn" id="vf" disabled>${L('சரிபார்','Verify')}</button><button class="btn ghost" id="bk">${L('நம்பரை மாத்து','Change number')}</button></div>`;
+  const ins=[...app.querySelectorAll('.otp input')],vf=document.getElementById('vf');
+  const code=()=>ins.map(i=>i.value).join('');
+  ins.forEach((inp,i)=>{inp.oninput=()=>{const v=inp.value.replace(/\D/g,'');if(v.length>1){v.slice(0,6).split('').forEach((d,j)=>{if(ins[j])ins[j].value=d});ins[Math.min(5,v.length-1)].focus()}else{inp.value=v;if(v&&ins[i+1])ins[i+1].focus()}vf.disabled=code().length!==6};
+    inp.onkeydown=e=>{if(e.key==='Backspace'&&!inp.value&&ins[i-1])ins[i-1].focus()}});
+  ins[0].focus();
+  vf.onclick=async()=>{vf.disabled=true;try{await CL.verifyOtp(code());await afterLogin()}catch(e){document.getElementById('e').textContent=CL.errText(e,S.lang==='ta');vf.disabled=false}};
+  document.getElementById('bk').onclick=()=>go('login');
+}
+async function afterLogin(){
+  S.phone=CL.phone.replace('+91','');
+  try{const d=await F.getDoc(F.doc(CL.db,'drivers',CL.phone));if(d.exists()){S.app={status:'approved'};go('status');return}}catch(e){}
+  try{const a=await F.getDoc(F.doc(CL.db,'driverApps',CL.phone));if(a.exists()){S.app=a.data();S.data=a.data();if(S.data.veh)S.veh=S.data.veh;go(S.app.status==='rejected'?'form':'status');return}}catch(e){}
+  S.app=null;go('form');
+}
+
+/* shrink a photo on the phone so it uploads fast and fits the database (~150–300 KB) */
+function shrink(file){return new Promise((res,rej)=>{
+  if(!file||!/^image\//.test(file.type)){rej(new Error('type'));return}
+  const url=URL.createObjectURL(file),img=new Image();
+  img.onload=()=>{const max=1280,k=Math.min(1,max/Math.max(img.width,img.height));const c=document.createElement('canvas');c.width=Math.round(img.width*k);c.height=Math.round(img.height*k);
+    c.getContext('2d').drawImage(img,0,0,c.width,c.height);URL.revokeObjectURL(url);let q=.72,d=c.toDataURL('image/jpeg',q);while(d.length>700000&&q>.35){q-=.1;d=c.toDataURL('image/jpeg',q)}
+    d.length>900000?rej(new Error('big')):res(d)};
+  img.onerror=()=>{URL.revokeObjectURL(url);rej(new Error('read'))};img.src=url});}
+
+function form(){
+  const D=S.data||{},rej=S.app&&S.app.status==='rejected';
+  head(rej?L('திருத்தி மறுபடி அனுப்புங்க','Fix and send again'):L('உங்க விவரங்கள்','Your details'),
+       rej?L('Office குறிப்பு: ','Office note: ')+(S.app.note||'—'):L(`+91 ${S.phone} · எல்லா * கட்டமும் கட்டாயம்`,`+91 ${S.phone} · fields marked * are required`));
+  const dt=k=>D.exp&&D.exp[k]?new Date(D.exp[k]).toISOString().slice(0,10):'';
+  app.innerHTML=`<div class="card"><h2>${L('2. நீங்க','2. About you')}</h2>
+      <label for="nm">${L('முழு பெயர் *','Full name *')}</label><input id="nm" type="text" maxlength="40" value="${esc(D.name||'')}" autocomplete="name">
+      <label for="dln">${L('ஓட்டுநர் உரிம எண் *','Driving licence number *')}</label><input id="dln" type="text" maxlength="20" style="text-transform:uppercase" value="${esc(D.dlNo||'')}" placeholder="TN23 20XX 0001234">
+      <label for="exp">${L('ஓட்டுநர் அனுபவம் (வருடம்)','Driving experience (years)')}</label><input id="exp" inputmode="numeric" maxlength="2" value="${esc(D.years||'')}">
+      <label for="area">${L('வசிக்கும் பகுதி','Area you live in')}</label><input id="area" type="text" maxlength="40" value="${esc(D.area||'')}" placeholder="${L('உதா. காட்பாடி','e.g. Katpadi')}"></div>
+    <div class="card"><h2>${L('3. வண்டி','3. Vehicle')}</h2>
+      <div class="chips">${VEH.map(v=>`<button type="button" class="chip ${v[0]===S.veh?'on':''}" data-v="${v[0]}">${S.lang==='ta'?v[1]:v[2]}</button>`).join('')}</div>
+      <div class="row2"><div><label for="pl">${L('வண்டி எண் *','Number plate *')}</label><input id="pl" type="text" maxlength="14" style="text-transform:uppercase" value="${esc(D.plate||'')}" placeholder="TN 23 AB 1234"></div>
+      <div><label for="md">${L('Model','Model')}</label><input id="md" type="text" maxlength="24" value="${esc(D.model||'')}" placeholder="${L('உதா. Dzire','e.g. Dzire')}"></div></div>
+      <label class="chk" style="color:var(--fg)"><input type="checkbox" id="own" ${D.ownVehicle!==false?'checked':''}> ${L('இது என் சொந்த வண்டி','This is my own vehicle')}</label></div>
+    <div class="card"><h2>${L('4. Documents (photo)','4. Documents (photos)')}</h2>
+      <div class="docs">${DOCS.map(([k,ta,en,req])=>`<div class="doc ${S.files[k]||(D.files||[]).includes(k)?'has':''}" id="d_${k}">${S.files[k]?`<img src="${S.files[k]}" alt="">`:(D.files||[]).includes(k)?'<span style="font-size:28px">✅</span>':'<span style="font-size:28px">📷</span>'}
+        <b>${S.lang==='ta'?ta:en}${req?' <span class="req">*</span>':''}</b><small>${S.files[k]||(D.files||[]).includes(k)?L('மாத்த தொடுங்க','Tap to change'):L('Photo எடுங்க','Take a photo')}</small>
+        <input type="file" accept="image/*" capture="environment" data-f="${k}" aria-label="${en}"></div>`).join('')}</div>
+      <label style="margin-top:16px">${L('காலாவதி தேதிகள்','Expiry dates')}</label>
+      <div class="row2">${DOCS.filter(d=>d[4]).map(([k,ta,en,req])=>`<div><label for="x_${k}" style="margin-top:4px">${S.lang==='ta'?ta:en}${req?' *':''}</label><input type="date" id="x_${k}" value="${dt(k)}"></div>`).join('')}</div>
+      <p style="font-size:13px;color:var(--mut);margin:10px 0 0">${L('Aadhaar அல்லது வங்கி விவரம் இங்கே கேட்க மாட்டோம்.','We never ask for Aadhaar or bank details here.')}</p></div>
+    <div class="card"><label class="chk" style="color:var(--fg);margin:0"><input type="checkbox" id="agree"> <span>${L('நான் கொடுத்த விவரங்கள் உண்மை. Vellore Taxi-ன் <a href="../privacy/#drivers" target="_blank" rel="noopener">Driver விதிமுறைகள் &amp; தனியுரிமைக் கொள்கை</a>-க்கு ஒப்புக்கொள்கிறேன்.','The details are true and I agree to the Vellore Taxi <a href="../privacy/#drivers-en" target="_blank" rel="noopener">driver terms and privacy policy</a>.')}</span></label>
+      <div class="err" id="e"></div><div class="prog" id="pg" hidden><i></i></div>
+      <button class="btn y" id="sb">${L('Office-க்கு அனுப்பு','Send to office')}</button></div>`;
+  app.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>{S.veh=b.dataset.v;app.querySelectorAll('[data-v]').forEach(x=>x.classList.toggle('on',x===b))});
+  app.querySelectorAll('[data-f]').forEach(inp=>inp.onchange=async()=>{const k=inp.dataset.f,box=document.getElementById('d_'+k);box.querySelector('small').textContent=L('தயார் பண்ணுது…','Preparing…');
+    try{S.files[k]=await shrink(inp.files[0]);snap();form()}catch(e){box.querySelector('small').textContent=e.message==='type'?L('Photo மட்டும் (PDF வேண்டாம்)','Photos only (no PDF)'):L('இந்த photo வேலை செய்யல. மறுபடி எடுங்க','That photo didn’t work. Take it again')}});
+  const snap=()=>{const v=id=>(document.getElementById(id)||{}).value||'';S.data={...S.data,name:v('nm').trim(),dlNo:v('dln').trim().toUpperCase(),years:v('exp').replace(/\D/g,''),area:v('area').trim(),plate:v('pl').trim().toUpperCase(),model:v('md').trim(),ownVehicle:document.getElementById('own').checked,
+    exp:Object.fromEntries(DOCS.filter(d=>d[4]).map(([k])=>[k,v('x_'+k)?new Date(v('x_'+k)).getTime():((S.data.exp||{})[k]||null)]))}};
+  document.getElementById('sb').onclick=()=>{snap();submit()};
+}
+async function submit(){
+  const e=document.getElementById('e'),D=S.data,had=(S.app&&S.app.files)||[];
+  const missing=[];if((D.name||'').length<3)missing.push(L('பெயர்','name'));if((D.dlNo||'').length<8)missing.push(L('உரிம எண்','licence number'));if((D.plate||'').length<6)missing.push(L('வண்டி எண்','plate'));
+  DOCS.forEach(([k,ta,en,req,ex])=>{if(req&&!S.files[k]&&!had.includes(k))missing.push(S.lang==='ta'?ta:en);if(req&&ex&&!(D.exp||{})[k])missing.push((S.lang==='ta'?ta:en)+L(' தேதி',' date'))});
+  if(missing.length){e.textContent=L('இது இல்லை: ','Missing: ')+missing.join(', ');return}
+  if(!document.getElementById('agree').checked){e.textContent=L('விதிமுறைகளுக்கு ✓ போடுங்க','Please tick the agreement');return}
+  const now=Date.now();if(Object.values(D.exp||{}).some(t=>t&&t<now)){e.textContent=L('ஒரு document காலாவதி ஆயிடுச்சு. புதுப்பிச்ச பிறகு அனுப்புங்க','One of your documents has expired. Renew it first');return}
+  const sb=document.getElementById('sb'),pg=document.getElementById('pg');sb.disabled=true;sb.textContent=L('அனுப்புது…','Sending…');pg.hidden=false;e.textContent='';
+  const keys=Object.keys(S.files),bar=n=>pg.firstChild.style.width=Math.round(n*100)+'%';
+  try{
+    const ref=F.doc(CL.db,'driverApps',CL.phone);
+    await F.setDoc(ref,{name:D.name,phone:CL.phone,dlNo:D.dlNo,years:+D.years||0,area:D.area||'',veh:S.veh,plate:D.plate,model:D.model||'',ownVehicle:!!D.ownVehicle,exp:D.exp||{},
+      files:had,status:'pending',note:'',submittedAt:F.serverTimestamp(),updatedAt:F.serverTimestamp()},{merge:true});
+    bar(.1);
+    for(let i=0;i<keys.length;i++){await F.setDoc(F.doc(CL.db,'driverApps',CL.phone,'files',keys[i]),{data:S.files[keys[i]],at:Date.now()});bar(.1+.85*(i+1)/keys.length)}
+    const all=[...new Set([...had,...keys])];
+    await F.updateDoc(ref,{files:all,status:'pending',updatedAt:F.serverTimestamp()});bar(1);
+    S.app={...D,status:'pending',files:all};S.files={};go('status');
+  }catch(err){e.textContent=CL.errText(err,S.lang==='ta');sb.disabled=false;sb.textContent=L('மறுபடி அனுப்பு','Send again')}
+}
+function status(){
+  const st=(S.app&&S.app.status)||'pending';
+  if(st==='approved'){head(L('வாழ்த்துக்கள்! 🎉','Welcome aboard! 🎉'),L('நீங்க இப்போ Vellore Taxi driver','You are now a Vellore Taxi driver'));
+    app.innerHTML=`<div class="card status"><div class="ic">✅</div><h2>${L('Approve ஆயிடுச்சு','Approved')}</h2><p>${L('Driver app-ஐ திறந்து இதே நம்பர்ல login பண்ணுங்க. ⋮ → "Add to Home screen" பண்ணிக்கோங்க. Wallet recharge பண்ணிட்டு Online போங்க.','Open the driver app and log in with this number. Use ⋮ → "Add to Home screen". Recharge your wallet, then go online.')}</p>
+      <a class="btn" style="display:flex;align-items:center;justify-content:center;text-decoration:none" href="../driver/">${L('Driver app திற','Open the driver app')}</a></div>`;return}
+  head(L('விண்ணப்பம் அனுப்பியாச்சு','Application sent'),L('Office பார்த்து approve பண்ணுவாங்க','Our office will review it'));
+  app.innerHTML=`<div class="card status"><div class="ic">⏳</div><h2>${L('Approval-க்கு காத்திருக்கு','Waiting for approval')}</h2>
+    <p>${L('பொதுவா 1 நாளுக்குள்ள approve பண்ணுவோம். Approve ஆனதும் இந்த page-ஐ திறந்தா "Driver app திற" button வரும். தேவைப்பட்டா office உங்களை அழைக்கும்.','We usually review within a day. Open this page again to see the result. Our office may call you.')}</p>
+    <button class="btn ghost" id="rf">${L('நிலையை பார்','Check status')}</button><button class="btn ghost" id="ed">${L('விவரத்தை மாத்து','Edit details')}</button></div>`;
+  document.getElementById('rf').onclick=()=>afterLogin();
+  document.getElementById('ed').onclick=()=>go('form');
+}
+(async function(){
+  setLang();app.innerHTML=`<p style="text-align:center;color:var(--mut)">${L('ஏத்துது…','Loading…')}</p>`;
+  CL=await window.CLOUD_READY;if(!CL){go('offline');return}F=CL.fs;
+  const u=await CL.waitUser();if(u)await afterLogin();else go('login');
+})();
+</script>
+</body>
+</html>
