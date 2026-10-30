@@ -1,12 +1,12 @@
 {
-  "name": "Vellore Taxi",
-  "short_name": "Vellore Taxi",
+  "name": "Vellore Call Taxi",
+  "short_name": "VCT Taxi",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#f4f5f7",
-  "theme_color": "#d71920",
+  "background_color": "#13284F",
+  "theme_color": "#13284F",
   "icons": [
     { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
     { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }

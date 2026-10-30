@@ -1,20 +1,10 @@
-// 1. Firebase console -> Project settings -> Your apps -> Web app -> copy the config here.
-// 2. While apiKey is empty the app runs in DEMO MODE (no server, fake driver) so you can try the screens.
-
+// Vellore Call Taxi — Firebase web config (public; safe to ship with the website)
 export const firebaseConfig = {
-  apiKey: "",
-  authDomain: "",
-  projectId: "",
-  storageBucket: "",
-  messagingSenderId: "",
-  appId: "",
-};
-
-export const BUSINESS = {
-  name: "Vellore Taxi",          // shown in header
-  supportPhone: "",              // your call-centre number, e.g. "9XXXXXXXXX"
-  upiId: "",                     // your UPI ID for fare payment, e.g. "name@okbank"
-  upiName: "Vellore Taxi",       // name shown in the UPI app
-  city: "Vellore",
-  center: { lat: 12.9165, lng: 79.1325 }, // map centre when GPS is unavailable
+  apiKey: "AIzaSyDdO6xnD1hmakweVjJw52p3Wj1wP-jMB9g",
+  authDomain: "vellore-taxi23.firebaseapp.com",
+  projectId: "vellore-taxi23",
+  storageBucket: "vellore-taxi23.firebasestorage.app",
+  messagingSenderId: "764188040315",
+  appId: "1:764188040315:web:54bf2a9b3c806b71a696de",
+  measurementId: "G-X9WBCXVGQ2"
 };

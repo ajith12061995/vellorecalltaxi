@@ -1,0 +1,1264 @@
+<!doctype html>
+<html lang="ta">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#13284F">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="robots" content="noindex">
+<link rel="icon" href="../icon-192.png">
+<link rel="apple-touch-icon" href="../icon-192.png">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{height:100%}body{margin:0;font-family:system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+<script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
+<script type="module">import('../vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
+</head>
+<body>
+<title>Vellore Call Taxi Driver</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+Thambi+2:wght@500;600;700;800&family=Hind+Madurai:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: one phone-width app column; map is the stage, a white bottom sheet carries the actions. */
+:root{
+  --yellow:#FFD84D; --yellow-soft:#FFF5C9; --yellow-ink:#7A5A00;
+  --navy:#1E3A6E; --navy-2:#2C5196; --navy-soft:#E6EDF9;
+  --bg:#F4F6FA; --surface:#FFFFFF; --surface-2:#F8F9FC;
+  --fg:#13284F; --muted:#5F6E89; --line:#E2E7F1;
+  --map-land:#EDF1F7; --map-block:#E3E9F2; --map-road:#FFFFFF; --map-edge:#D3DBE8; --map-river:#CBE1F4; --map-label:#56657F; --map-bldg:#D6DEEA;
+  --ok:#1E8A5A; --danger:#C23B3B;
+  --shadow:0 10px 30px rgba(19,40,79,.12);
+  --display:"Baloo Thambi 2","Hind Madurai",system-ui,sans-serif;
+  --body:"Hind Madurai","Noto Sans Tamil",system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --yellow:#FFD84D; --yellow-soft:#3A3417; --yellow-ink:#FFE38A;
+  --navy:#8FB0EE; --navy-2:#A9C3F5; --navy-soft:#1E2D4B;
+  --bg:#0D1628; --surface:#152240; --surface-2:#1A2A4C; --fg:#EAF0FB; --muted:#9AA8C3; --line:#26375C;
+  --map-land:#101C33; --map-block:#14223D; --map-road:#2A3B5E; --map-edge:#1B2A47; --map-river:#173556; --map-label:#8C9BB8; --map-bldg:#1D2E50;
+  --ok:#4CC28C; --danger:#F07A7A; --shadow:0 10px 30px rgba(0,0,0,.4); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --yellow:#FFD84D; --yellow-soft:#3A3417; --yellow-ink:#FFE38A;
+  --navy:#8FB0EE; --navy-2:#A9C3F5; --navy-soft:#1E2D4B;
+  --bg:#0D1628; --surface:#152240; --surface-2:#1A2A4C; --fg:#EAF0FB; --muted:#9AA8C3; --line:#26375C;
+  --map-land:#101C33; --map-block:#14223D; --map-road:#2A3B5E; --map-edge:#1B2A47; --map-river:#173556; --map-label:#8C9BB8; --map-bldg:#1D2E50;
+  --ok:#4CC28C; --danger:#F07A7A; --shadow:0 10px 30px rgba(0,0,0,.4); color-scheme:dark}
+
+html,body{height:100%}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;overflow:hidden}
+*{box-sizing:border-box}
+button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
+button:focus-visible,input:focus-visible{outline:3px solid var(--yellow);outline-offset:2px}
+.app{position:relative;height:100%;max-width:440px;margin:0 auto;background:var(--surface);overflow:hidden}
+@media (min-width:520px){.app{height:calc(100% - 32px);margin-block:16px;border-radius:28px;box-shadow:var(--shadow);border:1px solid var(--line)}}
+.screen{position:absolute;inset:0;display:flex;flex-direction:column;background:var(--surface);animation:in .32s ease both}
+@keyframes in{from{opacity:.4;transform:translateY(10px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+.pad{padding-left:max(18px,env(safe-area-inset-left,0px));padding-right:max(18px,env(safe-area-inset-right,0px))}
+h1,h2,h3{font-family:var(--display);margin:0;line-height:1.15;text-wrap:balance}
+.muted{color:var(--muted)}
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;height:54px;border-radius:16px;background:var(--navy);color:#fff;font-weight:700;font-size:16px;transition:transform .12s, opacity .2s}
+:root[data-theme="dark"] .btn{color:#0D1628}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .btn{color:#0D1628}}
+.btn:active{transform:scale(.98)}
+.btn[disabled]{opacity:.4;cursor:not-allowed}
+.btn.yellow{background:var(--yellow);color:#13284F}
+
+/* splash */
+#splash{background:#13284F;color:#fff;align-items:center;justify-content:center;gap:22px}
+.roofsign{background:var(--yellow);color:#13284F;border-radius:14px 14px 6px 6px;padding:14px 22px 10px;text-align:center;box-shadow:0 14px 0 -6px #0b1a36, 0 0 0 4px rgba(255,216,77,.25);animation:pop .6s cubic-bezier(.2,1.4,.4,1) both}
+.roofsign b{display:block;font-family:var(--display);font-size:30px;font-weight:800;letter-spacing:.06em}
+.roofsign span{font-family:var(--display);font-size:17px;font-weight:600}
+@keyframes pop{from{transform:scale(.6);opacity:0}}
+.road{width:220px;height:6px;border-radius:3px;background:repeating-linear-gradient(90deg,#FFD84D 0 26px,transparent 26px 44px);background-size:44px 6px;animation:roll .6s linear infinite;opacity:.8}
+@keyframes roll{to{background-position:-44px 0}}
+.tag{font-size:13px;letter-spacing:.14em;text-transform:uppercase;opacity:.7}
+
+/* onboarding */
+.hero{background:linear-gradient(170deg,var(--yellow) 0%,var(--yellow-soft) 100%);padding-top:48px;padding-bottom:28px;display:flex;flex-direction:column;gap:10px;border-radius:0 0 32px 32px}
+.hero h1{font-size:30px;color:#13284F}
+.hero p{margin:0;color:#3D4D6E}
+.hero .mini{display:inline-flex;align-self:flex-start;background:#13284F;color:var(--yellow);font-family:var(--display);font-weight:700;padding:4px 12px;border-radius:999px;font-size:13px;letter-spacing:.06em}
+.body{flex:1;display:flex;flex-direction:column;gap:16px;padding-top:24px;padding-bottom:max(20px,env(safe-area-inset-bottom,0px));overflow:auto}
+.langcard{display:flex;align-items:center;justify-content:space-between;padding:18px;border:2px solid var(--line);border-radius:18px;text-align:left;background:var(--surface)}
+.langcard.sel{border-color:var(--navy);background:var(--navy-soft)}
+.langcard b{font-family:var(--display);font-size:22px}
+.radio{width:22px;height:22px;border-radius:50%;border:2px solid var(--line)}
+.sel .radio{border:7px solid var(--navy)}
+.field{display:flex;align-items:center;gap:10px;height:58px;border:2px solid var(--line);border-radius:16px;padding:0 16px;background:var(--surface)}
+.field:focus-within{border-color:var(--navy)}
+.field input{flex:1;min-width:0;border:0;outline:0;background:none;font:inherit;font-size:19px;color:var(--fg);letter-spacing:.04em}
+.field .cc{font-weight:700;padding-right:10px;border-right:1px solid var(--line)}
+.otp{display:flex;gap:12px}
+.otp input{width:100%;min-width:0;height:62px;text-align:center;font-size:26px;font-family:var(--display);font-weight:700;border:2px solid var(--line);border-radius:16px;background:var(--surface);color:var(--fg)}
+.otp input:focus{border-color:var(--navy);outline:0}
+.note{background:var(--yellow-soft);color:var(--yellow-ink);border-radius:14px;padding:10px 14px;font-size:13.5px}
+.err{color:var(--danger);font-size:13.5px;min-height:18px}
+.linkbtn{color:var(--navy);font-weight:700;font-size:14px}
+.fine{font-size:12.5px;text-align:center}
+
+/* home */
+.mapwrap{position:relative;flex:1 1 auto;min-height:230px}
+canvas.map{position:absolute;inset:0;width:100%;height:100%;display:block}
+.topbar{position:absolute;top:max(14px,env(safe-area-inset-top,0px));left:max(14px,env(safe-area-inset-left,0px));right:max(14px,env(safe-area-inset-right,0px));display:flex;align-items:center;gap:10px;z-index:2}
+.chipbtn{height:42px;min-width:42px;border-radius:14px;background:var(--surface);box-shadow:var(--shadow);display:flex;align-items:center;justify-content:center;gap:6px;padding:0 12px;font-weight:700;font-size:13.5px}
+.greet{flex:1;min-width:0;background:var(--surface);box-shadow:var(--shadow);border-radius:14px;padding:6px 12px;line-height:1.2}
+.greet small{display:block;color:var(--muted);font-size:12px}
+.greet b{font-family:var(--display);font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+.locate{position:absolute;right:max(14px,env(safe-area-inset-right,0px));bottom:30px;z-index:2}
+.nearby{position:absolute;left:max(14px,env(safe-area-inset-left,0px));bottom:30px;z-index:2;background:var(--navy);color:#fff;border-radius:999px;padding:6px 12px;font-size:12.5px;font-weight:600;display:flex;align-items:center;gap:6px}
+:root[data-theme="dark"] .nearby{color:#0D1628}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .nearby{color:#0D1628}}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--yellow);box-shadow:0 0 0 0 rgba(255,216,77,.7);animation:ping 1.6s infinite}
+@keyframes ping{70%{box-shadow:0 0 0 8px rgba(255,216,77,0)}100%{box-shadow:0 0 0 0 rgba(255,216,77,0)}}
+.sheet{position:relative;z-index:3;margin-top:-22px;background:var(--surface);border-radius:26px 26px 0 0;box-shadow:0 -8px 24px rgba(19,40,79,.08);display:flex;flex-direction:column;gap:16px;padding-top:12px;padding-bottom:14px;max-height:62%;overflow:auto}
+.grab{width:40px;height:5px;border-radius:3px;background:var(--line);align-self:center}
+.where{display:flex;align-items:center;gap:12px;height:58px;border-radius:18px;background:var(--surface-2);border:1px solid var(--line);padding:0 8px 0 16px;text-align:left;width:100%}
+.where span{flex:1;font-family:var(--display);font-weight:700;font-size:19px}
+.where i{width:42px;height:42px;border-radius:13px;background:var(--yellow);display:flex;align-items:center;justify-content:center}
+.chips{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;margin-inline:-2px;padding:2px}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;display:flex;align-items:center;gap:6px;height:38px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:var(--surface);font-size:13.5px;font-weight:600;white-space:nowrap}
+.sec{display:flex;align-items:baseline;justify-content:space-between}
+.sec h3{font-size:17px}
+.services{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.svc{display:flex;flex-direction:column;align-items:center;gap:6px;font-size:12.5px;font-weight:600;text-align:center;line-height:1.2}
+.svc i{width:100%;aspect-ratio:1;max-width:72px;border-radius:18px;background:var(--navy-soft);display:flex;align-items:center;justify-content:center}
+.svc:first-child i{background:var(--yellow)}
+.offers{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;padding-bottom:2px}
+.offers::-webkit-scrollbar{display:none}
+.offer{flex:none;width:78%;scroll-snap-align:start;border-radius:20px;padding:16px;display:flex;flex-direction:column;gap:6px;position:relative;overflow:hidden;min-height:120px}
+.offer b{font-family:var(--display);font-size:20px;line-height:1.15}
+.offer small{opacity:.85;font-size:12.5px}
+.offer .code{align-self:flex-start;margin-top:auto;border:1.5px dashed currentColor;border-radius:8px;padding:2px 10px;font-weight:700;letter-spacing:.08em;font-size:13px}
+.offer.o1{background:#13284F;color:#FFD84D}
+.offer.o2{background:#FFD84D;color:#13284F}
+.offer.o3{background:#2C5196;color:#fff}
+.offer svg{position:absolute;right:-14px;bottom:-12px;opacity:.18}
+.sample{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.recent{display:flex;flex-direction:column}
+.row{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--line);text-align:left;width:100%}
+.row:last-child{border-bottom:0}
+.row .ic{width:40px;height:40px;border-radius:12px;background:var(--surface-2);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;flex:none}
+.row div{flex:1;min-width:0}
+.row b{display:block;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row small{color:var(--muted);font-size:12.5px}
+.nav{display:grid;grid-template-columns:repeat(5,1fr);border-top:1px solid var(--line);background:var(--surface);padding-bottom:max(6px,env(safe-area-inset-bottom,0px));position:relative;z-index:4}
+.nav button{display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 0 4px;font-size:11.5px;font-weight:600;color:var(--muted)}
+.nav button.on{color:var(--navy)}
+.nav button.on svg{background:var(--yellow-soft);border-radius:10px}
+.nav svg{width:44px;height:28px;padding:3px 10px}
+
+/* search */
+.head{display:flex;align-items:center;gap:10px;padding-top:max(14px,env(safe-area-inset-top,0px));padding-bottom:10px}
+.head h2{font-size:20px;flex:1}
+.back{width:42px;height:42px;border-radius:14px;background:var(--surface-2);border:1px solid var(--line);display:flex;align-items:center;justify-content:center}
+.route-in{display:flex;gap:12px;background:var(--surface-2);border:1px solid var(--line);border-radius:18px;padding:10px 12px}
+.rail{display:flex;flex-direction:column;align-items:center;padding-top:14px;gap:0}
+.rail .a{width:10px;height:10px;border-radius:50%;background:var(--ok)}
+.rail .l{width:2px;flex:1;min-height:28px;background:repeating-linear-gradient(var(--muted) 0 3px,transparent 3px 6px)}
+.rail .b{width:10px;height:10px;border-radius:2px;background:var(--danger)}
+.ins{flex:1;min-width:0;display:flex;flex-direction:column}
+.ins input{height:44px;border:0;outline:0;background:none;font:inherit;font-size:16px;color:var(--fg);min-width:0}
+.ins input:first-child{border-bottom:1px solid var(--line)}
+.ins input:focus{color:var(--navy)}
+.mic{width:44px;height:44px;border-radius:14px;background:var(--yellow);display:flex;align-items:center;justify-content:center;align-self:flex-end;flex:none}
+.list{flex:1;overflow:auto;padding-bottom:20px}
+.tagline{font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);padding:16px 0 4px}
+
+/* fare */
+.fare-sheet{gap:12px;max-height:68%}
+.trip{display:flex;gap:10px;align-items:center;font-size:13.5px}
+.trip b{font-family:var(--display);font-size:16px}
+.pill{display:inline-flex;align-items:center;gap:4px;background:var(--navy-soft);color:var(--navy);border-radius:999px;padding:3px 10px;font-weight:700;font-size:12.5px;white-space:nowrap}
+.veh{display:flex;align-items:center;gap:12px;padding:12px;border-radius:18px;border:2px solid var(--line);text-align:left;width:100%;background:var(--surface);transition:border-color .15s, background .15s}
+.veh.sel{border-color:var(--navy);background:var(--navy-soft)}
+.veh .vi{width:58px;height:44px;border-radius:12px;background:var(--yellow-soft);display:flex;align-items:center;justify-content:center;flex:none}
+.veh div{flex:1;min-width:0}
+.veh b{font-family:var(--display);font-size:17px;display:block}
+.veh small{color:var(--muted);font-size:12.5px}
+.veh .price{text-align:right;flex:none}
+.veh .price b{font-size:20px;font-variant-numeric:tabular-nums}
+.veh .price s{color:var(--muted);font-size:12px}
+.payrow{display:flex;gap:8px}
+.pay{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;height:44px;border-radius:14px;border:1.5px solid var(--line);font-weight:700;font-size:14px}
+.pay.sel{border-color:var(--navy);background:var(--navy-soft);color:var(--navy)}
+
+
+canvas.map{touch-action:none;cursor:grab;-webkit-user-select:none;user-select:none}
+canvas.map:active{cursor:grabbing}
+.zoomctl{position:absolute;right:max(14px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:8px;z-index:2}
+.zoomctl .chipbtn{font-size:22px;font-weight:700;width:44px;height:44px;padding:0}
+.hint{position:absolute;left:50%;transform:translateX(-50%);top:calc(max(14px,env(safe-area-inset-top,0px)) + 56px);z-index:2;background:rgba(19,40,79,.88);color:#fff;font-size:12.5px;font-weight:600;padding:6px 12px;border-radius:999px;white-space:nowrap;transition:opacity .4s;pointer-events:none}
+.hint.gone{opacity:0}
+.pin{position:absolute;left:50%;top:50%;z-index:3;pointer-events:none;transform:translate(-50%,-97%);transition:transform .2s cubic-bezier(.3,1.6,.5,1)}
+.pin.lift{transform:translate(-50%,calc(-97% - 16px))}
+.pinshadow{position:absolute;left:50%;top:50%;width:18px;height:7px;border-radius:50%;background:rgba(19,40,79,.4);transform:translate(-50%,-50%);z-index:2;pointer-events:none;transition:.2s}
+.pin.lift + .pinshadow{width:10px;opacity:.45}
+.pickcard{display:flex;flex-direction:column;gap:12px;padding-top:16px;padding-bottom:max(16px,env(safe-area-inset-bottom,0px));border-top:1px solid var(--line);background:var(--surface);border-radius:24px 24px 0 0;margin-top:-20px;position:relative;z-index:4;box-shadow:0 -8px 24px rgba(19,40,79,.08)}
+.addr{display:flex;gap:12px;align-items:flex-start;min-height:52px}
+.addr .ic{width:44px;height:44px;border-radius:14px;background:var(--yellow-soft);color:var(--yellow-ink);display:flex;align-items:center;justify-content:center;flex:none}
+.addr div{min-width:0}
+.addr b{font-family:var(--display);font-size:19px;display:block;line-height:1.2}
+.addr small{color:var(--muted);font-size:13px;font-variant-numeric:tabular-nums}
+.addr b,.addr small{transition:opacity .15s}
+.addr.loading b,.addr.loading small{opacity:.35}
+.kind{font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.row.onmap b{color:var(--navy)}
+.row.onmap .ic{background:var(--yellow);border-color:var(--yellow);color:#13284F}
+.ins input[readonly]{cursor:pointer}
+.greet.tap{cursor:pointer;text-align:left}
+
+
+[hidden]{display:none!important}
+.radar{position:absolute;left:50%;top:50%;z-index:2;pointer-events:none}
+.radar i{position:absolute;left:-60px;top:-60px;width:120px;height:120px;border-radius:50%;border:2px solid var(--navy-2);background:rgba(44,81,150,.10);animation:radar 2.4s ease-out infinite;opacity:0}
+.radar i:nth-child(2){animation-delay:.8s}.radar i:nth-child(3){animation-delay:1.6s}
+@keyframes radar{0%{transform:scale(.2);opacity:.9}100%{transform:scale(1.7);opacity:0}}
+.ride-sheet{gap:14px;max-height:66%}
+.searchrow{display:flex;gap:14px;align-items:center}
+.searchrow>div{min-width:0}
+.searchrow .vi{width:62px;height:48px;border-radius:14px;background:var(--yellow-soft);display:flex;align-items:center;justify-content:center;flex:none;animation:bob .8s ease-in-out infinite alternate}
+@keyframes bob{to{transform:translateY(-4px)}}
+.searchrow h3{font-size:19px}
+.bar{height:6px;border-radius:3px;background:var(--line);overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--navy),var(--navy-2));border-radius:3px;animation:fill 4.2s linear forwards}
+@keyframes fill{to{width:100%}}
+.btn.ghost{background:transparent;color:var(--danger)!important;border:1.5px solid var(--line);height:48px}
+.tripcard{display:flex;gap:12px;padding:12px 14px;border-radius:16px;background:var(--surface-2);border:1px solid var(--line)}
+.tripcard .rail{padding-top:6px}
+.tripcard .rail .l{min-height:22px}
+.stops{flex:1;min-width:0;display:flex;flex-direction:column;gap:10px;font-size:14px}
+.stops b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stops small{color:var(--muted);font-size:11.5px;text-transform:uppercase;letter-spacing:.08em;font-weight:700}
+.amt{text-align:right;flex:none}
+.amt b{font-family:var(--display);font-size:21px;font-variant-numeric:tabular-nums}
+.status b{font-size:17px}
+.chipbtn.sos{background:#C23B3B;color:#fff;font-weight:800;letter-spacing:.08em;box-shadow:0 6px 18px rgba(194,59,59,.35)}
+.chipbtn.ff{position:absolute;right:max(14px,env(safe-area-inset-right,0px));bottom:34px;z-index:2;font-size:12.5px}
+.pinbox{display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--yellow-soft);border-radius:16px;padding:10px 14px}
+.pinbox span{font-size:13px;color:var(--yellow-ink);font-weight:600;line-height:1.3}
+.pinbox b{display:flex;gap:6px;flex:none}
+.pinbox i{font-style:normal;width:34px;height:40px;border-radius:10px;background:var(--surface);color:var(--fg);display:flex;align-items:center;justify-content:center;font-family:var(--display);font-size:22px;font-weight:800;box-shadow:0 2px 0 var(--line)}
+.drv{display:flex;align-items:center;gap:12px}
+.drv>div:not(.vehbox){flex:1;min-width:0}
+.drv b{font-family:var(--display);font-size:18px;display:block}
+.drv small{color:var(--muted);font-size:12.5px}
+.drv .avatar{width:50px;height:50px;font-size:22px;border-radius:16px}
+.vehbox{display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex:none}
+.plate{background:#FFD84D;color:#111;border:2px solid #111;border-radius:6px;padding:1px 8px;font-weight:700;font-size:13.5px;letter-spacing:.06em;white-space:nowrap}
+.acts{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.acts button{display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 0;border-radius:14px;background:var(--surface-2);border:1px solid var(--line);font-size:12px;font-weight:600}
+.acts button svg{color:var(--navy)}
+.modal{position:absolute;inset:0;z-index:30;display:flex;flex-direction:column;justify-content:flex-end;background:rgba(10,20,40,.45);animation:fade .2s}
+@keyframes fade{from{opacity:0}}
+.modal .card{background:var(--surface);border-radius:24px 24px 0 0;padding-top:20px;padding-bottom:max(18px,env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:12px;max-height:82%;overflow:auto;animation:in .25s}
+.modal h3{font-size:20px}
+.reason{display:flex;align-items:center;gap:12px;padding:12px 14px;border:1.5px solid var(--line);border-radius:14px;text-align:left;width:100%;font-weight:600}
+.reason .radio{flex:none}
+.reason.sel{border-color:var(--navy);background:var(--navy-soft)}
+.reason.sel .radio{border:7px solid var(--navy)}
+.chatlog{display:flex;flex-direction:column;gap:8px;min-height:120px;max-height:240px;overflow:auto;padding:4px 0}
+.msg{max-width:78%;padding:8px 12px;border-radius:14px;font-size:14px}
+.msg.me{align-self:flex-end;background:#1E3A6E;color:#fff;border-bottom-right-radius:4px}
+.msg.dr{align-self:flex-start;background:var(--surface-2);border:1px solid var(--line);border-bottom-left-radius:4px}
+.sosbig{height:64px;border-radius:18px;background:#C23B3B;color:#fff;font-family:var(--display);font-size:20px;font-weight:800;width:100%;letter-spacing:.06em}
+.donehero{background:linear-gradient(170deg,var(--yellow),var(--yellow-soft));padding-top:40px;padding-bottom:24px;border-radius:0 0 32px 32px;display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center;color:#13284F}
+.check{width:72px;height:72px;border-radius:50%;background:#13284F;display:flex;align-items:center;justify-content:center;animation:pop .5s cubic-bezier(.2,1.5,.4,1)}
+.bill{display:flex;flex-direction:column;gap:8px;padding:14px 16px;border:1px solid var(--line);border-radius:18px}
+.bill div{display:flex;justify-content:space-between;gap:12px;font-size:14.5px;font-variant-numeric:tabular-nums}
+.bill .tot{border-top:1px dashed var(--line);padding-top:10px;font-family:var(--display);font-size:20px;font-weight:700}
+.qr{display:flex;gap:14px;align-items:center;padding:14px;border-radius:18px;background:var(--surface-2);border:1px solid var(--line)}
+.qr svg{flex:none;border-radius:10px;background:#fff;padding:6px}
+.stars{display:flex;gap:6px;justify-content:center}
+.stars button{width:48px;height:48px;font-size:36px;line-height:1;color:var(--line);transition:transform .15s,color .15s}
+.stars button.on{color:#F5B400;transform:scale(1.08)}
+.tags{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.chip.sel{background:var(--navy-soft);border-color:var(--navy);color:var(--navy)}
+textarea{width:100%;min-height:70px;border:1.5px solid var(--line);border-radius:14px;padding:10px 12px;font:inherit;background:var(--surface);color:var(--fg);resize:vertical}
+
+
+.vsvg .wh{transform-box:fill-box;transform-origin:center}
+.vsvg .bd{transform-box:fill-box}
+.veh .vi,.searchrow .vi{position:relative;overflow:hidden;width:68px;height:48px}
+.veh .vi::after,.searchrow .vi::after{content:"";position:absolute;left:0;right:0;bottom:4px;height:2px;background:repeating-linear-gradient(90deg,var(--muted) 0 8px,transparent 8px 14px);background-size:14px 2px;opacity:0;transition:opacity .2s}
+.veh.sel .vi::after,.searchrow .vi::after{opacity:.5;animation:road .45s linear infinite}
+.veh.sel .vsvg .wh,.searchrow .vsvg .wh{animation:spin .55s linear infinite}
+.veh.sel .vsvg .bd,.searchrow .vsvg .bd{animation:bump .28s ease-in-out infinite alternate}
+.veh:not(.sel):hover .vsvg{transform:translateX(2px);transition:transform .2s}
+.searchrow .vi{animation:none}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes bump{to{transform:translateY(-1.2px)}}
+@keyframes road{to{background-position:-14px 0}}
+
+
+.fleet{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;padding:2px 2px 6px}
+.fleet::-webkit-scrollbar{display:none}
+.fcard{flex:none;width:62%;max-width:240px;scroll-snap-align:start;position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:4px;text-align:left;padding:16px 16px 12px;border-radius:22px;border:1px solid var(--line);background:var(--surface);min-height:190px;overflow:hidden}
+.fcard b{font-family:var(--display);font-size:20px;line-height:1.1}
+.fcard small{color:var(--muted);font-size:13px;line-height:1.3}
+.fcard.hot{background:var(--navy);border-color:var(--navy)}
+.fcard.hot b,.fcard.hot small,.fcard.hot .farr{color:#fff}
+.fcard.hot .fseat{background:rgba(255,255,255,.16);color:#fff}
+:root[data-theme="dark"] .fcard.hot b,:root[data-theme="dark"] .fcard.hot small,:root[data-theme="dark"] .fcard.hot .farr{color:#0D1628}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .fcard.hot b,:root:not([data-theme="light"]) .fcard.hot small,:root:not([data-theme="light"]) .fcard.hot .farr{color:#0D1628}}
+.fseat{font-size:11.5px;font-weight:700;padding:2px 8px;border-radius:999px;background:var(--yellow-soft);color:var(--yellow-ink)}
+.fart{margin-top:auto;align-self:flex-end;margin-right:-10px;margin-bottom:-6px;filter:drop-shadow(0 8px 6px rgba(19,40,79,.18))}
+.fcard:active .fart{transform:translateX(6px);transition:transform .2s}
+.fcard:hover .vsvg .wh{animation:spin .6s linear infinite}
+.farr{position:absolute;left:16px;bottom:14px;font-style:normal;font-size:20px;color:var(--fg)}
+
+.sheet>*,.body>*{flex-shrink:0}
+
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.stats div{background:var(--surface-2);border:1px solid var(--line);border-radius:16px;padding:10px 12px;display:flex;flex-direction:column}
+.stats b{font-family:var(--display);font-size:20px;font-variant-numeric:tabular-nums}
+.stats small{color:var(--muted);font-size:12px}
+.trow .tv{width:52px;background:var(--yellow-soft);border-color:transparent}
+.trow .tv svg{width:46px;height:28px}
+.tamt{flex:none;text-align:right;display:flex;flex-direction:column;align-items:flex-end}
+.tamt b{font-family:var(--display);font-size:17px;font-variant-numeric:tabular-nums}
+.tamt small{color:var(--muted);font-size:12px}
+.st{font-style:normal;font-size:12px;font-weight:700;padding:2px 10px;border-radius:999px}
+.st.cx{background:rgba(194,59,59,.12);color:var(--danger)}
+.empty{display:flex;flex-direction:column;align-items:center;text-align:center;gap:8px;padding:40px 10px;color:var(--muted)}
+.empty h3{color:var(--fg)}
+.empty .btn{margin-top:8px;max-width:260px}
+.minimap{position:relative;height:200px;border-radius:20px;overflow:hidden;border:1px solid var(--line)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.two .btn:only-child{grid-column:1/-1}
+.btn.wa{background:#1E8A5A;color:#fff!important;text-decoration:none;text-align:center;font-size:15px}
+.receipt{background:#fff;color:#13284F;border-radius:18px;border:1px solid #E2E7F1;padding:18px 18px 22px;display:flex;flex-direction:column;gap:14px;position:relative;box-shadow:0 10px 30px rgba(19,40,79,.10)}
+.receipt::after{content:"";position:absolute;left:10px;right:10px;bottom:-7px;height:14px;background:radial-gradient(circle at 7px 0,transparent 6px,#fff 6.5px) 0 0/14px 14px repeat-x}
+.rhead{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;padding-bottom:12px;border-bottom:2px solid #FFD84D}
+.rbrand{display:flex;gap:10px;align-items:center;min-width:0}
+.rbrand b{font-family:var(--display);font-size:17px;display:block;line-height:1.1}
+.rbrand small{font-size:11px;color:#5F6E89}
+.rsign{background:#FFD84D;color:#13284F;font-family:var(--display);font-weight:800;font-size:13px;letter-spacing:.08em;padding:4px 8px;border-radius:8px 8px 3px 3px;border:1.5px solid #13284F;flex:none}
+.rinv{display:flex;flex-direction:column;align-items:flex-end;text-align:right;flex:none}
+.rinv b{font-size:13px;font-variant-numeric:tabular-nums}
+.rinv small{font-size:11px;color:#5F6E89}
+.rsec{display:flex;flex-direction:column;gap:6px;padding-bottom:12px;border-bottom:1px dashed #D3DBE8}
+.rsec:last-of-type{border-bottom:0}
+.rrow{display:flex;justify-content:space-between;gap:12px;font-size:13.5px}
+.rrow span{color:#5F6E89;flex:none}
+.rrow b{text-align:right;font-weight:600;min-width:0;font-variant-numeric:tabular-nums}
+.rtot{font-family:var(--display);font-size:19px;padding-top:4px}
+.rtot span{color:#13284F}
+.rthanks{margin:0;text-align:center;font-size:13px;color:#5F6E89}
+.walcard{background:#13284F;color:#fff;border-radius:24px;padding:20px;display:flex;flex-direction:column;gap:4px;position:relative;overflow:hidden}
+.walcard::before{content:"";position:absolute;right:-40px;top:-40px;width:160px;height:160px;border-radius:50%;background:rgba(255,216,77,.16)}
+.walcard small{opacity:.75}
+.walcard b{font-family:var(--display);font-size:40px;line-height:1.1;color:#FFD84D;font-variant-numeric:tabular-nums}
+.walcard span{font-size:13px;opacity:.8;margin-bottom:10px}
+.walcard .btn{color:#13284F!important}
+.refer{display:flex;align-items:center;gap:12px;padding:14px;border-radius:18px;background:var(--yellow-soft)}
+.refer div{flex:1;min-width:0;display:flex;flex-direction:column}
+.refer b{font-family:var(--display);font-size:17px;color:var(--yellow-ink)}
+.refer small{font-size:12.5px;color:var(--yellow-ink);opacity:.85}
+.code{flex:none;display:flex;flex-direction:column;align-items:center;border:1.5px dashed var(--yellow-ink);border-radius:12px;padding:6px 10px;font-weight:800;letter-spacing:.08em;color:var(--yellow-ink)}
+.code i{font-style:normal;font-size:11px;font-weight:600;letter-spacing:0;opacity:.8}
+.row .ic.in{background:rgba(30,138,90,.12);color:var(--ok);font-weight:800;font-size:18px;border-color:transparent}
+.row .ic.out{background:rgba(194,59,59,.10);color:var(--danger);font-weight:800;font-size:18px;border-color:transparent}
+b.pos{color:var(--ok)}
+
+
+.wherewrap{display:flex;gap:10px}
+.wherewrap .where{flex:1;min-width:0}
+.micbig{flex:none;width:58px;height:58px;border-radius:18px;background:#13284F;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 16px rgba(19,40,79,.25)}
+.upnext{display:flex;align-items:center;gap:12px;width:100%;text-align:left;padding:12px 14px;border-radius:18px;background:var(--yellow-soft);border:1px solid transparent}
+.upnext .ic{width:40px;height:40px;border-radius:12px;background:var(--yellow);color:#13284F;display:flex;align-items:center;justify-content:center;flex:none}
+.upnext div{flex:1;min-width:0}
+.upnext small{display:block;font-size:12px;color:var(--yellow-ink);font-weight:600}
+.upnext b{display:block;font-family:var(--display);font-size:16px;color:var(--yellow-ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.upnext i{font-style:normal;font-size:20px;color:var(--yellow-ink)}
+.st.up{background:var(--navy-soft);color:var(--navy);white-space:nowrap}
+.kindtag{align-self:flex-start;background:var(--navy);color:#fff;border-radius:999px;padding:3px 12px;font-weight:700;font-size:12.5px}
+:root[data-theme="dark"] .kindtag{color:#0D1628}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .kindtag{color:#0D1628}}
+.bill div b{text-align:right}
+.whenrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.whenrow .chip svg{width:16px;height:16px}
+.selbox{width:100%;height:52px;border-radius:14px;border:2px solid var(--line);background:var(--surface);color:var(--fg);font:inherit;font-size:17px;padding:0 12px}
+.pickrow{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:16px;background:var(--surface-2);border:1px solid var(--line)}
+.pickrow div{flex:1;min-width:0}
+.pickrow small{display:block;font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;font-weight:700}
+.pickrow b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dotg,.dotr{width:12px;height:12px;flex:none;border-radius:50%;background:var(--ok)}
+.dotr{border-radius:3px;background:var(--danger)}
+.pkgs{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.pkg{display:flex;flex-direction:column;align-items:center;padding:10px 4px;border-radius:14px;border:2px solid var(--line);background:var(--surface)}
+.pkg b{font-family:var(--display);font-size:16px;white-space:nowrap}
+.pkg small{font-size:11.5px;color:var(--muted)}
+.pkg.sel{border-color:var(--navy);background:var(--navy-soft)}
+.veh[disabled]{opacity:.45;cursor:not-allowed}
+.seg{display:grid;grid-template-columns:1fr 1fr;background:var(--surface-2);border:1px solid var(--line);border-radius:16px;padding:4px}
+.seg button{height:42px;border-radius:12px;font-weight:700;color:var(--muted)}
+.seg button.on{background:var(--navy);color:#fff}
+:root[data-theme="dark"] .seg button.on{color:#0D1628}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .seg button.on{color:#0D1628}}
+.vwrap{display:flex;flex-direction:column;align-items:center;gap:10px;padding:6px 0}
+.vmic{width:92px;height:92px;border-radius:50%;background:#13284F;display:flex;align-items:center;justify-content:center;position:relative}
+.vmic.on::before,.vmic.on::after{content:"";position:absolute;inset:0;border-radius:50%;border:3px solid #FFD84D;animation:radar 1.6s ease-out infinite}
+.vmic.on::after{animation-delay:.8s}
+.chip.ex{font-weight:500;color:var(--muted)}
+
+
+.helphero{background:linear-gradient(160deg,var(--yellow),var(--yellow-soft));border-radius:22px;padding:16px;display:flex;flex-direction:column;gap:12px}
+.helphero b{font-family:var(--display);font-size:20px;color:#13284F}
+.helphero .field{border-color:transparent}
+.lastride{display:flex;flex-direction:column;gap:10px;padding:14px;border:1px solid var(--line);border-radius:18px}
+.lastride b{font-family:var(--display);font-size:17px;display:block}
+.lastride small{color:var(--muted);font-size:12.5px}
+.fgrp{display:flex;flex-direction:column;gap:8px;margin-bottom:10px}
+details.faq{border:1px solid var(--line);border-radius:14px;background:var(--surface);overflow:hidden}
+details.faq summary{cursor:pointer;list-style:none;padding:12px 40px 12px 14px;font-weight:600;position:relative}
+details.faq summary::-webkit-details-marker{display:none}
+details.faq summary::after{content:"+";position:absolute;right:14px;top:50%;transform:translateY(-50%);font-size:20px;color:var(--navy);transition:transform .2s}
+details.faq[open] summary::after{transform:translateY(-50%) rotate(45deg)}
+details.faq[open]{border-color:var(--navy)}
+details.faq p{margin:0;padding:0 14px 14px;color:var(--muted);font-size:14px;line-height:1.5}
+.helpcta{display:flex;flex-direction:column;gap:12px;padding:16px;border-radius:20px;background:var(--navy-soft)}
+.helpcta b{font-family:var(--display);font-size:18px;display:block}
+.helpcta small{color:var(--muted);font-size:13px}
+.helpcta .btn svg{width:18px;height:18px}
+.photo{display:flex;align-items:center;justify-content:center;height:48px;border:1.5px dashed var(--line);border-radius:14px;color:var(--navy);font-weight:600;cursor:pointer}
+.eclist{display:flex;flex-wrap:wrap;gap:6px}
+.btn.dashed{background:var(--surface-2);color:var(--fg)!important;border:1.5px dashed var(--line)}
+
+/* placeholder pages */
+.soon{border:1px dashed var(--line);border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:8px;background:var(--surface-2)}
+.soon ul{margin:0;padding-left:18px;display:grid;gap:4px}
+.badge{align-self:flex-start;background:var(--yellow);color:#13284F;border-radius:999px;padding:2px 10px;font-weight:700;font-size:12px}
+.prof{display:flex;align-items:center;gap:14px}
+.avatar{width:58px;height:58px;border-radius:18px;background:var(--yellow);color:#13284F;display:flex;align-items:center;justify-content:center;font-family:var(--display);font-weight:800;font-size:26px;flex:none}
+
+.toast{position:absolute;left:50%;bottom:calc(86px + env(safe-area-inset-bottom,0px));transform:translate(-50%,20px);background:#13284F;color:#fff;padding:10px 16px;border-radius:14px;font-size:13.5px;font-weight:600;opacity:0;transition:.25s;z-index:20;width:max-content;max-width:calc(100% - 32px);text-align:center;pointer-events:none}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+
+/* ---------- driver app ---------- */
+.drvtag{background:#FFD84D;color:#13284F;font-family:var(--display);font-weight:800;letter-spacing:.3em;padding:2px 14px;border-radius:6px;font-size:15px}
+.lang2{display:flex;gap:8px;margin-top:6px}
+.lang2 button{height:36px;padding:0 14px;border-radius:999px;border:1.5px solid #13284F;color:#13284F;font-weight:700;font-size:13.5px}
+.lang2 button.on{background:#13284F;color:#FFD84D}
+.otpwrap{display:flex;flex-direction:column;gap:10px}
+.nav.n4{grid-template-columns:repeat(4,1fr)}
+.stpill{display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 14px;border-radius:14px;background:var(--surface);box-shadow:var(--shadow);font-weight:800;font-size:14px;color:var(--muted)}
+.stpill i{width:10px;height:10px;border-radius:50%;background:var(--muted)}
+.stpill.on{background:#1E8A5A;color:#fff}
+.stpill.on i{background:#fff;animation:ping 1.4s infinite}
+.chipbtn.lowbal{background:#C23B3B;color:#fff}
+.warn{background:rgba(194,59,59,.10);color:var(--danger);border-radius:14px;padding:10px 14px;font-size:13.5px;font-weight:600}
+.liveCard{display:flex;align-items:center;gap:14px;padding:14px;border-radius:18px;background:rgba(30,138,90,.10)}
+.liveCard b{font-family:var(--display);font-size:18px;display:block;color:var(--ok)}
+.liveCard small{color:var(--muted)}
+.pulse{width:18px;height:18px;border-radius:50%;background:var(--ok);flex:none;box-shadow:0 0 0 0 rgba(30,138,90,.6);animation:ping2 1.4s infinite}
+@keyframes ping2{70%{box-shadow:0 0 0 14px rgba(30,138,90,0)}100%{box-shadow:0 0 0 0 rgba(30,138,90,0)}}
+.slide{--p:0;position:relative;height:62px;border-radius:20px;background:var(--navy);overflow:hidden;display:flex;align-items:center;justify-content:center;user-select:none;-webkit-user-select:none;touch-action:none}
+.slide.green{background:#1E8A5A}.slide.red{background:#C23B3B}
+.slide::before{content:"";position:absolute;inset:0;background:rgba(255,255,255,.18);transform-origin:left;transform:scaleX(var(--p))}
+.slabel{position:relative;color:#fff;font-family:var(--display);font-weight:700;font-size:17px;padding-left:44px;opacity:calc(1 - var(--p))}
+.knob{position:absolute;left:4px;top:4px;width:54px;height:54px;border-radius:16px;background:#FFD84D;color:#13284F;display:flex;align-items:center;justify-content:center;transition:transform .25s;cursor:grab;touch-action:none;box-shadow:0 4px 10px rgba(0,0,0,.2)}
+.slide.done .slabel{opacity:0}
+.demo{align-self:center;border:1.5px dashed var(--line);border-radius:999px;padding:6px 14px;font-size:12.5px;font-weight:600;color:var(--muted)}
+.demo.sm{padding:4px 10px;font-size:11.5px;flex:none}
+.vcard{display:flex;align-items:center;gap:12px;padding:12px;border-radius:18px;border:1px solid var(--line)}
+.vcard .vi{width:68px;height:48px;border-radius:14px;background:var(--yellow-soft);display:flex;align-items:center;justify-content:center;flex:none}
+.vcard div{flex:1;min-width:0}
+.vcard b{font-family:var(--display);font-size:16px;display:block}
+.vcard small{color:var(--muted);font-size:12.5px}
+.veh .plate{flex:none}
+.reqsheet{max-height:72%}
+.reqtop{display:flex;align-items:center;gap:16px}
+.ring{position:relative;width:64px;height:64px;flex:none}
+.ring circle#rg{transition:stroke-dashoffset .2s linear}
+.ring b{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:var(--display);font-size:22px}
+.reqfare{display:flex;flex-direction:column}
+.reqfare small{color:var(--muted);font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase}
+.reqfare b{font-family:var(--display);font-size:36px;line-height:1.05;font-variant-numeric:tabular-nums}
+.reqfare span{font-size:13.5px;color:var(--muted)}
+.pm{font-style:normal;font-weight:700;font-size:11.5px;padding:1px 8px;border-radius:999px}
+.pm.cash{background:var(--yellow-soft);color:var(--yellow-ink)}
+.pm.upi{background:var(--navy-soft);color:var(--navy)}
+.pm.wallet{background:rgba(30,138,90,.12);color:var(--ok)}
+.custrow{display:flex;align-items:center;gap:10px}
+.custrow small{color:var(--muted)}
+.avatar.sm{width:36px;height:36px;font-size:16px;border-radius:12px}
+.cbtns{display:flex;gap:8px;flex:none}
+.round{width:46px;height:46px;border-radius:14px;background:var(--surface-2);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;color:var(--navy)}
+.navbtn{display:flex;align-items:center;justify-content:center;gap:8px;height:54px;border-radius:16px;background:var(--surface-2);border:1.5px solid var(--line);color:var(--navy);font-weight:700;text-decoration:none}
+.sheet .addr{align-items:center}
+.sheet .addr small.kind{display:block}
+.sheet .addr .pill{margin-left:auto;flex:none}
+.bigic{width:56px;height:56px;border-radius:16px;background:var(--yellow);color:#13284F;display:flex;align-items:center;justify-content:center;flex:none}
+.earncard{display:flex;justify-content:space-between;gap:12px;padding:16px;border-radius:20px;background:#13284F;color:#fff}
+.earncard small{opacity:.75;font-size:12.5px}
+.earncard b{display:block;font-family:var(--display);font-size:34px;color:#FFD84D;font-variant-numeric:tabular-nums}
+.ec2{text-align:right;display:flex;flex-direction:column;justify-content:center}
+.ec2 span{font-size:12.5px;opacity:.8}
+.ec2 b{font-size:20px;color:#fff}
+.hero2{display:flex;flex-direction:column;padding:4px 2px}
+.hero2 small{color:var(--muted);font-weight:700;font-size:12px;letter-spacing:.08em;text-transform:uppercase}
+.hero2 b{font-family:var(--display);font-size:42px;line-height:1.1;font-variant-numeric:tabular-nums}
+.hero2 span{color:var(--muted);font-size:13.5px}
+.chart{position:relative;display:grid;grid-template-columns:auto 1fr;gap:8px;height:190px;padding:12px 12px 8px;border:1px solid var(--line);border-radius:18px}
+.yax{display:flex;flex-direction:column;justify-content:space-between;font-size:10.5px;color:var(--muted);padding-bottom:20px;font-variant-numeric:tabular-nums}
+.bars{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;align-items:end;background:linear-gradient(var(--line) 1px,transparent 1px) 0 0/100% calc((100% - 20px)/2);padding-bottom:0}
+.bcol{height:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:4px;padding:0}
+.bar{position:relative;width:min(70%,22px);background:var(--navy-2);border-radius:4px 4px 0 0;min-height:2px;transition:background .15s}
+.bcol.today .bar{background:var(--navy)}
+.bcol.hl .bar{background:#F5B400}
+.bar em{position:absolute;bottom:100%;left:50%;transform:translateX(-50%);font-style:normal;font-size:10.5px;font-weight:700;color:var(--fg);white-space:nowrap;padding-bottom:2px}
+.bcol small{height:16px;font-size:11px;color:var(--muted)}
+.ctip{position:absolute;right:12px;top:8px;background:#13284F;color:#fff;font-size:12px;font-weight:600;padding:4px 10px;border-radius:8px}
+.steps{display:flex;flex-direction:column;gap:8px;font-size:13.5px}
+.steps div{display:flex;gap:10px;align-items:flex-start}
+.steps i{font-style:normal;width:22px;height:22px;border-radius:50%;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex:none}
+.st.okst{background:rgba(30,138,90,.12);color:var(--ok)}
+.st.warnst{background:rgba(245,180,0,.18);color:var(--yellow-ink)}
+.row .ic .pm{font-size:10px;padding:1px 5px}
+</style>
+
+<div class="app" id="app"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* shared with the customer app: icons, places, fares, map engine */
+const I = {
+  bike:`<svg class="vsvg" width="58" height="36" viewBox="0 0 64 40" fill="none" aria-hidden="true"><g class="bd"><path d="M14 30L26 20H40L50 30" stroke="#13284F" stroke-width="2.6" stroke-linejoin="round"/><path d="M14 27H28" stroke="#8A96AD" stroke-width="2.4" stroke-linecap="round"/><path d="M23 19Q27 12 36 13L41 19Z" fill="#FFD84D" stroke="#13284F" stroke-width="2"/><path d="M15 16H27L25 20H17Z" fill="#13284F"/><path d="M42 10L47 22" stroke="#13284F" stroke-width="2.6" stroke-linecap="round"/><path d="M39 10H45" stroke="#13284F" stroke-width="2.4" stroke-linecap="round"/><circle cx="48" cy="15" r="2.2" fill="#FFD84D" stroke="#13284F" stroke-width="1.2"/></g><g class="wh"><circle cx="14" cy="30" r="7" fill="#13284F"/><circle cx="14" cy="30" r="3.5" fill="#C9D3E6"/><path d="M10.8 30H17.1M14 26.9V33.1" stroke="#13284F" stroke-width="1.3"/></g><g class="wh"><circle cx="50" cy="30" r="7" fill="#13284F"/><circle cx="50" cy="30" r="3.5" fill="#C9D3E6"/><path d="M46.9 30H53.1M50 26.9V33.1" stroke="#13284F" stroke-width="1.3"/></g></svg>`,
+  auto:`<svg class="vsvg" width="58" height="36" viewBox="0 0 64 40" fill="none" aria-hidden="true"><g class="bd"><path d="M8 20V11Q9 6 16 6H38Q42 6 43 10L44 20Z" fill="#202124" stroke="#4A4F57" stroke-width="1.4"/><path d="M12 11H37V19H12Z" fill="#3B4252"/><path d="M14 12H24V18H14Z" fill="#F7C600" opacity=".9"/><path d="M5 31V20H44L50 21Q56 23 57 28V31Z" fill="#F7C600" stroke="#13284F" stroke-width="2" stroke-linejoin="round"/><path d="M43 9H46L50.5 20H45Z" fill="#CFE3F5" stroke="#13284F" stroke-width="1.2"/><path d="M8 25H42" stroke="#13284F" stroke-width="1.6"/><circle cx="55" cy="25" r="1.8" fill="#fff" stroke="#13284F"/></g><g class="wh"><circle cx="15" cy="31" r="5.2" fill="#13284F"/><circle cx="15" cy="31" r="2.6" fill="#C9D3E6"/><path d="M12.7 31H17.3M15 28.7V33.3" stroke="#13284F" stroke-width="1.3"/></g><g class="wh"><circle cx="50" cy="31" r="5.2" fill="#13284F"/><circle cx="50" cy="31" r="2.6" fill="#C9D3E6"/><path d="M47.7 31H52.3M50 28.7V33.3" stroke="#13284F" stroke-width="1.3"/></g></svg>`,
+  car:`<svg class="vsvg" width="58" height="36" viewBox="0 0 64 40" fill="none" aria-hidden="true"><g class="bd"><path d="M5 30V24Q5 21 9 21L15 20L21 12.5Q22 11 24 11H39Q41 11 42 12.5L49 19L57 21Q60 22 60 26V30Z" fill="#FFFFFF" stroke="#13284F" stroke-width="2" stroke-linejoin="round"/><path d="M23 13H31V19H18ZM33 13H39L44.5 19H33Z" fill="#BFD3F2" stroke="#13284F" stroke-width="1.3" stroke-linejoin="round"/><path d="M6 24.5H59" stroke="#FFD84D" stroke-width="2.6"/><rect x="27" y="6.5" width="10" height="4" rx="1" fill="#FFD84D" stroke="#13284F" stroke-width="1.2"/><circle cx="58" cy="23.5" r="1.5" fill="#FFD84D"/><path d="M5.5 22.5H8" stroke="#D9443B" stroke-width="2.2"/></g><g class="wh"><circle cx="16" cy="31" r="5.5" fill="#13284F"/><circle cx="16" cy="31" r="2.8" fill="#C9D3E6"/><path d="M13.5 31H18.5M16 28.5V33.5" stroke="#13284F" stroke-width="1.3"/></g><g class="wh"><circle cx="49" cy="31" r="5.5" fill="#13284F"/><circle cx="49" cy="31" r="2.8" fill="#C9D3E6"/><path d="M46.5 31H51.5M49 28.5V33.5" stroke="#13284F" stroke-width="1.3"/></g></svg>`,
+  mini:`<svg class="vsvg" width="58" height="36" viewBox="0 0 64 40" fill="none" aria-hidden="true"><g class="bd"><path d="M6 30V14Q6 9 11 9H38Q41 9 43 12L49 19L56 21Q58 22 58 25V30Z" fill="#FFD84D" stroke="#13284F" stroke-width="2" stroke-linejoin="round"/><path d="M10 12H22V19H10ZM24 12H35V19H24ZM37 12H40.5L45 19H37Z" fill="#fff" stroke="#13284F" stroke-width="1.4" stroke-linejoin="round"/><path d="M23 12V28" stroke="#13284F" stroke-width="1"/><circle cx="56" cy="24" r="1.6" fill="#fff" stroke="#13284F"/><path d="M6 21H8" stroke="#D9443B" stroke-width="2.4"/><rect x="19" y="4.5" width="10" height="4" rx="1" fill="#FFD84D" stroke="#13284F" stroke-width="1.2"/></g><g class="wh"><circle cx="15" cy="31" r="5.5" fill="#13284F"/><circle cx="15" cy="31" r="2.8" fill="#C9D3E6"/><path d="M12.5 31H17.5M15 28.5V33.5" stroke="#13284F" stroke-width="1.3"/></g><g class="wh"><circle cx="47" cy="31" r="5.5" fill="#13284F"/><circle cx="47" cy="31" r="2.8" fill="#C9D3E6"/><path d="M44.5 31H49.5M47 28.5V33.5" stroke="#13284F" stroke-width="1.3"/></g></svg>`,
+  suv:`<svg class="vsvg" width="58" height="36" viewBox="0 0 64 40" fill="none" aria-hidden="true"><g class="bd"><path d="M4 30V17Q4 12 9 12L13 11H45Q47 11 49 13L54 19L60 21Q62 22 62 26V30Z" fill="#3D66B0" stroke="#13284F" stroke-width="2" stroke-linejoin="round"/><path d="M9 14H20V19H8ZM22 14H33V19H22ZM35 14H45L49.5 19H35Z" fill="#D6E4FA" stroke="#13284F" stroke-width="1.3" stroke-linejoin="round"/><path d="M12 8.5H44" stroke="#13284F" stroke-width="2" stroke-linecap="round"/><path d="M5 24H61" stroke="#FFD84D" stroke-width="2.6"/><circle cx="60" cy="23.5" r="1.6" fill="#FFD84D"/><path d="M4.5 21H7" stroke="#D9443B" stroke-width="2.2"/><rect x="24" y="3.5" width="10" height="4" rx="1" fill="#FFD84D" stroke="#13284F" stroke-width="1.2"/></g><g class="wh"><circle cx="16" cy="31" r="6" fill="#13284F"/><circle cx="16" cy="31" r="3.0" fill="#C9D3E6"/><path d="M13.3 31H18.7M16 28.3V33.7" stroke="#13284F" stroke-width="1.3"/></g><g class="wh"><circle cx="51" cy="31" r="6" fill="#13284F"/><circle cx="51" cy="31" r="3.0" fill="#C9D3E6"/><path d="M48.3 31H53.7M51 28.3V33.7" stroke="#13284F" stroke-width="1.3"/></g></svg>`,
+  trav:`<svg class="vsvg" width="58" height="36" viewBox="0 0 64 40" fill="none" aria-hidden="true"><g class="bd"><path d="M3 30V9Q3 6 6 6H47Q50 6 52 9L57 17L61 19Q62 20 62 23V30Z" fill="#FFFFFF" stroke="#13284F" stroke-width="2" stroke-linejoin="round"/><path d="M7 10H16V17H7ZM18 10H27V17H18ZM29 10H38V17H29ZM40 10H47.5L52 17H40Z" fill="#BFD3F2" stroke="#13284F" stroke-width="1.3" stroke-linejoin="round"/><path d="M4 22H61" stroke="#FFD84D" stroke-width="3"/><path d="M38 18V29" stroke="#13284F" stroke-width="1"/><rect x="22" y="2" width="10" height="4" rx="1" fill="#FFD84D" stroke="#13284F" stroke-width="1.2"/><circle cx="60.5" cy="24.5" r="1.5" fill="#FFD84D"/><path d="M3.5 25H6" stroke="#D9443B" stroke-width="2.2"/></g><g class="wh"><circle cx="14" cy="31" r="5.5" fill="#13284F"/><circle cx="14" cy="31" r="2.8" fill="#C9D3E6"/><path d="M11.5 31H16.5M14 28.5V33.5" stroke="#13284F" stroke-width="1.3"/></g><g class="wh"><circle cx="50" cy="31" r="5.5" fill="#13284F"/><circle cx="50" cy="31" r="2.8" fill="#C9D3E6"/><path d="M47.5 31H52.5M50 28.5V33.5" stroke="#13284F" stroke-width="1.3"/></g></svg>`,
+  bus:`<svg class="vsvg" width="58" height="36" viewBox="0 0 64 40" fill="none" aria-hidden="true"><g class="bd"><path d="M2 30V8Q2 4 6 4H57Q61 4 61 8V30Z" fill="#FFD84D" stroke="#13284F" stroke-width="2" stroke-linejoin="round"/><path d="M5 8H13V16H5ZM15 8H23V16H15ZM25 8H33V16H25ZM35 8H43V16H35ZM45 8H52V16H45Z" fill="#BFD3F2" stroke="#13284F" stroke-width="1.2"/><path d="M54 8H59V28H54Z" fill="#BFD3F2" stroke="#13284F" stroke-width="1.2"/><path d="M2 20H54" stroke="#13284F" stroke-width="2.4"/><circle cx="59" cy="26" r="1.4" fill="#fff" stroke="#13284F"/></g><g class="wh"><circle cx="13" cy="31" r="5.5" fill="#13284F"/><circle cx="13" cy="31" r="2.8" fill="#C9D3E6"/><path d="M10.5 31H15.5M13 28.5V33.5" stroke="#13284F" stroke-width="1.3"/></g><g class="wh"><circle cx="46" cy="31" r="5.5" fill="#13284F"/><circle cx="46" cy="31" r="2.8" fill="#C9D3E6"/><path d="M43.5 31H48.5M46 28.5V33.5" stroke="#13284F" stroke-width="1.3"/></g></svg>`,
+  search:`<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#13284F" stroke-width="2.5" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>`,
+  mic:`<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#13284F" stroke-width="2.4" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0014 0M12 18v3"/></svg>`,
+  back:`<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>`,
+  pin:`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 22s7-6.5 7-12a7 7 0 10-14 0c0 5.5 7 12 7 12z"/><circle cx="12" cy="10" r="2.5"/></svg>`,
+  home:`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="M3 11l9-7 9 7v9a1 1 0 01-1 1h-5v-6h-6v6H4a1 1 0 01-1-1z"/></svg>`,
+  hosp:`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="3" width="18" height="18" rx="4"/><path d="M12 8v8M8 12h8"/></svg>`,
+  train:`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="5" y="3" width="14" height="13" rx="3"/><path d="M5 10h14M8 20l2-4M16 20l-2-4"/></svg>`,
+  clock:`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>`,
+  gps:`<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>`,
+  now:`<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#13284F" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></svg>`,
+  sched:`<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4M12 14v3l2 1"/></svg>`,
+  rent:`<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2M9 2h6"/></svg>`,
+  out:`<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20L10 4h4l6 16M12 8v2M12 13v2M12 18v1"/></svg>`,
+  navHome:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="M3 11l9-7 9 7v9a1 1 0 01-1 1h-5v-6h-6v6H4a1 1 0 01-1-1z"/></svg>`,
+  navTrips:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="6" cy="18" r="2.5"/><circle cx="18" cy="6" r="2.5"/><path d="M8.5 18H15a3 3 0 000-6H9a3 3 0 010-6h6.5"/></svg>`,
+  navWallet:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><rect x="3" y="6" width="18" height="14" rx="3"/><path d="M3 10h18M16 15h2"/></svg>`,
+  navHelp:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 114 2c-1 .7-1.5 1.2-1.5 2.5M12 17h.01"/></svg>`,
+  navMe:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/></svg>`,
+  cash:`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/></svg>`,
+  upi:`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h3v3h-3zM20 14v7h-6"/></svg>`
+};
+
+
+/* ---------- Vellore places (approx. coordinates) ---------- */
+const P = {
+  home:{ta:'காந்தி நகர், காட்பாடி',en:'Gandhi Nagar, Katpadi',lat:12.9550,lon:79.1390,ic:'home'},
+  katpadi:{ta:'காட்பாடி ஜங்ஷன்',en:'Katpadi Junction',sub:'Railway station',lat:12.9716,lon:79.1376,ic:'train'},
+  vit:{ta:'VIT பல்கலைக்கழகம்',en:'VIT University',sub:'Katpadi',lat:12.9692,lon:79.1559,ic:'pin'},
+  cmc:{ta:'CMC மருத்துவமனை',en:'CMC Hospital',sub:'Ida Scudder Road',lat:12.9246,lon:79.1356,ic:'hosp'},
+  newbus:{ta:'புதிய பேருந்து நிலையம்',en:'New Bus Stand',sub:'Vellore',lat:12.9349,lon:79.1435,ic:'pin'},
+  oldbus:{ta:'பழைய பேருந்து நிலையம்',en:'Old Bus Stand',sub:'Vellore town',lat:12.9180,lon:79.1330,ic:'pin'},
+  fort:{ta:'வேலூர் கோட்டை',en:'Vellore Fort',sub:'Jalakandeswarar Temple',lat:12.9206,lon:79.1295,ic:'pin'},
+  golden:{ta:'ஸ்ரீபுரம் தங்கக் கோவில்',en:'Sripuram Golden Temple',sub:'Thirumalaikodi',lat:12.8710,lon:79.0880,ic:'pin'},
+  sathu:{ta:'சத்துவாச்சாரி',en:'Sathuvachari',sub:'Vellore',lat:12.9370,lon:79.1640,ic:'pin'},
+  bagayam:{ta:'பாகாயம்',en:'Bagayam',sub:'Vellore',lat:12.8890,lon:79.1350,ic:'pin'}
+};
+let ROADS=[['home','katpadi'],['home','vit'],['katpadi','vit'],['home','newbus'],['newbus','sathu'],['newbus','oldbus'],['oldbus','fort'],['fort','cmc'],['cmc','oldbus'],['oldbus','bagayam'],['bagayam','golden'],['newbus','cmc'],['vit','sathu']];
+function hav(a,b){const R=6371,r=Math.PI/180,dl=(b.lat-a.lat)*r,dn=(b.lon-a.lon)*r;const x=Math.sin(dl/2)**2+Math.cos(a.lat*r)*Math.cos(b.lat*r)*Math.sin(dn/2)**2;return 2*R*Math.asin(Math.sqrt(x))}
+function route(from,to){ // dijkstra on the tiny road graph
+  const d={},prev={},q=new Set(Object.keys(P));Object.keys(P).forEach(k=>d[k]=Infinity);d[from]=0;
+  while(q.size){let u=null;q.forEach(k=>{if(u===null||d[k]<d[u])u=k});q.delete(u);if(u===to)break;
+    ROADS.forEach(([a,b])=>{let v=a===u?b:b===u?a:null;if(v&&q.has(v)){const nd=d[u]+hav(P[u],P[v]);if(nd<d[v]){d[v]=nd;prev[v]=u}}})}
+  const path=[to];while(path[0]!==from&&prev[path[0]])path.unshift(prev[path[0]]);
+  const viaKm=d[to]*1.25,directKm=hav(P[from],P[to])*1.35;
+  if((from==='pick'||from==='drop'||to==='pick'||to==='drop')&&directKm<viaKm)return {path:[from,to],km:Math.max(1.2,directKm)};
+  return {path,km:Math.max(1.2,viaKm)};
+}
+I.sedan=I.car;
+const VEH=[
+  {id:'bike',en:'Bike',ta:'பைக்',seats:1,base:25,per:7,eta:2},
+  {id:'auto',en:'Auto',ta:'ஆட்டோ',seats:3,base:40,per:16,eta:3},
+  {id:'mini',en:'Mini',ta:'Mini கார்',seats:4,base:100,per:16,eta:4,models:'Swift · Wagon R'},
+  {id:'sedan',en:'Sedan',ta:'Sedan கார்',seats:4,base:130,per:19,eta:5,models:'Dzire · Aura · Etios'},
+  {id:'suv',en:'SUV',ta:'SUV',seats:6,base:180,per:22,eta:6,models:'Ertiga · Rumion',tag:'7-seater'},
+  {id:'trav',en:'Traveller',ta:'Traveller',seats:12,base:600,per:28,eta:25,models:'Tempo Traveller',tag:'12-seater'},
+  {id:'bus',en:'Mini Bus',ta:'Mini Bus',seats:24,base:1200,per:40,eta:40,models:'Mini bus · AC / Non-AC',tag:'24-seater'}
+];
+const fare=(v,km)=>Math.round((v.base+v.per*Math.max(0,km-1.5))/5)*5;
+
+
+Object.assign(I,{
+  phone:`<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="M5 3h4l2 5-2.5 1.5a11 11 0 006 6L16 13l5 2v4a2 2 0 01-2 2A16 16 0 013 5a2 2 0 012-2z"/></svg>`,
+  chat:`<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="M4 5h16v11H9l-5 4z"/></svg>`,
+  share:`<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="M8.2 10.8l7.6-4.4M8.2 13.2l7.6 4.4"/></svg>`,
+  shield:`<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/></svg>`,
+  tick:`<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#FFD84D" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7"/></svg>`
+});
+Object.assign(I,{
+  navEarn:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>`,
+  nav:`<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"><path d="M3 11l18-8-8 18-2-8z"/></svg>`
+});
+
+/* position along a lat/lon polyline at fraction f */
+function along(pts,f){
+  const seg=[];let tot=0;for(let i=1;i<pts.length;i++){const d=hav(pts[i-1],pts[i]);seg.push(d);tot+=d}
+  let want=Math.max(0,Math.min(1,f))*tot,i=0;while(i<seg.length-1&&want>seg[i]){want-=seg[i];i++}
+  const a=pts[i],b=pts[i+1]||pts[i],k=seg[i]?want/seg[i]:1;
+  return{lat:a.lat+(b.lat-a.lat)*k,lon:a.lon+(b.lon-a.lon)*k,nlat:b.lat,nlon:b.lon,idx:i};
+}
+
+function modal(html,bind){const m=document.createElement('div');m.className='modal';m.innerHTML=`<div class="card pad">${html}</div>`;app.appendChild(m);const close=()=>m.remove();m.onclick=e=>{if(e.target===m)close()};bind&&bind(m,close);return close}
+/* ---------- interactive Vellore map: drag, pinch, wheel, double-tap, fling ---------- */
+const AREAS=[
+  {ta:'காட்பாடி',en:'Katpadi',lat:12.9690,lon:79.1440},{ta:'காந்தி நகர்',en:'Gandhi Nagar',lat:12.9550,lon:79.1390},
+  {ta:'பிரம்மபுரம்',en:'Brahmapuram',lat:12.9850,lon:79.1450},{ta:'விருதம்பட்டு',en:'Viruthampet',lat:12.9480,lon:79.1220},
+  {ta:'சத்துவாச்சாரி',en:'Sathuvachari',lat:12.9370,lon:79.1640},{ta:'தோட்டப்பாளையம்',en:'Thottapalayam',lat:12.9265,lon:79.1420},
+  {ta:'கொசப்பேட்டை',en:'Kosapet',lat:12.9300,lon:79.1250},{ta:'வேலூர் டவுன்',en:'Vellore Town',lat:12.9220,lon:79.1330},
+  {ta:'சாய்நாதபுரம்',en:'Sainathapuram',lat:12.9150,lon:79.1440},{ta:'அல்லாபுரம்',en:'Allapuram',lat:12.9050,lon:79.1350},
+  {ta:'பாகாயம்',en:'Bagayam',lat:12.8890,lon:79.1350},{ta:'திருமலைக்கோடி',en:'Thirumalaikodi',lat:12.8730,lon:79.0920}
+];
+const COS=Math.cos(12.94*Math.PI/180);
+const RIVER=[[79.04,12.9440],[79.08,12.9475],[79.11,12.9452],[79.135,12.9468],[79.16,12.9490],[79.19,12.9462],[79.23,12.9478]];
+const hsh=(a,b)=>{let h=(Math.imul(a,374761393)+Math.imul(b,668265263))|0;h=Math.imul(h^(h>>>13),1274126177);return((h^(h>>>16))>>>0)/4294967295};
+const CELL=.0011,LX=i=>i*CELL+(hsh(i,7)-.5)*CELL*.35,LY=j=>j*CELL*.9+(hsh(j,11)-.5)*CELL*.3;
+const WB=(()=>{let sd=7;const r=()=>(sd=(sd*9301+49297)%233280)/233280;const a=[];for(let i=0;i<220;i++)a.push([79.06+r()*.14,12.86+r()*.14,.002+r()*.005,.0015+r()*.004]);return a})();
+const ramp=(v,a,b)=>Math.max(0,Math.min(1,(v-a)/(b-a)));
+
+function makeMap(cv,o={}){
+  const ctx=cv.getContext('2d'),dpr=Math.min(2,window.devicePixelRatio||1);
+  const cam={lat:P.home.lat,lon:P.home.lon,s:20000},MIN=2500,MAX=700000;
+  const clamp=s=>Math.max(MIN,Math.min(MAX,s));
+  let W=0,H=0,anim=null,wheelT=0;
+  const X=lon=>W/2+(lon-cam.lon)*cam.s*COS,Y=lat=>H/2+(cam.lat-lat)*cam.s;
+  const toLL=(x,y)=>({lon:cam.lon+(x-W/2)/(cam.s*COS),lat:cam.lat-(y-H/2)/cam.s});
+  function size(){const r=cv.getBoundingClientRect();W=r.width;H=r.height;cv.width=Math.round(W*dpr);cv.height=Math.round(H*dpr);ctx.setTransform(dpr,0,0,dpr,0,0)}
+  const end=()=>o.onEnd&&o.onEnd({lat:cam.lat,lon:cam.lon});
+  const pan=(dx,dy)=>{cam.lon-=dx/(cam.s*COS);cam.lat+=dy/cam.s};
+  function zoomAt(x,y,f){const ll=toLL(x,y);cam.s=clamp(cam.s*f);cam.lon=ll.lon-(x-W/2)/(cam.s*COS);cam.lat=ll.lat+(y-H/2)/cam.s}
+  function flyTo(lat,lon,s,ms=550){const a={...cam},b={lat,lon,s:clamp(s)},t0=performance.now();o.onStart&&o.onStart();
+    anim=now=>{let k=Math.min(1,(now-t0)/ms);k=1-Math.pow(1-k,3);cam.lat=a.lat+(b.lat-a.lat)*k;cam.lon=a.lon+(b.lon-a.lon)*k;cam.s=a.s*Math.pow(b.s/a.s,k);if(k>=1){anim=null;end()}}}
+  function zoomAtAnim(x,y,f){const ll=toLL(x,y),s2=clamp(cam.s*f);flyTo(ll.lat+(y-H/2)/s2,ll.lon-(x-W/2)/(s2*COS),s2,320)}
+  function fit(pts,pad=40,top=0){if(!W)size();const la=pts.map(p=>p.lat),lo=pts.map(p=>p.lon);
+    const dLa=Math.max(.004,Math.max(...la)-Math.min(...la)),dLo=Math.max(.004,Math.max(...lo)-Math.min(...lo));
+    cam.s=clamp(Math.min((W-pad*2)/(dLo*COS),(H-pad*2-top)/dLa));
+    cam.lat=(Math.max(...la)+Math.min(...la))/2+top/2/cam.s;cam.lon=(Math.max(...lo)+Math.min(...lo))/2}
+
+  /* gestures */
+  const pts=new Map();let moved=false,lastT=0,vx=0,vy=0,lastTap=0,down=null;
+  const pos=e=>{const r=cv.getBoundingClientRect();return{x:e.clientX-r.left,y:e.clientY-r.top}};
+  const cen=()=>{let x=0,y=0;pts.forEach(p=>{x+=p.x;y+=p.y});return{x:x/pts.size,y:y/pts.size}};
+  const spr=c=>{let d=0;pts.forEach(p=>{d+=Math.hypot(p.x-c.x,p.y-c.y)});return d/pts.size};
+  cv.addEventListener('pointerdown',e=>{e.preventDefault();try{cv.setPointerCapture(e.pointerId)}catch(_){}
+    pts.set(e.pointerId,pos(e));anim=null;if(pts.size===1){moved=false;vx=vy=0;lastT=performance.now();down=pos(e);o.onStart&&o.onStart()}else moved=true});
+  cv.addEventListener('pointermove',e=>{if(!pts.has(e.pointerId))return;
+    const c0=cen(),s0=spr(c0);pts.set(e.pointerId,pos(e));const c1=cen(),s1=spr(c1);
+    const dx=c1.x-c0.x,dy=c1.y-c0.y;pan(dx,dy);if(pts.size>1&&s0>4)zoomAt(c1.x,c1.y,s1/s0);
+    const now=performance.now(),dt=Math.max(1,now-lastT);vx=.6*vx+.4*dx/dt;vy=.6*vy+.4*dy/dt;lastT=now;
+    if(down&&Math.hypot(c1.x-down.x,c1.y-down.y)>5)moved=true});
+  const up=e=>{if(!pts.has(e.pointerId))return;pts.delete(e.pointerId);if(pts.size){vx=vy=0;return}
+    const now=performance.now();
+    if(!moved){if(now-lastTap<320){const p=pos(e);lastTap=0;zoomAtAnim(p.x,p.y,2.4);return}lastTap=now;end();return}
+    if(now-lastT>90)vx=vy=0;
+    if(Math.hypot(vx,vy)>.25){let t0=now;anim=n=>{const dt=n-t0;t0=n;pan(vx*dt,vy*dt);const d=Math.pow(.9,dt/16);vx*=d;vy*=d;if(Math.hypot(vx,vy)<.02){anim=null;end()}}}
+    else end()};
+  cv.addEventListener('pointerup',up);cv.addEventListener('pointercancel',up);
+  cv.addEventListener('wheel',e=>{e.preventDefault();const p=pos(e);if(!wheelT&&o.onStart)o.onStart();anim=null;
+    zoomAt(p.x,p.y,Math.exp(-e.deltaY*(e.ctrlKey?.01:.0018)));clearTimeout(wheelT);wheelT=setTimeout(()=>{wheelT=0;end()},220)},{passive:false});
+
+  /* drawing */
+  const cars=Array.from({length:6},(_,i)=>({e:ROADS[(i*3)%ROADS.length],t:hsh(i,3),s:.0012+hsh(i,5)*.0018,k:['auto','bike','car','suv'][i%4]}));
+  function frame(ts){
+    if(!document.body.contains(cv))return;
+    const r=cv.getBoundingClientRect();if(r.width!==W||r.height!==H)size();
+    if(anim)anim(ts);
+    const css=getComputedStyle(document.documentElement),c=n=>css.getPropertyValue(n).trim();
+    ctx.fillStyle=c('--map-land');ctx.fillRect(0,0,W,H);
+    const tl=toLL(0,0),br=toLL(W,H);
+    // neighbourhood blocks (far view)
+    const aBlk=1-ramp(cam.s,60000,120000);
+    if(aBlk>0){ctx.globalAlpha=aBlk;ctx.fillStyle=c('--map-block');WB.forEach(b=>{const x=X(b[0]),y=Y(b[1]+b[3]),w=b[2]*cam.s*COS,h=b[3]*cam.s;if(x>W||y>H||x+w<0||y+h<0)return;ctx.beginPath();ctx.roundRect(x,y,w,h,Math.min(8,w/4));ctx.fill()});ctx.globalAlpha=1}
+    // streets + buildings (close view)
+    const aSt=ramp(cam.s,16000,32000),aBd=ramp(cam.s,55000,110000);
+    const i0=Math.floor(tl.lon/CELL)-1,i1=Math.ceil(br.lon/CELL)+1,j0=Math.floor(br.lat/(CELL*.9))-1,j1=Math.ceil(tl.lat/(CELL*.9))+1;
+    if(aSt>0&&(i1-i0)*(j1-j0)<4000){
+      const sw=Math.max(2,cam.s*.00007);
+      if(aBd>0){ctx.globalAlpha=aBd;ctx.fillStyle=c('--map-bldg');
+        for(let i=i0;i<i1;i++)for(let j=j0;j<j1;j++){const x0=X(LX(i)),x1=X(LX(i+1)),y0=Y(LY(j+1)),y1=Y(LY(j));const m=sw/2+3,cw=(x1-x0-2*m)/3,ch=(y1-y0-2*m)/2;
+          for(let a=0;a<3;a++)for(let b=0;b<2;b++){const h=hsh(i*7+a,j*13+b);if(h<.16)continue;const g=2+h*3;ctx.beginPath();ctx.roundRect(x0+m+a*cw+g,y0+m+b*ch+g,cw-2*g,ch-2*g,2);ctx.fill()}}
+        ctx.globalAlpha=1}
+      ctx.globalAlpha=aSt;ctx.strokeStyle=c('--map-road');ctx.lineWidth=sw;ctx.beginPath();
+      for(let i=i0;i<=i1;i++){const x=X(LX(i));ctx.moveTo(x,0);ctx.lineTo(x,H)}
+      for(let j=j0;j<=j1;j++){const y=Y(LY(j));ctx.moveTo(0,y);ctx.lineTo(W,y)}
+      ctx.stroke();ctx.globalAlpha=1}
+    // Palar river
+    ctx.strokeStyle=c('--map-river');ctx.lineWidth=Math.max(10,cam.s*.0016);ctx.lineCap='round';ctx.lineJoin='round';ctx.beginPath();
+    RIVER.forEach(([lo,la],i)=>i?ctx.lineTo(X(lo),Y(la)):ctx.moveTo(X(lo),Y(la)));ctx.stroke();
+    const rl=RIVER.find(([lo])=>X(lo)>20)||RIVER[0];
+    ctx.fillStyle=c('--map-label');ctx.font='italic 600 11px Hind Madurai, sans-serif';ctx.fillText(S.lang==='ta'?'பாலாறு':'Palar River',Math.max(8,X(rl[0])),Y(rl[1])-Math.max(8,cam.s*.0009));
+    // main roads
+    const rw=Math.min(30,Math.max(7,cam.s*.00012));
+    [[c('--map-edge'),rw+4],[c('--map-road'),rw]].forEach(([col,w])=>{ctx.strokeStyle=col;ctx.lineWidth=w;ctx.beginPath();ROADS.forEach(([a,b])=>{ctx.moveTo(X(P[a].lon),Y(P[a].lat));ctx.lineTo(X(P[b].lon),Y(P[b].lat))});ctx.stroke()});
+    // route
+    const path=o.path;
+    const LP=o.line?o.line():(path&&path.length>1?path.map(k=>P[k]):null);
+    if(LP&&LP.length>1){ctx.strokeStyle=c('--navy');ctx.lineWidth=Math.max(6,rw*.6);ctx.beginPath();LP.forEach((p,i)=>i?ctx.lineTo(X(p.lon),Y(p.lat)):ctx.moveTo(X(p.lon),Y(p.lat)));ctx.stroke();
+      ctx.setLineDash([2,10]);ctx.strokeStyle='#FFD84D';ctx.lineWidth=3;ctx.lineDashOffset=-(ts/40%12);ctx.stroke();ctx.setLineDash([])}
+    // vehicles
+    if(o.cars)cars.forEach(v=>{v.t+=v.s;if(v.t>1){v.t=0;v.e=ROADS[Math.floor(Math.random()*ROADS.length)]}const a=P[v.e[0]],b=P[v.e[1]];
+      const ax=X(a.lon),ay=Y(a.lat),bx=X(b.lon),by=Y(b.lat),x=ax+(bx-ax)*v.t,y=ay+(by-ay)*v.t;
+      ctx.save();ctx.translate(x,y);ctx.rotate(Math.atan2(by-ay,bx-ax));ctx.fillStyle='#13284F';ctx.beginPath();ctx.roundRect(-9,-6,18,12,4);ctx.fill();ctx.fillStyle='#FFD84D';ctx.beginPath();ctx.roundRect(-6,-4,v.k==='bike'?6:12,8,2);ctx.fill();ctx.restore()});
+    // places
+    Object.keys(P).forEach(k=>{if((o.hide||[]).includes(k))return;if(CUSTOM.includes(k)&&!(path&&path.includes(k))&&!o.hide)return;
+      const p=P[k],x=X(p.lon),y=Y(p.lat);if(x<-60||x>W+60||y<-40||y>H+40)return;
+      const isDest=path&&k===path[path.length-1],isFrom=path&&k===path[0],isHome=k==='home';
+      if(isHome&&!isFrom&&!isDest){const pulse=(ts/1200)%1;ctx.fillStyle=`rgba(44,81,150,${.35*(1-pulse)})`;ctx.beginPath();ctx.arc(x,y,10+pulse*18,0,7);ctx.fill();
+        ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(x,y,9,0,7);ctx.fill();ctx.fillStyle='#2C5196';ctx.beginPath();ctx.arc(x,y,6,0,7);ctx.fill()}
+      else if(isDest||isFrom){ctx.fillStyle=isFrom?'#1E8A5A':'#13284F';ctx.beginPath();ctx.arc(x,y-18,11,0,7);ctx.fill();ctx.beginPath();ctx.moveTo(x-7,y-12);ctx.lineTo(x,y);ctx.lineTo(x+7,y-12);ctx.fill();ctx.fillStyle='#FFD84D';ctx.beginPath();ctx.arc(x,y-18,5,0,7);ctx.fill()}
+      else{ctx.fillStyle=c('--surface');ctx.strokeStyle=c('--map-label');ctx.lineWidth=2;ctx.beginPath();ctx.arc(x,y,4,0,7);ctx.fill();ctx.stroke()}
+      const big=isDest||isFrom||isHome;ctx.font=(big?'700 12.5px ':'600 11px ')+'Hind Madurai, sans-serif';const lb=p[S.lang];const tw=ctx.measureText(lb).width;
+      const lx=Math.min(Math.max(x+10,6),W-tw-10),ly=(isDest||isFrom)?y-34:y-8;
+      ctx.fillStyle=c('--surface');ctx.globalAlpha=.88;ctx.beginPath();ctx.roundRect(lx-4,ly-12,tw+8,17,5);ctx.fill();ctx.globalAlpha=1;
+      ctx.fillStyle=big?c('--fg'):c('--map-label');ctx.fillText(lb,lx,ly)});
+    (o.pins||[]).forEach(q=>{const x=X(q.lon),y=Y(q.lat);ctx.fillStyle=q.col;ctx.beginPath();ctx.arc(x,y-18,11,0,7);ctx.fill();ctx.beginPath();ctx.moveTo(x-7,y-12);ctx.lineTo(x,y);ctx.lineTo(x+7,y-12);ctx.fill();ctx.fillStyle='#FFD84D';ctx.beginPath();ctx.arc(x,y-18,5,0,7);ctx.fill()});
+    // live driver
+    if(o.driver){const d=o.driver();if(d){const x=X(d.lon),y=Y(d.lat),ang=Math.atan2(Y(d.nlat)-y,X(d.nlon)-x)||0;const pl=(ts/900)%1;
+      ctx.fillStyle=`rgba(30,58,110,${.25*(1-pl)})`;ctx.beginPath();ctx.arc(x,y,16+pl*16,0,7);ctx.fill();
+      ctx.save();ctx.translate(x,y);ctx.rotate(ang);ctx.fillStyle='#fff';ctx.beginPath();ctx.roundRect(-16,-11,32,22,8);ctx.fill();
+      ctx.fillStyle='#13284F';ctx.beginPath();ctx.roundRect(-14,-9,28,18,6);ctx.fill();ctx.fillStyle='#FFD84D';ctx.beginPath();ctx.roundRect(-3,-6,11,12,3);ctx.fill();ctx.restore()}}
+    // scale bar
+    if(o.scale){const mpp=111320/cam.s;const nice=[5,10,20,50,100,200,500,1000,2000,5000].find(v=>v/mpp>=70)||5000;const px=nice/mpp,sx=16,sy=H-42;
+      ctx.fillStyle=c('--surface');ctx.globalAlpha=.9;ctx.beginPath();ctx.roundRect(sx-6,sy-18,px+12,28,8);ctx.fill();ctx.globalAlpha=1;
+      ctx.strokeStyle=c('--fg');ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(sx,sy-4);ctx.lineTo(sx,sy+2);ctx.lineTo(sx+px,sy+2);ctx.lineTo(sx+px,sy-4);ctx.stroke();
+      ctx.fillStyle=c('--fg');ctx.font='700 11px Hind Madurai, sans-serif';ctx.fillText(nice>=1000?nice/1000+' '+T[S.lang].km:nice+' '+T[S.lang].m,sx+2,sy-7)}
+    mapLoop=requestAnimationFrame(frame);
+  }
+  size();mapLoop=requestAnimationFrame(frame);
+  return{cam,fit,flyTo,zoomBy:f=>flyTo(cam.lat,cam.lon,cam.s*f,300),setView:(lat,lon,s)=>{cam.lat=lat;cam.lon=lon;cam.s=clamp(s)},center:()=>({lat:cam.lat,lon:cam.lon})};
+}
+
+
+
+/* ================= VELLORE CALL TAXI — DRIVER APP ================= */
+const T={ta:{km:'கி.மீ',m:'மீ',near:'அருகில்',from:'ல இருந்து'},en:{km:'km',m:'m',near:'Near',from:'from'}};
+const CUSTOM=['pick','drop'];
+let mapLoop=null,TK=null,REQ=null;
+const S={lang:'ta',phone:'',logged:false,pid:null,tab:'home',online:false,onSince:0};
+try{Object.assign(S,JSON.parse(localStorage.getItem('vctd')||'{}'),{online:false,tab:'home'})}catch(e){}
+const save=()=>{try{localStorage.setItem('vctd',JSON.stringify({lang:S.lang,phone:S.phone,logged:S.logged,pid:S.pid}))}catch(e){}};
+const L=(ta,en)=>S.lang==='ta'?ta:en;
+const pn=k=>P[k][S.lang];
+const inr=n=>'₹'+Math.round(n).toLocaleString('en-IN');
+const esc=v=>String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
+let COMM=10,MINBAL=100;
+const DPROF=[
+  {id:'auto',ta:'செல்வம் R',en:'Selvam R',plate:'TN 23 Q 7788',model:'Bajaj RE',veh:'auto',rating:4.8},
+  {id:'sedan',ta:'ரவிக்குமார் M',en:'Ravikumar M',plate:'TN 23 CA 3344',model:'Swift Dzire',veh:'sedan',rating:4.9},
+  {id:'mini',ta:'சுரேஷ் P',en:'Suresh P',plate:'TN 23 CA 2108',model:'Maruti Swift',veh:'mini',rating:4.8},
+  {id:'suv',ta:'பாலாஜி T',en:'Balaji T',plate:'TN 23 CB 5566',model:'Maruti Ertiga',veh:'suv',rating:4.9},
+  {id:'bike',ta:'கார்த்திக் S',en:'Karthik S',plate:'TN 23 BK 1290',model:'Honda Shine',veh:'bike',rating:4.9}];
+const me=()=>DME||DPROF.find(d=>d.id===S.pid)||DPROF[0];
+const CUST=[['பிரியா','Priya',4.9],['அருண்','Arun',4.7],['லட்சுமி','Lakshmi',4.8],['முகமது','Mohammed',4.9],['திவ்யா','Divya',4.6],['சரவணன்','Saravanan',4.8]];
+
+/* data */
+function seed(){const tr=[],now=new Date();
+  for(let d=1;d<=6;d++){const n=3+((d*7)%5);for(let i=0;i<n;i++){const day=new Date(now);day.setDate(day.getDate()-d);day.setHours(8+i*2,(i*17)%60);
+    const fare=60+((d*31+i*47)%180),comm=Math.round(fare*COMM/100);tr.push({id:'S'+d+i,date:day.getTime(),fare,comm,net:fare-comm,pay:['cash','upi','cash','wallet'][(d+i)%4],km:+(2+((d+i)*1.7)%9).toFixed(1),from:{ta:'காட்பாடி',en:'Katpadi'},to:{ta:'வேலூர் டவுன்',en:'Vellore Town'},sample:true})}}
+  return{wallet:350,tx:[{amt:350,ta:'தொடக்க இருப்பு',en:'Opening balance',date:Date.now()-6*864e5}],trips:tr,pending:[],onMs:0,onDay:new Date().toDateString()}}
+let DS=seed();try{const d=JSON.parse(localStorage.getItem('vctd_data')||'null');if(d&&d.trips)DS=d}catch(e){}
+const saveDS=()=>{try{localStorage.setItem('vctd_data',JSON.stringify(DS))}catch(e){}};
+if(DS.onDay!==new Date().toDateString()){DS.onMs=0;DS.onDay=new Date().toDateString()}
+let POS={lat:P.home.lat+.003,lon:P.home.lon-.002};
+let J=null; // active job
+
+const app=document.getElementById('app');
+function go(html,after){cancelAnimationFrame(mapLoop);clearInterval(TK);clearTimeout(REQ);app.innerHTML=html;after&&after()}
+function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(toast.h);toast.h=setTimeout(()=>el.classList.remove('show'),2600)}
+const isToday=ts=>new Date(ts).toDateString()===new Date().toDateString();
+const onMinutes=()=>Math.round((DS.onMs+(S.online?Date.now()-S.onSince:0))/6e4);
+function setOnline(v){if(v===S.online)return;if(v){S.onSince=Date.now()}else{DS.onMs+=Date.now()-S.onSince;saveDS()}S.online=v;if(CL)goLive(v)}
+
+/* slide-to-confirm */
+const slider=(id,label,cls='')=>`<div class="slide ${cls}" id="${id}"><span class="slabel">${label}</span><button class="knob" aria-label="${label}">${'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h13M13 6l6 6-6 6"/></svg>'}</button></div>`;
+function bindSlide(id,done){const el=document.getElementById(id),k=el.querySelector('.knob');let sx=0,dx=0,drag=false,fired=false;
+  const max=()=>el.clientWidth-k.offsetWidth-8;
+  const fire=()=>{if(fired)return;fired=true;k.style.transform=`translateX(${max()}px)`;el.classList.add('done');setTimeout(done,180)};
+  k.onpointerdown=e=>{drag=true;sx=e.clientX;dx=0;try{k.setPointerCapture(e.pointerId)}catch(_){}k.style.transition='none'};
+  k.onpointermove=e=>{if(!drag)return;dx=Math.max(0,Math.min(max(),e.clientX-sx));k.style.transform=`translateX(${dx}px)`;el.style.setProperty('--p',(dx/max()).toFixed(2))};
+  k.onpointerup=k.onpointercancel=()=>{if(!drag)return;drag=false;k.style.transition='';if(dx>max()*.78)fire();else{k.style.transform='';el.style.setProperty('--p',0)}};
+  k.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();fire()}};
+}
+const navLink=(p,txt)=>`<a class="navbtn" href="https://www.google.com/maps/dir/?api=1&destination=${p.lat},${p.lon}&travelmode=driving" target="_blank" rel="noopener">${I.nav}${txt}</a>`;
+
+/* ---------- login ---------- */
+function splash(){
+  go(`<section class="screen" id="splash"><div class="roofsign"><b>TAXI</b><span>வேலூர் கால் டாக்ஸி</span></div><span class="drvtag">DRIVER</span>
+    <div class="road"></div><div class="tag">Vellore Call Taxi · Driver</div></section>`);
+  setTimeout(async()=>{if(await cloudBootD())return;S.logged&&S.pid?home():login()},1500);
+}
+function login(){
+  go(`<section class="screen"><div class="hero pad"><span class="mini">DRIVER APP</span><h1>${L('வணக்கம் Driver!','Welcome, driver!')}</h1>
+    <p>${L('Owner உங்களை சேர்த்த நம்பர்ல login பண்ணுங்க','Log in with the number your owner registered')}</p>
+    <div class="lang2"><button data-l="ta" class="${S.lang==='ta'?'on':''}">தமிழ்</button><button data-l="en" class="${S.lang==='en'?'on':''}">English</button></div></div>
+   <div class="body pad"><label class="muted" for="ph" style="font-weight:600">${L('மொபைல் நம்பர்','Mobile number')}</label>
+    <div class="field"><span class="cc">+91</span><input id="ph" inputmode="numeric" maxlength="10" value="${S.phone}" placeholder="98765 43210"></div>
+    <div class="err" id="e"></div><div class="otpwrap" id="ow" hidden><label class="muted" style="font-weight:600">OTP</label>
+    <div class="otp">${[...Array(CL?6:4).keys()].map(i=>`<input id="o${i}" inputmode="numeric" maxlength="1" autocomplete="one-time-code" aria-label="OTP ${i+1}">`).join('')}</div>
+    <div class="note">${CL?L('SMS-ல வந்த 6 இலக்க OTP-ஐ போடுங்க','Enter the 6-digit OTP from the SMS'):'Demo OTP: 1234'}</div></div><div style="flex:1"></div>
+    <button class="btn" id="go" disabled>${L('OTP அனுப்பு','Send OTP')}</button></div></section>`,()=>{
+    app.querySelectorAll('[data-l]').forEach(b=>b.onclick=()=>{S.lang=b.dataset.l;save();login()});
+    const ph=document.getElementById('ph'),b=document.getElementById('go'),e=document.getElementById('e'),ow=document.getElementById('ow');let stage=0;
+    ph.oninput=()=>{ph.value=ph.value.replace(/\D/g,'').slice(0,10);if(!stage)b.disabled=ph.value.length!==10;e.textContent=''};b.disabled=ph.value.length!==10;
+    const ins=[...app.querySelectorAll('.otp input')];
+    ins.forEach((inp,i)=>{inp.oninput=()=>{inp.value=inp.value.replace(/\D/g,'').slice(-1);if(inp.value&&ins[i+1])ins[i+1].focus();b.disabled=ins.map(x=>x.value).join('').length!==(CL?6:4)};
+      inp.onkeydown=ev=>{if(ev.key==='Backspace'&&!inp.value&&ins[i-1])ins[i-1].focus()}});
+    b.onclick=()=>{
+      if(!stage){if(!/^[6-9]\d{9}$/.test(ph.value)){e.textContent=L('10 இலக்க நம்பர் கொடுங்க','Enter a 10-digit number');return}
+        S.phone=ph.value;save();
+        if(CL){b.disabled=true;b.textContent=L('OTP அனுப்புது…','Sending OTP…');CL.sendOtp(ph.value).then(()=>{stage=1;ow.hidden=false;ph.disabled=true;b.textContent=L('சரிபார்','Verify');b.disabled=true;ins[0].focus()}).catch(er=>{b.disabled=false;b.textContent=L('OTP அனுப்பு','Send OTP');e.textContent=CL.errText(er,S.lang==='ta')});return}
+        stage=1;ow.hidden=false;ph.disabled=true;b.textContent=L('சரிபார்','Verify');b.disabled=true;ins[0].focus();return}
+      if(CL){b.disabled=true;CL.verifyOtp(ins.map(x=>x.value).join('')).then(async()=>{if(await loadMe())home()}).catch(er=>{b.disabled=false;e.textContent=CL.errText(er,S.lang==='ta');ins.forEach(x=>x.value='');ins[0].focus()});return}
+      if(ins.map(x=>x.value).join('')!=='1234'){e.textContent=L('OTP தவறு','Wrong OTP');ins.forEach(x=>x.value='');ins[0].focus();b.disabled=true;return}
+      S.logged=true;save();pickProfile();
+    };
+  });
+}
+function pickProfile(){
+  go(`<section class="screen"><div class="head pad"><h2>${L('உங்க வண்டி','Your vehicle')}</h2></div>
+   <div class="body pad" style="padding-top:0"><div class="note">${L('Demo: உண்மையான app-ல Owner உங்க நம்பருக்கு வண்டியை assign பண்ணுவாங்க. இங்கே ஒண்ணை தேர்வு பண்ணுங்க.','Demo: in the real app your owner assigns your vehicle. Pick one here.')}</div>
+    ${DPROF.map(d=>{const v=VEH.find(x=>x.id===d.veh);return `<button class="veh" data-p="${d.id}"><span class="vi">${I[d.veh]}</span><div><b>${d[S.lang]}</b><small>${v[S.lang]} · ${d.model}</small></div><span class="plate">${d.plate}</span></button>`}).join('')}
+   </div></section>`,()=>app.querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>{S.pid=b.dataset.p;save();home()}));
+}
+
+/* ---------- shell ---------- */
+function shell(content){
+  const tabs=[['home','navHome',L('Home','Home')],['earn','navEarn',L('வருமானம்','Earnings')],['wallet','navWallet','Wallet'],['me','navMe',L('நான்','Me')]];
+  return `<section class="screen">${content}<nav class="nav n4">${tabs.map(([k,ic,l])=>`<button data-tab="${k}" class="${S.tab===k?'on':''}">${I[ic]}${l}</button>`).join('')}</nav></section>`;
+}
+function bindNav(){app.querySelectorAll('.nav button').forEach(b=>b.onclick=()=>{S.tab=b.dataset.tab;({home,earn:earnTab,wallet:walletTab,me:profileTab})[S.tab]()})}
+
+/* ---------- home ---------- */
+function home(){
+  S.tab='home';const d=me(),today=DS.trips.filter(x=>isToday(x.date)),net=today.reduce((a,x)=>a+x.net,0);const low=DS.wallet<MINBAL;
+  go(shell(`<div class="mapwrap"><canvas class="map" id="map"></canvas>
+     <div class="topbar"><span class="stpill ${S.online?'on':''}"><i></i>${S.online?'Online':'Offline'}</span><div style="flex:1"></div>
+       <button class="chipbtn ${low?'lowbal':''}" id="wb">${I.navWallet.replace('<svg ','<svg width="18" height="18" ')} ${inr(DS.wallet)}</button></div>
+     <div class="zoomctl" style="bottom:34px"><button class="chipbtn" id="loc" aria-label="My location">${I.gps}</button></div></div>
+   <div class="sheet pad"><div class="grab"></div>
+     ${low?`<div class="warn">${L(`Wallet-ல ${inr(DS.wallet)} தான் இருக்கு. Online போக குறைந்தது ${inr(MINBAL)} வேணும்.`,`Only ${inr(DS.wallet)} in wallet. You need at least ${inr(MINBAL)} to go online.`)} <button class="linkbtn" id="rc">${L('Recharge பண்ணு','Recharge')}</button></div>`:''}
+     ${S.online?`<div class="liveCard"><span class="pulse"></span><div><b>${L('Online-ல இருக்கீங்க','You are online')}</b><small>${L('புது ride request-க்கு காத்திருக்கு…','Waiting for ride requests…')}</small></div></div>
+        ${slider('offs',L('Offline ஆக இழுங்க','Slide to go offline'),'red')}
+        ${CL?'':`<button class="demo" id="dreq">${L('Demo: ride request கொண்டு வா','Demo: send a ride request')}</button>`}`
+      :`${slider('ons',L('Online ஆக இழுங்க','Slide to go online'))}`}
+     <div class="sec"><h3>${L('இன்று','Today')}</h3><span class="sample">${new Date().toLocaleDateString(S.lang==='ta'?'ta-IN':'en-IN',{day:'numeric',month:'short'})}</span></div>
+     <div class="stats"><div><b>${inr(net)}</b><small>${L('வருமானம்','Earnings')}</small></div><div><b>${today.length}</b><small>${L('பயணங்கள்','Rides')}</small></div><div><b>${Math.floor(onMinutes()/60)}:${String(onMinutes()%60).padStart(2,'0')}</b><small>${L('Online நேரம்','Online hrs')}</small></div></div>
+     <div class="vcard"><span class="vi">${I[d.veh]}</span><div><b>${d[S.lang]}</b><small>${VEH.find(v=>v.id===d.veh)[S.lang]} · ${d.model}</small></div><span class="plate">${d.plate}</span></div>
+   </div>`),()=>{
+    bindNav();
+    const m=makeMap(document.getElementById('map'),{driver:()=>({...POS,nlat:POS.lat,nlon:POS.lon+.0001}),cars:!CL&&S.online});m.setView(POS.lat,POS.lon,26000);
+    document.getElementById('loc').onclick=()=>m.flyTo(POS.lat,POS.lon,60000);
+    document.getElementById('wb').onclick=()=>{S.tab='wallet';walletTab()};
+    const rc=document.getElementById('rc');if(rc)rc.onclick=()=>{S.tab='wallet';walletTab();recharge()};
+    if(S.online){bindSlide('offs',()=>{setOnline(false);home();toast(L('Offline ஆயிட்டீங்க','You are offline'))});
+      if(CL)maybeShowReq();else{document.getElementById('dreq').onclick=()=>incoming();REQ=setTimeout(()=>incoming(),7000)}}
+    else bindSlide('ons',()=>{if(DME&&DME.blocked){toast(L('உங்க account நிறுத்தி வைக்கப்பட்டிருக்கு. Owner-ஐ தொடர்பு கொள்ளுங்க','Your account is on hold. Contact the owner'));home();return}if(DS.wallet<MINBAL){toast(L('Wallet recharge பண்ணிட்டு Online போங்க','Recharge your wallet to go online'));home();return}setOnline(true);home();toast(L('Online! Ride request வந்தா சத்தம் வரும்','You are online. Requests will ring'))});
+  });
+}
+
+/* ---------- incoming request ---------- */
+function incoming(pre){
+  if(pre)return renderReq(pre);
+  const d=me(),v=VEH.find(x=>x.id===d.veh),keys=['katpadi','vit','cmc','newbus','oldbus','fort','sathu','home','bagayam'];
+  const from=keys[Math.floor(Math.random()*keys.length)];let to=from;while(to===from)to=keys[Math.floor(Math.random()*keys.length)];
+  const r=route(from,to),c=CUST[Math.floor(Math.random()*CUST.length)],f=fare(v,r.km),pk=P[from];
+  const away=hav(POS,pk)*1.3;
+  J={from,to,path:r.path,km:r.km,fare:f,comm:Math.round(f*COMM/100),pay:['upi','cash','cash','wallet'][Math.floor(Math.random()*4)],
+     cust:{ta:c[0],en:c[1],rating:c[2]},pin:String(1000+Math.floor(Math.random()*9000)),away,
+     approach:[{...POS},{lat:POS.lat,lon:pk.lon},{lat:pk.lat,lon:pk.lon}],trip:r.path.map(k=>({lat:P[k].lat,lon:P[k].lon}))};
+  J.away=away;renderReq(J);
+}
+function renderReq(j){
+  J=j;const from=J.from,to=J.to,pk=P[from],away=J.away;
+  const SEC=20;
+  go(`<section class="screen req"><div class="mapwrap"><canvas class="map" id="map"></canvas>
+     <div class="topbar"><span class="stpill on"><i></i>${L('புது Ride!','New ride!')}</span></div></div>
+   <div class="sheet pad reqsheet"><div class="grab"></div>
+     <div class="reqtop"><div class="ring"><svg viewBox="0 0 44 44" width="64" height="64"><circle cx="22" cy="22" r="19" fill="none" stroke="var(--line)" stroke-width="4"/><circle id="rg" cx="22" cy="22" r="19" fill="none" stroke="var(--yellow)" stroke-width="4" stroke-linecap="round" stroke-dasharray="119.4" transform="rotate(-90 22 22)"/></svg><b id="sec">${SEC}</b></div>
+       <div class="reqfare"><small>${L('கட்டணம்','Fare')}</small><b>${inr(J.fare)}</b><span>${L('உங்களுக்கு','You get')} ${inr(J.fare-J.comm)} · <em class="pm ${J.pay}">${payName(J.pay)}</em></span></div></div>
+     <div class="tripcard"><div class="rail"><i class="a"></i><i class="l"></i><i class="b"></i></div>
+       <div class="stops"><div><small>${t2('pickup')} · ${away.toFixed(1)} ${L('கி.மீ தூரம்','km away')}</small><b>${pn(from)}</b></div><div><small>Drop · ${J.km.toFixed(1)} ${L('கி.மீ பயணம்','km trip')}</small><b>${pn(to)}</b></div></div></div>
+     <div class="custrow"><span class="avatar sm">${J.cust.en[0]}</span><b>${J.cust[S.lang]}</b><small>★ ${J.cust.rating}</small></div>
+     ${slider('acc',L('ஏற்க இழுங்க →','Slide to accept →'),'green')}
+     <button class="linkbtn" id="dec" style="align-self:center;color:var(--danger)">${L('வேண்டாம்','Decline')}</button>
+   </div></section>`,()=>{
+    const m=makeMap(document.getElementById('map'),{driver:()=>({...POS,nlat:pk.lat,nlon:pk.lon}),line:()=>J.trip,pins:[{...pk,col:'#1E8A5A'},{lat:P[to].lat,lon:P[to].lon,col:'#13284F'}],hide:CUSTOM});
+    m.fit([POS,...J.trip],50,40);
+    const t0=Date.now(),rg=document.getElementById('rg'),sc=document.getElementById('sec');
+    TK=setInterval(()=>{const left=Math.max(0,SEC-(Date.now()-t0)/1000);sc.textContent=Math.ceil(left);rg.setAttribute('stroke-dashoffset',(119.4*(1-left/SEC)).toFixed(1));
+      if(left<=0){if(J&&J.id){DECL.add(J.id);SHOWING=null}J=null;home();toast(L('Request நேரம் முடிஞ்சது','Request timed out'))}},200);
+    bindSlide('acc',()=>J&&J.id?acceptCloud():toPickup());
+    document.getElementById('dec').onclick=()=>{if(J&&J.id){DECL.add(J.id);SHOWING=null}J=null;home();toast(L('Request-ஐ விட்டாச்சு','Request declined'))};
+  });
+}
+const t2=k=>({pickup:'Pickup'})[k];
+const payName=p=>p==='upi'?'UPI':p==='wallet'?'Wallet':'Cash';
+
+/* ---------- job screens ---------- */
+function jobShell(title,body,opts={}){
+  return `<section class="screen"><div class="mapwrap"><canvas class="map" id="map"></canvas>
+     <div class="topbar"><div class="greet status"><small id="stS">${title[0]}</small><b id="stB">${title[1]}</b></div><button class="chipbtn sos" id="sos">SOS</button></div>
+     ${opts.ff?`<button class="chipbtn ff" id="ff">Demo ⏩</button>`:''}</div>
+   <div class="sheet ride-sheet pad"><div class="grab"></div>${body}</div></section>`;
+}
+const custCard=()=>`<div class="drv"><span class="avatar">${J.cust.en[0]}</span><div><b>${J.cust[S.lang]}</b><small>★ ${J.cust.rating} · <em class="pm ${J.pay}">${payName(J.pay)}</em></small></div>
+  <div class="cbtns"><button class="round" id="call" aria-label="Call">${I.phone}</button><button class="round" id="chat" aria-label="Chat">${I.chat}</button></div></div>`;
+function bindCust(){
+  document.getElementById('call').onclick=()=>toast(L('Masked call: customer நம்பர் உங்களுக்கு தெரியாது (calling service connect ஆனதும்)','Masked call: the customer number stays hidden (once calling is connected)'));
+  document.getElementById('chat').onclick=()=>{const q=S.lang==='ta'?['வந்துகிட்டு இருக்கேன்','Pickup-ல நிக்கிறேன்','Traffic, 5 நிமி ஆகும்','எங்கே இருக்கீங்க?']:['On my way','I’m at the pickup','Traffic, 5 more minutes','Where are you?'];
+    modal(`<h3>${J.cust[S.lang]}</h3><p class="muted" style="margin:0;font-size:13px">${L('ஒரே tap-ல message அனுப்புங்க','Send a quick message')}</p><div style="display:flex;flex-direction:column;gap:8px">${q.map(x=>`<button class="reason" data-q="1">${x}</button>`).join('')}</div>`,(m,close)=>m.querySelectorAll('[data-q]').forEach(b=>b.onclick=()=>{close();toast(L('Message அனுப்பியாச்சு','Message sent'))}))};
+  document.getElementById('sos').onclick=()=>modal(`<h3>SOS</h3><p class="muted" style="margin:0">${L('உறுதி செய்தா Owner / dispatcher-க்கு உங்க location-ஓட alert போகும்.','Confirm to alert the owner and dispatcher with your location.')}</p>
+    <button class="sosbig" id="sb">${L('Alert அனுப்பு','Send alert')}</button><div class="bill"><div><span>${L('அவசர உதவி','Emergency')}</span><b>112</b></div><div><span>${L('காவல்','Police')}</span><b>100</b></div></div>`,(m,close)=>m.querySelector('#sb').onclick=()=>{close();if(CL){driverSos();toast(L('Alert அனுப்பியாச்சு. Office உடனே கூப்பிடுவாங்க','Alert sent. The office will call you'));return}toast(L('Alert அனுப்பியாச்சு (demo)','Alert sent (demo)'))});
+}
+function runAlong(o,pts,ms,onEnd,label){
+  let t0=performance.now(),done=false;J.f=0;
+  const tick=()=>{J.f=Math.min(1,(performance.now()-t0)/ms);POS=along(pts,J.f);label&&label();if(J.f>=1&&!done){done=true;clearInterval(TK);onEnd&&onEnd()}};
+  tick();TK=setInterval(tick,200);
+  return ()=>{t0=-1e9};
+}
+function toPickup(){
+  const pk=P[J.from];
+  go(jobShell([L('Pickup-க்கு போங்க','Head to pickup'),pn(J.from)],`${custCard()}
+     <div class="addr"><span class="ic" style="background:rgba(30,138,90,.14);color:var(--ok)">${I.pin}</span><div><small class="kind">Pickup</small><b>${pn(J.from)}</b></div></div>
+     <div class="two">${navLink(pk,L('Navigate','Navigate'))}<button class="btn yellow" id="arr">${L('வந்துட்டேன்','I have arrived')}</button></div>
+     <button class="linkbtn" id="jcx" style="align-self:center;color:var(--danger)">${L('Ride-ஐ ரத்து செய்','Cancel ride')}</button>`,{ff:!J.id}),()=>{
+    const o={driver:()=>POS,line:()=>{if(J&&J.id)return[POS,pk];const p=along(J.approach,J.f);return[p,...J.approach.slice(p.idx+1)]},pins:[{...pk,col:'#1E8A5A'}],hide:CUSTOM};
+    const m=makeMap(document.getElementById('map'),o);m.fit(J.id?[POS,pk]:J.approach,60,70);
+    const stS=document.getElementById('stS');
+    if(J.id){const up=()=>{const km=hav(POS,pk)*1.3;stS.textContent=km<0.15?L('Pickup வந்தாச்சு','At pickup'):L(`Pickup-க்கு ${km.toFixed(1)} கி.மீ`,`${km.toFixed(1)} km to pickup`)};up();TK=setInterval(up,2000);bindCust()}else{
+    const skip=runAlong(o,J.approach,12000,()=>{stS.textContent=L('Pickup வந்தாச்சு','At pickup')},()=>{const mn=Math.max(1,Math.ceil((1-J.f)*Math.max(2,J.away/0.35)));if(J.f<1)stS.textContent=L(`Pickup-க்கு ${mn} நிமி`,`${mn} min to pickup`)});
+    document.getElementById('ff').onclick=skip;bindCust();}
+    document.getElementById('arr').onclick=()=>{if(J.id){cUpd({arrivedAt:F().serverTimestamp()});atPickup();return}POS={lat:pk.lat,lon:pk.lon};atPickup()};
+    document.getElementById('jcx').onclick=()=>jobCancel();
+  });
+}
+function jobCancel(){
+  const rs=S.lang==='ta'?['Customer வரல (no-show)','Customer ரத்து பண்ண சொன்னாங்க','வண்டி பிரச்சனை','வேற காரணம்']:['Customer did not show up','Customer asked to cancel','Vehicle problem','Other reason'];
+  modal(`<h3>${L('ஏன் ரத்து?','Why cancel?')}</h3><div style="display:flex;flex-direction:column;gap:8px">${rs.map((r,i)=>`<button class="reason" data-i="${i}"><i class="radio"></i>${r}</button>`).join('')}</div>
+    <div class="note">${L('அடிக்கடி ரத்து செய்தா rating குறையும். Owner-க்கு தகவல் போகும்.','Frequent cancels lower your rating. The owner is informed.')}</div>
+    <button class="btn ghost" id="cy" disabled>${L('ரத்து செய்','Cancel ride')}</button><button class="btn" id="cn">${L('Ride-ஐ தொடரு','Keep the ride')}</button>`,(m,close)=>{
+    m.querySelectorAll('.reason').forEach(b=>b.onclick=()=>{m.querySelectorAll('.reason').forEach(x=>x.classList.toggle('sel',x===b));m.querySelector('#cy').disabled=false});
+    m.querySelector('#cn').onclick=close;m.querySelector('#cy').onclick=()=>{if(J&&J.id){const sel=m.querySelector('.reason.sel');cUpd({status:'cancelled',cancelReason:'driver: '+(sel?sel.textContent.trim():'')});stopJob();setTimeout(()=>pushLive(true),300)}J=null;close();home();toast(L('Ride ரத்து ஆச்சு','Ride cancelled'))};
+  });
+}
+function atPickup(){
+  const t0=Date.now();
+  go(jobShell([L('Pickup-ல காத்திருக்கீங்க','Waiting at pickup'),'0:00'],`${custCard()}
+     ${J.id&&!J.app?'':`<span class="kind">${L('Customer சொல்லும் PIN-ஐ போடுங்க','Enter the PIN the customer tells you')}</span>
+     <div class="otp" id="pinb">${[0,1,2,3].map(i=>`<input id="p${i}" inputmode="numeric" maxlength="1" aria-label="PIN ${i+1}">`).join('')}</div>`}
+     <div class="err" id="pe"></div>${J.id?`<div class="note">${J.app?L('PIN போட்டதும் customer app தானா சரிபார்க்கும்','The customer app checks the PIN automatically'):L('Phone booking. PIN தேவையில்லை','Phone booking. No PIN needed')}</div>`:`<div class="note">Demo PIN: ${J.pin}</div>`}
+     ${slider('st',L('Trip ஆரம்பிக்க இழுங்க','Slide to start trip'),'green')}
+     <button class="linkbtn" id="jcx" style="align-self:center;color:var(--danger)">${L('Customer வரல / ரத்து','No-show / cancel')}</button>`),()=>{
+    const pk=P[J.from];
+    makeMap(document.getElementById('map'),{driver:()=>({...POS,nlat:POS.lat,nlon:POS.lon+.0001}),pins:[{...pk,col:'#1E8A5A'}],hide:CUSTOM}).setView(pk.lat,pk.lon,60000);
+    const stB=document.getElementById('stB');
+    TK=setInterval(()=>{const s=Math.floor((Date.now()-t0)/1000);stB.textContent=`${Math.floor(s/60)}:${String(s%60).padStart(2,'0')} ${s<180?L('· இலவச நேரம்','· free time'):L('· waiting charge ஆரம்பம்','· waiting charge on')}`},1000);
+    const ins=[...app.querySelectorAll('#pinb input')];
+    ins.forEach((inp,i)=>{inp.oninput=()=>{inp.value=inp.value.replace(/\D/g,'').slice(-1);if(inp.value&&ins[i+1])ins[i+1].focus();document.getElementById('pe').textContent=''};
+      inp.onkeydown=e=>{if(e.key==='Backspace'&&!inp.value&&ins[i-1])ins[i-1].focus()}});
+    bindCust();document.getElementById('jcx').onclick=()=>jobCancel();
+    const start=()=>{if(J.id){cloudStart(ins);return}if(ins.map(x=>x.value).join('')!==J.pin){document.getElementById('pe').textContent=L('PIN தவறு. Customer-கிட்ட மறுபடி கேளுங்க','Wrong PIN. Ask the customer again');ins.forEach(x=>x.value='');ins[0].focus();
+        const sl=document.getElementById('st');sl.classList.remove('done');const k=sl.querySelector('.knob');k.style.transform='';sl.style.setProperty('--p',0);bindSlide('st',start);return}
+      onTrip()};
+    bindSlide('st',start);
+  });
+}
+function onTrip(){
+  const dp=P[J.to],mins=Math.round(J.km/22*60)+3;
+  go(jobShell([L('பயணத்தில்','On trip'),pn(J.to)],`${custCard()}
+     <div class="addr"><span class="ic" style="background:rgba(194,59,59,.12);color:var(--danger)">${I.pin}</span><div><small class="kind">Drop</small><b>${pn(J.to)}</b></div><span class="pill">${J.km.toFixed(1)} ${L('கி.மீ','km')}</span></div>
+     ${navLink(dp,L('Drop-க்கு Navigate','Navigate to drop'))}
+     ${slider('end',L('Trip முடிக்க இழுங்க','Slide to end trip'),'red')}`,{ff:!J.id}),()=>{
+    const o={driver:()=>POS,line:()=>{if(J&&J.id)return[POS,dp];const p=along(J.trip,J.f);return[p,...J.trip.slice(p.idx+1)]},pins:[{...dp,col:'#13284F'}],hide:CUSTOM};
+    makeMap(document.getElementById('map'),o).fit(J.id?[POS,dp]:J.trip,60,70);
+    const stS=document.getElementById('stS');
+    if(J.id){const up=()=>{const km=hav(POS,dp)*1.3;stS.textContent=km<0.2?L('Drop வந்தாச்சு','At drop'):L(`Drop-க்கு ${km.toFixed(1)} கி.மீ`,`${km.toFixed(1)} km to drop`)};up();TK=setInterval(up,2000);bindCust()}else{
+    const skip=runAlong(o,J.trip,16000,()=>{stS.textContent=L('Drop வந்தாச்சு','At drop')},()=>{if(J.f<1)stS.textContent=L(`Drop-க்கு ${Math.max(1,Math.ceil((1-J.f)*mins))} நிமி`,`${Math.max(1,Math.ceil((1-J.f)*mins))} min to drop`)});
+    document.getElementById('ff').onclick=skip;bindCust();}
+    bindSlide('end',()=>{if(!J.id)POS={lat:dp.lat,lon:dp.lon};collect()});
+  });
+}
+function collect(){
+  const v=VEH.find(x=>x.id===me().veh),base=J.b&&J.b.base!=null?+J.b.base:v.base,dist=J.fare-base;let pm=J.pay,stars=0,paid=false;
+  go(`<section class="screen"><div class="donehero pad"><span class="check">${I.tick}</span><h1 style="font-size:26px">${L('Trip முடிஞ்சது!','Trip complete!')}</h1><span>${pn(J.from)} → ${pn(J.to)}</span></div>
+   <div class="body pad">
+    <div class="bill"><div><span>${L('அடிப்படை கட்டணம்','Base fare')}</span><span>${inr(base)}</span></div><div><span>${L(`தூரம் (${J.km.toFixed(1)} கி.மீ)`,`Distance (${J.km.toFixed(1)} km)`)}</span><span>${inr(dist)}</span></div>
+      <div class="tot"><span>${L('Customer கொடுக்க வேண்டியது','Collect from customer')}</span><span>${inr(J.fare)}</span></div></div>
+    <div id="pay">
+      <span class="kind">${L('Customer எப்படி கொடுத்தாங்க?','How did the customer pay?')}</span>
+      <div class="payrow" style="margin-top:8px">${['cash','upi'].concat(J.pay==='wallet'?['wallet']:[]).map(p=>`<button class="pay ${p===pm?'sel':''}" data-pm="${p}">${p==='cash'?I.cash:p==='upi'?I.upi:I.navWallet.replace('<svg ','<svg width="18" height="18" ')}${payName(p)}</button>`).join('')}</div>
+      <div class="qr" id="pmtxt" style="margin-top:10px"></div>
+      <button class="btn" id="got" style="margin-top:12px"></button></div>
+    <div id="sum" hidden style="display:flex;flex-direction:column;gap:14px">
+      <div class="earncard"><div><small>${L('உங்க வருமானம்','Your earnings')}</small><b>${inr(J.fare-J.comm)}</b></div>
+        <div class="ec2"><span>${L('Commission','Commission')} ${COMM}%</span><b>−${inr(J.comm)}</b><small>${L('Wallet-ல இருந்து கழிக்கப்பட்டது','Taken from your wallet')}</small></div></div>
+      <span class="kind" style="text-align:center">${L(`${J.cust.ta} எப்படி?`,`Rate ${J.cust.en}`)}</span>
+      <div class="stars">${[1,2,3,4,5].map(n=>`<button data-s="${n}" aria-label="${n} stars">★</button>`).join('')}</div>
+      <button class="btn yellow" id="next">${L('அடுத்த ride-க்கு Online','Back online for the next ride')}</button>
+      <button class="linkbtn" id="off" style="align-self:center">${L('இப்போ Offline போறேன்','Go offline for now')}</button></div>
+   </div></section>`,()=>{
+    const pt=document.getElementById('pmtxt'),got=document.getElementById('got');
+    const setPm=p=>{pm=p;app.querySelectorAll('[data-pm]').forEach(b=>b.classList.toggle('sel',b.dataset.pm===p));
+      pt.innerHTML=p==='cash'?`<span class="bigic">${I.cash.replace('width="18" height="18"','width="30" height="30"')}</span><div><b>${L(`${inr(J.fare)} cash வாங்குங்க`,`Collect ${inr(J.fare)} in cash`)}</b><p class="muted" style="margin:4px 0 0;font-size:13px">${L('சில்லறை சரியா கொடுங்க','Give correct change')}</p></div>`
+        :p==='upi'?`<span class="bigic">${I.upi.replace('width="18" height="18"','width="30" height="30"')}</span><div><b>${L(`Customer UPI-ல ${inr(J.fare)} அனுப்பணும்`,`Customer pays ${inr(J.fare)} by UPI`)}</b><p class="muted" style="margin:4px 0 0;font-size:13px">${L('Customer app-ல வர்ற QR அல்லது உங்க QR. பணம் வந்ததை phone-ல பார்த்துட்டு confirm பண்ணுங்க.','The QR in the customer app, or yours. Check the money arrived before confirming.')}</p></div>`
+        :`<span class="bigic">${I.navWallet.replace('<svg ','<svg width="30" height="30" ')}</span><div><b>${L('Customer wallet-ல இருந்து கழிஞ்சது','Paid from customer wallet')}</b><p class="muted" style="margin:4px 0 0;font-size:13px">${L('நீங்க எதுவும் வாங்க வேண்டாம். Owner settlement-ல சேரும்.','Collect nothing. It is settled by the owner.')}</p></div>`;
+      got.textContent=p==='wallet'?L('சரி','OK'):p==='cash'?L(`${inr(J.fare)} cash வாங்கியாச்சு`,`Collected ${inr(J.fare)} cash`):L('UPI பணம் வந்தாச்சு','UPI payment received')};
+    setPm(pm);
+    app.querySelectorAll('[data-pm]').forEach(b=>b.onclick=()=>{if(b.dataset.pm!==pm)toast(L(`${payName(b.dataset.pm)}-க்கு மாத்தியாச்சு`,`Switched to ${payName(b.dataset.pm)}`));setPm(b.dataset.pm)});
+    got.onclick=()=>{if(paid)return;paid=true;
+      if(J.id){cloudDone(pm);document.getElementById('pay').hidden=true;const sm=document.getElementById('sum');sm.hidden=false;sm.style.display='flex';return}
+      DS.trips.unshift({id:Date.now().toString(36),date:Date.now(),fare:J.fare,comm:J.comm,net:J.fare-J.comm,pay:pm,km:+J.km.toFixed(1),from:{ta:P[J.from].ta,en:P[J.from].en},to:{ta:P[J.to].ta,en:P[J.to].en},cust:J.cust});
+      DS.wallet-=J.comm;DS.tx.unshift({amt:-J.comm,ta:`Commission: ${P[J.to].ta}`,en:`Commission: ${P[J.to].en}`,date:Date.now()});saveDS();
+      document.getElementById('pay').hidden=true;const sm=document.getElementById('sum');sm.hidden=false;sm.style.display='flex'};
+    app.querySelectorAll('[data-s]').forEach(b=>b.onclick=()=>{stars=+b.dataset.s;if(J&&J.id)cUpd({custRating:stars});app.querySelectorAll('[data-s]').forEach(x=>x.classList.toggle('on',+x.dataset.s<=stars))});
+    document.getElementById('next').onclick=()=>{stopJob();J=null;if(DS.wallet<MINBAL){setOnline(false);home();toast(L('Wallet குறைவு. Recharge பண்ணிட்டு Online போங்க','Wallet is low. Recharge to go online'));return}home()};
+    document.getElementById('off').onclick=()=>{stopJob();J=null;setOnline(false);home()};
+  });
+}
+
+/* ---------- earnings ---------- */
+let EV='today';
+function earnTab(){
+  const days=[...Array(7)].map((_,i)=>{const d=new Date();d.setHours(0,0,0,0);d.setDate(d.getDate()-6+i);return d});
+  const inDay=(x,d)=>new Date(x.date).toDateString()===d.toDateString();
+  const list=EV==='today'?DS.trips.filter(x=>isToday(x.date)):DS.trips.filter(x=>x.date>=days[0].getTime());
+  const sum=k=>list.reduce((a,x)=>a+x[k],0),cash=list.filter(x=>x.pay==='cash').reduce((a,x)=>a+x.fare,0);
+  const per=days.map(d=>DS.trips.filter(x=>inDay(x,d)).reduce((a,x)=>a+x.net,0)),mx=Math.max(100,...per);
+  const nice=Math.ceil(mx/500)*500;const anySample=list.some(x=>x.sample);
+  go(shell(`<div class="head pad"><h2>${L('வருமானம்','Earnings')}</h2></div><div class="body pad" style="padding-top:0">
+    <div class="seg"><button class="${EV==='today'?'on':''}" data-ev="today">${L('இன்று','Today')}</button><button class="${EV==='week'?'on':''}" data-ev="week">${L('இந்த வாரம்','Last 7 days')}</button></div>
+    <div class="hero2"><small>${L('நிகர வருமானம்','Net earnings')}</small><b>${inr(sum('net'))}</b><span>${list.length} ${L('பயணங்கள்','rides')} · ${list.reduce((a,x)=>a+x.km,0).toFixed(1)} ${L('கி.மீ','km')}</span></div>
+    <div class="stats"><div><b>${inr(sum('fare'))}</b><small>${L('மொத்த கட்டணம்','Total fares')}</small></div><div><b>−${inr(sum('comm'))}</b><small>Commission</small></div><div><b>${inr(cash)}</b><small>${L('கையில் cash','Cash in hand')}</small></div></div>
+    ${EV==='week'?`<div class="chart" role="img" aria-label="${L('7 நாள் வருமானம்','Earnings for the last 7 days')}">
+      <div class="yax"><span>${inr(nice)}</span><span>${inr(nice/2)}</span><span>₹0</span></div>
+      <div class="bars">${days.map((d,i)=>`<button class="bcol ${i===6?'today':''}" data-v="${inr(per[i])}" data-d="${d.toLocaleDateString(S.lang==='ta'?'ta-IN':'en-IN',{weekday:'long',day:'numeric',month:'short'})}"><span class="bar" style="height:${(per[i]/nice*100).toFixed(1)}%">${i===6||per[i]===Math.max(...per)?`<em>${inr(per[i])}</em>`:''}</span><small>${d.toLocaleDateString(S.lang==='ta'?'ta-IN':'en-IN',{weekday:'narrow'})}</small></button>`).join('')}</div>
+      <div class="ctip" id="ctip" hidden></div></div>`:''}
+    <div class="sec"><h3>${L('பயணங்கள்','Rides')}</h3>${anySample?`<span class="sample">${L('முந்தைய நாட்கள் sample','Older days are sample')}</span>`:''}</div>
+    ${list.length?`<div class="recent">${list.slice(0,40).map(x=>`<div class="row"><span class="ic"><em class="pm ${x.pay}">${payName(x.pay)}</em></span><div><b>${x.to[S.lang]}</b><small>${new Date(x.date).toLocaleString(S.lang==='ta'?'ta-IN':'en-IN',{day:'numeric',month:'short',hour:'numeric',minute:'2-digit'})} · ${x.km} ${L('கி.மீ','km')}</small></div><div class="tamt"><b>${inr(x.net)}</b><small>${inr(x.fare)} − ${inr(x.comm)}</small></div></div>`).join('')}</div>`
+      :`<div class="empty"><h3>${L('இன்னும் ride இல்லை','No rides yet')}</h3><p class="muted">${L('Online போனா ride request வரும்.','Go online to get ride requests.')}</p></div>`}
+  </div>`),()=>{
+    bindNav();app.querySelectorAll('[data-ev]').forEach(b=>b.onclick=()=>{EV=b.dataset.ev;earnTab()});
+    const tip=document.getElementById('ctip');
+    app.querySelectorAll('.bcol').forEach(b=>{const show=()=>{tip.hidden=false;tip.textContent=`${b.dataset.d}: ${b.dataset.v}`;app.querySelectorAll('.bcol').forEach(x=>x.classList.toggle('hl',x===b))};b.onmouseenter=show;b.onclick=show;b.onfocus=show});
+  });
+}
+
+/* ---------- wallet ---------- */
+function walletTab(){
+  go(shell(`<div class="head pad"><h2>Wallet</h2></div><div class="body pad" style="padding-top:4px">
+    <div class="walcard"><small>${L('Wallet இருப்பு','Wallet balance')}</small><b>${inr(DS.wallet)}</b>
+      <span>${L(`ஒவ்வொரு ride-க்கும் ${COMM}% commission இதுல இருந்து கழியும். Online போக குறைந்தது ${inr(MINBAL)}.`,`${COMM}% commission per ride is taken from here. Minimum ${inr(MINBAL)} to go online.`)}</span>
+      <button class="btn yellow" id="rc">+ ${L('Recharge பண்ணு','Recharge')}</button></div>
+    ${DS.pending.length?`<div class="sec"><h3>${L('Approval-க்கு காத்திருக்கு','Waiting for approval')}</h3></div><div class="recent">${DS.pending.map((p,i)=>`<div class="row"><span class="ic in">+</span><div><b>${inr(p.amt)} · UTR ${esc(p.utr)}</b><small>${L('Owner பார்த்து approve பண்ணுவாங்க','Your owner will verify and approve')}</small></div>${CL?'':`<button class="demo sm" data-ap="${i}">${L('Demo: approve','Demo: approve')}</button>`}</div>`).join('')}</div>`:''}
+    <div class="sec"><h3>${L('பரிவர்த்தனைகள்','Transactions')}</h3></div>
+    <div class="recent">${DS.tx.slice(0,40).map(x=>`<div class="row"><span class="ic ${x.amt>0?'in':'out'}">${x.amt>0?'+':'−'}</span><div><b>${esc(x[S.lang])}</b><small>${new Date(x.date).toLocaleString(S.lang==='ta'?'ta-IN':'en-IN',{day:'numeric',month:'short',hour:'numeric',minute:'2-digit'})}</small></div><b class="${x.amt>0?'pos':''}" style="flex:none">${x.amt>0?'+':'−'}${inr(Math.abs(x.amt))}</b></div>`).join('')}</div>
+  </div>`),()=>{
+    bindNav();document.getElementById('rc').onclick=recharge;
+    app.querySelectorAll('[data-ap]').forEach(b=>b.onclick=()=>{const p=DS.pending.splice(+b.dataset.ap,1)[0];DS.wallet+=p.amt;DS.tx.unshift({amt:p.amt,ta:'Recharge (Owner approve)',en:'Recharge (approved by owner)',date:Date.now()});saveDS();walletTab();toast(L(`${inr(p.amt)} wallet-ல சேர்ந்தது`,`${inr(p.amt)} added to wallet`))});
+  });
+}
+function recharge(){
+  let amt=500;
+  modal(`<h3>${L('Wallet recharge','Recharge wallet')}</h3>
+    <div class="steps"><div><i>1</i>${L('கீழே உள்ள amount-ஐ Owner UPI-க்கு அனுப்புங்க','Send the amount to the owner’s UPI')}</div><div><i>2</i>${L('UPI app-ல வர்ற 12 இலக்க UTR / Transaction ID-ஐ போடுங்க','Enter the 12-digit UTR / transaction ID from your UPI app')}</div><div><i>3</i>${L('Owner சரிபார்த்ததும் wallet-ல சேரும்','It is added once the owner verifies it')}</div></div>
+    ${CFGD&&CFGD.upi?`<div class="note" style="font-size:15px">UPI ID: <b>${esc(CFGD.upi)}</b></div>`:`<div class="note">${L('Owner UPI ID, Owner app-ல set பண்ணதும் இங்கே காட்டும்.','The owner’s UPI ID shows here once set in the Owner app.')}</div>`}
+    <div class="tags" style="justify-content:flex-start">${[200,500,1000,2000].map(a=>`<button class="chip ${a===500?'sel':''}" data-a="${a}">₹${a}</button>`).join('')}</div>
+    <div class="field" style="height:52px"><span class="cc">UTR</span><input id="utr" inputmode="numeric" maxlength="12" placeholder="123456789012"></div>
+    <div class="err" id="re"></div><button class="btn" id="rs">${L('Approval-க்கு அனுப்பு','Send for approval')}</button>`,(m,close)=>{
+    m.querySelectorAll('[data-a]').forEach(b=>b.onclick=()=>{amt=+b.dataset.a;m.querySelectorAll('[data-a]').forEach(x=>x.classList.toggle('sel',x===b))});
+    const u=m.querySelector('#utr');u.oninput=()=>{u.value=u.value.replace(/\D/g,'').slice(0,12)};
+    m.querySelector('#rs').onclick=()=>{if(u.value.length!==12){m.querySelector('#re').textContent=L('12 இலக்க UTR எண் போடுங்க','Enter the 12-digit UTR');return}
+      if(CL)cloudRecharge(amt,u.value);DS.pending.unshift({amt,utr:u.value,date:Date.now()});saveDS();close();S.tab='wallet';walletTab();toast(L('அனுப்பியாச்சு. Owner approve பண்ணணும்','Sent. Waiting for owner approval'))};
+  });
+}
+
+/* ---------- profile ---------- */
+function profileTab(){
+  const d=me(),v=VEH.find(x=>x.id===d.veh),all=DS.trips.length;
+  const docs=[['ஓட்டுநர் உரிமம் (DL)','Driving licence',400],['RC','RC book',900],['Insurance','Insurance',18],['Permit','Permit',210],['FC (Fitness)','Fitness certificate',95]];
+  if(DME&&DME.docs)['dl','rc','ins','permit','fc'].forEach((k,i)=>{if(DME.docs[k])docs[i][2]=Math.round((DME.docs[k]-Date.now())/864e5)});
+  go(shell(`<div class="head pad"><h2>${L('நான்','Profile')}</h2></div><div class="body pad" style="padding-top:4px">
+    <div class="prof"><span class="avatar">${d.en[0]}</span><div style="flex:1;min-width:0"><h3>${d[S.lang]}</h3><span class="muted">+91 ${S.phone} · ★ ${d.rating}</span></div></div>
+    <div class="vcard"><span class="vi">${I[d.veh]}</span><div><b>${v[S.lang]} · ${d.model}</b><small>${L('Owner வண்டி','Owner’s vehicle')} · ${all} ${L('பயணங்கள்','rides')}</small></div><span class="plate">${d.plate}</span></div>
+    <div class="sec"><h3>${L('ஆவணங்கள்','Documents')}</h3>${CL?'':`<span class="sample">${L('Sample தேதிகள்','Sample dates')}</span>`}</div>
+    <div class="recent">${docs.map(([ta,en,dl])=>{const ex=new Date(Date.now()+dl*864e5);return `<div class="row"><span class="ic">${I.shield}</span><div><b>${S.lang==='ta'?ta:en}</b><small>${L('முடியும் தேதி','Expires')} ${ex.toLocaleDateString(S.lang==='ta'?'ta-IN':'en-IN',{day:'numeric',month:'short',year:'numeric'})}</small></div><em class="st ${dl<30?'warnst':'okst'}">${dl<0?L('காலாவதி','Expired'):dl<30?L(`${dl} நாள்ல முடியும்`,`${dl} days left`):L('சரி','Valid')}</em></div>`}).join('')}</div>
+    <div class="sec"><h3>${L('அமைப்புகள்','Settings')}</h3></div>
+    <div class="recent"><button class="row" id="lg"><span class="ic">அ</span><div><b>${L('மொழி','Language')}</b><small>${S.lang==='ta'?'தமிழ்':'English'}</small></div></button>
+      <button class="row" id="th"><span class="ic">☾</span><div><b>Dark mode</b><small>${document.documentElement.dataset.theme==='dark'?'On':'Off'}</small></div></button>
+      ${CL?'':`<button class="row" id="sw"><span class="ic">${I.navHome}</span><div><b>${L('வேற வண்டி (demo)','Switch vehicle (demo)')}</b><small>${L('Owner assign பண்றது','Assigned by owner')}</small></div></button>`}
+      <button class="row" id="lo"><span class="ic" style="color:var(--danger)">⏻</span><div><b style="color:var(--danger)">Logout</b><small>+91 ${S.phone}</small></div></button></div>
+    <p class="fine muted">Vellore Call Taxi · Driver app v0.1 (demo)</p></div>`),()=>{
+    bindNav();
+    document.getElementById('lg').onclick=()=>{S.lang=S.lang==='ta'?'en':'ta';save();profileTab()};
+    document.getElementById('th').onclick=()=>{const r=document.documentElement;r.dataset.theme=r.dataset.theme==='dark'?'light':'dark';profileTab()};
+    const sw=document.getElementById('sw');if(sw)sw.onclick=()=>{setOnline(false);pickProfile()};
+    document.getElementById('lo').onclick=()=>{setOnline(false);if(CL){stopAllD();DME=null;CL.logout()}S.logged=false;S.pid=null;save();login()};
+  });
+}
+
+
+/* ================= CLOUD: Firebase (live on GitHub Pages; demo everywhere else) ================= */
+let CL=null,DME=null,UNS=[],REQUNSUB=null,JOBUNSUB=null,GEO=null,LASTLIVE=0,SHOWING=null,REQS=[],RCH=[];
+const DECL=new Set();const CFGD={upi:''};
+const ON_PAGES=/github\.io$/.test(location.hostname);
+const cloudP=(window.CLOUD_READY||Promise.resolve(null)).then(c=>{CL=c||null;return CL}).catch(()=>null);
+const F=()=>CL.fs;
+const ts=()=>F().serverTimestamp();
+function offlineD(){go(`<section class="screen"><div class="hero pad"><span class="mini">DRIVER APP</span><h1>${L('Internet இல்லை','You are offline')}</h1><p>${L('Connection-ஐ பார்த்துட்டு மறுபடி முயற்சி பண்ணுங்க.','Check your connection and try again.')}</p></div><div class="body pad"><div style="flex:1"></div><button class="btn" id="rl">${L('மறுபடி முயற்சி','Try again')}</button></div></section>`,()=>document.getElementById('rl').onclick=()=>location.reload())}
+function notDriver(){
+  go(`<section class="screen"><div class="hero pad"><span class="mini">DRIVER APP</span><h1>${L('இந்த நம்பர் driver-ஆ சேர்க்கப்படல','This number is not registered as a driver')}</h1>
+    <p>${esc(CL.phone||'')} · ${L('Owner-கிட்ட உங்க நம்பரை Office panel-ல சேர்க்க சொல்லுங்க.','Ask the owner to add your number in the office panel.')}</p></div>
+   <div class="body pad"><div style="flex:1"></div><button class="btn" id="lo2">${L('வேற நம்பர்ல login','Log in with another number')}</button></div></section>`,()=>document.getElementById('lo2').onclick=()=>{CL.logout().then(login)});
+}
+async function cloudBootD(){
+  const c=await cloudP;
+  if(!c){if(ON_PAGES){offlineD();return true}return false}
+  const u=await CL.waitUser();
+  if(!u){login();return true}
+  if(await loadMe())home();
+  return true;
+}
+async function loadMe(){
+  let s=null;try{s=await F().getDoc(F().doc(CL.db,'drivers',CL.phone))}catch(e){}
+  if(!s||!s.exists()){notDriver();return false}
+  applyMe(s.data());S.phone=(CL.phone||'').replace('+91','');S.logged=true;S.pid='cloud';save();
+  DS={wallet:DS.wallet,tx:[],trips:[],pending:[],onMs:0,onDay:new Date().toDateString()};
+  watchMe();watchCfgD();watchMine();watchRch();
+  return true;
+}
+function applyMe(d){DME={id:CL.phone,ta:d.name||'Driver',en:d.name||'Driver',plate:d.plate||'',model:d.model||'',veh:d.veh||'auto',rating:d.rating||5,docs:d.docs||null,blocked:!!d.blocked};DS.wallet=+d.wallet||0}
+function watchMe(){UNS.push(F().onSnapshot(F().doc(CL.db,'drivers',CL.phone),s=>{if(!s.exists())return;const before=DS.wallet;applyMe(s.data());
+  if(DME.blocked&&S.online){setOnline(false);toast(L('உங்க account நிறுத்தி வைக்கப்பட்டிருக்கு','Your account is on hold'))}
+  if(!J&&!document.querySelector('.modal')){if(S.tab==='wallet'&&before!==DS.wallet)walletTab();else if(S.tab==='home'&&document.getElementById('ons'))home()}},()=>{}))}
+function watchCfgD(){UNS.push(F().onSnapshot(F().doc(CL.db,'config','app'),s=>{if(!s.exists())return;const d=s.data();
+  if(d.comm!=null)COMM=+d.comm;if(d.minbal!=null)MINBAL=+d.minbal;CFGD.upi=d.upi||'';
+  if(d.fares)VEH.forEach(v=>{const f=d.fares[v.id];if(f){if(f.base!=null)v.base=+f.base;if(f.per!=null)v.per=+f.per}})},()=>{}))}
+function watchMine(){UNS.push(F().onSnapshot(F().query(F().collection(CL.db,'bookings'),F().where('driverPhone','==',CL.phone)),snap=>{
+  const all=snap.docs.map(d=>({id:d.id,...d.data()}));
+  DS.trips=all.filter(b=>b.status==='done').map(b=>{const f=+b.fare||0,c=Math.round(f*COMM/100);return{id:b.id,date:CL.toMs(b.doneAt)||b.when||Date.now(),fare:f,comm:c,net:f-c,pay:b.pay||'cash',km:+b.km||0,from:{ta:b.from.ta,en:b.from.en},to:{ta:b.to.ta,en:b.to.en},cust:{ta:b.custName||'',en:b.custName||''}}}).sort((a,b)=>b.date-a.date);
+  rebuildTx();
+  const act=all.find(b=>b.status==='assigned'||b.status==='ontrip');
+  if(act&&!J)adoptJob(act);
+  if(!J&&!document.querySelector('.modal')&&S.tab==='earn')earnTab();
+},e=>console.warn(e)))}
+function watchRch(){UNS.push(F().onSnapshot(F().query(F().collection(CL.db,'recharges'),F().where('driverPhone','==',CL.phone)),snap=>{
+  RCH=snap.docs.map(d=>({id:d.id,...d.data()}));
+  DS.pending=RCH.filter(r=>r.status==='pending').sort((a,b)=>(b.date||0)-(a.date||0)).map(r=>({amt:r.amt,utr:r.utr,date:r.date}));
+  rebuildTx();
+  if(!J&&!document.querySelector('.modal')&&S.tab==='wallet')walletTab();
+},()=>{}))}
+function rebuildTx(){
+  DS.tx=[...RCH.filter(r=>r.status==='approved').map(r=>({amt:+r.amt,ta:'Recharge (Owner approve)',en:'Recharge (approved)',date:CL.toMs(r.approvedAt)||r.date||0})),
+    ...RCH.filter(r=>r.status==='rejected').map(r=>({amt:0,ta:`Recharge நிராகரிப்பு · UTR ${r.utr}`,en:`Recharge rejected · UTR ${r.utr}`,date:CL.toMs(r.approvedAt)||r.date||0})),
+    ...DS.trips.map(t=>({amt:-t.comm,ta:`Commission: ${t.to.ta}`,en:`Commission: ${t.to.en}`,date:t.date}))].sort((a,b)=>b.date-a.date);
+}
+function stopAllD(){UNS.forEach(u=>{try{u()}catch(e){}});UNS=[];if(REQUNSUB){REQUNSUB();REQUNSUB=null}stopJob();stopGeo()}
+
+/* going online: GPS + live position + ride requests */
+function goLive(on){
+  F().updateDoc(F().doc(CL.db,'drivers',CL.phone),{online:on,updatedAt:ts()}).catch(()=>{});
+  pushLive(true);
+  if(on){startGeo();listenReq()}else{stopGeo();if(REQUNSUB){REQUNSUB();REQUNSUB=null}REQS=[]}
+}
+function pushLive(force){
+  if(!CL||!CL.phone)return;const now=Date.now();if(!force&&now-LASTLIVE<8000)return;LASTLIVE=now;
+  F().setDoc(F().doc(CL.db,'live',CL.phone),{lat:POS.lat,lon:POS.lon,online:!!S.online,busy:!!(J&&J.id),veh:me().veh,name:me().en,plate:me().plate,updatedAt:ts()}).catch(()=>{});
+}
+setInterval(()=>{if(CL&&S.online)pushLive(true)},20000);
+function startGeo(){
+  if(GEO!=null||!navigator.geolocation)return;
+  GEO=navigator.geolocation.watchPosition(p=>{POS={lat:p.coords.latitude,lon:p.coords.longitude};pushLive(false)},
+    ()=>toast(L('Location அனுமதி கொடுங்க. இல்லைனா customer-க்கு உங்க வண்டி தெரியாது','Allow location so customers can see your vehicle')),{enableHighAccuracy:true,maximumAge:5000,timeout:20000});
+}
+function stopGeo(){if(GEO!=null){navigator.geolocation.clearWatch(GEO);GEO=null}}
+function beep(){try{const a=new (window.AudioContext||window.webkitAudioContext)();[0,.35,.7].forEach(t=>{const o=a.createOscillator(),g=a.createGain();o.frequency.value=880;o.connect(g);g.connect(a.destination);g.gain.setValueAtTime(.25,a.currentTime+t);g.gain.exponentialRampToValueAtTime(.001,a.currentTime+t+.3);o.start(a.currentTime+t);o.stop(a.currentTime+t+.3)})}catch(e){}try{navigator.vibrate&&navigator.vibrate([300,150,300])}catch(e){}}
+function listenReq(){
+  if(REQUNSUB)return;
+  REQUNSUB=F().onSnapshot(F().query(F().collection(CL.db,'bookings'),F().where('status','==','searching'),F().where('veh','==',me().veh)),snap=>{
+    REQS=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(a.when||0)-(b.when||0));
+    if(SHOWING&&!REQS.some(b=>b.id===SHOWING)&&document.getElementById('acc')){SHOWING=null;J=null;home();toast(L('இந்த ride-ஐ வேற driver எடுத்துட்டாங்க, அல்லது ரத்து ஆயிடுச்சு','Another driver took this ride, or it was cancelled'));return}
+    if(document.getElementById('offs'))maybeShowReq();
+  },e=>console.warn(e));
+}
+function maybeShowReq(){
+  if(!CL||!S.online||J||SHOWING||document.querySelector('.modal'))return;
+  const b=REQS.find(x=>!DECL.has(x.id));if(!b)return;
+  SHOWING=b.id;beep();incoming(buildJ(b,b.id));
+}
+function buildJ(b,id){
+  P.pick={ta:b.from.ta,en:b.from.en,lat:b.from.lat,lon:b.from.lon,ic:'pin'};
+  const tl=b.to&&b.to.lat!=null?b.to:b.from;
+  P.drop={ta:b.to.ta,en:b.to.en,lat:tl.lat,lon:tl.lon,ic:'pin'};
+  const trip=(b.path&&b.path.length>1)?b.path:[{lat:P.pick.lat,lon:P.pick.lon},{lat:P.drop.lat,lon:P.drop.lon}];
+  const fare=+b.fare||0;
+  return{id,from:'pick',to:'drop',km:+b.km||hav(P.pick,P.drop)*1.3,fare,comm:Math.round(fare*COMM/100),pay:b.pay||'cash',
+    cust:{ta:b.custName||'Customer',en:b.custName||'Customer',rating:'—'},pin:null,app:!!b.customerUid,away:hav(POS,P.pick)*1.3,
+    approach:[{...POS},{lat:POS.lat,lon:P.pick.lon},{lat:P.pick.lat,lon:P.pick.lon}],trip,b};
+}
+async function acceptCloud(){
+  const id=J.id,d=me();
+  try{
+    await F().runTransaction(CL.db,async tx=>{const ref=F().doc(CL.db,'bookings',id);const s=await tx.get(ref);
+      if(!s.exists()||s.data().status!=='searching')throw new Error('taken');
+      tx.update(ref,{status:'assigned',driverPhone:CL.phone,driverName:d.en,plate:d.plate,vehModel:d.model,assignedAt:ts(),updatedAt:ts()})});
+    SHOWING=null;watchJob(id);pushLive(true);toPickup();
+  }catch(e){SHOWING=null;DECL.add(id);J=null;home();toast(e&&e.message==='taken'?L('இந்த ride-ஐ வேற driver எடுத்துட்டாங்க','Another driver took this ride'):CL.errText(e,S.lang==='ta'))}
+}
+function adoptJob(b){
+  J=buildJ(b,b.id);watchJob(b.id);beep();
+  toast(L('உங்களுக்கு ஒரு ride இருக்கு','You have a ride'));
+  if(b.status==='ontrip')onTrip();else if(b.arrivedAt)atPickup();else toPickup();
+}
+function watchJob(id){
+  if(JOBUNSUB)JOBUNSUB();
+  JOBUNSUB=F().onSnapshot(F().doc(CL.db,'bookings',id),s=>{
+    if(!J||J.id!==id||!s.exists())return;const b=s.data();J.b=b;
+    if(b.status==='cancelled'||(b.driverPhone&&b.driverPhone!==CL.phone)){stopJob();J=null;pushLive(true);home();toast(L('இந்த ride ரத்து / மாற்றப்பட்டது','This ride was cancelled or reassigned'));return}
+    if(b.status==='ontrip'&&(document.getElementById('pinb')||document.getElementById('arr')||document.getElementById('st'))){clearTimeout(J.waitPin);onTrip();toast(L('PIN சரி! Trip ஆரம்பம்','PIN verified. Trip started'))}
+  },()=>{});
+}
+function stopJob(){if(JOBUNSUB){JOBUNSUB();JOBUNSUB=null}if(J)clearTimeout(J.waitPin)}
+function cUpd(o){if(!J||!J.id)return Promise.resolve();return F().updateDoc(F().doc(CL.db,'bookings',J.id),{...o,updatedAt:ts()}).catch(e=>toast(CL.errText(e,S.lang==='ta')))}
+function cloudStart(ins){
+  const pe=document.getElementById('pe');
+  const reset=()=>{const sl=document.getElementById('st');if(!sl)return;sl.classList.remove('done');const k=sl.querySelector('.knob');k.style.transform='';sl.style.setProperty('--p',0);bindSlide('st',()=>cloudStart(ins))};
+  if(!J.app){cUpd({status:'ontrip'});onTrip();return}
+  const pin=ins.map(x=>x.value).join('');
+  if(pin.length!==4){pe.textContent=L('4 இலக்க PIN போடுங்க','Enter the 4-digit PIN');reset();return}
+  pe.style.color='var(--muted)';pe.textContent=L('Customer app PIN-ஐ சரிபார்க்குது…','The customer app is checking the PIN…');
+  cUpd({pinTry:pin});
+  clearTimeout(J.waitPin);
+  J.waitPin=setTimeout(()=>{if(J&&J.b&&J.b.status!=='ontrip'){pe.style.color='';pe.textContent=L('PIN தப்பு, அல்லது customer app offline. Customer-கிட்ட மறுபடி கேளுங்க / office-ஐ அழைங்க','Wrong PIN, or the customer app is offline. Ask again or call the office');ins.forEach(x=>x.value='');ins[0].focus();reset()}},12000);
+}
+function cloudDone(pm){
+  cUpd({status:'done',pay:pm,doneAt:ts(),paidAt:ts()});
+  if(J.comm>0)F().updateDoc(F().doc(CL.db,'drivers',CL.phone),{wallet:F().increment(-J.comm),updatedAt:ts()}).catch(e=>console.warn(e));
+  setTimeout(()=>pushLive(true),500);
+}
+function cloudRecharge(amt,utr){
+  F().addDoc(F().collection(CL.db,'recharges'),{driverPhone:CL.phone,driverName:me().en,amt,utr,status:'pending',date:Date.now(),createdAt:ts()}).catch(e=>toast(CL.errText(e,S.lang==='ta')));
+}
+function driverSos(){
+  F().addDoc(F().collection(CL.db,'tickets'),{uid:CL.user.uid,type:'sos',title:{ta:'Driver SOS',en:'Driver SOS'},cust:'Driver · '+me().en,phone:S.phone,
+    trip:J&&J.id?J.id.slice(0,6).toUpperCase():'',lat:POS.lat,lon:POS.lon,status:'open',date:Date.now(),createdAt:ts()}).catch(()=>{});
+}
+
+splash();
+
+</script>
+
+</body>
+</html>

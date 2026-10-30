@@ -1,0 +1,104 @@
+rules_version = '2';
+
+// Vellore Call Taxi — Firestore security rules
+// Who is who (decided by the phone number used to log in):
+//   staff/{+91XXXXXXXXXX}   role: "owner" or "staff"   → office panel
+//   drivers/{+91XXXXXXXXXX}                            → driver app
+//   everyone else who logs in                          → customer app
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() { return request.auth != null; }
+    function phone()    { return request.auth.token.phone_number; }
+    function isStaff()  { return signedIn() && exists(/databases/$(database)/documents/staff/$(phone())); }
+    function isOwner()  { return isStaff() && get(/databases/$(database)/documents/staff/$(phone())).data.role == 'owner'; }
+    function isDriver() { return signedIn() && exists(/databases/$(database)/documents/drivers/$(phone())); }
+    function changes()  { return request.resource.data.diff(resource.data).affectedKeys(); }
+
+    // Fares, commission, UPI ID, office phone — everyone logged in reads, only owner edits
+    match /config/{doc} {
+      allow read: if signedIn();
+      allow write: if isOwner();
+    }
+
+    // Office logins
+    match /staff/{ph} {
+      allow read: if isStaff() || (signedIn() && phone() == ph);
+      allow write: if isOwner();
+    }
+
+    // Customer profile (name, emergency contacts, saved places)
+    match /users/{uid} {
+      allow read, write: if signedIn() && request.auth.uid == uid;
+      allow read: if isStaff();
+    }
+
+    // Driver record (wallet, documents, vehicle). Only owner adds drivers.
+    match /drivers/{ph} {
+      allow read: if isStaff() || (signedIn() && phone() == ph);
+      allow create, delete: if isOwner();
+      allow update: if isStaff()
+        || (signedIn() && phone() == ph
+            && changes().hasOnly(['online', 'lat', 'lon', 'updatedAt', 'wallet'])
+            // a driver can only lower their own wallet (commission), never raise it
+            && (!('wallet' in changes()) || request.resource.data.wallet < resource.data.wallet));
+    }
+
+    // Live driver position shown to customers on the map
+    match /live/{ph} {
+      allow read: if signedIn();
+      allow write: if isDriver() && phone() == ph;
+    }
+
+    // Rides
+    match /bookings/{id} {
+      allow read: if isStaff()
+        || (signedIn() && resource.data.customerUid == request.auth.uid)
+        || (isDriver() && resource.data.driverPhone == phone())
+        || (isDriver() && resource.data.status == 'searching');
+
+      allow create: if isStaff()
+        || (signedIn() && request.resource.data.customerUid == request.auth.uid
+            && request.resource.data.status in ['searching', 'scheduled']);
+
+      allow update: if isStaff()
+        // customer: cancel, rate, tip, switch payment, confirm the PIN the driver typed
+        || (signedIn() && resource.data.customerUid == request.auth.uid
+            && changes().hasOnly(['status', 'cancelReason', 'pay', 'rating', 'tip', 'startedAt', 'updatedAt'])
+            && (request.resource.data.status == resource.data.status
+                || request.resource.data.status == 'cancelled'
+                || (resource.data.status == 'assigned' && request.resource.data.status == 'ontrip')))
+        // driver: accept a waiting ride
+        || (isDriver() && resource.data.status == 'searching'
+            && request.resource.data.status == 'assigned' && request.resource.data.driverPhone == phone()
+            && changes().hasOnly(['status', 'driverPhone', 'driverName', 'plate', 'vehModel', 'assignedAt', 'updatedAt']))
+        // driver: progress their own ride
+        || (isDriver() && resource.data.driverPhone == phone()
+            && changes().hasOnly(['status', 'pay', 'pinTry', 'arrivedAt', 'doneAt', 'paidAt', 'custRating', 'cancelReason', 'updatedAt'])
+            && request.resource.data.status in ['assigned', 'arrived', 'ontrip', 'done', 'cancelled']);
+
+      allow delete: if isOwner();
+
+      // Ride PIN: only the customer and the office can see it
+      match /private/{doc} {
+        allow read, write: if isStaff()
+          || (signedIn() && get(/databases/$(database)/documents/bookings/$(id)).data.customerUid == request.auth.uid);
+      }
+    }
+
+    // Driver wallet recharge requests (UPI + UTR) — owner approves
+    match /recharges/{id} {
+      allow read: if isStaff() || (signedIn() && resource.data.driverPhone == phone());
+      allow create: if isDriver() && request.resource.data.driverPhone == phone()
+        && request.resource.data.status == 'pending';
+      allow update: if isOwner();
+    }
+
+    // Call me back, complaints, lost items, SOS
+    match /tickets/{id} {
+      allow read: if isStaff() || (signedIn() && resource.data.uid == request.auth.uid);
+      allow create: if signedIn() && request.resource.data.uid == request.auth.uid;
+      allow update: if isStaff();
+    }
+  }
+}

@@ -1,20 +1,1829 @@
 <!doctype html>
-<html lang="en">
+<html lang="ta">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#d71920">
-  <title>Vellore Taxi</title>
-  <link rel="manifest" href="manifest.webmanifest">
-  <link rel="icon" href="icon-192.png">
-  <link rel="apple-touch-icon" href="icon-192.png">
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-  <link rel="stylesheet" href="style.css">
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#13284F">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="./icon-192.png">
+<link rel="apple-touch-icon" href="./icon-192.png">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{height:100%}body{margin:0;font-family:system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+<script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
+<script type="module">import('./vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 </head>
 <body>
-  <div id="app"></div>
-  <script type="module" src="app.js"></script>
+<title>Vellore Call Taxi</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+Thambi+2:wght@500;600;700;800&family=Hind+Madurai:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: one phone-width app column; map is the stage, a white bottom sheet carries the actions. */
+:root{
+  --yellow:#FFD84D; --yellow-soft:#FFF5C9; --yellow-ink:#7A5A00;
+  --navy:#1E3A6E; --navy-2:#2C5196; --navy-soft:#E6EDF9;
+  --bg:#F4F6FA; --surface:#FFFFFF; --surface-2:#F8F9FC;
+  --fg:#13284F; --muted:#5F6E89; --line:#E2E7F1;
+  --map-land:#EDF1F7; --map-block:#E3E9F2; --map-road:#FFFFFF; --map-edge:#D3DBE8; --map-river:#CBE1F4; --map-label:#56657F; --map-bldg:#D6DEEA;
+  --ok:#1E8A5A; --danger:#C23B3B;
+  --shadow:0 10px 30px rgba(19,40,79,.12);
+  --display:"Baloo Thambi 2","Hind Madurai",system-ui,sans-serif;
+  --body:"Hind Madurai","Noto Sans Tamil",system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --yellow:#FFD84D; --yellow-soft:#3A3417; --yellow-ink:#FFE38A;
+  --navy:#8FB0EE; --navy-2:#A9C3F5; --navy-soft:#1E2D4B;
+  --bg:#0D1628; --surface:#152240; --surface-2:#1A2A4C; --fg:#EAF0FB; --muted:#9AA8C3; --line:#26375C;
+  --map-land:#101C33; --map-block:#14223D; --map-road:#2A3B5E; --map-edge:#1B2A47; --map-river:#173556; --map-label:#8C9BB8; --map-bldg:#1D2E50;
+  --ok:#4CC28C; --danger:#F07A7A; --shadow:0 10px 30px rgba(0,0,0,.4); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --yellow:#FFD84D; --yellow-soft:#3A3417; --yellow-ink:#FFE38A;
+  --navy:#8FB0EE; --navy-2:#A9C3F5; --navy-soft:#1E2D4B;
+  --bg:#0D1628; --surface:#152240; --surface-2:#1A2A4C; --fg:#EAF0FB; --muted:#9AA8C3; --line:#26375C;
+  --map-land:#101C33; --map-block:#14223D; --map-road:#2A3B5E; --map-edge:#1B2A47; --map-river:#173556; --map-label:#8C9BB8; --map-bldg:#1D2E50;
+  --ok:#4CC28C; --danger:#F07A7A; --shadow:0 10px 30px rgba(0,0,0,.4); color-scheme:dark}
+
+html,body{height:100%}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;overflow:hidden}
+*{box-sizing:border-box}
+button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
+button:focus-visible,input:focus-visible{outline:3px solid var(--yellow);outline-offset:2px}
+.app{position:relative;height:100%;max-width:440px;margin:0 auto;background:var(--surface);overflow:hidden}
+@media (min-width:520px){.app{height:calc(100% - 32px);margin-block:16px;border-radius:28px;box-shadow:var(--shadow);border:1px solid var(--line)}}
+.screen{position:absolute;inset:0;display:flex;flex-direction:column;background:var(--surface);animation:in .32s ease both}
+@keyframes in{from{opacity:.4;transform:translateY(10px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+.pad{padding-left:max(18px,env(safe-area-inset-left,0px));padding-right:max(18px,env(safe-area-inset-right,0px))}
+h1,h2,h3{font-family:var(--display);margin:0;line-height:1.15;text-wrap:balance}
+.muted{color:var(--muted)}
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;height:54px;border-radius:16px;background:var(--navy);color:#fff;font-weight:700;font-size:16px;transition:transform .12s, opacity .2s}
+:root[data-theme="dark"] .btn{color:#0D1628}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .btn{color:#0D1628}}
+.btn:active{transform:scale(.98)}
+.btn[disabled]{opacity:.4;cursor:not-allowed}
+.btn.yellow{background:var(--yellow);color:#13284F}
+
+/* splash */
+#splash{background:#13284F;color:#fff;align-items:center;justify-content:center;gap:22px}
+.roofsign{background:var(--yellow);color:#13284F;border-radius:14px 14px 6px 6px;padding:14px 22px 10px;text-align:center;box-shadow:0 14px 0 -6px #0b1a36, 0 0 0 4px rgba(255,216,77,.25);animation:pop .6s cubic-bezier(.2,1.4,.4,1) both}
+.roofsign b{display:block;font-family:var(--display);font-size:30px;font-weight:800;letter-spacing:.06em}
+.roofsign span{font-family:var(--display);font-size:17px;font-weight:600}
+@keyframes pop{from{transform:scale(.6);opacity:0}}
+.road{width:220px;height:6px;border-radius:3px;background:repeating-linear-gradient(90deg,#FFD84D 0 26px,transparent 26px 44px);background-size:44px 6px;animation:roll .6s linear infinite;opacity:.8}
+@keyframes roll{to{background-position:-44px 0}}
+.tag{font-size:13px;letter-spacing:.14em;text-transform:uppercase;opacity:.7}
+
+/* onboarding */
+.hero{background:linear-gradient(170deg,var(--yellow) 0%,var(--yellow-soft) 100%);padding-top:48px;padding-bottom:28px;display:flex;flex-direction:column;gap:10px;border-radius:0 0 32px 32px}
+.hero h1{font-size:30px;color:#13284F}
+.hero p{margin:0;color:#3D4D6E}
+.hero .mini{display:inline-flex;align-self:flex-start;background:#13284F;color:var(--yellow);font-family:var(--display);font-weight:700;padding:4px 12px;border-radius:999px;font-size:13px;letter-spacing:.06em}
+.body{flex:1;display:flex;flex-direction:column;gap:16px;padding-top:24px;padding-bottom:max(20px,env(safe-area-inset-bottom,0px));overflow:auto}
+.langcard{display:flex;align-items:center;justify-content:space-between;padding:18px;border:2px solid var(--line);border-radius:18px;text-align:left;background:var(--surface)}
+.langcard.sel{border-color:var(--navy);background:var(--navy-soft)}
+.langcard b{font-family:var(--display);font-size:22px}
+.radio{width:22px;height:22px;border-radius:50%;border:2px solid var(--line)}
+.sel .radio{border:7px solid var(--navy)}
+.field{display:flex;align-items:center;gap:10px;height:58px;border:2px solid var(--line);border-radius:16px;padding:0 16px;background:var(--surface)}
+.field:focus-within{border-color:var(--navy)}
+.field input{flex:1;min-width:0;border:0;outline:0;background:none;font:inherit;font-size:19px;color:var(--fg);letter-spacing:.04em}
+.field .cc{font-weight:700;padding-right:10px;border-right:1px solid var(--line)}
+.otp{display:flex;gap:12px}
+.otp input{width:100%;min-width:0;height:62px;text-align:center;font-size:26px;font-family:var(--display);font-weight:700;border:2px solid var(--line);border-radius:16px;background:var(--surface);color:var(--fg)}
+.otp input:focus{border-color:var(--navy);outline:0}
+.note{background:var(--yellow-soft);color:var(--yellow-ink);border-radius:14px;padding:10px 14px;font-size:13.5px}
+.err{color:var(--danger);font-size:13.5px;min-height:18px}
+.linkbtn{color:var(--navy);font-weight:700;font-size:14px}
+.fine{font-size:12.5px;text-align:center}
+
+/* home */
+.mapwrap{position:relative;flex:1 1 auto;min-height:230px}
+canvas.map{position:absolute;inset:0;width:100%;height:100%;display:block}
+.topbar{position:absolute;top:max(14px,env(safe-area-inset-top,0px));left:max(14px,env(safe-area-inset-left,0px));right:max(14px,env(safe-area-inset-right,0px));display:flex;align-items:center;gap:10px;z-index:2}
+.chipbtn{height:42px;min-width:42px;border-radius:14px;background:var(--surface);box-shadow:var(--shadow);display:flex;align-items:center;justify-content:center;gap:6px;padding:0 12px;font-weight:700;font-size:13.5px}
+.greet{flex:1;min-width:0;background:var(--surface);box-shadow:var(--shadow);border-radius:14px;padding:6px 12px;line-height:1.2}
+.greet small{display:block;color:var(--muted);font-size:12px}
+.greet b{font-family:var(--display);font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+.locate{position:absolute;right:max(14px,env(safe-area-inset-right,0px));bottom:30px;z-index:2}
+.nearby{position:absolute;left:max(14px,env(safe-area-inset-left,0px));bottom:30px;z-index:2;background:var(--navy);color:#fff;border-radius:999px;padding:6px 12px;font-size:12.5px;font-weight:600;display:flex;align-items:center;gap:6px}
+:root[data-theme="dark"] .nearby{color:#0D1628}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .nearby{color:#0D1628}}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--yellow);box-shadow:0 0 0 0 rgba(255,216,77,.7);animation:ping 1.6s infinite}
+@keyframes ping{70%{box-shadow:0 0 0 8px rgba(255,216,77,0)}100%{box-shadow:0 0 0 0 rgba(255,216,77,0)}}
+.sheet{position:relative;z-index:3;margin-top:-22px;background:var(--surface);border-radius:26px 26px 0 0;box-shadow:0 -8px 24px rgba(19,40,79,.08);display:flex;flex-direction:column;gap:16px;padding-top:12px;padding-bottom:14px;max-height:62%;overflow:auto}
+.grab{width:40px;height:5px;border-radius:3px;background:var(--line);align-self:center}
+.where{display:flex;align-items:center;gap:12px;height:58px;border-radius:18px;background:var(--surface-2);border:1px solid var(--line);padding:0 8px 0 16px;text-align:left;width:100%}
+.where span{flex:1;font-family:var(--display);font-weight:700;font-size:19px}
+.where i{width:42px;height:42px;border-radius:13px;background:var(--yellow);display:flex;align-items:center;justify-content:center}
+.chips{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;margin-inline:-2px;padding:2px}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;display:flex;align-items:center;gap:6px;height:38px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:var(--surface);font-size:13.5px;font-weight:600;white-space:nowrap}
+.sec{display:flex;align-items:baseline;justify-content:space-between}
+.sec h3{font-size:17px}
+.services{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.svc{display:flex;flex-direction:column;align-items:center;gap:6px;font-size:12.5px;font-weight:600;text-align:center;line-height:1.2}
+.svc i{width:100%;aspect-ratio:1;max-width:72px;border-radius:18px;background:var(--navy-soft);display:flex;align-items:center;justify-content:center}
+.svc:first-child i{background:var(--yellow)}
+.offers{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;padding-bottom:2px}
+.offers::-webkit-scrollbar{display:none}
+.offer{flex:none;width:78%;scroll-snap-align:start;border-radius:20px;padding:16px;display:flex;flex-direction:column;gap:6px;position:relative;overflow:hidden;min-height:120px}
+.offer b{font-family:var(--display);font-size:20px;line-height:1.15}
+.offer small{opacity:.85;font-size:12.5px}
+.offer .code{align-self:flex-start;margin-top:auto;border:1.5px dashed currentColor;border-radius:8px;padding:2px 10px;font-weight:700;letter-spacing:.08em;font-size:13px}
+.offer.o1{background:#13284F;color:#FFD84D}
+.offer.o2{background:#FFD84D;color:#13284F}
+.offer.o3{background:#2C5196;color:#fff}
+.offer svg{position:absolute;right:-14px;bottom:-12px;opacity:.18}
+.sample{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.recent{display:flex;flex-direction:column}
+.row{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--line);text-align:left;width:100%}
+.row:last-child{border-bottom:0}
+.row .ic{width:40px;height:40px;border-radius:12px;background:var(--surface-2);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;flex:none}
+.row div{flex:1;min-width:0}
+.row b{display:block;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row small{color:var(--muted);font-size:12.5px}
+.nav{display:grid;grid-template-columns:repeat(5,1fr);border-top:1px solid var(--line);background:var(--surface);padding-bottom:max(6px,env(safe-area-inset-bottom,0px));position:relative;z-index:4}
+.nav button{display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 0 4px;font-size:11.5px;font-weight:600;color:var(--muted)}
+.nav button.on{color:var(--navy)}
+.nav button.on svg{background:var(--yellow-soft);border-radius:10px}
+.nav svg{width:44px;height:28px;padding:3px 10px}
+
+/* search */
+.head{display:flex;align-items:center;gap:10px;padding-top:max(14px,env(safe-area-inset-top,0px));padding-bottom:10px}
+.head h2{font-size:20px;flex:1}
+.back{width:42px;height:42px;border-radius:14px;background:var(--surface-2);border:1px solid var(--line);display:flex;align-items:center;justify-content:center}
+.route-in{display:flex;gap:12px;background:var(--surface-2);border:1px solid var(--line);border-radius:18px;padding:10px 12px}
+.rail{display:flex;flex-direction:column;align-items:center;padding-top:14px;gap:0}
+.rail .a{width:10px;height:10px;border-radius:50%;background:var(--ok)}
+.rail .l{width:2px;flex:1;min-height:28px;background:repeating-linear-gradient(var(--muted) 0 3px,transparent 3px 6px)}
+.rail .b{width:10px;height:10px;border-radius:2px;background:var(--danger)}
+.ins{flex:1;min-width:0;display:flex;flex-direction:column}
+.ins input{height:44px;border:0;outline:0;background:none;font:inherit;font-size:16px;color:var(--fg);min-width:0}
+.ins input:first-child{border-bottom:1px solid var(--line)}
+.ins input:focus{color:var(--navy)}
+.mic{width:44px;height:44px;border-radius:14px;background:var(--yellow);display:flex;align-items:center;justify-content:center;align-self:flex-end;flex:none}
+.list{flex:1;overflow:auto;padding-bottom:20px}
+.tagline{font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);padding:16px 0 4px}
+
+/* fare */
+.fare-sheet{gap:12px;max-height:68%}
+.trip{display:flex;gap:10px;align-items:center;font-size:13.5px}
+.trip b{font-family:var(--display);font-size:16px}
+.pill{display:inline-flex;align-items:center;gap:4px;background:var(--navy-soft);color:var(--navy);border-radius:999px;padding:3px 10px;font-weight:700;font-size:12.5px;white-space:nowrap}
+.veh{display:flex;align-items:center;gap:12px;padding:12px;border-radius:18px;border:2px solid var(--line);text-align:left;width:100%;background:var(--surface);transition:border-color .15s, background .15s}
+.veh.sel{border-color:var(--navy);background:var(--navy-soft)}
+.veh .vi{width:58px;height:44px;border-radius:12px;background:var(--yellow-soft);display:flex;align-items:center;justify-content:center;flex:none}
+.veh div{flex:1;min-width:0}
+.veh b{font-family:var(--display);font-size:17px;display:block}
+.veh small{color:var(--muted);font-size:12.5px}
+.veh .price{text-align:right;flex:none}
+.veh .price b{font-size:20px;font-variant-numeric:tabular-nums}
+.veh .price s{color:var(--muted);font-size:12px}
+.payrow{display:flex;gap:8px}
+.pay{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;height:44px;border-radius:14px;border:1.5px solid var(--line);font-weight:700;font-size:14px}
+.pay.sel{border-color:var(--navy);background:var(--navy-soft);color:var(--navy)}
+
+
+canvas.map{touch-action:none;cursor:grab;-webkit-user-select:none;user-select:none}
+canvas.map:active{cursor:grabbing}
+.zoomctl{position:absolute;right:max(14px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:8px;z-index:2}
+.zoomctl .chipbtn{font-size:22px;font-weight:700;width:44px;height:44px;padding:0}
+.hint{position:absolute;left:50%;transform:translateX(-50%);top:calc(max(14px,env(safe-area-inset-top,0px)) + 56px);z-index:2;background:rgba(19,40,79,.88);color:#fff;font-size:12.5px;font-weight:600;padding:6px 12px;border-radius:999px;white-space:nowrap;transition:opacity .4s;pointer-events:none}
+.hint.gone{opacity:0}
+.pin{position:absolute;left:50%;top:50%;z-index:3;pointer-events:none;transform:translate(-50%,-97%);transition:transform .2s cubic-bezier(.3,1.6,.5,1)}
+.pin.lift{transform:translate(-50%,calc(-97% - 16px))}
+.pinshadow{position:absolute;left:50%;top:50%;width:18px;height:7px;border-radius:50%;background:rgba(19,40,79,.4);transform:translate(-50%,-50%);z-index:2;pointer-events:none;transition:.2s}
+.pin.lift + .pinshadow{width:10px;opacity:.45}
+.pickcard{display:flex;flex-direction:column;gap:12px;padding-top:16px;padding-bottom:max(16px,env(safe-area-inset-bottom,0px));border-top:1px solid var(--line);background:var(--surface);border-radius:24px 24px 0 0;margin-top:-20px;position:relative;z-index:4;box-shadow:0 -8px 24px rgba(19,40,79,.08)}
+.addr{display:flex;gap:12px;align-items:flex-start;min-height:52px}
+.addr .ic{width:44px;height:44px;border-radius:14px;background:var(--yellow-soft);color:var(--yellow-ink);display:flex;align-items:center;justify-content:center;flex:none}
+.addr div{min-width:0}
+.addr b{font-family:var(--display);font-size:19px;display:block;line-height:1.2}
+.addr small{color:var(--muted);font-size:13px;font-variant-numeric:tabular-nums}
+.addr b,.addr small{transition:opacity .15s}
+.addr.loading b,.addr.loading small{opacity:.35}
+.kind{font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.row.onmap b{color:var(--navy)}
+.row.onmap .ic{background:var(--yellow);border-color:var(--yellow);color:#13284F}
+.ins input[readonly]{cursor:pointer}
+.greet.tap{cursor:pointer;text-align:left}
+
+
+[hidden]{display:none!important}
+.radar{position:absolute;left:50%;top:50%;z-index:2;pointer-events:none}
+.radar i{position:absolute;left:-60px;top:-60px;width:120px;height:120px;border-radius:50%;border:2px solid var(--navy-2);background:rgba(44,81,150,.10);animation:radar 2.4s ease-out infinite;opacity:0}
+.radar i:nth-child(2){animation-delay:.8s}.radar i:nth-child(3){animation-delay:1.6s}
+@keyframes radar{0%{transform:scale(.2);opacity:.9}100%{transform:scale(1.7);opacity:0}}
+.ride-sheet{gap:14px;max-height:66%}
+.searchrow{display:flex;gap:14px;align-items:center}
+.searchrow>div{min-width:0}
+.searchrow .vi{width:62px;height:48px;border-radius:14px;background:var(--yellow-soft);display:flex;align-items:center;justify-content:center;flex:none;animation:bob .8s ease-in-out infinite alternate}
+@keyframes bob{to{transform:translateY(-4px)}}
+.searchrow h3{font-size:19px}
+.bar{height:6px;border-radius:3px;background:var(--line);overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--navy),var(--navy-2));border-radius:3px;animation:fill 4.2s linear forwards}
+@keyframes fill{to{width:100%}}
+.btn.ghost{background:transparent;color:var(--danger)!important;border:1.5px solid var(--line);height:48px}
+.tripcard{display:flex;gap:12px;padding:12px 14px;border-radius:16px;background:var(--surface-2);border:1px solid var(--line)}
+.tripcard .rail{padding-top:6px}
+.tripcard .rail .l{min-height:22px}
+.stops{flex:1;min-width:0;display:flex;flex-direction:column;gap:10px;font-size:14px}
+.stops b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stops small{color:var(--muted);font-size:11.5px;text-transform:uppercase;letter-spacing:.08em;font-weight:700}
+.amt{text-align:right;flex:none}
+.amt b{font-family:var(--display);font-size:21px;font-variant-numeric:tabular-nums}
+.status b{font-size:17px}
+.chipbtn.sos{background:#C23B3B;color:#fff;font-weight:800;letter-spacing:.08em;box-shadow:0 6px 18px rgba(194,59,59,.35)}
+.chipbtn.ff{position:absolute;right:max(14px,env(safe-area-inset-right,0px));bottom:34px;z-index:2;font-size:12.5px}
+.pinbox{display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--yellow-soft);border-radius:16px;padding:10px 14px}
+.pinbox span{font-size:13px;color:var(--yellow-ink);font-weight:600;line-height:1.3}
+.pinbox b{display:flex;gap:6px;flex:none}
+.pinbox i{font-style:normal;width:34px;height:40px;border-radius:10px;background:var(--surface);color:var(--fg);display:flex;align-items:center;justify-content:center;font-family:var(--display);font-size:22px;font-weight:800;box-shadow:0 2px 0 var(--line)}
+.drv{display:flex;align-items:center;gap:12px}
+.drv>div:not(.vehbox){flex:1;min-width:0}
+.drv b{font-family:var(--display);font-size:18px;display:block}
+.drv small{color:var(--muted);font-size:12.5px}
+.drv .avatar{width:50px;height:50px;font-size:22px;border-radius:16px}
+.vehbox{display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex:none}
+.plate{background:#FFD84D;color:#111;border:2px solid #111;border-radius:6px;padding:1px 8px;font-weight:700;font-size:13.5px;letter-spacing:.06em;white-space:nowrap}
+.acts{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.acts button{display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 0;border-radius:14px;background:var(--surface-2);border:1px solid var(--line);font-size:12px;font-weight:600}
+.acts button svg{color:var(--navy)}
+.modal{position:absolute;inset:0;z-index:30;display:flex;flex-direction:column;justify-content:flex-end;background:rgba(10,20,40,.45);animation:fade .2s}
+@keyframes fade{from{opacity:0}}
+.modal .card{background:var(--surface);border-radius:24px 24px 0 0;padding-top:20px;padding-bottom:max(18px,env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:12px;max-height:82%;overflow:auto;animation:in .25s}
+.modal h3{font-size:20px}
+.reason{display:flex;align-items:center;gap:12px;padding:12px 14px;border:1.5px solid var(--line);border-radius:14px;text-align:left;width:100%;font-weight:600}
+.reason .radio{flex:none}
+.reason.sel{border-color:var(--navy);background:var(--navy-soft)}
+.reason.sel .radio{border:7px solid var(--navy)}
+.chatlog{display:flex;flex-direction:column;gap:8px;min-height:120px;max-height:240px;overflow:auto;padding:4px 0}
+.msg{max-width:78%;padding:8px 12px;border-radius:14px;font-size:14px}
+.msg.me{align-self:flex-end;background:#1E3A6E;color:#fff;border-bottom-right-radius:4px}
+.msg.dr{align-self:flex-start;background:var(--surface-2);border:1px solid var(--line);border-bottom-left-radius:4px}
+.sosbig{height:64px;border-radius:18px;background:#C23B3B;color:#fff;font-family:var(--display);font-size:20px;font-weight:800;width:100%;letter-spacing:.06em}
+.donehero{background:linear-gradient(170deg,var(--yellow),var(--yellow-soft));padding-top:40px;padding-bottom:24px;border-radius:0 0 32px 32px;display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center;color:#13284F}
+.check{width:72px;height:72px;border-radius:50%;background:#13284F;display:flex;align-items:center;justify-content:center;animation:pop .5s cubic-bezier(.2,1.5,.4,1)}
+.bill{display:flex;flex-direction:column;gap:8px;padding:14px 16px;border:1px solid var(--line);border-radius:18px}
+.bill div{display:flex;justify-content:space-between;gap:12px;font-size:14.5px;font-variant-numeric:tabular-nums}
+.bill .tot{border-top:1px dashed var(--line);padding-top:10px;font-family:var(--display);font-size:20px;font-weight:700}
+.qr{display:flex;gap:14px;align-items:center;padding:14px;border-radius:18px;background:var(--surface-2);border:1px solid var(--line)}
+.qr svg{flex:none;border-radius:10px;background:#fff;padding:6px}
+.stars{display:flex;gap:6px;justify-content:center}
+.stars button{width:48px;height:48px;font-size:36px;line-height:1;color:var(--line);transition:transform .15s,color .15s}
+.stars button.on{color:#F5B400;transform:scale(1.08)}
+.tags{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.chip.sel{background:var(--navy-soft);border-color:var(--navy);color:var(--navy)}
+textarea{width:100%;min-height:70px;border:1.5px solid var(--line);border-radius:14px;padding:10px 12px;font:inherit;background:var(--surface);color:var(--fg);resize:vertical}
+
+
+.vsvg .wh{transform-box:fill-box;transform-origin:center}
+.vsvg .bd{transform-box:fill-box}
+.veh .vi,.searchrow .vi{position:relative;overflow:hidden;width:68px;height:48px}
+.veh .vi::after,.searchrow .vi::after{content:"";position:absolute;left:0;right:0;bottom:4px;height:2px;background:repeating-linear-gradient(90deg,var(--muted) 0 8px,transparent 8px 14px);background-size:14px 2px;opacity:0;transition:opacity .2s}
+.veh.sel .vi::after,.searchrow .vi::after{opacity:.5;animation:road .45s linear infinite}
+.veh.sel .vsvg .wh,.searchrow .vsvg .wh{animation:spin .55s linear infinite}
+.veh.sel .vsvg .bd,.searchrow .vsvg .bd{animation:bump .28s ease-in-out infinite alternate}
+.veh:not(.sel):hover .vsvg{transform:translateX(2px);transition:transform .2s}
+.searchrow .vi{animation:none}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes bump{to{transform:translateY(-1.2px)}}
+@keyframes road{to{background-position:-14px 0}}
+
+
+.fleet{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;padding:2px 2px 6px}
+.fleet::-webkit-scrollbar{display:none}
+.fcard{flex:none;width:62%;max-width:240px;scroll-snap-align:start;position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:4px;text-align:left;padding:16px 16px 12px;border-radius:22px;border:1px solid var(--line);background:var(--surface);min-height:190px;overflow:hidden}
+.fcard b{font-family:var(--display);font-size:20px;line-height:1.1}
+.fcard small{color:var(--muted);font-size:13px;line-height:1.3}
+.fcard.hot{background:var(--navy);border-color:var(--navy)}
+.fcard.hot b,.fcard.hot small,.fcard.hot .farr{color:#fff}
+.fcard.hot .fseat{background:rgba(255,255,255,.16);color:#fff}
+:root[data-theme="dark"] .fcard.hot b,:root[data-theme="dark"] .fcard.hot small,:root[data-theme="dark"] .fcard.hot .farr{color:#0D1628}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .fcard.hot b,:root:not([data-theme="light"]) .fcard.hot small,:root:not([data-theme="light"]) .fcard.hot .farr{color:#0D1628}}
+.fseat{font-size:11.5px;font-weight:700;padding:2px 8px;border-radius:999px;background:var(--yellow-soft);color:var(--yellow-ink)}
+.fart{margin-top:auto;align-self:flex-end;margin-right:-10px;margin-bottom:-6px;filter:drop-shadow(0 8px 6px rgba(19,40,79,.18))}
+.fcard:active .fart{transform:translateX(6px);transition:transform .2s}
+.fcard:hover .vsvg .wh{animation:spin .6s linear infinite}
+.farr{position:absolute;left:16px;bottom:14px;font-style:normal;font-size:20px;color:var(--fg)}
+
+.sheet>*,.body>*{flex-shrink:0}
+
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.stats div{background:var(--surface-2);border:1px solid var(--line);border-radius:16px;padding:10px 12px;display:flex;flex-direction:column}
+.stats b{font-family:var(--display);font-size:20px;font-variant-numeric:tabular-nums}
+.stats small{color:var(--muted);font-size:12px}
+.trow .tv{width:52px;background:var(--yellow-soft);border-color:transparent}
+.trow .tv svg{width:46px;height:28px}
+.tamt{flex:none;text-align:right;display:flex;flex-direction:column;align-items:flex-end}
+.tamt b{font-family:var(--display);font-size:17px;font-variant-numeric:tabular-nums}
+.tamt small{color:var(--muted);font-size:12px}
+.st{font-style:normal;font-size:12px;font-weight:700;padding:2px 10px;border-radius:999px}
+.st.cx{background:rgba(194,59,59,.12);color:var(--danger)}
+.empty{display:flex;flex-direction:column;align-items:center;text-align:center;gap:8px;padding:40px 10px;color:var(--muted)}
+.empty h3{color:var(--fg)}
+.empty .btn{margin-top:8px;max-width:260px}
+.minimap{position:relative;height:200px;border-radius:20px;overflow:hidden;border:1px solid var(--line)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.two .btn:only-child{grid-column:1/-1}
+.btn.wa{background:#1E8A5A;color:#fff!important;text-decoration:none;text-align:center;font-size:15px}
+.receipt{background:#fff;color:#13284F;border-radius:18px;border:1px solid #E2E7F1;padding:18px 18px 22px;display:flex;flex-direction:column;gap:14px;position:relative;box-shadow:0 10px 30px rgba(19,40,79,.10)}
+.receipt::after{content:"";position:absolute;left:10px;right:10px;bottom:-7px;height:14px;background:radial-gradient(circle at 7px 0,transparent 6px,#fff 6.5px) 0 0/14px 14px repeat-x}
+.rhead{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;padding-bottom:12px;border-bottom:2px solid #FFD84D}
+.rbrand{display:flex;gap:10px;align-items:center;min-width:0}
+.rbrand b{font-family:var(--display);font-size:17px;display:block;line-height:1.1}
+.rbrand small{font-size:11px;color:#5F6E89}
+.rsign{background:#FFD84D;color:#13284F;font-family:var(--display);font-weight:800;font-size:13px;letter-spacing:.08em;padding:4px 8px;border-radius:8px 8px 3px 3px;border:1.5px solid #13284F;flex:none}
+.rinv{display:flex;flex-direction:column;align-items:flex-end;text-align:right;flex:none}
+.rinv b{font-size:13px;font-variant-numeric:tabular-nums}
+.rinv small{font-size:11px;color:#5F6E89}
+.rsec{display:flex;flex-direction:column;gap:6px;padding-bottom:12px;border-bottom:1px dashed #D3DBE8}
+.rsec:last-of-type{border-bottom:0}
+.rrow{display:flex;justify-content:space-between;gap:12px;font-size:13.5px}
+.rrow span{color:#5F6E89;flex:none}
+.rrow b{text-align:right;font-weight:600;min-width:0;font-variant-numeric:tabular-nums}
+.rtot{font-family:var(--display);font-size:19px;padding-top:4px}
+.rtot span{color:#13284F}
+.rthanks{margin:0;text-align:center;font-size:13px;color:#5F6E89}
+.walcard{background:#13284F;color:#fff;border-radius:24px;padding:20px;display:flex;flex-direction:column;gap:4px;position:relative;overflow:hidden}
+.walcard::before{content:"";position:absolute;right:-40px;top:-40px;width:160px;height:160px;border-radius:50%;background:rgba(255,216,77,.16)}
+.walcard small{opacity:.75}
+.walcard b{font-family:var(--display);font-size:40px;line-height:1.1;color:#FFD84D;font-variant-numeric:tabular-nums}
+.walcard span{font-size:13px;opacity:.8;margin-bottom:10px}
+.walcard .btn{color:#13284F!important}
+.refer{display:flex;align-items:center;gap:12px;padding:14px;border-radius:18px;background:var(--yellow-soft)}
+.refer div{flex:1;min-width:0;display:flex;flex-direction:column}
+.refer b{font-family:var(--display);font-size:17px;color:var(--yellow-ink)}
+.refer small{font-size:12.5px;color:var(--yellow-ink);opacity:.85}
+.code{flex:none;display:flex;flex-direction:column;align-items:center;border:1.5px dashed var(--yellow-ink);border-radius:12px;padding:6px 10px;font-weight:800;letter-spacing:.08em;color:var(--yellow-ink)}
+.code i{font-style:normal;font-size:11px;font-weight:600;letter-spacing:0;opacity:.8}
+.row .ic.in{background:rgba(30,138,90,.12);color:var(--ok);font-weight:800;font-size:18px;border-color:transparent}
+.row .ic.out{background:rgba(194,59,59,.10);color:var(--danger);font-weight:800;font-size:18px;border-color:transparent}
+b.pos{color:var(--ok)}
+
+
+.wherewrap{display:flex;gap:10px}
+.wherewrap .where{flex:1;min-width:0}
+.micbig{flex:none;width:58px;height:58px;border-radius:18px;background:#13284F;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 16px rgba(19,40,79,.25)}
+.upnext{display:flex;align-items:center;gap:12px;width:100%;text-align:left;padding:12px 14px;border-radius:18px;background:var(--yellow-soft);border:1px solid transparent}
+.upnext .ic{width:40px;height:40px;border-radius:12px;background:var(--yellow);color:#13284F;display:flex;align-items:center;justify-content:center;flex:none}
+.upnext div{flex:1;min-width:0}
+.upnext small{display:block;font-size:12px;color:var(--yellow-ink);font-weight:600}
+.upnext b{display:block;font-family:var(--display);font-size:16px;color:var(--yellow-ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.upnext i{font-style:normal;font-size:20px;color:var(--yellow-ink)}
+.st.up{background:var(--navy-soft);color:var(--navy);white-space:nowrap}
+.kindtag{align-self:flex-start;background:var(--navy);color:#fff;border-radius:999px;padding:3px 12px;font-weight:700;font-size:12.5px}
+:root[data-theme="dark"] .kindtag{color:#0D1628}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .kindtag{color:#0D1628}}
+.bill div b{text-align:right}
+.whenrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.whenrow .chip svg{width:16px;height:16px}
+.selbox{width:100%;height:52px;border-radius:14px;border:2px solid var(--line);background:var(--surface);color:var(--fg);font:inherit;font-size:17px;padding:0 12px}
+.pickrow{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:16px;background:var(--surface-2);border:1px solid var(--line)}
+.pickrow div{flex:1;min-width:0}
+.pickrow small{display:block;font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;font-weight:700}
+.pickrow b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dotg,.dotr{width:12px;height:12px;flex:none;border-radius:50%;background:var(--ok)}
+.dotr{border-radius:3px;background:var(--danger)}
+.pkgs{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.pkg{display:flex;flex-direction:column;align-items:center;padding:10px 4px;border-radius:14px;border:2px solid var(--line);background:var(--surface)}
+.pkg b{font-family:var(--display);font-size:16px;white-space:nowrap}
+.pkg small{font-size:11.5px;color:var(--muted)}
+.pkg.sel{border-color:var(--navy);background:var(--navy-soft)}
+.veh[disabled]{opacity:.45;cursor:not-allowed}
+.seg{display:grid;grid-template-columns:1fr 1fr;background:var(--surface-2);border:1px solid var(--line);border-radius:16px;padding:4px}
+.seg button{height:42px;border-radius:12px;font-weight:700;color:var(--muted)}
+.seg button.on{background:var(--navy);color:#fff}
+:root[data-theme="dark"] .seg button.on{color:#0D1628}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .seg button.on{color:#0D1628}}
+.vwrap{display:flex;flex-direction:column;align-items:center;gap:10px;padding:6px 0}
+.vmic{width:92px;height:92px;border-radius:50%;background:#13284F;display:flex;align-items:center;justify-content:center;position:relative}
+.vmic.on::before,.vmic.on::after{content:"";position:absolute;inset:0;border-radius:50%;border:3px solid #FFD84D;animation:radar 1.6s ease-out infinite}
+.vmic.on::after{animation-delay:.8s}
+.chip.ex{font-weight:500;color:var(--muted)}
+
+
+.helphero{background:linear-gradient(160deg,var(--yellow),var(--yellow-soft));border-radius:22px;padding:16px;display:flex;flex-direction:column;gap:12px}
+.helphero b{font-family:var(--display);font-size:20px;color:#13284F}
+.helphero .field{border-color:transparent}
+.lastride{display:flex;flex-direction:column;gap:10px;padding:14px;border:1px solid var(--line);border-radius:18px}
+.lastride b{font-family:var(--display);font-size:17px;display:block}
+.lastride small{color:var(--muted);font-size:12.5px}
+.fgrp{display:flex;flex-direction:column;gap:8px;margin-bottom:10px}
+details.faq{border:1px solid var(--line);border-radius:14px;background:var(--surface);overflow:hidden}
+details.faq summary{cursor:pointer;list-style:none;padding:12px 40px 12px 14px;font-weight:600;position:relative}
+details.faq summary::-webkit-details-marker{display:none}
+details.faq summary::after{content:"+";position:absolute;right:14px;top:50%;transform:translateY(-50%);font-size:20px;color:var(--navy);transition:transform .2s}
+details.faq[open] summary::after{transform:translateY(-50%) rotate(45deg)}
+details.faq[open]{border-color:var(--navy)}
+details.faq p{margin:0;padding:0 14px 14px;color:var(--muted);font-size:14px;line-height:1.5}
+.helpcta{display:flex;flex-direction:column;gap:12px;padding:16px;border-radius:20px;background:var(--navy-soft)}
+.helpcta b{font-family:var(--display);font-size:18px;display:block}
+.helpcta small{color:var(--muted);font-size:13px}
+.helpcta .btn svg{width:18px;height:18px}
+.photo{display:flex;align-items:center;justify-content:center;height:48px;border:1.5px dashed var(--line);border-radius:14px;color:var(--navy);font-weight:600;cursor:pointer}
+.eclist{display:flex;flex-wrap:wrap;gap:6px}
+.btn.dashed{background:var(--surface-2);color:var(--fg)!important;border:1.5px dashed var(--line)}
+
+/* placeholder pages */
+.soon{border:1px dashed var(--line);border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:8px;background:var(--surface-2)}
+.soon ul{margin:0;padding-left:18px;display:grid;gap:4px}
+.badge{align-self:flex-start;background:var(--yellow);color:#13284F;border-radius:999px;padding:2px 10px;font-weight:700;font-size:12px}
+.prof{display:flex;align-items:center;gap:14px}
+.avatar{width:58px;height:58px;border-radius:18px;background:var(--yellow);color:#13284F;display:flex;align-items:center;justify-content:center;font-family:var(--display);font-weight:800;font-size:26px;flex:none}
+
+.toast{position:absolute;left:50%;bottom:calc(86px + env(safe-area-inset-bottom,0px));transform:translate(-50%,20px);background:#13284F;color:#fff;padding:10px 16px;border-radius:14px;font-size:13.5px;font-weight:600;opacity:0;transition:.25s;z-index:20;width:max-content;max-width:calc(100% - 32px);text-align:center;pointer-events:none}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+</style>
+
+<div class="app" id="app"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ---------- icons ---------- */
+const I = {
+  bike:`<svg class="vsvg" width="58" height="36" viewBox="0 0 64 40" fill="none" aria-hidden="true"><g class="bd"><path d="M14 30L26 20H40L50 30" stroke="#13284F" stroke-width="2.6" stroke-linejoin="round"/><path d="M14 27H28" stroke="#8A96AD" stroke-width="2.4" stroke-linecap="round"/><path d="M23 19Q27 12 36 13L41 19Z" fill="#FFD84D" stroke="#13284F" stroke-width="2"/><path d="M15 16H27L25 20H17Z" fill="#13284F"/><path d="M42 10L47 22" stroke="#13284F" stroke-width="2.6" stroke-linecap="round"/><path d="M39 10H45" stroke="#13284F" stroke-width="2.4" stroke-linecap="round"/><circle cx="48" cy="15" r="2.2" fill="#FFD84D" stroke="#13284F" stroke-width="1.2"/></g><g class="wh"><circle cx="14" cy="30" r="7" fill="#13284F"/><circle cx="14" cy="30" r="3.5" fill="#C9D3E6"/><path d="M10.8 30H17.1M14 26.9V33.1" stroke="#13284F" stroke-width="1.3"/></g><g class="wh"><circle cx="50" cy="30" r="7" fill="#13284F"/><circle cx="50" cy="30" r="3.5" fill="#C9D3E6"/><path d="M46.9 30H53.1M50 26.9V33.1" stroke="#13284F" stroke-width="1.3"/></g></svg>`,
+  auto:`<svg class="vsvg" width="58" height="36" viewBox="0 0 64 40" fill="none" aria-hidden="true"><g class="bd"><path d="M8 20V11Q9 6 16 6H38Q42 6 43 10L44 20Z" fill="#202124" stroke="#4A4F57" stroke-width="1.4"/><path d="M12 11H37V19H12Z" fill="#3B4252"/><path d="M14 12H24V18H14Z" fill="#F7C600" opacity=".9"/><path d="M5 31V20H44L50 21Q56 23 57 28V31Z" fill="#F7C600" stroke="#13284F" stroke-width="2" stroke-linejoin="round"/><path d="M43 9H46L50.5 20H45Z" fill="#CFE3F5" stroke="#13284F" stroke-width="1.2"/><path d="M8 25H42" stroke="#13284F" stroke-width="1.6"/><circle cx="55" cy="25" r="1.8" fill="#fff" stroke="#13284F"/></g><g class="wh"><circle cx="15" cy="31" r="5.2" fill="#13284F"/><circle cx="15" cy="31" r="2.6" fill="#C9D3E6"/><path d="M12.7 31H17.3M15 28.7V33.3" stroke="#13284F" stroke-width="1.3"/></g><g class="wh"><circle cx="50" cy="31" r="5.2" fill="#13284F"/><circle cx="50" cy="31" r="2.6" fill="#C9D3E6"/><path d="M47.7 31H52.3M50 28.7V33.3" stroke="#13284F" stroke-width="1.3"/></g></svg>`,
+  car:`<svg class="vsvg" width="58" height="36" viewBox="0 0 64 40" fill="none" aria-hidden="true"><g class="bd"><path d="M5 30V24Q5 21 9 21L15 20L21 12.5Q22 11 24 11H39Q41 11 42 12.5L49 19L57 21Q60 22 60 26V30Z" fill="#FFFFFF" stroke="#13284F" stroke-width="2" stroke-linejoin="round"/><path d="M23 13H31V19H18ZM33 13H39L44.5 19H33Z" fill="#BFD3F2" stroke="#13284F" stroke-width="1.3" stroke-linejoin="round"/><path d="M6 24.5H59" stroke="#FFD84D" stroke-width="2.6"/><rect x="27" y="6.5" width="10" height="4" rx="1" fill="#FFD84D" stroke="#13284F" stroke-width="1.2"/><circle cx="58" cy="23.5" r="1.5" fill="#FFD84D"/><path d="M5.5 22.5H8" stroke="#D9443B" stroke-width="2.2"/></g><g class="wh"><circle cx="16" cy="31" r="5.5" fill="#13284F"/><circle cx="16" cy="31" r="2.8" fill="#C9D3E6"/><path d="M13.5 31H18.5M16 28.5V33.5" stroke="#13284F" stroke-width="1.3"/></g><g class="wh"><circle cx="49" cy="31" r="5.5" fill="#13284F"/><circle cx="49" cy="31" r="2.8" fill="#C9D3E6"/><path d="M46.5 31H51.5M49 28.5V33.5" stroke="#13284F" stroke-width="1.3"/></g></svg>`,
+  mini:`<svg class="vsvg" width="58" height="36" viewBox="0 0 64 40" fill="none" aria-hidden="true"><g class="bd"><path d="M6 30V14Q6 9 11 9H38Q41 9 43 12L49 19L56 21Q58 22 58 25V30Z" fill="#FFD84D" stroke="#13284F" stroke-width="2" stroke-linejoin="round"/><path d="M10 12H22V19H10ZM24 12H35V19H24ZM37 12H40.5L45 19H37Z" fill="#fff" stroke="#13284F" stroke-width="1.4" stroke-linejoin="round"/><path d="M23 12V28" stroke="#13284F" stroke-width="1"/><circle cx="56" cy="24" r="1.6" fill="#fff" stroke="#13284F"/><path d="M6 21H8" stroke="#D9443B" stroke-width="2.4"/><rect x="19" y="4.5" width="10" height="4" rx="1" fill="#FFD84D" stroke="#13284F" stroke-width="1.2"/></g><g class="wh"><circle cx="15" cy="31" r="5.5" fill="#13284F"/><circle cx="15" cy="31" r="2.8" fill="#C9D3E6"/><path d="M12.5 31H17.5M15 28.5V33.5" stroke="#13284F" stroke-width="1.3"/></g><g class="wh"><circle cx="47" cy="31" r="5.5" fill="#13284F"/><circle cx="47" cy="31" r="2.8" fill="#C9D3E6"/><path d="M44.5 31H49.5M47 28.5V33.5" stroke="#13284F" stroke-width="1.3"/></g></svg>`,
+  suv:`<svg class="vsvg" width="58" height="36" viewBox="0 0 64 40" fill="none" aria-hidden="true"><g class="bd"><path d="M4 30V17Q4 12 9 12L13 11H45Q47 11 49 13L54 19L60 21Q62 22 62 26V30Z" fill="#3D66B0" stroke="#13284F" stroke-width="2" stroke-linejoin="round"/><path d="M9 14H20V19H8ZM22 14H33V19H22ZM35 14H45L49.5 19H35Z" fill="#D6E4FA" stroke="#13284F" stroke-width="1.3" stroke-linejoin="round"/><path d="M12 8.5H44" stroke="#13284F" stroke-width="2" stroke-linecap="round"/><path d="M5 24H61" stroke="#FFD84D" stroke-width="2.6"/><circle cx="60" cy="23.5" r="1.6" fill="#FFD84D"/><path d="M4.5 21H7" stroke="#D9443B" stroke-width="2.2"/><rect x="24" y="3.5" width="10" height="4" rx="1" fill="#FFD84D" stroke="#13284F" stroke-width="1.2"/></g><g class="wh"><circle cx="16" cy="31" r="6" fill="#13284F"/><circle cx="16" cy="31" r="3.0" fill="#C9D3E6"/><path d="M13.3 31H18.7M16 28.3V33.7" stroke="#13284F" stroke-width="1.3"/></g><g class="wh"><circle cx="51" cy="31" r="6" fill="#13284F"/><circle cx="51" cy="31" r="3.0" fill="#C9D3E6"/><path d="M48.3 31H53.7M51 28.3V33.7" stroke="#13284F" stroke-width="1.3"/></g></svg>`,
+  trav:`<svg class="vsvg" width="58" height="36" viewBox="0 0 64 40" fill="none" aria-hidden="true"><g class="bd"><path d="M3 30V9Q3 6 6 6H47Q50 6 52 9L57 17L61 19Q62 20 62 23V30Z" fill="#FFFFFF" stroke="#13284F" stroke-width="2" stroke-linejoin="round"/><path d="M7 10H16V17H7ZM18 10H27V17H18ZM29 10H38V17H29ZM40 10H47.5L52 17H40Z" fill="#BFD3F2" stroke="#13284F" stroke-width="1.3" stroke-linejoin="round"/><path d="M4 22H61" stroke="#FFD84D" stroke-width="3"/><path d="M38 18V29" stroke="#13284F" stroke-width="1"/><rect x="22" y="2" width="10" height="4" rx="1" fill="#FFD84D" stroke="#13284F" stroke-width="1.2"/><circle cx="60.5" cy="24.5" r="1.5" fill="#FFD84D"/><path d="M3.5 25H6" stroke="#D9443B" stroke-width="2.2"/></g><g class="wh"><circle cx="14" cy="31" r="5.5" fill="#13284F"/><circle cx="14" cy="31" r="2.8" fill="#C9D3E6"/><path d="M11.5 31H16.5M14 28.5V33.5" stroke="#13284F" stroke-width="1.3"/></g><g class="wh"><circle cx="50" cy="31" r="5.5" fill="#13284F"/><circle cx="50" cy="31" r="2.8" fill="#C9D3E6"/><path d="M47.5 31H52.5M50 28.5V33.5" stroke="#13284F" stroke-width="1.3"/></g></svg>`,
+  bus:`<svg class="vsvg" width="58" height="36" viewBox="0 0 64 40" fill="none" aria-hidden="true"><g class="bd"><path d="M2 30V8Q2 4 6 4H57Q61 4 61 8V30Z" fill="#FFD84D" stroke="#13284F" stroke-width="2" stroke-linejoin="round"/><path d="M5 8H13V16H5ZM15 8H23V16H15ZM25 8H33V16H25ZM35 8H43V16H35ZM45 8H52V16H45Z" fill="#BFD3F2" stroke="#13284F" stroke-width="1.2"/><path d="M54 8H59V28H54Z" fill="#BFD3F2" stroke="#13284F" stroke-width="1.2"/><path d="M2 20H54" stroke="#13284F" stroke-width="2.4"/><circle cx="59" cy="26" r="1.4" fill="#fff" stroke="#13284F"/></g><g class="wh"><circle cx="13" cy="31" r="5.5" fill="#13284F"/><circle cx="13" cy="31" r="2.8" fill="#C9D3E6"/><path d="M10.5 31H15.5M13 28.5V33.5" stroke="#13284F" stroke-width="1.3"/></g><g class="wh"><circle cx="46" cy="31" r="5.5" fill="#13284F"/><circle cx="46" cy="31" r="2.8" fill="#C9D3E6"/><path d="M43.5 31H48.5M46 28.5V33.5" stroke="#13284F" stroke-width="1.3"/></g></svg>`,
+  search:`<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#13284F" stroke-width="2.5" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>`,
+  mic:`<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#13284F" stroke-width="2.4" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0014 0M12 18v3"/></svg>`,
+  back:`<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>`,
+  pin:`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 22s7-6.5 7-12a7 7 0 10-14 0c0 5.5 7 12 7 12z"/><circle cx="12" cy="10" r="2.5"/></svg>`,
+  home:`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="M3 11l9-7 9 7v9a1 1 0 01-1 1h-5v-6h-6v6H4a1 1 0 01-1-1z"/></svg>`,
+  hosp:`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="3" width="18" height="18" rx="4"/><path d="M12 8v8M8 12h8"/></svg>`,
+  train:`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="5" y="3" width="14" height="13" rx="3"/><path d="M5 10h14M8 20l2-4M16 20l-2-4"/></svg>`,
+  clock:`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>`,
+  gps:`<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>`,
+  now:`<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#13284F" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></svg>`,
+  sched:`<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4M12 14v3l2 1"/></svg>`,
+  rent:`<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2M9 2h6"/></svg>`,
+  out:`<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20L10 4h4l6 16M12 8v2M12 13v2M12 18v1"/></svg>`,
+  navHome:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="M3 11l9-7 9 7v9a1 1 0 01-1 1h-5v-6h-6v6H4a1 1 0 01-1-1z"/></svg>`,
+  navTrips:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="6" cy="18" r="2.5"/><circle cx="18" cy="6" r="2.5"/><path d="M8.5 18H15a3 3 0 000-6H9a3 3 0 010-6h6.5"/></svg>`,
+  navWallet:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><rect x="3" y="6" width="18" height="14" rx="3"/><path d="M3 10h18M16 15h2"/></svg>`,
+  navHelp:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 114 2c-1 .7-1.5 1.2-1.5 2.5M12 17h.01"/></svg>`,
+  navMe:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/></svg>`,
+  cash:`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/></svg>`,
+  upi:`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h3v3h-3zM20 14v7h-6"/></svg>`
+};
+
+/* ---------- text: Tamil + English ---------- */
+const T = {
+  ta:{tagline:'உங்க ஊர், உங்க டாக்ஸி',chooseLang:'மொழியை தேர்வு செய்யுங்க',langSub:'அப்புறம் Profile-ல மாத்திக்கலாம்',cont:'தொடரவும்',
+    loginH:'வணக்கம்! உள்ள வாங்க',loginP:'Bike முதல் Mini Bus வரை — ஒரே app-ல Vellore முழுக்க',phone:'மொபைல் நம்பர்',getOtp:'OTP அனுப்பு',terms:'தொடர்ந்தால் Terms & Privacy-க்கு ஒப்புக்கொள்கிறீர்கள்',
+    phoneErr:'10 இலக்க நம்பர் கொடுங்க',otpH:'OTP கொடுங்க',otpP:'அனுப்பியது',change:'மாற்று',verify:'சரிபார்',otpErr:'OTP தவறு. மறுபடியும் முயற்சி பண்ணுங்க',resend:'மறுபடி அனுப்பு',
+    demoOtp:'Demo OTP: 1234 — Firebase connect பண்ணும்போது உண்மையான SMS வரும்',nameH:'உங்க பேர் என்ன?',nameP:'Driver உங்களை இந்த பேர்ல கூப்பிடுவாங்க',name:'பெயர்',start:'ஆரம்பிக்கலாம்',
+    morning:'காலை வணக்கம்',afternoon:'மதிய வணக்கம்',evening:'மாலை வணக்கம்',where:'எங்கே போகணும்?',nearby:'வண்டிகள் அருகில்',services:'சேவைகள்',
+    sNow:'இப்போ Ride',sSched:'Schedule',sRent:'Rental',sOut:'Outstation',offers:'Offers',sample:'Sample',recent:'சமீபத்திய பயணங்கள்',
+    nHome:'Home',nTrips:'பயணங்கள்',nWallet:'Wallet',nHelp:'உதவி',nMe:'நான்',
+    pickup:'Pickup',drop:'எங்கே போகணும்?',current:'உங்க இடம்',saved:'சேமித்தவை',popular:'Vellore-ல பிரபலமானவை',noMatch:'இந்த பேர்ல இடம் இல்லை',
+    chooseRide:'வண்டியை தேர்வு செய்',km:'கி.மீ',min:'நிமி',away:'நிமி-ல வரும்',seats:'பேர்',book:'Book பண்ணு',coupon:'Coupon',payCash:'Cash',payUpi:'UPI QR',fareNote:'Sample கட்டணம் — Owner app-ல rate set பண்ணலாம்',
+    soonBook:'Booking + driver tracking அடுத்த Step-ல வரும்',voiceSoon:'Tamil voice booking Step 4-ல வரும்',
+    trips:'பயணங்கள்',wallet:'Wallet',help:'உதவி',me:'Profile',coming:'அடுத்த Step-ல வரும்',lang:'மொழி',logout:'Logout',theme:'Dark mode',
+    soonServ:'இந்த சேவை அடுத்த Step-ல வரும்',fav:'பிடித்த இடங்கள்',
+    pinPick:'Pickup இடத்தை pin பண்ணுங்க',pinDrop:'போக வேண்டிய இடத்தை pin பண்ணுங்க',dropLbl:'Drop',near:'அருகில்',m:'மீ',confirmPick:'இங்கே Pickup பண்ணு',confirmDrop:'இந்த இடத்துக்கு போகணும்',onMap:'Map-ல exact இடத்தை pin பண்ணு',onMapSub:'Zoom பண்ணி வீட்டு வாசல் வரை சரியா காட்டலாம்',hint:'Map-ஐ நகர்த்துங்க · இரண்டு விரலால் zoom',tooClose:'Pickup-க்கும் Drop-க்கும் ரொம்ப கிட்ட இருக்கு',pinChip:'Map-ல pin',from:'ல இருந்து'},
+  en:{tagline:'Your town, your taxi',chooseLang:'Choose your language',langSub:'You can change it later in Profile',cont:'Continue',
+    loginH:'Welcome! Let’s get you moving',loginP:'From bikes to mini buses — all of Vellore in one app',phone:'Mobile number',getOtp:'Send OTP',terms:'By continuing you agree to the Terms & Privacy',
+    phoneErr:'Enter a 10-digit number',otpH:'Enter the OTP',otpP:'Sent to',change:'Change',verify:'Verify',otpErr:'Wrong OTP. Please try again',resend:'Resend',
+    demoOtp:'Demo OTP: 1234 — real SMS works once Firebase is connected',nameH:'What should we call you?',nameP:'Your driver will greet you by this name',name:'Name',start:'Let’s go',
+    morning:'Good morning',afternoon:'Good afternoon',evening:'Good evening',where:'Where to?',nearby:'vehicles nearby',services:'Services',
+    sNow:'Ride now',sSched:'Schedule',sRent:'Rental',sOut:'Outstation',offers:'Offers',sample:'Sample',recent:'Recent trips',
+    nHome:'Home',nTrips:'Trips',nWallet:'Wallet',nHelp:'Help',nMe:'Me',
+    pickup:'Pickup',drop:'Where to?',current:'Your location',saved:'Saved',popular:'Popular in Vellore',noMatch:'No place by that name',
+    chooseRide:'Choose a ride',km:'km',min:'min',away:'min away',seats:'seats',book:'Book',coupon:'Coupon',payCash:'Cash',payUpi:'UPI QR',fareNote:'Sample fares — the owner sets real rates in the Owner app',
+    soonBook:'Booking + driver tracking comes in the next step',voiceSoon:'Tamil voice booking comes in Step 4',
+    trips:'Trips',wallet:'Wallet',help:'Help',me:'Profile',coming:'Coming in the next step',lang:'Language',logout:'Log out',theme:'Dark mode',
+    soonServ:'This service comes in a later step',fav:'Saved places',
+    pinPick:'Pin your pickup point',pinDrop:'Pin where you\u2019re going',dropLbl:'Drop',near:'Near',m:'m',confirmPick:'Pick me up here',confirmDrop:'Go to this spot',onMap:'Pin the exact spot on the map',onMapSub:'Zoom in right down to the gate',hint:'Drag to move · pinch to zoom',tooClose:'Pickup and drop are too close together',pinChip:'Pin on map',from:'from'}
+};
+
+/* ---------- Vellore places (approx. coordinates) ---------- */
+const P = {
+  home:{ta:'காந்தி நகர், காட்பாடி',en:'Gandhi Nagar, Katpadi',lat:12.9550,lon:79.1390,ic:'home'},
+  katpadi:{ta:'காட்பாடி ஜங்ஷன்',en:'Katpadi Junction',sub:'Railway station',lat:12.9716,lon:79.1376,ic:'train'},
+  vit:{ta:'VIT பல்கலைக்கழகம்',en:'VIT University',sub:'Katpadi',lat:12.9692,lon:79.1559,ic:'pin'},
+  cmc:{ta:'CMC மருத்துவமனை',en:'CMC Hospital',sub:'Ida Scudder Road',lat:12.9246,lon:79.1356,ic:'hosp'},
+  newbus:{ta:'புதிய பேருந்து நிலையம்',en:'New Bus Stand',sub:'Vellore',lat:12.9349,lon:79.1435,ic:'pin'},
+  oldbus:{ta:'பழைய பேருந்து நிலையம்',en:'Old Bus Stand',sub:'Vellore town',lat:12.9180,lon:79.1330,ic:'pin'},
+  fort:{ta:'வேலூர் கோட்டை',en:'Vellore Fort',sub:'Jalakandeswarar Temple',lat:12.9206,lon:79.1295,ic:'pin'},
+  golden:{ta:'ஸ்ரீபுரம் தங்கக் கோவில்',en:'Sripuram Golden Temple',sub:'Thirumalaikodi',lat:12.8710,lon:79.0880,ic:'pin'},
+  sathu:{ta:'சத்துவாச்சாரி',en:'Sathuvachari',sub:'Vellore',lat:12.9370,lon:79.1640,ic:'pin'},
+  bagayam:{ta:'பாகாயம்',en:'Bagayam',sub:'Vellore',lat:12.8890,lon:79.1350,ic:'pin'}
+};
+let ROADS=[['home','katpadi'],['home','vit'],['katpadi','vit'],['home','newbus'],['newbus','sathu'],['newbus','oldbus'],['oldbus','fort'],['fort','cmc'],['cmc','oldbus'],['oldbus','bagayam'],['bagayam','golden'],['newbus','cmc'],['vit','sathu']];
+function hav(a,b){const R=6371,r=Math.PI/180,dl=(b.lat-a.lat)*r,dn=(b.lon-a.lon)*r;const x=Math.sin(dl/2)**2+Math.cos(a.lat*r)*Math.cos(b.lat*r)*Math.sin(dn/2)**2;return 2*R*Math.asin(Math.sqrt(x))}
+function route(from,to){ // dijkstra on the tiny road graph
+  const d={},prev={},q=new Set(Object.keys(P));Object.keys(P).forEach(k=>d[k]=Infinity);d[from]=0;
+  while(q.size){let u=null;q.forEach(k=>{if(u===null||d[k]<d[u])u=k});q.delete(u);if(u===to)break;
+    ROADS.forEach(([a,b])=>{let v=a===u?b:b===u?a:null;if(v&&q.has(v)){const nd=d[u]+hav(P[u],P[v]);if(nd<d[v]){d[v]=nd;prev[v]=u}}})}
+  const path=[to];while(path[0]!==from&&prev[path[0]])path.unshift(prev[path[0]]);
+  const viaKm=d[to]*1.25,directKm=hav(P[from],P[to])*1.35;
+  if((from==='pick'||from==='drop'||to==='pick'||to==='drop')&&directKm<viaKm)return {path:[from,to],km:Math.max(1.2,directKm)};
+  return {path,km:Math.max(1.2,viaKm)};
+}
+I.sedan=I.car;
+const VEH=[
+  {id:'bike',en:'Bike',ta:'பைக்',seats:1,base:25,per:7,eta:2},
+  {id:'auto',en:'Auto',ta:'ஆட்டோ',seats:3,base:40,per:16,eta:3},
+  {id:'mini',en:'Mini',ta:'Mini கார்',seats:4,base:100,per:16,eta:4,models:'Swift · Wagon R'},
+  {id:'sedan',en:'Sedan',ta:'Sedan கார்',seats:4,base:130,per:19,eta:5,models:'Dzire · Aura · Etios'},
+  {id:'suv',en:'SUV',ta:'SUV',seats:6,base:180,per:22,eta:6,models:'Ertiga · Rumion',tag:'7-seater'},
+  {id:'trav',en:'Traveller',ta:'Traveller',seats:12,base:600,per:28,eta:25,models:'Tempo Traveller',tag:'12-seater'},
+  {id:'bus',en:'Mini Bus',ta:'Mini Bus',seats:24,base:1200,per:40,eta:40,models:'Mini bus · AC / Non-AC',tag:'24-seater'}
+];
+const fare=(v,km)=>Math.round((v.base+v.per*Math.max(0,km-1.5))/5)*5;
+
+/* ---------- state ---------- */
+const S={lang:'ta',from:'home',phone:'',name:'',logged:false,tab:'home',dest:null,veh:'auto',pay:'upi'};
+try{const s=JSON.parse(localStorage.getItem('vct')||'{}');Object.assign(S,s)}catch(e){}
+function save(){try{localStorage.setItem('vct',JSON.stringify({lang:S.lang,phone:S.phone,name:S.name,logged:S.logged}))}catch(e){}}
+const t=k=>T[S.lang][k]||k;
+const pn=k=>P[k][S.lang];
+const app=document.getElementById('app');
+let mapLoop=null;
+function go(html,after){cancelAnimationFrame(mapLoop);clearInterval(rideTimer);app.innerHTML=html;after&&after()}
+function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(toast.h);toast.h=setTimeout(()=>el.classList.remove('show'),2400)}
+
+/* ---------- screens ---------- */
+function splash(){
+  if(/^#track-/.test(location.hash)){trackView(location.hash.slice(7));return}
+  go(`<section class="screen" id="splash"><div class="roofsign"><b>TAXI</b><span>வேலூர் கால் டாக்ஸி</span></div>
+    <div class="road"></div><div class="tag">Vellore Call Taxi</div></section>`);
+  setTimeout(async()=>{if(await cloudBoot())return;S.logged?home():langScreen()},1700);
+}
+function langScreen(){
+  go(`<section class="screen"><div class="hero pad"><span class="mini">VELLORE CALL TAXI</span><h1>${t('chooseLang')}</h1><p>${t('langSub')}</p></div>
+  <div class="body pad">
+   <button class="langcard ${S.lang==='ta'?'sel':''}" data-l="ta"><span><b>தமிழ்</b><br><small class="muted">Tamil</small></span><i class="radio"></i></button>
+   <button class="langcard ${S.lang==='en'?'sel':''}" data-l="en"><span><b>English</b><br><small class="muted">ஆங்கிலம்</small></span><i class="radio"></i></button>
+   <div style="flex:1"></div><button class="btn" id="go">${t('cont')}</button></div></section>`,()=>{
+    app.querySelectorAll('.langcard').forEach(b=>b.onclick=()=>{S.lang=b.dataset.l;save();langScreen()});
+    document.getElementById('go').onclick=login;
+  });
+}
+function login(){
+  go(`<section class="screen"><div class="hero pad"><span class="mini">${t('tagline')}</span><h1>${t('loginH')}</h1><p>${t('loginP')}</p>
+    <div style="display:flex;gap:12px;margin-top:8px;flex-wrap:wrap">${I.bike}${I.auto}${I.mini}${I.car}${I.suv}</div></div>
+  <div class="body pad"><label class="muted" for="ph" style="font-weight:600">${t('phone')}</label>
+   <div class="field"><span class="cc">+91</span><input id="ph" inputmode="numeric" maxlength="10" autocomplete="tel" value="${S.phone}" placeholder="98765 43210"></div>
+   <div class="err" id="e"></div><div style="flex:1"></div>
+   <button class="btn" id="go" ${S.phone.length===10?'':'disabled'}>${t('getOtp')}</button><p class="fine muted">${t('terms')}</p></div></section>`,()=>{
+    const ph=document.getElementById('ph'),b=document.getElementById('go');
+    ph.oninput=()=>{ph.value=ph.value.replace(/\D/g,'').slice(0,10);b.disabled=ph.value.length!==10;document.getElementById('e').textContent=''};
+    b.onclick=()=>{if(!/^[6-9]\d{9}$/.test(ph.value)){document.getElementById('e').textContent=t('phoneErr');return}S.phone=ph.value;save();
+      if(CL){b.disabled=true;b.textContent=L('OTP அனுப்புது…','Sending OTP…');CL.sendOtp(ph.value).then(otp).catch(e=>{b.disabled=false;b.textContent=t('getOtp');document.getElementById('e').textContent=CL.errText(e,S.lang==='ta')});return}otp()};
+    setTimeout(()=>ph.focus(),300);
+  });
+}
+function otp(){
+  go(`<section class="screen"><div class="head pad"><button class="back" id="bk" aria-label="Back">${I.back}</button><h2>${t('otpH')}</h2></div>
+  <div class="body pad" style="padding-top:8px"><p class="muted" style="margin:0">${t('otpP')} +91 ${S.phone.slice(0,5)} ${S.phone.slice(5)} · <button class="linkbtn" id="ch">${t('change')}</button></p>
+   <div class="otp">${[...Array(CL?6:4).keys()].map(i=>`<input id="o${i}" inputmode="numeric" maxlength="1" autocomplete="one-time-code" aria-label="OTP digit ${i+1}">`).join('')}</div>
+   <div class="err" id="e"></div>${CL?`<div class="note">${L('SMS-ல வந்த 6 இலக்க OTP-ஐ போடுங்க','Enter the 6-digit OTP from the SMS')}</div>`:`<div class="note">${t('demoOtp')}</div>`}
+   <p class="muted" style="margin:0;font-size:14px" id="rs"></p><div style="flex:1"></div><button class="btn" id="go" disabled>${t('verify')}</button></div></section>`,()=>{
+    const ins=[...app.querySelectorAll('.otp input')],b=document.getElementById('go');
+    const val=()=>ins.map(i=>i.value).join('');
+    ins.forEach((inp,i)=>{inp.oninput=()=>{inp.value=inp.value.replace(/\D/g,'').slice(-1);if(inp.value&&ins[i+1])ins[i+1].focus();b.disabled=val().length!==(CL?6:4);document.getElementById('e').textContent='';if(val().length===(CL?6:4))b.click()};
+      inp.onpaste=e=>{const d=(e.clipboardData.getData('text')||'').replace(/\D/g,'');if(d.length>1){e.preventDefault();ins.forEach((x,j)=>x.value=d[j]||'');b.disabled=val().length!==(CL?6:4);if(!b.disabled)b.click()}};
+      inp.onkeydown=e=>{if(e.key==='Backspace'&&!inp.value&&ins[i-1])ins[i-1].focus()}});
+    b.onclick=()=>{if(CL){b.disabled=true;CL.verifyOtp(val()).then(async u=>{CUID=u.uid;await loadProfile();watchConfig();if(S.name){S.logged=true;save();saveProfile({lastLogin:F().serverTimestamp()});home()}else nameScreen()}).catch(e=>{b.disabled=false;document.getElementById('e').textContent=CL.errText(e,S.lang==='ta');ins.forEach(i=>i.value='');ins[0].focus()});return}
+      if(val()==='1234'){S.name?(S.logged=true,save(),home()):nameScreen()}else{document.getElementById('e').textContent=t('otpErr');ins.forEach(i=>i.value='');ins[0].focus();b.disabled=true}};
+    document.getElementById('bk').onclick=login;document.getElementById('ch').onclick=login;
+    let n=30;const rs=document.getElementById('rs');const tick=()=>{if(!document.body.contains(rs))return;rs.innerHTML=n>0?`${t('resend')} 0:${String(n).padStart(2,'0')}`:`<button class="linkbtn" id="rsb">${t('resend')}</button>`;if(n===0){document.getElementById('rsb').onclick=()=>{if(CL){CL.sendOtp(S.phone).then(()=>toast(L('OTP மறுபடி அனுப்பியாச்சு','OTP sent again'))).catch(e=>toast(CL.errText(e,S.lang==='ta')))}else toast('OTP: 1234');n=30;tick()};return}n--;setTimeout(tick,1000)};tick();
+    setTimeout(()=>ins[0].focus(),300);
+  });
+}
+function nameScreen(){
+  go(`<section class="screen"><div class="hero pad"><span class="mini">+91 ${S.phone}</span><h1>${t('nameH')}</h1><p>${t('nameP')}</p></div>
+  <div class="body pad"><label class="muted" for="nm" style="font-weight:600">${t('name')}</label>
+   <div class="field"><input id="nm" autocomplete="name" maxlength="30" placeholder="${S.lang==='ta'?'எ.கா. அஜித்':'e.g. Ajith'}"></div>
+   <div style="flex:1"></div><button class="btn yellow" id="go" disabled>${t('start')}</button></div></section>`,()=>{
+    const nm=document.getElementById('nm'),b=document.getElementById('go');
+    nm.oninput=()=>b.disabled=nm.value.trim().length<2;
+    b.onclick=()=>{S.name=nm.value.trim();S.logged=true;save();saveProfile(CL?{createdAt:F().serverTimestamp()}:{});home()};setTimeout(()=>nm.focus(),300);
+  });
+}
+
+function shell(content){
+  const tabs=[['home','navHome','nHome'],['trips','navTrips','nTrips'],['wallet','navWallet','nWallet'],['help','navHelp','nHelp'],['me','navMe','nMe']];
+  return `<section class="screen">${content}<nav class="nav">${tabs.map(([k,ic,l])=>`<button data-tab="${k}" class="${S.tab===k?'on':''}">${I[ic]}${t(l)}</button>`).join('')}</nav></section>`;
+}
+function bindNav(){app.querySelectorAll('.nav button').forEach(b=>b.onclick=()=>{S.tab=b.dataset.tab;({home,trips:tripsTab,wallet:walletTab,help:helpTab,me:profile})[S.tab]()})}
+
+const CUSTOM=['pick','drop'];
+const pinSvg=col=>`<svg width="46" height="60" viewBox="0 0 46 60" aria-hidden="true"><path d="M23 58C23 58 4 36 4 22a19 19 0 0138 0c0 14-19 36-19 36z" fill="${col}" stroke="#fff" stroke-width="3"/><circle cx="23" cy="22" r="8" fill="#FFD84D"/></svg>`;
+
+/* Pin text: nearest landmark + area (demo; Google Maps gives real street addresses later) */
+function describe(lat,lon,lang=S.lang){
+  const tt=T[lang],p={lat,lon};
+  let lm=null,ld=1e9;Object.keys(P).forEach(k=>{if(CUSTOM.includes(k))return;const d=hav(p,P[k]);if(d<ld){ld=d;lm=k}});
+  let ar=AREAS[0],ad=1e9;AREAS.forEach(a=>{const d=hav(p,a);if(d<ad){ad=d;ar=a}});
+  const fd=d=>d<1?Math.max(10,Math.round(d*100)*10)+' '+tt.m:d.toFixed(1)+' '+tt.km;
+  const coords=lat.toFixed(5)+', '+lon.toFixed(5);
+  if(ld<.3)return{title:lang==='ta'?`${P[lm].ta} ${tt.near}`:`${tt.near} ${P[lm].en}`,sub:`${ar[lang]} · ${coords}`};
+  if(P[lm].en===ar.en)return{title:ar[lang],sub:coords};
+  return{title:ar[lang],sub:(lang==='ta'?`${P[lm].ta}-${tt.from} ${fd(ld)}`:`${fd(ld)} ${tt.from} ${P[lm].en}`)+` · ${coords}`};
+}
+function setCustom(key,c){
+  const ta=describe(c.lat,c.lon,'ta'),en=describe(c.lat,c.lon,'en');
+  P[key]={ta:ta.title,en:en.title,sub:(S.lang==='ta'?ta:en).sub.split(' · ').pop(),lat:c.lat,lon:c.lon,ic:'pin'};
+  ROADS=ROADS.filter(r=>!r.includes(key));
+  let n=null,nd=1e9;Object.keys(P).forEach(k=>{if(CUSTOM.includes(k))return;const d=hav(c,P[k]);if(d<nd){nd=d;n=k}});
+  ROADS.push([key,n]);
+}
+const zoomCtl=bottom=>`<div class="zoomctl" style="bottom:${bottom}px"><button class="chipbtn" id="zi" aria-label="Zoom in">+</button><button class="chipbtn" id="zo" aria-label="Zoom out">−</button><button class="chipbtn" id="loc" aria-label="My location">${I.gps}</button></div>`;
+function bindZoom(m){
+  document.getElementById('zi').onclick=()=>m.zoomBy(2);
+  document.getElementById('zo').onclick=()=>m.zoomBy(.5);
+  document.getElementById('loc').onclick=()=>m.flyTo(P.home.lat,P.home.lon,Math.max(m.cam.s,60000));
+}
+
+
+const FLEET=[
+  ['sedan','Business class வசதி','Business-class comfort'],['mini','சிக்கனமான கார் பயணம்','Budget car rides'],
+  ['suv','குடும்பத்தோட 7-seater பயணம்','7-seater for the family'],['trav','குழு பயணம், கோவில் tour','Group trips and temple tours'],
+  ['bus','கல்யாணம், function, college tour','Weddings, events and tours'],['auto','ஊருக்குள்ள எங்க வேணாலும்','Anywhere in town'],['bike','தனியா, வேகமா','Quick solo rides']];
+function fleetHtml(){return `<div class="sec"><h3>${L('எங்க வண்டிகள்','Our fleet')}</h3><span class="sample">${FLEET.length} ${L('வகை','types')}</span></div>
+  <div class="fleet">${FLEET.map(([id,ta,en],i)=>{const v=VEH.find(x=>x.id===id);return `<button class="fcard${i===0?' hot':''}" data-veh="${id}"><b>${v[S.lang]}</b><small>${S.lang==='ta'?ta:en}</small>
+    <span class="fseat">${v.seats} ${t('seats')}${v.tag?' · '+v.tag:''}</span><span class="fart">${I[id].replace('width="58" height="36"','width="150" height="94"')}</span><i class="farr">→</i></button>`}).join('')}</div>`}
+
+function home(){
+  S.tab='home';S.dest=null;S.from='home';S.when=null;
+  const h=new Date().getHours();const g=h<12?t('morning'):h<17?t('afternoon'):t('evening');
+  const recents=[['cmc','Auto',' ₹110','2 நாள் முன்','2 days ago'],['katpadi','Bike',' ₹35','போன வாரம்','Last week']];
+  go(shell(`<div class="mapwrap"><canvas class="map" id="map"></canvas>
+     <div class="topbar"><div class="greet"><small>${g}</small><b>${S.name||'Vellore'}</b></div>
+       <button class="chipbtn" id="lg" aria-label="Language">${S.lang==='ta'?'EN':'தமிழ்'}</button></div>
+     ${CL?'':`<span class="nearby"><i class="dot"></i>6 ${t('nearby')}</span>`}${zoomCtl(34)}</div>
+   <div class="sheet pad"><div class="grab"></div>
+     <div class="wherewrap"><button class="where" id="wh"><span>${t('where')}</span><i>${I.search}</i></button><button class="micbig" id="vmic" aria-label="${L('பேசி book பண்ணு','Book by voice')}">${I.mic.replace('stroke="#13284F"','stroke="#FFD84D"')}</button></div>
+     ${upNextHtml()}
+     ${fleetHtml()}
+     <div class="chips"><button class="chip" id="pinchip" style="background:var(--yellow);border-color:var(--yellow);color:#13284F">${I.pin}${t('pinChip')}</button>${[['cmc','hosp'],['katpadi','train'],['vit','pin'],['golden','pin']].map(([k,ic])=>`<button class="chip" data-p="${k}">${I[ic]}${pn(k)}</button>`).join('')}</div>
+     <div class="sec"><h3>${t('services')}</h3></div>
+     <div class="services">${[['now','sNow'],['sched','sSched'],['rent','sRent'],['out','sOut']].map(([ic,l])=>`<button class="svc" data-s="${ic}"><i>${I[ic]}</i>${t(l)}</button>`).join('')}</div>
+     ${recentHtml()}
+   </div>`),()=>{
+     bindNav();
+     const m=makeMap(document.getElementById('map'),{cars:!CL});
+     m.fit(Object.keys(P).filter(k=>k!=='golden'&&!CUSTOM.includes(k)).map(k=>P[k]),30,60);
+     bindZoom(m);
+     document.getElementById('wh').onclick=()=>search();
+     document.getElementById('pinchip').onclick=()=>picker('drop');
+     document.getElementById('lg').onclick=()=>{S.lang=S.lang==='ta'?'en':'ta';save();home()};
+     app.querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>{S.dest=b.dataset.p;fareScreen()});
+     app.querySelectorAll('[data-trip]').forEach(b=>b.onclick=()=>tripDetail(TRIPS.filter(isDone)[+b.dataset.trip]));
+     app.querySelectorAll('[data-veh]').forEach(b=>b.onclick=()=>{S.veh=b.dataset.veh;search();toast(L(`${VEH.find(v=>v.id===S.veh).ta} தேர்வு ஆயிடுச்சு — இடத்தை சொல்லுங்க`,`${VEH.find(v=>v.id===S.veh).en} selected. Now pick your drop`))});
+     app.querySelectorAll('.svc').forEach(b=>b.onclick=()=>({now:search,sched:()=>pickWhen(30,ts=>{S.when=ts;search()}),rent:rentalScreen,out:()=>{OS.city=null;outScreen()}})[b.dataset.s]());
+     document.getElementById('vmic').onclick=voiceSheet;
+     const upn=document.getElementById('upn');if(upn)upn.onclick=()=>upcomingDetail(TRIPS.find(x=>x.id===upn.dataset.id));
+   });
+}
+
+function search(){
+  const fromTxt=S.from==='home'?`${t('current')} · ${pn('home')}`:pn(S.from);
+  go(`<section class="screen"><div class="head pad"><button class="back" id="bk" aria-label="Back">${I.back}</button><h2>${t('where')}</h2></div>
+   <div class="pad"><div class="route-in"><div class="rail"><i class="a"></i><i class="l"></i><i class="b"></i></div>
+     <div class="ins"><input id="pu" readonly value="${fromTxt}" aria-label="${t('pickup')}"><input id="dr" placeholder="${t('drop')}" aria-label="${t('drop')}" autocomplete="off"></div>
+     <button class="mic" id="mic" aria-label="Voice">${I.mic}</button></div></div>
+   <div class="list pad" id="ls"></div></section>`,()=>{
+    const ls=document.getElementById('ls'),dr=document.getElementById('dr');
+    const item=k=>`<button class="row" data-p="${k}"><span class="ic">${I[P[k].ic]}</span><div><b>${pn(k)}</b><small>${P[k].sub||''} · ${route(S.from,k).km.toFixed(1)} ${t('km')}</small></div></button>`;
+    const pinRow=`<button class="row onmap" id="onmap"><span class="ic">${I.pin}</span><div><b>${t('onMap')}</b><small>${t('onMapSub')}</small></div></button>`;
+    const render=()=>{const q=dr.value.trim().toLowerCase();const keys=Object.keys(P).filter(k=>k!=='home'&&k!==S.from&&!CUSTOM.includes(k));
+      if(!q){ls.innerHTML=`${pinRow}<div class="tagline">${t('fav')}</div>${['cmc','katpadi'].map(item).join('')}<div class="tagline">${t('popular')}</div>${keys.filter(k=>!['cmc','katpadi'].includes(k)).map(item).join('')}`}
+      else{const mm=keys.filter(k=>(P[k].en+' '+P[k].ta+' '+(P[k].sub||'')).toLowerCase().includes(q));ls.innerHTML=pinRow+(mm.length?mm.map(item).join(''):`<p class="muted" style="padding:20px 0">${t('noMatch')}</p>`)}
+      ls.querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>{S.dest=b.dataset.p;fareScreen()});
+      document.getElementById('onmap').onclick=()=>picker('drop')};
+    dr.oninput=render;render();setTimeout(()=>dr.focus(),300);
+    document.getElementById('pu').onclick=()=>picker('pick');
+    document.getElementById('bk').onclick=home;document.getElementById('mic').onclick=voiceSheet;
+  });
+}
+
+/* Exact-spot picker: map moves under a fixed centre pin */
+function picker(mode){
+  const isPick=mode==='pick';
+  const start=isPick?P[S.from]:(S.dest&&P[S.dest]?P[S.dest]:{lat:P.home.lat-.006,lon:P.home.lon+.002});
+  go(`<section class="screen"><div class="mapwrap" style="min-height:0"><canvas class="map" id="map"></canvas>
+     <div class="topbar"><button class="chipbtn" id="bk" aria-label="Back">${I.back}</button><div class="greet"><small>${isPick?t('pickup'):t('dropLbl')}</small><b>${t(isPick?'pinPick':'pinDrop')}</b></div></div>
+     <div class="hint" id="hint">${t('hint')}</div>
+     <div class="pin" id="pin">${pinSvg(isPick?'#1E8A5A':'#13284F')}</div><i class="pinshadow"></i>
+     ${zoomCtl(36)}</div>
+   <div class="pickcard pad"><span class="kind">${isPick?t('pickup'):t('dropLbl')}</span>
+     <div class="addr" id="addr"><span class="ic">${I.pin}</span><div><b id="at">…</b><small id="as"></small></div></div>
+     <button class="btn ${isPick?'':'yellow'}" id="ok">${t(isPick?'confirmPick':'confirmDrop')}</button></div></section>`,()=>{
+    const pin=document.getElementById('pin'),addr=document.getElementById('addr'),ok=document.getElementById('ok'),hint=document.getElementById('hint');
+    let cur=null,touches=0;
+    const show=c=>{const d=describe(c.lat,c.lon);document.getElementById('at').textContent=d.title;document.getElementById('as').textContent=d.sub;addr.classList.remove('loading');cur=c;ok.disabled=false};
+    const m=makeMap(document.getElementById('map'),{scale:true,hide:CUSTOM.filter(k=>!(isPick&&k==='drop'&&S.dest==='drop')),
+      onStart(){pin.classList.add('lift');addr.classList.add('loading');ok.disabled=true;if(++touches>1)hint.classList.add('gone')},
+      onEnd(c){pin.classList.remove('lift');show(c)}});
+    m.setView(start.lat,start.lon,90000);show(m.center());
+    setTimeout(()=>hint.classList.add('gone'),4500);
+    bindZoom(m);
+    document.getElementById('bk').onclick=search;
+    ok.onclick=()=>{if(!cur)return;
+      if(isPick){setCustom('pick',cur);S.from='pick';S.dest&&P[S.dest]?fareScreen():search();return}
+      if(hav(cur,P[S.from])<.08){toast(t('tooClose'));return}
+      setCustom('drop',cur);S.dest='drop';fareScreen()};
+  });
+}
+
+function fareScreen(){
+  if(!VEH.some(v=>v.id===S.veh))S.veh='auto';
+  const r=route(S.from,S.dest);const mins=Math.round(r.km/22*60)+3;
+  go(`<section class="screen"><div class="mapwrap"><canvas class="map" id="map"></canvas>
+     <div class="topbar"><button class="chipbtn" id="bk" aria-label="Back">${I.back}</button><button class="greet tap" id="edit"><small>${pn(S.from)}</small><b>→ ${pn(S.dest)}</b></button></div></div>
+   <div class="sheet fare-sheet pad"><div class="grab"></div>
+     <div class="sec"><h3>${t('chooseRide')}</h3><div class="trip"><span class="pill">${r.km.toFixed(1)} ${t('km')}</span><span class="pill">~${mins} ${t('min')}</span></div></div>
+     <div class="whenrow"><button class="chip ${S.when?'sel':''}" id="whenb">${I.clock} ${S.when?fmtWhen(S.when):L('இப்போ','Now')}</button>${S.when?`<button class="linkbtn" id="whenx">${L('இப்போவே போகணும்','Ride now instead')}</button>`:`<span class="muted" style="font-size:12.5px">${L('பின்னாடி போகணுமா? நேரம் தேர்வு பண்ணுங்க','Later? Pick a time')}</span>`}</div>
+     <div style="display:flex;flex-direction:column;gap:10px" id="vs">${VEH.map(v=>{const f=fare(v,r.km);return `<button class="veh ${S.veh===v.id?'sel':''}" data-v="${v.id}"><span class="vi">${I[v.id]}</span>
+       <div><b>${v[S.lang]}${v.tag?` <span class="pill" style="font-family:var(--body);vertical-align:2px">${v.tag}</span>`:''}</b><small>${v.models?v.models+' · ':''}${v.eta} ${t('away')} · ${v.seats} ${t('seats')}</small></div><span class="price"><b>₹${f}</b><br><s>₹${Math.round(f*1.15/5)*5}</s></span></button>`}).join('')}</div>
+     <div class="payrow"><button class="pay ${S.pay==='cash'?'sel':''}" data-pay="cash">${I.cash}${t('payCash')}</button><button class="pay ${S.pay==='upi'?'sel':''}" data-pay="upi">${I.upi}${t('payUpi')}</button>${CL?'':`<button class="pay ${S.pay==='wallet'?'sel':''}" data-pay="wallet">${I.navWallet.replace('<svg ','<svg width="18" height="18" ')}${inr(WAL.bal)}</button>`}</div>
+     <p class="fine muted" style="margin:0"><button class="linkbtn" id="cp">% ${t('coupon')}</button> · ${t('fareNote')}</p>
+     <button class="btn yellow" id="bookb"></button></div></section>`,()=>{
+    const m=makeMap(document.getElementById('map'),{path:r.path});
+    m.fit(r.path.map(k=>P[k]),46,64);
+    const upd=()=>{const v=VEH.find(x=>x.id===S.veh);document.getElementById('bookb').textContent=`${S.when||ADV.includes(v.id)?L('Schedule பண்ணு','Schedule'):t('book')} ${v[S.lang]} · ₹${fare(v,r.km)}`};upd();
+    app.querySelectorAll('.veh').forEach(b=>b.onclick=()=>{S.veh=b.dataset.v;app.querySelectorAll('.veh').forEach(x=>x.classList.toggle('sel',x===b));upd()});
+    app.querySelectorAll('[data-pay]').forEach(b=>b.onclick=()=>{if(b.dataset.pay==='wallet'&&WAL.bal<fare(VEH.find(x=>x.id===S.veh),r.km)){toast(L(`Wallet-ல ${inr(WAL.bal)} தான் இருக்கு. பணம் சேர்க்கணும்`,`Only ${inr(WAL.bal)} in wallet. Add money first`));return}S.pay=b.dataset.pay;app.querySelectorAll('[data-pay]').forEach(x=>x.classList.toggle('sel',x===b))});
+    document.getElementById('cp').onclick=()=>toast('FIRST20 · AUTO15 · REFER');
+    document.getElementById('edit').onclick=search;
+    document.getElementById('bk').onclick=search;document.getElementById('bookb').onclick=()=>{const v=VEH.find(x=>x.id===S.veh);
+      if(ADV.includes(v.id)&&(!S.when||S.when<Date.now()+3*36e5)){pickWhen(180,ts=>{S.when=ts;fareScreen()},L('Traveller / Mini Bus-க்கு குறைந்தது 3 மணி நேரம் முன்னாடி book பண்ணணும்','Travellers and mini buses need at least 3 hours\u2019 notice'));return}
+      if(S.when){if(S.pay==='wallet')S.pay='upi';confirmSchedule();return}if(CL)return cloudBook();startBooking()};
+    document.getElementById('whenb').onclick=()=>pickWhen(ADV.includes(S.veh)?180:30,ts=>{S.when=ts;fareScreen()});
+    const wx=document.getElementById('whenx');if(wx)wx.onclick=()=>{S.when=null;fareScreen()};
+  });
+}
+
+
+const SOON={
+  trips:{n:'Step 3',ta:['எல்லா பயணமும் தேதி வாரியா','PDF bill WhatsApp-ல share','அதே பயணத்தை மறுபடி Book','Driver-க்கு rating, tip'],en:['All trips by date','PDF bill, share on WhatsApp','Rebook the same trip','Rate and tip your driver']},
+  wallet:{n:'Step 3',ta:['UPI-ல Wallet recharge','Cashback & refer bonus','ஒவ்வொரு ரூபாய்க்கும் history'],en:['Recharge wallet with UPI','Cashback and referral bonus','History of every rupee']},
+  help:{n:'Step 5',ta:['பொதுவான பிரச்சனைக்கு உடனே பதில்','"Call me back" — staff திரும்ப கூப்பிடுவாங்க','SOS & live trip share','Lost item report'],en:['Instant answers to common problems','"Call me back" — our staff calls you','SOS and live trip sharing','Report a lost item']}
+};
+function soonTab(k){
+  const s=SOON[k];
+  const hist=k==='trips'&&TRIPS.length?`<div class="recent">${TRIPS.map(x=>`<div class="row"><span class="ic">${I[x.veh.en.toLowerCase()]?I.clock:I.clock}</span><div><b>${x.from[S.lang]} → ${x.to[S.lang]}</b><small>${x.veh[S.lang]} · ${x.driver[S.lang]} · ${when(x.date)}${x.stars?' · '+'★'.repeat(x.stars):''}</small></div><b style="flex:none;font-family:var(--display)">₹${x.fare}</b></div>`).join('')}</div>`:'';
+  go(shell(`<div class="head pad"><h2>${t(k)}</h2></div><div class="body pad" style="padding-top:4px">${hist}
+     <div class="soon"><span class="badge">${s.n}</span><b>${t('coming')}</b><ul>${s[S.lang].map(x=>`<li>${x}</li>`).join('')}</ul></div></div>`),bindNav);
+}
+function profile(){
+  const dark=document.documentElement.dataset.theme==='dark';
+  go(shell(`<div class="head pad"><h2>${t('me')}</h2></div><div class="body pad" style="padding-top:4px">
+    <div class="prof"><span class="avatar">${esc((S.name||'V')[0].toUpperCase())}</span><div style="flex:1;min-width:0"><h3>${esc(S.name)}</h3><span class="muted">+91 ${S.phone}</span></div><button class="linkbtn" id="ed">${L('பெயர் மாற்று','Edit name')}</button></div>
+    <div class="sec"><h3>${L('அவசர தொடர்புகள்','Emergency contacts')}</h3><span class="sample">${EC.length}/3</span></div>
+    <p class="muted" style="margin:0;font-size:13px">${L('Ride-ல SOS அழுத்தினா இவங்களுக்கு உங்க location-ஓட alert போகும்.','When you press SOS during a ride, they get an alert with your location.')}</p>
+    ${EC.length?`<div class="recent">${EC.map((c,i)=>`<div class="row"><span class="ic">${I.shield}</span><div><b>${esc(c.name)}</b><small>${esc(c.rel)} · +91 ${c.phone}</small></div><button class="linkbtn" data-rm="${i}" style="color:var(--danger)">${L('நீக்கு','Remove')}</button></div>`).join('')}</div>`:''}
+    ${EC.length<3?`<button class="btn dashed" id="addec">+ ${L('தொடர்பு சேர்','Add contact')}</button>`:''}
+    <div class="sec"><h3>${L('அமைப்புகள்','Settings')}</h3></div>
+    <div class="recent">
+    <button class="row" id="lg"><span class="ic">அ</span><div><b>${t('lang')}</b><small>${S.lang==='ta'?'தமிழ்':'English'}</small></div></button>
+    <button class="row" id="th"><span class="ic">${dark?'☾':'☀'}</span><div><b>${t('theme')}</b><small>${dark?'On':'Off'}</small></div></button>
+    <button class="row" id="rq"><span class="ic">${I.chat}</span><div><b>${L('என் requests & உதவி','My requests & help')}</b><small>${TIX.length} ${L('requests','requests')}</small></div></button>
+    <button class="row" id="lo"><span class="ic" style="color:var(--danger)">⏻</span><div><b style="color:var(--danger)">${t('logout')}</b><small>+91 ${S.phone}</small></div></button></div>
+    <p class="fine muted">Vellore Call Taxi · Customer app v0.5 (demo)</p></div>`),()=>{
+    bindNav();
+    document.getElementById('lg').onclick=()=>{S.lang=S.lang==='ta'?'en':'ta';save();profile()};
+    document.getElementById('th').onclick=()=>{document.documentElement.dataset.theme=dark?'light':'dark';profile()};
+    document.getElementById('rq').onclick=()=>{S.tab='help';helpTab()};
+    document.getElementById('lo').onclick=()=>{if(CL)CL.logout();stopWatch();forgetRide();S.logged=false;S.name='';save();login()};
+    const ae=document.getElementById('addec');if(ae)ae.onclick=()=>ecAdd(profile);
+    app.querySelectorAll('[data-rm]').forEach(b=>b.onclick=()=>{EC.splice(+b.dataset.rm,1);saveEc();saveProfile();profile()});
+    document.getElementById('ed').onclick=()=>modal(`<h3>${L('பெயர் மாற்று','Edit name')}</h3><div class="field" style="height:52px"><input id="nn" maxlength="30" value="${esc(S.name||'')}"></div><button class="btn" id="ns">${L('சேமி','Save')}</button>`,(m,close)=>{
+      m.querySelector('#ns').onclick=()=>{const v=m.querySelector('#nn').value.trim();if(v.length<2)return;S.name=v;save();saveProfile();close();profile()}});
+  });
+}
+
+/* ================= STEP 2: booking → driver → trip → bill → rating ================= */
+const L=(ta,en)=>S.lang==='ta'?ta:en;
+Object.assign(I,{
+  phone:`<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="M5 3h4l2 5-2.5 1.5a11 11 0 006 6L16 13l5 2v4a2 2 0 01-2 2A16 16 0 013 5a2 2 0 012-2z"/></svg>`,
+  chat:`<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="M4 5h16v11H9l-5 4z"/></svg>`,
+  share:`<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="M8.2 10.8l7.6-4.4M8.2 13.2l7.6 4.4"/></svg>`,
+  shield:`<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/></svg>`,
+  tick:`<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#FFD84D" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7"/></svg>`
+});
+const DRIVERS={
+  bike:{ta:'கார்த்திக் S',en:'Karthik S',plate:'TN 23 BK 1290',model:'Honda Shine',rating:4.9,trips:860},
+  auto:{ta:'செல்வம் R',en:'Selvam R',plate:'TN 23 Q 7788',model:'Bajaj RE',rating:4.8,trips:2140},
+  mini:{ta:'சுரேஷ் P',en:'Suresh P',plate:'TN 23 CA 2108',model:'Maruti Swift',rating:4.8,trips:1120},
+  sedan:{ta:'ரவிக்குமார் M',en:'Ravikumar M',plate:'TN 23 CA 3344',model:'Swift Dzire',rating:4.9,trips:1530},
+  suv:{ta:'பாலாஜி T',en:'Balaji T',plate:'TN 23 CB 5566',model:'Maruti Ertiga · 7-seater',rating:4.9,trips:980},
+  trav:{ta:'முருகேசன் K',en:'Murugesan K',plate:'TN 23 CD 4410',model:'Tempo Traveller · 12-seater',rating:4.8,trips:410},
+  bus:{ta:'சண்முகம் V',en:'Shanmugam V',plate:'TN 23 CE 9021',model:'Mini Bus · 24-seater',rating:4.7,trips:230}
+};
+let R=null,rideTimer=null;
+let TRIPS=[];try{TRIPS=JSON.parse(localStorage.getItem('vct_trips')||'[]')}catch(e){}
+function saveTrips(){try{localStorage.setItem('vct_trips',JSON.stringify(TRIPS.slice(0,30)))}catch(e){}}
+function when(ts){const d=new Date(ts),n=new Date();if(d.toDateString()===n.toDateString())return L('இன்று','Today')+' · '+d.toLocaleTimeString(S.lang==='ta'?'ta-IN':'en-IN',{hour:'numeric',minute:'2-digit'});return d.toLocaleDateString(S.lang==='ta'?'ta-IN':'en-IN',{day:'numeric',month:'short'})}
+function recentHtml(){
+  const DONE=TRIPS.filter(isDone);
+  if(DONE.length)return `<div class="sec"><h3>${t('recent')}</h3></div><div class="recent">${DONE.slice(0,3).map((x,i)=>`<button class="row" data-trip="${i}"><span class="ic">${I.clock}</span><div><b>${x.to[S.lang]}</b><small>${x.veh[S.lang]} · ${inr(total(x))} · ${when(x.date)}</small></div></button>`).join('')}</div>`;
+  const recents=[['cmc','Auto',' ₹110','2 நாள் முன்','2 days ago'],['katpadi','Bike',' ₹35','போன வாரம்','Last week']];
+  return `<div class="sec"><h3>${t('recent')}</h3><span class="sample">${t('sample')}</span></div><div class="recent">${recents.map(r=>`<button class="row" data-p="${r[0]}"><span class="ic">${I.clock}</span><div><b>${pn(r[0])}</b><small>${r[1]} ·${r[2]} · ${S.lang==='ta'?r[3]:r[4]}</small></div></button>`).join('')}</div>`;
+}
+
+/* position along a lat/lon polyline at fraction f */
+function along(pts,f){
+  const seg=[];let tot=0;for(let i=1;i<pts.length;i++){const d=hav(pts[i-1],pts[i]);seg.push(d);tot+=d}
+  let want=Math.max(0,Math.min(1,f))*tot,i=0;while(i<seg.length-1&&want>seg[i]){want-=seg[i];i++}
+  const a=pts[i],b=pts[i+1]||pts[i],k=seg[i]?want/seg[i]:1;
+  return{lat:a.lat+(b.lat-a.lat)*k,lon:a.lon+(b.lon-a.lon)*k,nlat:b.lat,nlon:b.lon,idx:i};
+}
+function modal(html,bind){const m=document.createElement('div');m.className='modal';m.innerHTML=`<div class="card pad">${html}</div>`;app.appendChild(m);const close=()=>m.remove();m.onclick=e=>{if(e.target===m)close()};bind&&bind(m,close);return close}
+const stopsHtml=()=>`<div class="tripcard"><div class="rail"><i class="a"></i><i class="l"></i><i class="b"></i></div>
+  <div class="stops"><div><small>${t('pickup')}</small><b>${R.fromName[S.lang]}</b></div><div><small>${t('dropLbl')}</small><b>${R.destName[S.lang]}</b></div></div>
+  <div class="amt"><b>₹${R.fare}</b><br><small class="muted">${payName(R.pay)}</small></div></div>`;
+
+function startBooking(){
+  const r=route(S.from,S.dest),v=VEH.find(x=>x.id===S.veh),pu=P[S.from];
+  if(S.pay==='wallet'&&WAL.bal<fare(v,r.km)){toast(L('Wallet-ல போதுமான பணம் இல்லை. UPI அல்லது Cash தேர்வு பண்ணுங்க','Not enough in wallet. Choose UPI or cash'));return}
+  const st={lat:pu.lat+.0062,lon:pu.lon-.0048};
+  R={v,km:r.km,path:r.path,fare:fare(v,r.km),pay:S.pay,from:S.from,dest:S.dest,
+     fromName:{ta:P[S.from].ta,en:P[S.from].en},destName:{ta:P[S.dest].ta,en:P[S.dest].en},
+     drv:DRIVERS[v.id],pin:String(1000+Math.floor(Math.random()*9000)),trackId:Math.random().toString(36).slice(2,8),
+     approach:[st,{lat:st.lat,lon:pu.lon},{lat:pu.lat,lon:pu.lon}],trip:r.path.map(k=>({lat:P[k].lat,lon:P[k].lon})),
+     phase:'search',f:0,chat:[],sosArmed:false};
+  searching();
+}
+
+function searching(){
+  const pu=P[R.from];
+  go(`<section class="screen"><div class="mapwrap"><canvas class="map" id="map"></canvas><div class="radar"><i></i><i></i><i></i></div>
+     <div class="topbar"><div class="greet"><small>${R.fromName[S.lang]}</small><b>→ ${R.destName[S.lang]}</b></div></div></div>
+   <div class="sheet ride-sheet pad"><div class="grab"></div>
+     <div class="searchrow"><span class="vi">${I[R.v.id]}</span><div><h3>${L('Driver-ஐ தேடுறோம்…','Finding your driver…')}</h3>
+       <small class="muted">${L(`அருகில் இருக்கிற ${R.v.ta} drivers-க்கு request போயிடுச்சு`,`Request sent to ${R.v.en} drivers near you`)}</small></div></div>
+     <div class="bar"><i></i></div>${stopsHtml()}
+     <button class="btn ghost" id="cx">${L('Booking-ஐ ரத்து செய்','Cancel booking')}</button></div></section>`,()=>{
+    const m=makeMap(document.getElementById('map'),{cars:true,path:[R.from]});m.setView(pu.lat,pu.lon,32000);
+    document.getElementById('cx').onclick=cancelSheet;
+    rideTimer=setInterval(()=>{clearInterval(rideTimer);rideScreen()},4200);
+  });
+}
+
+const DUR={arriving:14000,arrived:6000,ontrip:18000};
+function rideScreen(){
+  R.phase='arriving';R.f=0;saveActive();
+  go(`<section class="screen"><div class="mapwrap"><canvas class="map" id="map"></canvas>
+     <div class="topbar"><div class="greet status"><small id="stS"></small><b id="stB"></b></div><button class="chipbtn sos" id="sos">SOS</button></div>
+     <button class="chipbtn ff" id="ff" title="Demo only">${L('Demo ⏩ அடுத்து','Demo ⏩ Next')}</button></div>
+   <div class="sheet ride-sheet pad"><div class="grab"></div>
+     <div class="pinbox" id="pinbox"><span>${L('இந்த PIN-ஐ driver-கிட்ட சொல்லுங்க','Tell this PIN to your driver')}</span><b>${R.pin.split('').map(d=>`<i>${d}</i>`).join('')}</b></div>
+     <div class="drv"><span class="avatar">${R.drv.en[0]}</span><div><b>${R.drv[S.lang]}</b><small>★ ${R.drv.rating} · ${R.drv.trips.toLocaleString('en-IN')} ${L('பயணங்கள்','trips')}</small></div>
+       <div class="vehbox"><span class="plate">${R.drv.plate}</span><small class="muted">${R.drv.model}</small></div></div>
+     <div class="acts"><button data-a="call">${I.phone}Call</button><button data-a="chat">${I.chat}Chat</button><button data-a="share">${I.share}Share</button><button data-a="safety">${I.shield}${L('பாதுகாப்பு','Safety')}</button></div>
+     ${stopsHtml()}
+     <button class="btn ghost" id="cx">${L('Ride-ஐ ரத்து செய்','Cancel ride')}</button></div></section>`,()=>{
+    const o={path:[R.from],
+      driver:()=>R.phase==='arrived'?{...R.approach[2],nlat:R.approach[2].lat,nlon:R.approach[2].lon+.0001}:along(R.phase==='ontrip'?R.trip:R.approach,R.f),
+      line:()=>{if(R.phase==='arrived')return null;const pts=R.phase==='ontrip'?R.trip:R.approach,p=along(pts,R.f);return[p,...pts.slice(p.idx+1)]}};
+    const m=makeMap(document.getElementById('map'),o);m.fit(R.approach,70,70);
+    const stS=document.getElementById('stS'),stB=document.getElementById('stB');
+    let t0=performance.now();
+    const next=()=>{
+      if(R.phase==='arriving'){R.phase='arrived';toast(L('Driver வந்துட்டாரு! PIN-ஐ சொல்லுங்க','Your driver is here. Share your PIN'))}
+      else if(R.phase==='arrived'){R.phase='ontrip';o.path=R.path;m.fit(R.trip,60,70);
+        document.getElementById('pinbox').hidden=true;document.getElementById('cx').hidden=true;
+        toast(L('PIN சரி! பயணம் ஆரம்பம்','PIN verified. Your trip has started'))}
+      else{clearInterval(rideTimer);doneScreen();return}
+      R.f=0;t0=performance.now();
+    };
+    const tick=()=>{
+      R.f=Math.min(1,(performance.now()-t0)/DUR[R.phase]);
+      if(R.phase==='arriving'){const eta=Math.max(1,Math.ceil((1-R.f)*(R.v.eta+1)));stS.textContent=L(`${R.drv.ta} வந்துகிட்டு இருக்காரு`,`${R.drv.en} is on the way`);stB.textContent=L(`${eta} நிமி-ல வருவாரு`,`Arriving in ${eta} min`)}
+      else if(R.phase==='arrived'){const left=Math.max(0,180-Math.round(R.f*30)),mm=Math.floor(left/60)+':'+String(left%60).padStart(2,'0');stB.textContent=L('Driver வந்துட்டாரு!','Your driver has arrived');stS.textContent=L(`இலவச காத்திருப்பு ${mm}`,`Free waiting ${mm}`)}
+      else{const mins=Math.max(1,Math.ceil((1-R.f)*(Math.round(R.km/22*60)+3)));stS.textContent=L('பயணத்தில்','On trip');stB.textContent=L(`${mins} நிமி-ல சேருவீங்க`,`${mins} min to drop`)}
+      if(R.f>=1)next();
+    };
+    tick();rideTimer=setInterval(tick,200);
+    document.getElementById('ff').onclick=next;
+    document.getElementById('cx').onclick=cancelSheet;
+    document.getElementById('sos').onclick=safetySheet;
+    app.querySelectorAll('.acts button').forEach(b=>b.onclick=()=>({call:callSheet,chat:chatSheet,share:shareTrip,safety:safetySheet})[b.dataset.a]());
+  });
+}
+
+function callSheet(){
+  modal(`<h3>${L(`${R.drv.ta}-ஐ கூப்பிட`,`Call ${R.drv.en}`)}</h3>
+    <p class="muted" style="margin:0">${L('Driver-க்கு உங்க நம்பர் தெரியாது. Call ஒரு masked நம்பர் வழியா போகும்.','Your number stays hidden from the driver. Calls go through a masked number.')}</p>
+    <div class="note">${L('Masked calling service connect பண்ணும்போது இந்த button நேரடியா call பண்ணும்.','This button will place the call once the masked-calling service is connected.')}</div>
+    ${CL&&CFG.office?`<a class="btn yellow" href="tel:+91${CFG.office}">${L('Office-ஐ அழை','Call our office')} · +91 ${CFG.office}</a>`:''}<button class="btn" id="mok">${L('சரி','OK')}</button>`,(m,close)=>m.querySelector('#mok').onclick=close);
+}
+function chatSheet(){
+  const quick=S.lang==='ta'?['நான் gate-ல நிக்கிறேன்','5 நிமிஷம் ஆகும்','எங்கே இருக்கீங்க?','வந்துட்டேன்']:['I’m at the gate','Give me 5 minutes','Where are you?','Coming now'];
+  const reply=S.lang==='ta'?'சரி, வந்துடறேன்':'Okay, on my way';
+  modal(`<h3>${R.drv[S.lang]}</h3><div class="chatlog" id="log"></div><div class="tags" style="justify-content:flex-start">${quick.map(q=>`<button class="chip" data-q="${q}">${q}</button>`).join('')}</div>
+    <div class="field" style="height:50px"><input id="msg" placeholder="${L('Message type பண்ணுங்க','Type a message')}" maxlength="120"><button class="linkbtn" id="snd">${L('அனுப்பு','Send')}</button></div>`,(m)=>{
+    const log=m.querySelector('#log');
+    const draw=()=>{log.innerHTML=R.chat.length?R.chat.map(x=>`<div class="msg ${x.me?'me':'dr'}"></div>`).join(''):`<p class="muted" style="margin:auto;font-size:13px">${L('Driver-க்கு உங்க நம்பர் தெரியாது','Your number stays private')}</p>`;
+      [...log.querySelectorAll('.msg')].forEach((el,i)=>el.textContent=R.chat[i].text);log.scrollTop=log.scrollHeight};
+    const send=txt=>{if(!txt.trim())return;R.chat.push({me:true,text:txt.trim()});draw();setTimeout(()=>{if(!document.body.contains(log))return;R.chat.push({me:false,text:reply});draw()},1200)};
+    m.querySelectorAll('[data-q]').forEach(b=>b.onclick=()=>send(b.dataset.q));
+    const inp=m.querySelector('#msg');m.querySelector('#snd').onclick=()=>{send(inp.value);inp.value=''};inp.onkeydown=e=>{if(e.key==='Enter'){send(inp.value);inp.value=''}};draw();
+  });
+}
+function shareTrip(){
+  const txt=L(`நான் Vellore Call Taxi-ல பயணம் பண்றேன்: ${R.drv.ta}, ${R.drv.plate} (${R.v.ta}). ${R.fromName.ta} → ${R.destName.ta}.`,
+              `I'm riding with Vellore Call Taxi: ${R.drv.en}, ${R.drv.plate} (${R.v.en}). ${R.fromName.en} → ${R.destName.en}.`);
+  const link=`${APP_URL}#track-${R.trackId}`,txt2=txt+'\n'+L('Live location','Live location')+': '+link;
+  modal(`<h3>${L('பயண விவரத்தை share பண்ணு','Share trip details')}</h3><div class="note" id="stx"></div>
+    <p class="muted" style="margin:0;font-size:13px">${L('Link-ஐ திறக்கிறவங்க உங்க வண்டி எங்கே இருக்குன்னு பார்க்கலாம். Live map Firebase connect ஆனதும் வேலை செய்யும்.','Anyone with the link can follow your ride. The live map works once Firebase is connected.')}</p>
+    <div class="two"><button class="btn" id="cpy">${L('Copy பண்ணு','Copy')}</button><a class="btn wa" href="https://wa.me/?text=${encodeURIComponent(txt2)}" target="_blank" rel="noopener">WhatsApp</a></div>`,(m,close)=>{
+    m.querySelector('#stx').textContent=txt2;
+    m.querySelector('#cpy').onclick=()=>{navigator.clipboard.writeText(txt2).then(()=>{toast(L('Copy ஆயிடுச்சு — WhatsApp-ல paste பண்ணுங்க','Copied. Paste it in WhatsApp'));close()}).catch(()=>{const r=document.createRange();r.selectNodeContents(m.querySelector('#stx'));const s=getSelection();s.removeAllRanges();s.addRange(r);toast(L('Text select ஆயிருக்கு, copy பண்ணுங்க','Text selected, copy it now'))})};
+  });
+}
+function safetySheet(){
+  modal(`<h3>${L('பாதுகாப்பு','Safety')}</h3>
+    <button class="sosbig" id="sosb">SOS</button>
+    <p class="muted" style="margin:0;font-size:13px" id="soshint">${L('ஒருமுறை அழுத்தினா உறுதி கேட்கும். உறுதி செய்தா எங்க team-க்கும் உங்க emergency contact-க்கும் உங்க location-ஓட alert போகும்.','Tap once and we ask you to confirm. Then our team and your emergency contact get an alert with your location.')}</p>
+    ${ecHtml()}
+    <div class="bill"><div><span>${L('அவசர உதவி','Emergency')}</span><b>112</b></div><div><span>${L('காவல்','Police')}</span><b>100</b></div><div><span>${L('பெண்கள் உதவி','Women helpline')}</span><b>181</b></div></div>
+    <button class="btn" style="background:var(--surface-2);color:var(--fg);border:1px solid var(--line)" id="shr">${I.share}${L('பயணத்தை share பண்ணு','Share trip')}</button>`,(m,close)=>{
+    const b=m.querySelector('#sosb');let armed=false;const ae=m.querySelector('#addec');if(ae)ae.onclick=()=>{close();ecAdd(safetySheet)};
+    b.onclick=()=>{if(!armed){armed=true;b.textContent=L('உறுதி செய்ய மறுபடி அழுத்துங்க','Tap again to confirm');return}
+      close();if(CL){cloudTicket({type:'sos',title:{ta:'SOS அவசரம்',en:'SOS emergency'},trip:R&&R.id?R.id.slice(0,6).toUpperCase():'',lat:R&&R.dpos?R.dpos.lat:null,lon:R&&R.dpos?R.dpos.lon:null});toast(L('Alert அனுப்பியாச்சு. எங்க office உடனே உங்களை கூப்பிடுவாங்க','Alert sent. Our office will call you right away'));return}toast(L(`Alert அனுப்பியாச்சு (demo)${EC.length?': '+EC.map(c=>c.name).join(', ')+' + எங்க team':''}. Dispatcher panel connect ஆனதும் உண்மையா போகும்`,`Alert sent (demo)${EC.length?' to '+EC.map(c=>c.name).join(', ')+' and our team':''}. It goes live once the dispatcher panel is connected`))};
+    m.querySelector('#shr').onclick=()=>{close();shareTrip()};
+  });
+}
+function cancelSheet(){
+  const rs=S.lang==='ta'?['Driver ரொம்ப லேட்','Plan மாறிடுச்சு','Pickup இடம் தப்பு','தவறா book பண்ணிட்டேன்','வேற காரணம்']:['Driver is taking too long','Change of plans','Wrong pickup point','Booked by mistake','Other reason'];
+  modal(`<h3>${L('ஏன் ரத்து பண்றீங்க?','Why are you cancelling?')}</h3>
+    ${rs.map((r,i)=>`<button class="reason" data-i="${i}"><i class="radio"></i>${r}</button>`).join('')}
+    <div class="note">${L('Driver வர்றதுக்கு முன்னாடி ரத்து செய்தா கட்டணம் இல்லை.','No charge if you cancel before the driver arrives.')}</div>
+    <button class="btn ghost" id="cyes" disabled>${L('ரத்து செய்','Cancel ride')}</button>
+    <button class="btn" id="cno">${L('வேண்டாம், ride தொடரட்டும்','Keep my ride')}</button>`,(m,close)=>{
+    const y=m.querySelector('#cyes');
+    m.querySelectorAll('.reason').forEach(b=>b.onclick=()=>{m.querySelectorAll('.reason').forEach(x=>x.classList.toggle('sel',x===b));y.disabled=false});
+    m.querySelector('#cno').onclick=close;
+    y.onclick=()=>{clearInterval(rideTimer);const sel=m.querySelector('.reason.sel');if(CL&&R&&R.id)cloudCancel(sel?sel.textContent.trim():'');if(R)recordTrip('cancelled',{reason:sel?sel.textContent.trim():''});R=null;home();toast(L('Ride ரத்து ஆயிடுச்சு','Ride cancelled'))};
+  });
+}
+
+function doneScreen(){
+  const base=R.v.base,dist=R.fare-base,now=Date.now();
+  const qr=(()=>{let s='';for(let y=0;y<21;y++)for(let x=0;x<21;x++){if(((x*7+y*13+x*y)%5)<2)s+=`<rect x="${x*4}" y="${y*4}" width="4" height="4"/>`}return `<svg width="96" height="96" viewBox="0 0 84 84" fill="#13284F" aria-label="Sample QR">${s}</svg>`})();
+  go(`<section class="screen"><div class="donehero pad"><span class="check">${I.tick}</span><h1 style="font-size:26px">${L('வந்து சேர்ந்தாச்சு!','You have arrived!')}</h1><span>${R.destName[S.lang]}</span></div>
+   <div class="body pad" id="db">
+     <div class="bill"><div><span>${L('அடிப்படை கட்டணம்','Base fare')}</span><span>₹${base}</span></div>
+       <div><span>${L(`தூரம் (${R.km.toFixed(1)} கி.மீ)`,`Distance (${R.km.toFixed(1)} km)`)}</span><span>₹${dist}</span></div>
+       <div><span>${L('காத்திருப்பு','Waiting')}</span><span>₹0</span></div>
+       <div class="tot"><span>${L('மொத்தம்','Total')}</span><span>₹${R.fare}</span></div></div>
+     <div id="paybox" style="display:flex;flex-direction:column;gap:12px">
+       <span class="kind">${L('எப்படி பணம் கொடுக்கப் போறீங்க?','How will you pay?')}</span>
+       <div class="payrow"><button class="pay" data-pm="upi">${I.upi}${t('payUpi')}</button><button class="pay" data-pm="cash">${I.cash}${t('payCash')}</button>${CL?'':`<button class="pay" data-pm="wallet">${I.navWallet.replace('<svg ','<svg width="18" height="18" ')}Wallet</button>`}</div>
+       <div id="pmUpi"><div class="qr">${qr}<div><b>${L(`UPI-ல ₹${R.fare} செலுத்துங்க`,`Pay ₹${R.fare} by UPI`)}</b><p class="muted" style="margin:4px 0 0;font-size:13px">${L('இது sample QR. Owner UPI ID set பண்ணதும் உண்மையான QR இங்கே வரும்.','This is a sample QR. Your real UPI QR appears here once the owner UPI ID is set.')}</p></div></div></div>
+       <div id="pmCash"><div class="qr"><span style="width:64px;height:64px;border-radius:16px;background:var(--yellow);color:#13284F;display:flex;align-items:center;justify-content:center;flex:none">${I.cash.replace(/width="18" height="18"/,'width="34" height="34"')}</span><div><b>${L(`Driver-கிட்ட ₹${R.fare} cash கொடுங்க`,`Give ₹${R.fare} in cash to your driver`)}</b><p class="muted" style="margin:4px 0 0;font-size:13px">${L('Driver தன் app-ல cash வாங்கினதை confirm பண்ணுவார்.','Your driver confirms the cash in the driver app.')}</p></div></div></div>
+       <div id="pmWal"><div class="qr"><span style="width:64px;height:64px;border-radius:16px;background:#1E3A6E;color:#FFD84D;display:flex;align-items:center;justify-content:center;flex:none">${I.navWallet.replace('<svg ','<svg width="34" height="34" ')}</span><div><b>${L(`Wallet-ல இருந்து ${inr(R.fare)}`,`${inr(R.fare)} from wallet`)}</b><p class="muted" style="margin:4px 0 0;font-size:13px">${WAL.bal>=R.fare?L(`மீதம் ${inr(WAL.bal-R.fare)} இருக்கும்`,`${inr(WAL.bal-R.fare)} will be left`):L(`இருப்பு ${inr(WAL.bal)} தான். UPI அல்லது Cash தேர்வு பண்ணுங்க`,`Only ${inr(WAL.bal)} left. Choose UPI or cash`)}</p></div></div></div>
+       <button class="btn" id="paid"></button></div>
+     <div id="rate" hidden style="display:flex;flex-direction:column;gap:14px;text-align:center">
+       <h2 style="font-size:21px">${L(`${R.drv.ta} எப்படி?`,`How was ${R.drv.en}?`)}</h2>
+       <div class="stars">${[1,2,3,4,5].map(n=>`<button data-s="${n}" aria-label="${n} stars">★</button>`).join('')}</div>
+       <div class="tags">${(S.lang==='ta'?['சுத்தமான வண்டி','பாதுகாப்பான ஓட்டம்','மரியாதை','சரியான நேரம்']:['Clean vehicle','Safe driving','Polite','On time']).map(x=>`<button class="chip" data-tag="1">${x}</button>`).join('')}</div>
+       <span class="kind">${L('Driver-க்கு tip (விருப்பம்)','Tip your driver (optional)')}</span>
+       <div class="tags">${[10,20,30].map(x=>`<button class="chip" data-tip="${x}">₹${x}</button>`).join('')}</div>
+       <textarea id="fb" placeholder="${L('ஏதாவது சொல்லணுமா?','Anything to tell us?')}" maxlength="300"></textarea>
+       <button class="btn yellow" id="sub" disabled>${L('Submit பண்ணு','Submit')}</button>
+       <button class="linkbtn" id="skip">${L('இப்போ வேண்டாம்','Skip for now')}</button></div>
+   </div></section>`,()=>{
+    let stars=0,tip=0;const rate=document.getElementById('rate');rate.hidden=true;
+    const setPm=pm=>{R.pay=pm;app.querySelectorAll('[data-pm]').forEach(x=>x.classList.toggle('sel',x.dataset.pm===pm));
+      document.getElementById('pmUpi').hidden=pm!=='upi';document.getElementById('pmCash').hidden=pm!=='cash';document.getElementById('pmWal').hidden=pm!=='wallet';
+      document.getElementById('paid').textContent=pm==='upi'?L('UPI-ல கொடுத்தாச்சு','I have paid by UPI'):pm==='wallet'?L('Wallet-ல இருந்து கழி','Pay from wallet'):L('Cash கொடுத்தாச்சு','I have paid in cash')};
+    app.querySelectorAll('[data-pm]').forEach(b=>b.onclick=()=>{if(R.pay!==b.dataset.pm)toast(b.dataset.pm==='cash'?L('Cash-க்கு மாத்தியாச்சு','Switched to cash'):b.dataset.pm==='wallet'?L('Wallet-க்கு மாத்தியாச்சு','Switched to wallet'):L('UPI-க்கு மாத்தியாச்சு','Switched to UPI'));setPm(b.dataset.pm);cloudPayChange(b.dataset.pm)});
+    setPm(R.pay);
+    if(CL){const box=document.querySelector('#pmUpi .qr');if(box)box.innerHTML=CFG.upi?`<div id="rq" style="background:#fff;padding:6px;border-radius:10px;flex:none;min-width:132px;min-height:132px"></div><div><b>${L(`UPI-ல ${inr(R.fare)} செலுத்துங்க`,`Pay ${inr(R.fare)} by UPI`)}</b><p class="muted" style="margin:4px 0 0;font-size:13px">${L('QR-ஐ scan பண்ணுங்க, அல்லது','Scan the QR, or')} <a href="${upiLink(R.fare,R.id)}">${L('UPI app-ல திற','open your UPI app')}</a></p></div>`:`<div><b>${L(`UPI-ல ${inr(R.fare)} செலுத்துங்க`,`Pay ${inr(R.fare)} by UPI`)}</b><p class="muted" style="margin:4px 0 0;font-size:13px">${L('Driver காட்டுற QR-ல pay பண்ணுங்க.','Pay using the QR your driver shows.')}</p></div>`;realQr(document.getElementById('rq'),R.fare,R.id)}
+    document.getElementById('paid').onclick=()=>{if(R.pay==='wallet'){if(WAL.bal<R.fare){toast(L('Wallet-ல போதுமான பணம் இல்லை','Not enough money in wallet'));return}walTx(-R.fare,`Ride: ${R.destName.ta}`,`Ride: ${R.destName.en}`)}document.getElementById('paybox').hidden=true;rate.hidden=false;rate.style.display='flex';document.getElementById('db').scrollTop=0};
+    rate.querySelectorAll('[data-s]').forEach(b=>b.onclick=()=>{stars=+b.dataset.s;rate.querySelectorAll('[data-s]').forEach(x=>x.classList.toggle('on',+x.dataset.s<=stars));document.getElementById('sub').disabled=false});
+    rate.querySelectorAll('[data-tag]').forEach(b=>b.onclick=()=>b.classList.toggle('sel'));
+    rate.querySelectorAll('[data-tip]').forEach(b=>b.onclick=()=>{tip=tip===+b.dataset.tip?0:+b.dataset.tip;rate.querySelectorAll('[data-tip]').forEach(x=>x.classList.toggle('sel',+x.dataset.tip===tip))});
+    const finish=()=>{cloudRate(stars,tip);recordTrip('done',{tip,stars});R=null;home()};
+    document.getElementById('sub').onclick=()=>{finish();toast(L('நன்றி! உங்க rating driver-க்கு போயிடுச்சு','Thanks! Your rating reached the driver'))};
+    document.getElementById('skip').onclick=finish;
+  });
+}
+
+
+/* ================= STEP 3: trips history, bill / PDF, wallet ================= */
+let WAL={bal:50,tx:[{amt:50,ta:'வரவேற்பு bonus',en:'Welcome bonus',date:Date.now()}]};
+try{const w=JSON.parse(localStorage.getItem('vct_wallet')||'null');if(w&&typeof w.bal==='number')WAL=w}catch(e){}
+function saveWal(){try{localStorage.setItem('vct_wallet',JSON.stringify(WAL))}catch(e){}}
+function walTx(amt,ta,en){WAL.bal+=amt;WAL.tx.unshift({amt,ta,en,date:Date.now()});saveWal()}
+const inr=n=>'₹'+Number(n).toLocaleString('en-IN');
+
+function recordTrip(status,x={}){
+  if(!R.drv)R.drv={ta:'',en:'',plate:'',model:''};
+  const id=Date.now().toString(36).toUpperCase();
+  TRIPS.unshift({id,status,from:R.fromName,to:R.destName,fromKey:R.from,destKey:R.dest,
+    fromC:{lat:P[R.from].lat,lon:P[R.from].lon},toC:{lat:P[R.dest].lat,lon:P[R.dest].lon},path:R.trip,
+    veh:{ta:R.v.ta,en:R.v.en,id:R.v.id},km:+R.km.toFixed(1),base:R.v.base,fare:R.fare,tip:x.tip||0,pay:R.pay,date:Date.now(),
+    stars:x.stars||0,driver:{ta:R.drv.ta,en:R.drv.en},plate:R.drv.plate,model:R.drv.model,reason:x.reason||'',phase:R.phase});
+  saveTrips();
+}
+const invNo=x=>{const d=new Date(x.date);return `VCT-${String(d.getFullYear()).slice(2)}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}-${(x.id||String(x.date)).slice(-4)}`};
+const payName=p=>p==='upi'?t('payUpi'):p==='wallet'?'Wallet':t('payCash');
+const total=x=>(x.fare||0)+(x.tip||0);
+
+/* ---------- Trips tab ---------- */
+let tripFilter='all';
+function tripsTab(){
+  const list=TRIPS.filter(x=>tripFilter==='all'||(tripFilter==='done'?isDone(x):tripFilter==='up'?x.status==='upcoming':x.status==='cancelled'));
+  const done=TRIPS.filter(isDone);
+  const spent=done.reduce((a,x)=>a+total(x),0),km=done.reduce((a,x)=>a+(x.km||0),0);
+  go(shell(`<div class="head pad"><h2>${t('trips')}</h2></div>
+   <div class="body pad" style="padding-top:4px">
+    ${TRIPS.length?`<div class="stats"><div><b>${done.length}</b><small>${L('பயணங்கள்','Rides')}</small></div><div><b>${km.toFixed(1)}</b><small>${L('கி.மீ','km')}</small></div><div><b>${inr(spent)}</b><small>${L('செலவு','Spent')}</small></div></div>
+    <div class="chips">${[['all',L('எல்லாம்','All')],['up',L('வரவிருக்கும்','Upcoming')],['done',L('முடிந்தவை','Completed')],['cx',L('ரத்து','Cancelled')]].map(([k,l])=>`<button class="chip ${tripFilter===k?'sel':''}" data-f="${k}">${l}</button>`).join('')}</div>`:''}
+    ${list.length?`<div class="recent">${list.map(x=>`<button class="row trow" data-id="${x.id||''}" data-date="${x.date}">
+        <span class="ic tv">${I[(x.veh&&x.veh.id)||'auto']||I.clock}</span>
+        <div><b>${x.to[S.lang]}</b><small>${L('இருந்து','From')}: ${x.from[S.lang]} · ${when(x.date)}</small></div>
+        <span class="tamt">${x.status==='upcoming'?`<em class="st up">${fmtWhen(x.when)}</em><small>${kindName(x.kind)} · ${inr(x.fare)}</small>`:x.status==='cancelled'?`<em class="st cx">${L('ரத்து','Cancelled')}</em>`:`<b>${inr(total(x))}</b><small>${x.veh[S.lang]}</small>`}</span></button>`).join('')}</div>`
+     :`<div class="empty">${I.navTrips.replace('<svg ','<svg width="56" height="56" ')}<h3>${TRIPS.length?L('இந்த பிரிவுல பயணம் இல்லை','No rides here'):L('இன்னும் பயணம் இல்லை','No rides yet')}</h3>
+        <p class="muted">${L('உங்க முதல் ride-ஐ book பண்ணுங்க. எல்லா பயணமும் bill-ஓட இங்கே சேமிக்கப்படும்.','Book your first ride. Every trip is saved here with its bill.')}</p><button class="btn yellow" id="bk1">${t('where')}</button></div>`}
+   </div>`),()=>{
+    bindNav();
+    app.querySelectorAll('[data-f]').forEach(b=>b.onclick=()=>{tripFilter=b.dataset.f;tripsTab()});
+    app.querySelectorAll('.trow').forEach(b=>b.onclick=()=>{const x=TRIPS.find(x=>(x.id||'')===b.dataset.id&&String(x.date)===b.dataset.date);x&&x.status==='upcoming'?upcomingDetail(x):tripDetail(x)});
+    const b1=document.getElementById('bk1');if(b1)b1.onclick=search;
+  });
+}
+
+function tripDetail(x){
+  if(!x)return tripsTab();
+  const cx=x.status==='cancelled',hasMap=x.path&&x.path.length>1;
+  go(`<section class="screen"><div class="head pad"><button class="back" id="bk" aria-label="Back">${I.back}</button><h2>${cx?L('ரத்தான பயணம்','Cancelled ride'):L('பயண விவரம்','Ride details')}</h2><span class="muted" style="font-size:12.5px">${invNo(x)}</span></div>
+   <div class="body pad" style="padding-top:0">
+    ${hasMap?`<div class="minimap"><canvas class="map" id="map"></canvas></div>`:''}
+    <div class="tripcard"><div class="rail"><i class="a"></i><i class="l"></i><i class="b"></i></div>
+      <div class="stops"><div><small>${t('pickup')}</small><b>${x.from[S.lang]}</b></div><div><small>${t('dropLbl')}</small><b>${x.to[S.lang]}</b></div></div>
+      <div class="amt"><b>${cx?'₹0':inr(total(x))}</b><br><small class="muted">${when(x.date)}</small></div></div>
+    ${x.plate?`<div class="drv"><span class="avatar">${x.driver.en[0]}</span><div><b>${x.driver[S.lang]}</b><small>${x.veh[S.lang]} · ${x.model||''}</small></div><div class="vehbox"><span class="plate">${x.plate}</span>${x.stars?`<small style="color:#F5B400;letter-spacing:1px">${'★'.repeat(x.stars)}</small>`:''}</div></div>`:''}
+    ${cx?`<div class="note">${L('காரணம்','Reason')}: ${x.reason||'—'} · ${L('கட்டணம் இல்லை','No charge')}</div>`
+      :`<div class="bill">${x.base!=null?`<div><span>${L('அடிப்படை கட்டணம்','Base fare')}</span><span>${inr(x.base)}</span></div><div><span>${L(`தூரம் (${x.km} கி.மீ)`,`Distance (${x.km} km)`)}</span><span>${inr(x.fare-x.base)}</span></div>`:''}
+        ${x.tip?`<div><span>${L('Driver tip','Driver tip')}</span><span>${inr(x.tip)}</span></div>`:''}
+        <div class="tot"><span>${L('மொத்தம்','Total')}</span><span>${inr(total(x))}</span></div><div><span class="muted">${L('பணம்','Paid by')}</span><span>${payName(x.pay)}</span></div></div>`}
+    <div class="two">${cx?'':`<button class="btn" id="bill">${L('Bill பார்','View bill')}</button>`}<button class="btn yellow" id="again">${L('மறுபடி Book','Book again')}</button></div>
+    <button class="linkbtn" id="hlp" style="align-self:center">${L('இந்த பயணத்தில் பிரச்சனையா?','Problem with this ride?')}</button>
+   </div></section>`,()=>{
+    if(hasMap){const m=makeMap(document.getElementById('map'),{line:()=>x.path,hide:CUSTOM,pins:[{...x.fromC,col:'#1E8A5A'},{...x.toC,col:'#13284F'}]});m.fit(x.path,36,0)}
+    document.getElementById('bk').onclick=tripsTab;
+    const bl=document.getElementById('bill');if(bl)bl.onclick=()=>receipt(x);
+    document.getElementById('again').onclick=()=>rebook(x);
+    document.getElementById('hlp').onclick=()=>issueSheet(x);
+  });
+}
+function rebook(x){
+  if(x.fromKey&&P[x.fromKey]&&!CUSTOM.includes(x.fromKey))S.from=x.fromKey;else if(x.fromC){setCustom('pick',x.fromC);S.from='pick'}else S.from='home';
+  if(x.destKey&&P[x.destKey]&&!CUSTOM.includes(x.destKey))S.dest=x.destKey;else if(x.toC){setCustom('drop',x.toC);S.dest='drop'}else return search();
+  if(x.veh&&x.veh.id&&VEH.some(v=>v.id===x.veh.id))S.veh=x.veh.id;
+  fareScreen();
+}
+
+/* ---------- Bill / receipt ---------- */
+function receipt(x){
+  const inv=invNo(x),d=new Date(x.date);
+  const dt=d.toLocaleString(S.lang==='ta'?'ta-IN':'en-IN',{day:'numeric',month:'short',year:'numeric',hour:'numeric',minute:'2-digit'});
+  const waTxt=`Vellore Call Taxi — ${L('பயண bill','Ride bill')} ${inv}\n${dt}\n${x.from[S.lang]} → ${x.to[S.lang]}\n${x.veh[S.lang]} · ${x.plate||''} · ${x.km||''} km\n${L('மொத்தம்','Total')}: ${inr(total(x))} (${payName(x.pay)})`;
+  go(`<section class="screen"><div class="head pad"><button class="back" id="bk" aria-label="Back">${I.back}</button><h2>${L('பயண Bill','Ride bill')}</h2></div>
+   <div class="body pad" style="padding-top:0">
+    <div class="receipt" id="rcpt">
+      <div class="rhead"><div class="rbrand"><span class="rsign">TAXI</span><div><b>Vellore Call Taxi</b><small>வேலூர் கால் டாக்ஸி · Katpadi, Vellore</small></div></div>
+        <div class="rinv"><small>${L('Bill எண்','Bill no.')}</small><b>${inv}</b><small>${dt}</small></div></div>
+      <div class="rsec"><div class="rrow"><span>${L('வாடிக்கையாளர்','Customer')}</span><b>${S.name||'—'} · +91 ${S.phone||''}</b></div>
+        <div class="rrow"><span>${t('pickup')}</span><b>${x.from[S.lang]}</b></div><div class="rrow"><span>${t('dropLbl')}</span><b>${x.to[S.lang]}</b></div></div>
+      <div class="rsec"><div class="rrow"><span>${L('வண்டி','Vehicle')}</span><b>${x.veh[S.lang]} · ${x.model||''}</b></div>
+        <div class="rrow"><span>${L('வண்டி எண்','Vehicle no.')}</span><b>${x.plate||'—'}</b></div><div class="rrow"><span>Driver</span><b>${x.driver?x.driver[S.lang]:'—'}</b></div>
+        <div class="rrow"><span>${L('தூரம்','Distance')}</span><b>${x.km||'—'} km</b></div></div>
+      <div class="rsec">${x.base!=null?`<div class="rrow"><span>${L('அடிப்படை கட்டணம்','Base fare')}</span><b>${inr(x.base)}</b></div><div class="rrow"><span>${L('தூர கட்டணம்','Distance fare')}</span><b>${inr(x.fare-x.base)}</b></div>`:''}
+        ${x.tip?`<div class="rrow"><span>Tip</span><b>${inr(x.tip)}</b></div>`:''}
+        <div class="rrow rtot"><span>${L('மொத்தம்','Total')}</span><b>${inr(total(x))}</b></div>
+        <div class="rrow"><span>${L('பணம்','Paid by')}</span><b>${payName(x.pay)} ✓</b></div></div>
+      <p class="rthanks">${L('Vellore Call Taxi-ஐ தேர்ந்தெடுத்ததற்கு நன்றி!','Thank you for riding with Vellore Call Taxi!')}</p>
+    </div>
+    <div class="two"><button class="btn" id="pdf">${L('PDF Download','Download PDF')}</button>
+      <a class="btn wa" href="https://wa.me/?text=${encodeURIComponent(waTxt)}" target="_blank" rel="noopener">${L('WhatsApp-ல அனுப்பு','Send on WhatsApp')}</a></div>
+   </div></section>`,()=>{
+    document.getElementById('bk').onclick=()=>tripDetail(x);
+    document.getElementById('pdf').onclick=async()=>{
+      toast(L('PDF தயாராகுது…','Preparing PDF…'));
+      try{await loadPdfLib();await window.html2pdf().set({margin:6,filename:`${inv}.pdf`,image:{type:'jpeg',quality:.96},html2canvas:{scale:2,backgroundColor:'#ffffff'},jsPDF:{unit:'mm',format:'a5'}}).from(document.getElementById('rcpt')).save();
+        toast(L(`${inv}.pdf download ஆச்சு`,`${inv}.pdf downloaded`))}
+      catch(e){toast(L('PDF உருவாக்க முடியல. Internet-ஐ check பண்ணிட்டு மறுபடி முயற்சி பண்ணுங்க','Could not make the PDF. Check your internet and try again'))}
+    };
+  });
+}
+function loadPdfLib(){return new Promise((res,rej)=>{if(window.html2pdf)return res();const sc=document.createElement('script');
+  sc.src='https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';sc.onload=res;sc.onerror=rej;document.head.appendChild(sc)})}
+
+/* ---------- Wallet tab ---------- */
+function walletTab(){
+  if(CL){go(shell(`<div class="head pad"><h2>Wallet</h2></div><div class="body pad" style="padding-top:4px"><div class="soon"><span class="badge">${L('விரைவில்','Coming soon')}</span><b>${L('Wallet விரைவில் வரும்','Wallet is coming soon')}</b><p class="muted" style="margin:0">${L('இப்போதைக்கு UPI அல்லது Cash-ல pay பண்ணுங்க.','For now, please pay by UPI or cash.')}</p></div></div>`),bindNav);return}
+  const code=((S.name||'VCT').replace(/[^A-Za-z]/g,'').slice(0,4).toUpperCase()||'VCT')+(S.phone||'0000').slice(-4);
+  go(shell(`<div class="head pad"><h2>Wallet</h2></div>
+   <div class="body pad" style="padding-top:4px">
+    <div class="walcard"><small>${L('Wallet இருப்பு','Wallet balance')}</small><b>${inr(WAL.bal)}</b>
+      <span>${L('அடுத்த ride-க்கு Wallet-ல pay பண்ணலாம்','Use it to pay for your next ride')}</span>
+      <button class="btn yellow" id="add">+ ${L('பணம் சேர்','Add money')}</button></div>
+    <div class="refer"><div><b>${L('நண்பரை அழையுங்க','Invite a friend')}</b><small>${L('அவங்க முதல் ride முடிச்சதும் இருவருக்கும் ₹30 Wallet-ல','You both get ₹30 when they finish their first ride')}</small></div>
+      <button class="code" id="code">${code}<i>${L('Copy','Copy')}</i></button></div>
+    <div class="sec"><h3>${L('பரிவர்த்தனைகள்','Transactions')}</h3><span class="sample">${WAL.tx.length}</span></div>
+    <div class="recent">${WAL.tx.slice(0,30).map(x=>`<div class="row"><span class="ic ${x.amt>0?'in':'out'}">${x.amt>0?'+':'−'}</span><div><b>${x[S.lang]}</b><small>${when(x.date)}</small></div><b class="${x.amt>0?'pos':''}" style="flex:none">${x.amt>0?'+':'−'}${inr(Math.abs(x.amt))}</b></div>`).join('')}</div>
+    <p class="fine muted" style="margin:0">${L('இது demo wallet. Payment gateway connect பண்ணும்போது உண்மையான பணம் சேரும்.','This is a demo wallet. Real money is added once a payment gateway is connected.')}</p>
+   </div>`),()=>{
+    bindNav();
+    document.getElementById('add').onclick=addMoney;
+    document.getElementById('code').onclick=()=>{navigator.clipboard.writeText(code).then(()=>toast(L(`${code} copy ஆச்சு`,`${code} copied`))).catch(()=>toast(code))};
+  });
+}
+function addMoney(){
+  let amt=200;
+  modal(`<h3>${L('Wallet-ல பணம் சேர்','Add money to wallet')}</h3>
+    <div class="field"><span class="cc">₹</span><input id="amt" inputmode="numeric" maxlength="5" value="200" aria-label="Amount"></div>
+    <div class="tags" style="justify-content:flex-start">${[100,200,500,1000].map(a=>`<button class="chip ${a===200?'sel':''}" data-a="${a}">₹${a}</button>`).join('')}</div>
+    <div class="err" id="ae"></div>
+    <button class="btn" id="go">${L('UPI-ல ₹200 செலுத்து','Pay ₹200 by UPI')}</button>
+    <p class="fine muted" style="margin:0">${L('Demo: உண்மையான பணம் எடுக்கப்படாது.','Demo: no real money is charged.')}</p>`,(m,close)=>{
+    const inp=m.querySelector('#amt'),go2=m.querySelector('#go'),er=m.querySelector('#ae');
+    const upd=()=>{amt=parseInt(inp.value.replace(/\D/g,''))||0;inp.value=amt||'';go2.textContent=L(`UPI-ல ${inr(amt)} செலுத்து`,`Pay ${inr(amt)} by UPI`);
+      m.querySelectorAll('[data-a]').forEach(x=>x.classList.toggle('sel',+x.dataset.a===amt));er.textContent=''};
+    inp.oninput=upd;m.querySelectorAll('[data-a]').forEach(b=>b.onclick=()=>{inp.value=b.dataset.a;upd()});
+    go2.onclick=()=>{if(amt<10||amt>10000){er.textContent=L('₹10 முதல் ₹10,000 வரை சேர்க்கலாம்','You can add ₹10 to ₹10,000');return}
+      go2.disabled=true;go2.textContent=L('பணம் சரிபார்க்கிறோம்…','Confirming payment…');
+      setTimeout(()=>{walTx(amt,'UPI-ல சேர்த்தது','Added by UPI');close();walletTab();toast(L(`${inr(amt)} Wallet-ல சேர்ந்தது`,`${inr(amt)} added to wallet`))},1300)};
+  });
+}
+
+
+/* ================= STEP 4: schedule, rental, outstation, voice ================= */
+const ADV=['trav','bus'];
+const isDone=x=>!x.status||x.status==='done';
+const dayStart=o=>{const d=new Date();d.setHours(0,0,0,0);d.setDate(d.getDate()+o);return d};
+function dayLabel(ts){const d=new Date(ts);d.setHours(0,0,0,0);const diff=Math.round((d-dayStart(0))/864e5);
+  if(diff===0)return L('இன்று','Today');if(diff===1)return L('நாளை','Tomorrow');
+  return d.toLocaleDateString(S.lang==='ta'?'ta-IN':'en-IN',{weekday:'short',day:'numeric',month:'short'})}
+const timeLabel=ts=>new Date(ts).toLocaleTimeString(S.lang==='ta'?'ta-IN':'en-IN',{hour:'numeric',minute:'2-digit'});
+const fmtWhen=ts=>dayLabel(ts)+', '+timeLabel(ts);
+const kindName=k=>({schedule:L('முன்பதிவு ride','Scheduled ride'),rental:'Rental',outstation:'Outstation'})[k]||'';
+
+function pickWhen(minM,cb,note){
+  const min=Date.now()+minM*60e3;
+  const slots=o=>{const out=[],d=dayStart(o);for(let m=5*60;m<24*60;m+=15){const t=new Date(d);t.setMinutes(m);if(t.getTime()>=min)out.push(t.getTime())}return out};
+  const days=[0,1,2,3,4,5,6,7].filter(o=>slots(o).length).slice(0,7);
+  modal(`<h3>${L('எப்போ போகணும்?','When do you want to go?')}</h3>${note?`<div class="note">${note}</div>`:''}
+    <div class="chips" id="days">${days.map((o,i)=>`<button class="chip ${i===0?'sel':''}" data-d="${o}">${dayLabel(dayStart(o).getTime())}</button>`).join('')}</div>
+    <label class="kind" for="slot">${L('நேரம்','Time')}</label><select id="slot" class="selbox"></select>
+    <button class="btn" id="wok">${L('இந்த நேரம் சரி','Set this time')}</button>`,(m,close)=>{
+    const sl=m.querySelector('#slot');
+    const fill=o=>{sl.innerHTML=slots(o).map(ts=>`<option value="${ts}">${timeLabel(ts)}</option>`).join('')};fill(days[0]);
+    m.querySelectorAll('[data-d]').forEach(b=>b.onclick=()=>{m.querySelectorAll('[data-d]').forEach(x=>x.classList.toggle('sel',x===b));fill(+b.dataset.d)});
+    m.querySelector('#wok').onclick=()=>{close();cb(+sl.value)};
+  });
+}
+
+function saveUpcoming(rec){
+  const full={id:Date.now().toString(36).toUpperCase(),status:'upcoming',date:Date.now(),...rec};
+  TRIPS.unshift(full);saveTrips();bookedScreen(full);if(CL)cloudSchedule(rec).then(id=>{if(id){full.cid=id;saveTrips()}});
+}
+function confirmSchedule(){
+  const r=route(S.from,S.dest),v=VEH.find(x=>x.id===S.veh);
+  saveUpcoming({kind:'schedule',when:S.when,from:{ta:P[S.from].ta,en:P[S.from].en},to:{ta:P[S.dest].ta,en:P[S.dest].en},
+    fromC:{lat:P[S.from].lat,lon:P[S.from].lon},toC:{lat:P[S.dest].lat,lon:P[S.dest].lon},
+    veh:{ta:v.ta,en:v.en,id:v.id},fare:fare(v,r.km),km:+r.km.toFixed(1),pay:S.pay});
+}
+function bookedScreen(x){
+  go(`<section class="screen"><div class="donehero pad"><span class="check">${I.tick}</span><h1 style="font-size:26px">${L('Booking உறுதி!','Booking confirmed!')}</h1><span>${fmtWhen(x.when)}</span></div>
+   <div class="body pad">${upcomingCard(x)}
+    <div class="note">${L('Driver விவரம் பயணத்துக்கு 30 நிமிடம் முன்னாடி இந்த app-ல வரும். எங்க team உங்களை call பண்ணி confirm பண்ணுவாங்க.','Driver details appear here 30 minutes before pickup. Our team will call you to confirm.')}</div>
+    <div class="two"><button class="btn" id="tv">${L('என் பயணங்கள்','My trips')}</button><button class="btn yellow" id="hm">Home</button></div></div></section>`,()=>{
+    document.getElementById('tv').onclick=()=>{tripFilter='up';S.tab='trips';tripsTab()};
+    document.getElementById('hm').onclick=home;
+  });
+}
+function upcomingCard(x){
+  return `<span class="kindtag">${kindName(x.kind)}</span>
+  <div class="tripcard"><div class="rail"><i class="a"></i><i class="l"></i><i class="b"></i></div>
+    <div class="stops"><div><small>${t('pickup')}</small><b>${x.from[S.lang]}</b></div><div><small>${x.kind==='rental'?L('Package','Package'):t('dropLbl')}</small><b>${x.to[S.lang]}</b></div></div>
+    <div class="amt"><b>${inr(x.fare)}</b><br><small class="muted">${L('மதிப்பீடு','Estimate')}</small></div></div>
+  <div class="bill"><div><span>${L('நேரம்','Pickup time')}</span><b>${fmtWhen(x.when)}</b></div><div><span>${L('வண்டி','Vehicle')}</span><b>${x.veh[S.lang]}</b></div>
+    ${x.note?`<div><span>${L('விவரம்','Details')}</span><b style="text-align:right">${x.note[S.lang]}</b></div>`:''}
+    <div><span>${L('Booking எண்','Booking no.')}</span><b>${invNo(x)}</b></div><div><span>${L('பணம்','Payment')}</span><b>${payName(x.pay)}</b></div></div>`;
+}
+function upcomingDetail(x){
+  go(`<section class="screen"><div class="head pad"><button class="back" id="bk" aria-label="Back">${I.back}</button><h2>${L('வரவிருக்கும் பயணம்','Upcoming ride')}</h2></div>
+   <div class="body pad" style="padding-top:0">${upcomingCard(x)}
+    <div class="note">${L('Driver விவரம் பயணத்துக்கு 30 நிமிடம் முன்னாடி வரும்.','Driver details arrive 30 minutes before pickup.')}</div>
+    <button class="btn ghost" id="ucx">${L('Booking-ஐ ரத்து செய்','Cancel booking')}</button></div></section>`,()=>{
+    document.getElementById('bk').onclick=()=>{S.tab==='home'?home():tripsTab()};
+    document.getElementById('ucx').onclick=()=>modal(`<h3>${L('இந்த booking-ஐ ரத்து செய்யவா?','Cancel this booking?')}</h3><p class="muted" style="margin:0">${fmtWhen(x.when)} · ${x.to[S.lang]}</p>
+      <div class="note">${L('பயணத்துக்கு 1 மணி நேரம் முன்னாடி வரை கட்டணம் இல்லை.','Free until 1 hour before pickup.')}</div>
+      <button class="btn ghost" id="y">${L('ஆமா, ரத்து செய்','Yes, cancel')}</button><button class="btn" id="n">${L('வேண்டாம்','Keep booking')}</button>`,(m,close)=>{
+        m.querySelector('#n').onclick=close;
+        m.querySelector('#y').onclick=()=>{if(CL&&x.cid)F().updateDoc(F().doc(CL.db,'bookings',x.cid),{status:'cancelled',cancelReason:'customer',updatedAt:F().serverTimestamp()}).catch(()=>{});x.status='cancelled';x.reason=L('Customer ரத்து செய்தார்','Cancelled by customer');saveTrips();close();tripFilter='all';S.tab='trips';tripsTab();toast(L('Booking ரத்து ஆயிடுச்சு','Booking cancelled'))};
+      });
+  });
+}
+function upNextHtml(){
+  const u=TRIPS.filter(x=>x.status==='upcoming'&&x.when>Date.now()-36e5).sort((a,b)=>a.when-b.when)[0];
+  return u?`<button class="upnext" id="upn" data-id="${u.id}"><span class="ic">${I.clock}</span><div><small>${L('வரவிருக்கும் பயணம்','Upcoming ride')} · ${kindName(u.kind)}</small><b>${fmtWhen(u.when)} · ${u.to[S.lang]}</b></div><i>→</i></button>`:'';
+}
+
+/* ---------- Rental ---------- */
+const PKG=[{h:1,km:10},{h:2,km:20},{h:4,km:40},{h:8,km:80},{h:12,km:120}];
+const RENT={auto:[199,379,null,null,null],mini:[299,549,999,1799,2599],sedan:[349,649,1149,2099,2999],suv:[499,899,1599,2799,3999],trav:[null,null,2499,3999,5499],bus:[null,null,3999,6499,8999]};
+const XKM={auto:14,mini:12,sedan:13,suv:17,trav:24,bus:36},XHR={auto:120,mini:150,sedan:170,suv:230,trav:350,bus:550};
+const RS={pkg:2,veh:'sedan',when:null};
+function rentalScreen(){
+  if(RENT[RS.veh][RS.pkg]==null)RS.veh=Object.keys(RENT).find(k=>RENT[k][RS.pkg]!=null);
+  const pk=PKG[RS.pkg],price=RENT[RS.veh][RS.pkg],v=VEH.find(x=>x.id===RS.veh);
+  go(`<section class="screen"><div class="head pad"><button class="back" id="bk" aria-label="Back">${I.back}</button><h2>Rental</h2></div>
+   <div class="body pad" style="padding-top:0">
+    <p class="muted" style="margin:0">${L('ஒரு வண்டி, ஒரு driver, உங்க கூடவே. பல இடம் போகலாம், காத்திருக்கவும் செய்வாங்க.','One vehicle and driver stay with you. Make many stops; they wait for you.')}</p>
+    <div class="pickrow"><span class="dotg"></span><div><small>${t('pickup')}</small><b>${pn(S.from)}</b></div></div>
+    <span class="kind">${L('Package தேர்வு','Choose a package')}</span>
+    <div class="pkgs">${PKG.map((p,i)=>`<button class="pkg ${i===RS.pkg?'sel':''}" data-k="${i}"><b>${p.h} ${L('மணி','hr')}</b><small>${p.km} ${t('km')}</small></button>`).join('')}</div>
+    <div style="display:flex;flex-direction:column;gap:10px">${Object.keys(RENT).map(id=>{const vv=VEH.find(x=>x.id===id),pr=RENT[id][RS.pkg];
+      return `<button class="veh ${id===RS.veh?'sel':''}" data-v="${id}" ${pr==null?'disabled':''}><span class="vi">${I[id]}</span><div><b>${vv[S.lang]}${vv.tag?` <span class="pill" style="font-family:var(--body);vertical-align:2px">${vv.tag}</span>`:''}</b>
+        <small>${pr==null?L('இந்த package-க்கு கிடைக்காது','Not available for this package'):`+${inr(XKM[id])}/${t('km')} · +${inr(XHR[id])}/${L('மணி','hr')}`}</small></div><span class="price"><b>${pr==null?'—':inr(pr)}</b></span></button>`}).join('')}</div>
+    <div class="whenrow"><button class="chip ${RS.when?'sel':''}" id="whenb">${I.clock} ${RS.when?fmtWhen(RS.when):L('இப்போ','Now')}</button><span class="muted" style="font-size:12.5px">${L('கூடுதல் கி.மீ, மணி தனி கட்டணம்','Extra km and hours charged separately')}</span></div>
+    <div class="payrow"><button class="pay ${S.pay==='cash'?'sel':''}" data-pay="cash">${I.cash}${t('payCash')}</button><button class="pay ${S.pay!=='cash'?'sel':''}" data-pay="upi">${I.upi}${t('payUpi')}</button></div>
+    <button class="btn yellow" id="rb">${L(`${v[S.lang]} Rental book · ${inr(price)}`,`Book ${v.en} rental · ${inr(price)}`)}</button>
+   </div></section>`,()=>{
+    document.getElementById('bk').onclick=home;
+    app.querySelectorAll('[data-k]').forEach(b=>b.onclick=()=>{RS.pkg=+b.dataset.k;rentalScreen()});
+    app.querySelectorAll('.veh').forEach(b=>b.onclick=()=>{RS.veh=b.dataset.v;if(ADV.includes(RS.veh)&&RS.when&&RS.when<Date.now()+3*36e5)RS.when=null;rentalScreen()});
+    app.querySelectorAll('[data-pay]').forEach(b=>b.onclick=()=>{S.pay=b.dataset.pay;rentalScreen()});
+    document.getElementById('whenb').onclick=()=>pickWhen(ADV.includes(RS.veh)?180:30,ts=>{RS.when=ts;rentalScreen()});
+    document.getElementById('rb').onclick=()=>{
+      if(ADV.includes(RS.veh)&&(!RS.when||RS.when<Date.now()+3*36e5)){pickWhen(180,ts=>{RS.when=ts;rentalScreen()},L('Traveller / Mini Bus-க்கு குறைந்தது 3 மணி நேரம் முன்னாடி book பண்ணணும்','Travellers and mini buses need at least 3 hours’ notice'));return}
+      saveUpcoming({kind:'rental',when:RS.when||Date.now()+10*60e3,from:{ta:P[S.from].ta,en:P[S.from].en},
+        to:{ta:`${pk.h} மணி / ${pk.km} கி.மீ package`,en:`${pk.h} hr / ${pk.km} km package`},veh:{ta:v.ta,en:v.en,id:v.id},fare:price,km:pk.km,pay:S.pay==='wallet'?'upi':S.pay,
+        note:{ta:`கூடுதல்: ₹${XKM[v.id]}/கி.மீ, ₹${XHR[v.id]}/மணி`,en:`Extra: ₹${XKM[v.id]}/km, ₹${XHR[v.id]}/hr`}});
+      RS.when=null;
+    };
+  });
+}
+
+/* ---------- Outstation ---------- */
+const CITIES=[{ta:'சென்னை',en:'Chennai',km:140},{ta:'பெங்களூரு',en:'Bengaluru',km:215},{ta:'திருப்பதி',en:'Tirupati',km:115},{ta:'திருவண்ணாமலை',en:'Tiruvannamalai',km:85},
+  {ta:'காஞ்சிபுரம்',en:'Kanchipuram',km:70},{ta:'ஏலகிரி',en:'Yelagiri',km:90},{ta:'ஆம்பூர்',en:'Ambur',km:55},{ta:'கிருஷ்ணகிரி',en:'Krishnagiri',km:120},
+  {ta:'புதுச்சேரி',en:'Puducherry',km:165},{ta:'சேலம்',en:'Salem',km:200},{ta:'ஆற்காடு',en:'Arcot',km:25},{ta:'குடியாத்தம்',en:'Gudiyatham',km:35}];
+const ORATE={mini:11,sedan:12,suv:16,trav:22,bus:34},OBATA={mini:300,sedan:300,suv:350,trav:500,bus:600};
+const OS={city:null,type:'one',days:1,veh:'sedan',when:null};
+function outFare(id){const c=CITIES[OS.city];if(!c)return 0;
+  if(OS.type==='one')return Math.round((c.km*ORATE[id]+OBATA[id])/10)*10;
+  const billed=Math.max(c.km*2,250*OS.days);return Math.round((billed*ORATE[id]+OBATA[id]*OS.days)/10)*10}
+function outScreen(){
+  const c=CITIES[OS.city],v=VEH.find(x=>x.id===OS.veh);
+  go(`<section class="screen"><div class="head pad"><button class="back" id="bk" aria-label="Back">${I.back}</button><h2>Outstation</h2></div>
+   <div class="body pad" style="padding-top:0">
+    <div class="seg"><button class="${OS.type==='one'?'on':''}" data-t="one">${L('ஒரு வழி','One way')}</button><button class="${OS.type==='round'?'on':''}" data-t="round">${L('போய் வர','Round trip')}</button></div>
+    <div class="pickrow"><span class="dotg"></span><div><small>${t('pickup')}</small><b>${pn(S.from)}</b></div></div>
+    ${c?`<div class="pickrow"><span class="dotr"></span><div><small>${L('போகும் ஊர்','Destination')}</small><b>${c[S.lang]} · ~${c.km} ${t('km')}</b></div><button class="linkbtn" id="chg">${L('மாற்று','Change')}</button></div>`
+      :`<div class="field"><input id="oq" placeholder="${L('எந்த ஊருக்கு? (சென்னை, திருப்பதி…)','Which city? (Chennai, Tirupati…)')}" autocomplete="off"></div><div class="recent" id="ol"></div>`}
+    ${c?`
+    ${OS.type==='round'?`<span class="kind">${L('எத்தனை நாள்?','How many days?')}</span><div class="pkgs">${[1,2,3,4,5].map(d=>`<button class="pkg ${d===OS.days?'sel':''}" data-days="${d}"><b>${d}</b><small>${L('நாள்','day')}</small></button>`).join('')}</div>`:''}
+    <div class="whenrow"><button class="chip ${OS.when?'sel':''}" id="whenb">${I.clock} ${OS.when?fmtWhen(OS.when):L('புறப்படும் நேரம் தேர்வு','Pick departure time')}</button></div>
+    <div style="display:flex;flex-direction:column;gap:10px">${Object.keys(ORATE).map(id=>{const vv=VEH.find(x=>x.id===id);return `<button class="veh ${id===OS.veh?'sel':''}" data-v="${id}"><span class="vi">${I[id]}</span>
+      <div><b>${vv[S.lang]}${vv.tag?` <span class="pill" style="font-family:var(--body);vertical-align:2px">${vv.tag}</span>`:''}</b><small>₹${ORATE[id]}/${t('km')} · ${L('Driver bata','Driver allowance')} ₹${OBATA[id]}${OS.type==='round'?'/'+L('நாள்','day'):''}</small></div><span class="price"><b>${inr(outFare(id))}</b></span></button>`}).join('')}</div>
+    <p class="fine muted" style="margin:0">${OS.type==='round'?L('போய் வர: நாளுக்கு குறைந்தது 250 கி.மீ கணக்கு. ','Round trip: minimum 250 km per day. '):''}${L('Toll, parking, மாநில permit தனி.','Toll, parking and state permit extra.')}</p>
+    <button class="btn yellow" id="ob">${L(`${v[S.lang]} book · ${inr(outFare(OS.veh))}`,`Book ${v.en} · ${inr(outFare(OS.veh))}`)}</button>`:''}
+   </div></section>`,()=>{
+    document.getElementById('bk').onclick=home;
+    app.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{OS.type=b.dataset.t;outScreen()});
+    const oq=document.getElementById('oq');
+    if(oq){const ol=document.getElementById('ol');const draw=()=>{const q=oq.value.trim().toLowerCase();
+        ol.innerHTML=CITIES.map((x,i)=>[x,i]).filter(([x])=>!q||(x.en+' '+x.ta).toLowerCase().includes(q)).map(([x,i])=>`<button class="row" data-c="${i}"><span class="ic">${I.out.replace('width="28" height="28"','width="20" height="20"')}</span><div><b>${x[S.lang]}</b><small>~${x.km} ${t('km')} · ${L('சுமார்','about')} ${Math.round(x.km/50*60/60*10)/10} ${L('மணி நேரம்','hrs')}</small></div></button>`).join('')||`<p class="muted">${t('noMatch')}</p>`;
+        ol.querySelectorAll('[data-c]').forEach(b=>b.onclick=()=>{OS.city=+b.dataset.c;outScreen()})};
+      oq.oninput=draw;draw();setTimeout(()=>oq.focus(),250)}
+    const chg=document.getElementById('chg');if(chg)chg.onclick=()=>{OS.city=null;outScreen()};
+    app.querySelectorAll('[data-days]').forEach(b=>b.onclick=()=>{OS.days=+b.dataset.days;outScreen()});
+    app.querySelectorAll('.veh').forEach(b=>b.onclick=()=>{OS.veh=b.dataset.v;outScreen()});
+    const wb=document.getElementById('whenb');if(wb)wb.onclick=()=>pickWhen(ADV.includes(OS.veh)?180:60,ts=>{OS.when=ts;outScreen()});
+    const ob=document.getElementById('ob');
+    if(ob)ob.onclick=()=>{
+      const minM=ADV.includes(OS.veh)?180:60;
+      if(!OS.when||OS.when<Date.now()+minM*6e4){pickWhen(minM,ts=>{OS.when=ts;outScreen()},ADV.includes(OS.veh)?L('Traveller / Mini Bus-க்கு குறைந்தது 3 மணி நேரம் முன்னாடி book பண்ணணும்','Travellers and mini buses need at least 3 hours’ notice'):L('Outstation-க்கு குறைந்தது 1 மணி நேரம் முன்னாடி book பண்ணுங்க','Book outstation at least 1 hour ahead'));return}
+      const cc=CITIES[OS.city],vv=VEH.find(x=>x.id===OS.veh);
+      saveUpcoming({kind:'outstation',when:OS.when,from:{ta:P[S.from].ta,en:P[S.from].en},
+        to:OS.type==='one'?{ta:cc.ta,en:cc.en}:{ta:`${cc.ta} (போய் வர, ${OS.days} நாள்)`,en:`${cc.en} (round trip, ${OS.days} day${OS.days>1?'s':''})`},
+        veh:{ta:vv.ta,en:vv.en,id:vv.id},fare:outFare(OS.veh),km:OS.type==='one'?cc.km:Math.max(cc.km*2,250*OS.days),pay:S.pay==='wallet'?'upi':S.pay,
+        note:{ta:'Toll, parking, permit தனி',en:'Toll, parking, permit extra'}});
+      OS.when=null;
+    };
+  });
+}
+
+/* ---------- Voice booking (Tamil / English) ---------- */
+const TNUM={'ஒன்று':1,'ஒரு':1,'ஒண்ணு':1,'இரண்டு':2,'ரெண்டு':2,'மூன்று':3,'மூணு':3,'நான்கு':4,'நாலு':4,'ஐந்து':5,'அஞ்சு':5,'ஆறு':6,'ஏழு':7,'எட்டு':8,'ஒன்பது':9,'பத்து':10,'பதினொன்று':11,'பதினொரு':11,'பன்னிரண்டு':12};
+function parseVoice(raw){
+  let s=' '+(raw||'').toLowerCase().replace(/[.,!?]/g,' ')+' ';const out={};
+  const pick=list=>{for(const [id,ws] of list){const w=ws.find(w=>s.includes(w));if(w){s=s.replace(w,' ');return id}}return null};
+  out.veh=pick([['bus',['mini bus','minibus','மினி பஸ்','மினிபஸ்']],['trav',['traveller','traveler','tempo','டிராவலர்','டெம்போ','வேன்',' van ']],
+    ['suv',['suv','ertiga','எர்டிகா','7 seater','seven seater','எஸ்யூவி']],['sedan',['sedan','dzire','செடான்','கார்',' car ']],['mini',['mini','மினி','swift','wagon']],
+    ['auto',['auto','ஆட்டோ']],['bike',['bike','பைக்']]]);
+  const ci=CITIES.findIndex(c=>s.includes(c.en.toLowerCase())||s.includes(c.ta));if(ci>=0)out.city=ci;
+  out.dest=pick([['oldbus',['old bus','பழைய பஸ்','பழைய பேருந்து']],['newbus',['new bus','bus stand','busstand','பஸ் ஸ்டாண்ட்','பேருந்து நிலைய','புது பஸ்']],
+    ['cmc',['cmc','சிஎம்சி','hospital','ஆஸ்பத்திரி','மருத்துவமனை']],['katpadi',['station','railway','junction','ஸ்டேஷன்','ஜங்ஷன்','ரயில்','katpadi','காட்பாடி']],
+    ['vit',['vit','விஐடி','வி.ஐ.டி','university']],['fort',['fort','கோட்டை','jalakandeswarar']],['golden',['golden','sripuram','ஸ்ரீபுரம்','தங்க']],
+    ['sathu',['sathuvachari','சத்துவாச்சாரி']],['bagayam',['bagayam','பாகாயம்']],['home',['வீட்டுக்கு',' home ','gandhi nagar','காந்தி நகர்']]]);
+  Object.entries(TNUM).forEach(([w,n])=>{s=s.replace(new RegExp(w+'\\s*மணி','g'),n+' மணி')});
+  let day=/நாளன்னைக்கு|நாளை மறுநாள்|day after/.test(s)?2:/நாளை|tomorrow/.test(s)?1:0;
+  const pmW=/pm|மாலை|சாயங்காலம்|இரவு|ராத்திரி|evening|night|afternoon|மதியம்/.test(s),amW=/am|காலை|morning/.test(s);
+  const m=s.match(/(\d{1,2})(?:[:.](\d{2}))?\s*(am|pm|மணி|o'?clock)?/);
+  if(m&&(m[3]||pmW||amW)&&+m[1]<24){
+    let h=+m[1];const mi=+(m[2]||0);if(pmW&&h<12)h+=12;
+    const d=dayStart(day);d.setHours(h,mi);let ts=d.getTime();
+    if(!pmW&&!amW&&!day&&h<12&&ts<Date.now()+20*6e4)ts+=12*36e5;
+    if(!day&&ts<Date.now()+20*6e4)ts+=24*36e5;
+    out.when=ts;
+  }else if(day){const d=dayStart(day);d.setHours(9,0);out.when=d.getTime()}
+  return out;
+}
+function voiceSheet(){
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;let rec=null,parsed={};
+  const ex=S.lang==='ta'?['CMC-க்கு auto வேணும்','நாளை காலை 6 மணிக்கு station-க்கு கார்','சென்னைக்கு SUV']:['Auto to CMC','Car to the station tomorrow 6 am','SUV to Chennai'];
+  const T1=L('கேட்கிறேன்… பேசுங்க','Listening… go ahead'),T0=L('Mic-ஐ தொட்டு பேசுங்க','Tap the mic and speak');
+  modal(`<h3>${L('பேசி book பண்ணுங்க','Book by voice')}</h3>
+    <div class="vwrap"><button class="vmic" id="vm" aria-label="Microphone">${I.mic.replace('width="22" height="22"','width="40" height="40"').replace('stroke="#13284F"','stroke="#FFD84D"')}</button><span id="vs" class="muted">${T0}</span></div>
+    <div class="field"><input id="vt" placeholder="${L('அல்லது இங்கே type பண்ணுங்க','Or type it here')}" autocomplete="off"></div>
+    <div id="vp" class="tags" style="justify-content:flex-start"></div>
+    <div class="tags" style="justify-content:flex-start">${ex.map(e=>`<button class="chip ex" data-e="${e}">“${e}”</button>`).join('')}</div>
+    <button class="btn yellow" id="vgo" disabled>${L('தொடரு','Continue')}</button>`,(m,close)=>{
+    const vt=m.querySelector('#vt'),vs=m.querySelector('#vs'),vp=m.querySelector('#vp'),vgo=m.querySelector('#vgo'),vm=m.querySelector('#vm');
+    const show=()=>{parsed=parseVoice(vt.value);const c=[];
+      if(parsed.veh)c.push(VEH.find(v=>v.id===parsed.veh)[S.lang]);
+      if(parsed.city!=null)c.push(CITIES[parsed.city][S.lang]);else if(parsed.dest)c.push(pn(parsed.dest));
+      if(parsed.when)c.push(fmtWhen(parsed.when));
+      vp.innerHTML=c.map(x=>`<span class="chip sel">${x}</span>`).join('');
+      vgo.disabled=!(parsed.dest||parsed.city!=null||parsed.veh)};
+    vt.oninput=show;
+    m.querySelectorAll('.ex').forEach(b=>b.onclick=()=>{vt.value=b.dataset.e;show()});
+    const listen=()=>{
+      if(!SR){vs.textContent=L('இந்த browser-ல voice வசதி இல்லை. கீழே type பண்ணுங்க','Voice isn’t available in this browser. Type below');return}
+      try{rec=new SR();rec.lang=S.lang==='ta'?'ta-IN':'en-IN';rec.interimResults=true;
+        rec.onresult=e=>{vt.value=[...e.results].map(r=>r[0].transcript).join(' ');show()};
+        rec.onerror=e=>{vm.classList.remove('on');vs.textContent=/not-allowed|service-not-allowed/.test(e.error)?L('Mic அனுமதி கிடைக்கல. கீழே type பண்ணுங்க','Microphone not allowed. Type below instead'):L('சரியா கேட்கல. மறுபடி mic-ஐ தொடுங்க','Didn’t catch that. Tap the mic again')};
+        rec.onend=()=>{vm.classList.remove('on');if(vs.textContent===T1)vs.textContent=T0};
+        rec.start();vm.classList.add('on');vs.textContent=T1}
+      catch(e){vm.classList.remove('on');vs.textContent=L('Mic திறக்க முடியல. கீழே type பண்ணுங்க','Couldn’t open the mic. Type below')}};
+    vm.onclick=()=>{if(vm.classList.contains('on')&&rec){try{rec.stop()}catch(e){}return}listen()};
+    vgo.onclick=()=>{if(rec)try{rec.abort()}catch(e){}close();applyVoice(parsed)};
+    listen();
+  });
+}
+function applyVoice(p){
+  if(p.veh)S.veh=p.veh;
+  if(p.city!=null){OS.city=p.city;if(p.veh&&ORATE[p.veh])OS.veh=p.veh;if(p.when)OS.when=p.when;outScreen();return}
+  if(p.when)S.when=p.when;
+  if(p.dest&&p.dest!==S.from){S.dest=p.dest;fareScreen();return}
+  search();
+}
+
+
+/* ================= STEP 5: help, call-me-back, complaints, emergency contacts, trip link ================= */
+const APP_URL='https://ajith12061995.github.io/vellorecalltaxi/';
+const esc=v=>String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
+let TIX=[],EC=[];
+try{TIX=JSON.parse(localStorage.getItem('vct_tix')||'[]')}catch(e){}
+try{EC=JSON.parse(localStorage.getItem('vct_ec')||'[]')}catch(e){}
+const saveTix=()=>{try{localStorage.setItem('vct_tix',JSON.stringify(TIX.slice(0,30)))}catch(e){}};
+const saveEc=()=>{try{localStorage.setItem('vct_ec',JSON.stringify(EC))}catch(e){}};
+function addTicket(t0){const x={id:'R'+Date.now().toString(36).toUpperCase().slice(-5),date:Date.now(),status:'open',...t0};TIX.unshift(x);saveTix();cloudTicket(x);return x}
+
+const FAQ=[
+ ['booking','Ride-ஐ எப்படி ரத்து செய்வது?','How do I cancel a ride?','Ride screen-ல "ரத்து செய்" அழுத்துங்க. Driver வர்றதுக்கு முன்னாடி ரத்து செய்தா கட்டணம் இல்லை.','Tap "Cancel ride" on the ride screen. It is free before the driver arrives.'],
+ ['booking','Driver வரலைனா என்ன செய்வது?','My driver is not coming','ETA தாண்டியும் வரலைனா Chat அல்லது Call பண்ணுங்க. இல்லைனா ரத்து செய்து மறுபடி book பண்ணுங்க, கட்டணம் இல்லை.','If the ETA has passed, chat or call your driver. Or cancel for free and book again.'],
+ ['booking','PIN எதுக்கு?','What is the ride PIN for?','நீங்க சரியான வண்டியில தான் ஏறுறீங்கன்னு உறுதி பண்ண. Driver-கிட்ட PIN சொன்னா தான் trip ஆரம்பிக்கும்.','It makes sure you board the right vehicle. The trip starts only after you tell the driver your PIN.'],
+ ['booking','Traveller / Mini Bus எப்படி book பண்றது?','How do I book a Traveller or Mini Bus?','குறைந்தது 3 மணி நேரம் முன்னாடி Schedule, Rental அல்லது Outstation-ல book பண்ணுங்க.','Book at least 3 hours ahead through Schedule, Rental or Outstation.'],
+ ['pay','கட்டணம் எப்படி கணக்கிடப்படுது?','How is my fare calculated?','அடிப்படை கட்டணம் + தூர கட்டணம். ஒவ்வொரு bill-லயும் விவரம் இருக்கு. Toll, parking தனி.','Base fare plus distance fare. Every bill shows the split. Toll and parking are extra.'],
+ ['pay','UPI-ல இருந்து Cash-க்கு மாத்தலாமா?','Can I switch from UPI to cash?','ஆமா. பயணம் முடிஞ்ச bill screen-ல மாத்தலாம். Driver-உம் அவரோட app-ல confirm பண்ணலாம்.','Yes. Switch on the bill screen after the ride. Your driver can also confirm it in the driver app.'],
+ ['pay','Wallet பணம் திரும்ப கிடைக்குமா?','Do I get wallet money back?','ரத்தான ride-க்கு Wallet-ல கழிச்ச பணம் திரும்ப Wallet-க்கே வரும்.','Money taken from your wallet for a cancelled ride goes back to your wallet.'],
+ ['safety','SOS எப்படி வேலை செய்யும்?','How does SOS work?','Ride screen-ல சிவப்பு SOS அழுத்தி உறுதி செய்தா, எங்க team-க்கும் உங்க அவசர தொடர்புகளுக்கும் location-ஓட alert போகும்.','Press the red SOS on the ride screen and confirm. Our team and your emergency contacts get an alert with your location.'],
+ ['safety','பொருள் மறந்துட்டா?','I left something in the vehicle','பயணங்கள் → அந்த பயணம் → "பிரச்சனையா?" → "பொருள் மறந்துட்டேன்". நாங்க driver-ஐ தொடர்பு கொள்வோம்.','Trips → that ride → "Problem with this ride?" → "Lost item". We contact the driver for you.'],
+ ['account','Mobile number மாத்தணும்','I want to change my mobile number','Call me back request போடுங்க. எங்க staff சரிபார்த்து மாத்தி தருவாங்க.','Send a Call me back request. Our staff verifies and changes it for you.']
+];
+const FCAT={booking:['Booking','Booking'],pay:['கட்டணம் & பணம்','Fares & payment'],safety:['பாதுகாப்பு','Safety'],account:['கணக்கு','Account']};
+const ISSUES=[['fare','அதிக கட்டணம் கேட்டாங்க','Charged extra'],['lost','பொருள் மறந்துட்டேன்','Lost item'],['behaviour','Driver நடத்தை சரியில்லை','Driver behaviour'],
+  ['clean','வண்டி சுத்தமில்லை','Vehicle not clean'],['route','தவறான வழியில போனாங்க','Took a wrong route'],['other','வேற பிரச்சனை','Something else']];
+const tixName=x=>x.type==='callback'?'Call me back':x.type==='lost'?L('பொருள் மறந்தது','Lost item'):L('Complaint','Complaint');
+
+function helpTab(){
+  const last=TRIPS.find(isDone);
+  go(shell(`<div class="head pad"><h2>${t('help')}</h2></div><div class="body pad" style="padding-top:4px">
+    <div class="helphero"><b>${S.lang==='ta'?`${esc(S.name||'')} என்ன உதவி வேணும்?`:`How can we help${S.name?', '+esc(S.name):''}?`}</b>
+      <div class="field" style="height:50px">${I.search}<input id="hq" placeholder="${L('கேள்வியை தேடுங்க (கட்டணம், PIN…)','Search questions (fare, PIN…)')}" autocomplete="off"></div></div>
+    ${last?`<div class="sec"><h3>${L('சமீபத்திய பயணம்','Your last ride')}</h3><span class="sample">${when(last.date)}</span></div>
+      <div class="lastride"><div><b>${last.to[S.lang]}</b><small>${last.veh[S.lang]} · ${inr(total(last))}${last.plate?' · '+last.plate:''}</small></div>
+      <div class="tags" style="justify-content:flex-start">${ISSUES.slice(0,4).map(([k,ta,en])=>`<button class="chip" data-iq="${k}">${S.lang==='ta'?ta:en}</button>`).join('')}</div></div>`:''}
+    <div class="sec"><h3>${L('அடிக்கடி கேட்கப்படும் கேள்விகள்','Common questions')}</h3></div>
+    <div id="faq">${Object.keys(FCAT).map(c=>`<div class="fgrp" data-c="${c}"><span class="kind">${FCAT[c][S.lang==='ta'?0:1]}</span>${FAQ.filter(f=>f[0]===c).map(f=>`<details class="faq" data-s="${esc((f[1]+' '+f[2]+' '+f[3]+' '+f[4]).toLowerCase())}"><summary>${S.lang==='ta'?f[1]:f[2]}</summary><p>${S.lang==='ta'?f[3]:f[4]}</p></details>`).join('')}</div>`).join('')}</div>
+    <p class="muted" id="nofaq" hidden>${L('இதுக்கு பதில் கிடைக்கல. கீழே Call me back அழுத்துங்க.','No answer found. Use Call me back below.')}</p>
+    ${TIX.length?`<div class="sec"><h3>${L('என் requests','My requests')}</h3><span class="sample">${TIX.length}</span></div>
+      <div class="recent">${TIX.slice(0,5).map(x=>`<div class="row"><span class="ic">${x.type==='callback'?I.phone:I.chat}</span><div><b>${tixName(x)}${x.trip?' · '+x.trip:''}</b><small>${esc(x.title?x.title[S.lang]:'')} · ${when(x.date)}</small></div><em class="st up">${L('Staff பார்க்கிறாங்க','In progress')}</em></div>`).join('')}</div>`:''}
+    <div class="helpcta"><div><b>${L('இன்னும் உதவி வேணுமா?','Still need help?')}</b><small>${L('எங்க staff உங்களை திரும்ப கூப்பிடுவாங்க. Call charge இல்லை.','Our staff will call you back, free of charge.')}</small></div>
+      <div class="two"><button class="btn yellow" id="cb">${I.phone}Call me back</button><button class="btn" id="cu">${L('எங்களை அழை','Call us')}</button></div></div>
+  </div>`),()=>{
+    bindNav();
+    const hq=document.getElementById('hq');
+    hq.oninput=()=>{const q=hq.value.trim().toLowerCase();let any=0;
+      app.querySelectorAll('.faq').forEach(d=>{const ok=!q||d.dataset.s.includes(q);d.hidden=!ok;if(ok)any++;if(q&&ok)d.open=true});
+      app.querySelectorAll('.fgrp').forEach(g=>g.hidden=![...g.querySelectorAll('.faq')].some(d=>!d.hidden));
+      document.getElementById('nofaq').hidden=!!any};
+    app.querySelectorAll('[data-iq]').forEach(b=>b.onclick=()=>issueSheet(last,b.dataset.iq));
+    document.getElementById('cb').onclick=()=>callbackSheet();
+    document.getElementById('cu').onclick=()=>(CL&&CFG.office)?modal(`<h3>${L('எங்களை அழைக்க','Call us')}</h3><p style="margin:0;font-family:var(--display);font-size:28px">+91 ${CFG.office}</p><a class="btn" href="tel:+91${CFG.office}">${L('Call பண்ணு','Call now')}</a>`):modal(`<h3>${L('எங்களை அழைக்க','Call us')}</h3>
+      <div class="note">${L('உங்க office phone number Owner app-ல set பண்ணதும் இங்கே வரும், tap பண்ணா call போகும்.','Your office phone number shows here once it is set in the Owner app. Tapping it places the call.')}</div>
+      <p class="muted" style="margin:0">${L('அதுவரை Call me back பயன்படுத்துங்க.','Until then, use Call me back.')}</p><button class="btn" id="ok2">${L('சரி','OK')}</button>`,(m,close)=>m.querySelector('#ok2').onclick=close);
+  });
+}
+
+function callbackSheet(reason){
+  const RS2=S.lang==='ta'?['Booking உதவி','கட்டணம் / பணம்','Complaint','பொருள் மறந்தது','வேற']:['Booking help','Fare / payment','Complaint','Lost item','Other'];
+  const WH=S.lang==='ta'?['இப்போவே','30 நிமிடத்தில்','மாலை 6–8']:['Right now','In 30 minutes','6–8 pm'];
+  let r=reason!=null?reason:0,w=0;
+  modal(`<h3>Call me back</h3><p class="muted" style="margin:0">${L('எங்க staff உங்களை கூப்பிடுவாங்க. உங்களுக்கு call charge இல்லை.','Our staff will call you. The call is free for you.')}</p>
+    <span class="kind">${L('எதைப் பற்றி?','What is it about?')}</span>
+    <div class="tags" style="justify-content:flex-start">${RS2.map((x,i)=>`<button class="chip ${i===r?'sel':''}" data-r="${i}">${x}</button>`).join('')}</div>
+    <span class="kind">${L('எப்போ கூப்பிடலாம்?','When should we call?')}</span>
+    <div class="tags" style="justify-content:flex-start">${WH.map((x,i)=>`<button class="chip ${i===0?'sel':''}" data-w="${i}">${x}</button>`).join('')}</div>
+    <div class="field" style="height:52px"><span class="cc">+91</span><input id="cbp" inputmode="numeric" maxlength="10" value="${esc(S.phone||'')}" aria-label="Phone"></div>
+    <textarea id="cbn" maxlength="300" placeholder="${L('சுருக்கமா சொல்லுங்க (விருப்பம்)','Tell us briefly (optional)')}"></textarea>
+    <div class="err" id="cbe"></div><button class="btn" id="cbs">${L('Request அனுப்பு','Send request')}</button>`,(m,close)=>{
+    m.querySelectorAll('[data-r]').forEach(b=>b.onclick=()=>{r=+b.dataset.r;m.querySelectorAll('[data-r]').forEach(x=>x.classList.toggle('sel',x===b))});
+    m.querySelectorAll('[data-w]').forEach(b=>b.onclick=()=>{w=+b.dataset.w;m.querySelectorAll('[data-w]').forEach(x=>x.classList.toggle('sel',x===b))});
+    const ph=m.querySelector('#cbp');ph.oninput=()=>{ph.value=ph.value.replace(/\D/g,'').slice(0,10)};
+    m.querySelector('#cbs').onclick=()=>{
+      if(!/^[6-9]\d{9}$/.test(ph.value)){m.querySelector('#cbe').textContent=t('phoneErr');return}
+      const RS3=[['Booking உதவி','Booking help'],['கட்டணம் / பணம்','Fare / payment'],['Complaint','Complaint'],['பொருள் மறந்தது','Lost item'],['வேற','Other']];
+      const WH3=[['இப்போவே','Right now'],['30 நிமிடத்தில்','In 30 minutes'],['மாலை 6–8','6–8 pm']];
+      addTicket({type:'callback',title:{ta:`${RS3[r][0]} · ${WH3[w][0]}`,en:`${RS3[r][1]} · ${WH3[w][1]}`},phone:ph.value,note:m.querySelector('#cbn').value.trim()});
+      close();if(S.tab==='help')helpTab();
+      toast(L(`Request அனுப்பியாச்சு. Staff +91 ${ph.value}-க்கு கூப்பிடுவாங்க`,`Request sent. Our staff will call +91 ${ph.value}`));
+    };
+  });
+}
+
+function issueSheet(x,preset){
+  if(!x){callbackSheet(2);return}
+  let k=preset||'fare',photo=null;
+  modal(`<h3>${L('என்ன பிரச்சனை?','What went wrong?')}</h3><p class="muted" style="margin:0;font-size:13px">${x.to[S.lang]} · ${when(x.date)} · ${invNo(x)}</p>
+    <div style="display:flex;flex-direction:column;gap:8px">${ISSUES.map(([id,ta,en])=>`<button class="reason ${id===k?'sel':''}" data-k="${id}"><i class="radio"></i>${S.lang==='ta'?ta:en}</button>`).join('')}</div>
+    <div class="field" id="lostf" style="height:52px" ${k==='lost'?'':'hidden'}><input id="lostw" maxlength="60" placeholder="${L('என்ன பொருள்? (உதா: கருப்பு bag, phone)','What item? (e.g. black bag, phone)')}"></div>
+    <textarea id="isn" maxlength="400" placeholder="${L('என்ன நடந்ததுன்னு சொல்லுங்க','Tell us what happened')}"></textarea>
+    <label class="photo" for="isp"><span id="ispl">${L('+ Photo சேர் (விருப்பம்)','+ Add a photo (optional)')}</span><input id="isp" type="file" accept="image/*" hidden></label>
+    <div class="err" id="ise"></div><button class="btn" id="iss">${L('Complaint அனுப்பு','Send complaint')}</button>`,(m,close)=>{
+    m.querySelectorAll('[data-k]').forEach(b=>b.onclick=()=>{k=b.dataset.k;m.querySelectorAll('[data-k]').forEach(y=>y.classList.toggle('sel',y===b));m.querySelector('#lostf').hidden=k!=='lost';
+      m.querySelector('#iss').textContent=k==='lost'?L('Report அனுப்பு','Send report'):L('Complaint அனுப்பு','Send complaint')});
+    m.querySelector('#isp').onchange=e=>{const f=e.target.files[0];if(f){photo=f.name;m.querySelector('#ispl').textContent='✓ '+f.name}};
+    m.querySelector('#iss').onclick=()=>{
+      const item=m.querySelector('#lostw').value.trim(),note=m.querySelector('#isn').value.trim();
+      if(k==='lost'&&!item){m.querySelector('#ise').textContent=L('என்ன பொருள்னு சொல்லுங்க','Tell us which item');return}
+      if(k==='other'&&!note){m.querySelector('#ise').textContent=L('என்ன நடந்ததுன்னு கொஞ்சம் சொல்லுங்க','Please describe what happened');return}
+      const is=ISSUES.find(i=>i[0]===k);
+      const tk=addTicket({type:k==='lost'?'lost':'complaint',trip:invNo(x),title:{ta:k==='lost'?`${is[1]}: ${item}`:is[1],en:k==='lost'?`${is[2]}: ${item}`:is[2]},note,photo});
+      close();toast(L(`${tk.id} பதிவாச்சு. Staff பார்த்து உங்களை கூப்பிடுவாங்க`,`${tk.id} logged. Our staff will look into it and call you`));
+    };
+  });
+}
+
+/* emergency contacts */
+function ecHtml(){
+  return EC.length?`<div class="eclist">${EC.map(c=>`<span class="chip sel">${I.shield.replace('width="22" height="22"','width="14" height="14"')} ${esc(c.name)}</span>`).join('')}</div>`
+    :`<button class="linkbtn" id="addec" style="align-self:flex-start">+ ${L('அவசர தொடர்பு சேர்','Add an emergency contact')}</button>`;
+}
+function ecAdd(after){
+  const REL=S.lang==='ta'?['அம்மா','அப்பா','கணவர் / மனைவி','நண்பர்','வேற']:['Mother','Father','Spouse','Friend','Other'];let rel=0;
+  modal(`<h3>${L('அவசர தொடர்பு சேர்','Add emergency contact')}</h3>
+    <div class="field" style="height:52px"><input id="ecn" maxlength="30" placeholder="${L('பெயர்','Name')}" autocomplete="off"></div>
+    <div class="field" style="height:52px"><span class="cc">+91</span><input id="ecp" inputmode="numeric" maxlength="10" placeholder="98765 43210"></div>
+    <div class="tags" style="justify-content:flex-start">${REL.map((x,i)=>`<button class="chip ${i===0?'sel':''}" data-rl="${i}">${x}</button>`).join('')}</div>
+    <div class="err" id="ece"></div><button class="btn" id="ecs">${L('சேமி','Save')}</button>`,(m,close)=>{
+    m.querySelectorAll('[data-rl]').forEach(b=>b.onclick=()=>{rel=+b.dataset.rl;m.querySelectorAll('[data-rl]').forEach(x=>x.classList.toggle('sel',x===b))});
+    const ph=m.querySelector('#ecp');ph.oninput=()=>{ph.value=ph.value.replace(/\D/g,'').slice(0,10)};
+    m.querySelector('#ecs').onclick=()=>{const n=m.querySelector('#ecn').value.trim();
+      if(n.length<2){m.querySelector('#ece').textContent=L('பெயர் கொடுங்க','Enter a name');return}
+      if(!/^[6-9]\d{9}$/.test(ph.value)){m.querySelector('#ece').textContent=t('phoneErr');return}
+      if(ph.value===S.phone){m.querySelector('#ece').textContent=L('உங்க சொந்த நம்பர் இல்லாம வேற நம்பர் கொடுங்க','Use someone else’s number');return}
+      EC.push({name:n,phone:ph.value,rel:REL[rel]});saveEc();saveProfile();close();after&&after();toast(L(`${n} சேர்க்கப்பட்டார்`,`${n} added`))};
+  });
+}
+
+/* shared trip link view (#track-xxxx) */
+function trackView(code){
+  let a=null;try{a=JSON.parse(localStorage.getItem('vct_active')||'null')}catch(e){}
+  const ok=a&&a.id===code;
+  go(`<section class="screen"><div class="hero pad"><span class="mini">VELLORE CALL TAXI</span><h1>${L('பயண tracking','Trip tracking')}</h1><p>${ok?L(`${a.name||''} பயணம் பண்றாங்க`,`${a.name||'Your contact'} is on a ride`):L('Shared trip link','Shared trip link')}</p></div>
+   <div class="body pad">${ok?`<div class="drv"><span class="avatar">${a.drv.en[0]}</span><div><b>${a.drv[S.lang]}</b><small>${a.veh[S.lang]} · ${a.model}</small></div><div class="vehbox"><span class="plate">${a.plate}</span></div></div>
+      <div class="tripcard"><div class="rail"><i class="a"></i><i class="l"></i><i class="b"></i></div><div class="stops"><div><small>${t('pickup')}</small><b>${a.from[S.lang]}</b></div><div><small>${t('dropLbl')}</small><b>${a.to[S.lang]}</b></div></div></div>`:''}
+    <div class="note">${L('Live map tracking Firebase connect பண்ணதும் இந்த link-லயே வேலை செய்யும்.','Live map tracking works on this same link once Firebase is connected.')}</div>
+    <button class="btn" id="gohome">${L('App-ஐ திற','Open the app')}</button></div></section>`,()=>{
+    document.getElementById('gohome').onclick=()=>{try{history.replaceState(null,'',location.pathname)}catch(e){}S.logged?home():langScreen()};
+  });
+}
+function saveActive(){try{localStorage.setItem('vct_active',JSON.stringify({id:R.trackId,name:S.name,drv:R.drv,plate:R.drv.plate,model:R.drv.model,veh:{ta:R.v.ta,en:R.v.en},from:R.fromName,to:R.destName}))}catch(e){}}
+
+
+/* ================= CLOUD: Firebase (live on GitHub Pages; demo everywhere else) ================= */
+let CL=null,CUID=null,BKUNSUB=null,LIVEUNSUB=null,CFGUNSUB=null;
+const CFG={upi:'',office:'',comm:10};
+const ON_PAGES=/github\.io$/.test(location.hostname);
+const cloudP=(window.CLOUD_READY||Promise.resolve(null)).then(c=>{CL=c||null;return CL}).catch(()=>null);
+const F=()=>CL.fs;
+const placeOf=k=>({key:CUSTOM.includes(k)?null:k,ta:P[k].ta,en:P[k].en,lat:P[k].lat,lon:P[k].lon});
+function offlineScreen(){
+  go(`<section class="screen"><div class="hero pad"><span class="mini">VELLORE CALL TAXI</span><h1>${L('Internet இல்லை','You are offline')}</h1><p>${L('Connection-ஐ பார்த்துட்டு மறுபடி முயற்சி பண்ணுங்க.','Check your connection and try again.')}</p></div>
+   <div class="body pad"><div style="flex:1"></div><button class="btn" id="rl">${L('மறுபடி முயற்சி','Try again')}</button></div></section>`,()=>document.getElementById('rl').onclick=()=>location.reload());
+}
+async function cloudBoot(){
+  const c=await cloudP;
+  if(!c){if(ON_PAGES){offlineScreen();return true}return false}
+  const u=await CL.waitUser();
+  if(!u){S.logged=false;save();langScreen();return true}
+  CUID=u.uid;S.phone=(u.phoneNumber||'').replace('+91','');
+  await loadProfile();watchConfig();
+  if(!S.name){nameScreen();return true}
+  S.logged=true;save();resumeActive()||home();return true;
+}
+async function loadProfile(){
+  try{const s=await F().getDoc(F().doc(CL.db,'users',CUID));if(s.exists()){const d=s.data();if(d.name)S.name=d.name;if(Array.isArray(d.ec)){EC=d.ec;saveEc()}}}catch(e){}
+}
+function saveProfile(extra={}){if(!CL||!CUID)return;F().setDoc(F().doc(CL.db,'users',CUID),{name:S.name,phone:'+91'+S.phone,ec:EC,updatedAt:F().serverTimestamp(),...extra},{merge:true}).catch(()=>{})}
+function watchConfig(){
+  if(CFGUNSUB)return;
+  CFGUNSUB=F().onSnapshot(F().doc(CL.db,'config','app'),s=>{if(!s.exists())return;const d=s.data();
+    if(d.fares)VEH.forEach(v=>{const f=d.fares[v.id];if(f){if(f.base!=null)v.base=+f.base;if(f.per!=null)v.per=+f.per}});
+    CFG.upi=d.upi||'';CFG.office=d.office||'';CFG.comm=d.comm!=null?+d.comm:10},()=>{});
+}
+function resumeActive(){
+  let a=null;try{a=JSON.parse(localStorage.getItem('vct_ride')||'null')}catch(e){}
+  if(!a||!a.id)return false;
+  F().getDoc(F().doc(CL.db,'bookings',a.id)).then(s=>{if(!s.exists())return;const b=s.data();if(!['searching','assigned','ontrip'].includes(b.status)){forgetRide();return}
+    const v=VEH.find(x=>x.id===b.veh)||VEH[1];
+    R={id:a.id,v,km:b.km,path:[],fare:b.fare,pay:b.pay,from:'pick',dest:'drop',fromName:{ta:b.from.ta,en:b.from.en},destName:{ta:b.to.ta,en:b.to.en},
+       pin:a.pin,trackId:a.id.slice(0,8),trip:b.path||[b.from,b.to],phase:'search',chat:[],drv:null,dpos:null,b};
+    P.pick={...b.from,ic:'pin'};P.drop={...b.to,ic:'pin'};
+    watchBooking();
+  }).catch(()=>{});
+  return false;
+}
+const rememberRide=()=>{try{localStorage.setItem('vct_ride',JSON.stringify({id:R.id,pin:R.pin}))}catch(e){}};
+const forgetRide=()=>{try{localStorage.removeItem('vct_ride')}catch(e){}};
+function stopWatch(){if(BKUNSUB){BKUNSUB();BKUNSUB=null}if(LIVEUNSUB){LIVEUNSUB();LIVEUNSUB=null}}
+
+async function cloudBook(){
+  const r=route(S.from,S.dest),v=VEH.find(x=>x.id===S.veh),f=fare(v,r.km);
+  if(S.pay==='wallet')S.pay='upi';
+  const btn=document.getElementById('bookb');if(btn){btn.disabled=true;btn.textContent=L('Book ஆகுது…','Booking…')}
+  const pin=String(1000+Math.floor(Math.random()*9000));
+  const trip=r.path.map(k=>({lat:P[k].lat,lon:P[k].lon}));
+  const data={customerUid:CUID,custName:S.name,custPhone:'+91'+S.phone,src:'app',kind:'ride',from:placeOf(S.from),to:placeOf(S.dest),path:trip,
+    veh:v.id,vehTa:v.ta,vehEn:v.en,km:+r.km.toFixed(1),base:v.base,fare:f,pay:S.pay,status:'searching',when:Date.now(),
+    createdAt:F().serverTimestamp(),updatedAt:F().serverTimestamp()};
+  try{
+    const ref=await F().addDoc(F().collection(CL.db,'bookings'),data);
+    await F().setDoc(F().doc(CL.db,'bookings',ref.id,'private','pin'),{pin});
+    R={id:ref.id,v,km:r.km,path:r.path,fare:f,pay:S.pay,from:S.from,dest:S.dest,fromName:{ta:P[S.from].ta,en:P[S.from].en},destName:{ta:P[S.dest].ta,en:P[S.dest].en},
+       pin,trackId:ref.id.slice(0,8),trip,phase:'search',chat:[],drv:null,dpos:null,b:data,t0:Date.now()};
+    rememberRide();watchBooking();
+  }catch(e){toast(CL.errText(e,S.lang==='ta'));if(btn){btn.disabled=false;fareScreen()}}
+}
+function watchBooking(){
+  stopWatch();
+  BKUNSUB=F().onSnapshot(F().doc(CL.db,'bookings',R.id),s=>{if(!s.exists()||!R)return;onBooking(s.data())},()=>{});
+}
+function onBooking(b){
+  R.b=b;
+  if(b.driverPhone&&!LIVEUNSUB){
+    R.drv={ta:b.driverName||'Driver',en:b.driverName||'Driver',plate:b.plate||'',model:b.vehModel||'',rating:'',trips:0,phone:b.driverPhone};
+    LIVEUNSUB=F().onSnapshot(F().doc(CL.db,'live',b.driverPhone),s=>{if(s.exists()){const d=s.data();if(d.lat)R.dpos={lat:d.lat,lon:d.lon}}},()=>{});
+  }
+  if(b.status==='searching'){if(R.phase!=='search'||!document.getElementById('cxs'))searchingCloud();return}
+  if(b.status==='assigned'||b.status==='ontrip'){
+    if(b.status==='assigned'&&b.pinTry&&b.pinTry!==R.lastTry){R.lastTry=b.pinTry;
+      if(b.pinTry===R.pin){F().updateDoc(F().doc(CL.db,'bookings',R.id),{status:'ontrip',startedAt:F().serverTimestamp(),updatedAt:F().serverTimestamp()}).catch(()=>{});toast(L('PIN சரி! பயணம் ஆரம்பம்','PIN verified. Your trip has started'))}
+      else toast(L('Driver போட்ட PIN தப்பு. உங்க PIN-ஐ மறுபடி சொல்லுங்க','The driver entered a wrong PIN. Tell them your PIN again'))}
+    if(R.phase!=='ride'||!document.getElementById('stB'))rideCloud();else rideCloudUpdate(true);
+    return;
+  }
+  if(b.status==='done'){stopWatch();forgetRide();R.fare=b.fare;R.pay=b.pay||R.pay;doneScreen();return}
+  if(b.status==='cancelled'){stopWatch();forgetRide();if(!R.selfCancel){toast(L('இந்த ride ரத்து ஆயிடுச்சு. மறுபடி book பண்ணுங்க','This ride was cancelled. Please book again'));recordTrip('cancelled',{reason:b.cancelReason||''})}R=null;home()}
+}
+function searchingCloud(){
+  R.phase='search';const pu={lat:R.b.from.lat,lon:R.b.from.lon};
+  go(`<section class="screen"><div class="mapwrap"><canvas class="map" id="map"></canvas><div class="radar"><i></i><i></i><i></i></div>
+     <div class="topbar"><div class="greet"><small>${R.fromName[S.lang]}</small><b>→ ${R.destName[S.lang]}</b></div></div></div>
+   <div class="sheet ride-sheet pad"><div class="grab"></div>
+     <div class="searchrow"><span class="vi">${I[R.v.id]}</span><div><h3>${L('Driver-ஐ தேடுறோம்…','Finding your driver…')}</h3>
+       <small class="muted" id="sst">${L(`அருகில் இருக்கிற ${R.v.ta} drivers-க்கும் எங்க office-க்கும் request போயிடுச்சு`,`Request sent to nearby ${R.v.en} drivers and our office`)}</small></div></div>
+     <div class="bar"><i style="animation-duration:60s"></i></div>${stopsHtml()}
+     <button class="btn ghost" id="cxs">${L('Booking-ஐ ரத்து செய்','Cancel booking')}</button></div></section>`,()=>{
+    const m=makeMap(document.getElementById('map'),{cars:true,pins:[{...pu,col:'#1E8A5A'}],hide:CUSTOM});m.setView(pu.lat,pu.lon,32000);
+    document.getElementById('cxs').onclick=cancelSheet;
+    rideTimer=setInterval(()=>{const el=document.getElementById('sst');if(!el||!R)return;const s=Math.round((Date.now()-(R.t0||Date.now()))/1000);
+      if(s>120)el.textContent=L('கொஞ்சம் நேரம் ஆகுது. எங்க office staff driver-ஐ assign பண்ணுவாங்க.','Taking a little longer. Our office staff will assign a driver.')},5000);
+  });
+}
+function rideCloud(){
+  R.phase='ride';saveActive();
+  const b=R.b,pu={lat:b.from.lat,lon:b.from.lon},dp={lat:b.to.lat,lon:b.to.lon};
+  go(`<section class="screen"><div class="mapwrap"><canvas class="map" id="map"></canvas>
+     <div class="topbar"><div class="greet status"><small id="stS"></small><b id="stB"></b></div><button class="chipbtn sos" id="sos">SOS</button></div></div>
+   <div class="sheet ride-sheet pad"><div class="grab"></div>
+     <div class="pinbox" id="pinbox"><span>${L('இந்த PIN-ஐ driver-கிட்ட சொல்லுங்க','Tell this PIN to your driver')}</span><b>${R.pin.split('').map(d=>`<i>${d}</i>`).join('')}</b></div>
+     <div class="drv"><span class="avatar">${esc((R.drv.en||'D')[0])}</span><div><b>${esc(R.drv[S.lang])}</b><small>${esc(R.drv.model)}</small></div>
+       <div class="vehbox"><span class="plate">${esc(R.drv.plate)}</span><small class="muted">${R.v[S.lang]}</small></div></div>
+     <div class="acts"><button data-a="call">${I.phone}Call</button><button data-a="chat">${I.chat}Chat</button><button data-a="share">${I.share}Share</button><button data-a="safety">${I.shield}${L('பாதுகாப்பு','Safety')}</button></div>
+     ${stopsHtml()}
+     <button class="btn ghost" id="cx">${L('Ride-ஐ ரத்து செய்','Cancel ride')}</button></div></section>`,()=>{
+    const o={hide:CUSTOM,pins:[],driver:()=>R&&R.dpos?{...R.dpos,nlat:R.dpos.lat+.0001,nlon:R.dpos.lon}:null,
+      line:()=>{if(!R)return null;if(R.b.status==='ontrip')return R.trip;return R.dpos&&!R.b.arrivedAt?[R.dpos,pu]:null}};
+    R.map=makeMap(document.getElementById('map'),o);R.mo=o;R.fitFor=null;
+    rideCloudUpdate(true);rideTimer=setInterval(()=>rideCloudUpdate(false),1000);
+    document.getElementById('cx').onclick=cancelSheet;document.getElementById('sos').onclick=safetySheet;
+    app.querySelectorAll('.acts button').forEach(x=>x.onclick=()=>({call:callSheet,chat:chatSheet,share:shareTrip,safety:safetySheet})[x.dataset.a]());
+  });
+}
+function rideCloudUpdate(refit){
+  if(!R||!R.b)return;const b=R.b,stS=document.getElementById('stS'),stB=document.getElementById('stB');if(!stS)return;
+  const pu={lat:b.from.lat,lon:b.from.lon},dp={lat:b.to.lat,lon:b.to.lon},on=b.status==='ontrip';
+  const mode=on?'trip':b.arrivedAt?'here':'come';
+  if(R.mo)R.mo.pins=on?[{...dp,col:'#13284F'}]:[{...pu,col:'#1E8A5A'}];
+  if(mode!==R.fitFor||refit){R.fitFor=mode;if(R.map){if(on)R.map.fit(R.trip.length>1?R.trip:[pu,dp],60,70);else if(R.dpos&&mode==='come')R.map.fit([R.dpos,pu],80,70);else R.map.setView(pu.lat,pu.lon,60000)}}
+  const ph=document.getElementById('pinbox'),cx=document.getElementById('cx');if(ph)ph.hidden=on;if(cx)cx.hidden=on;
+  if(mode==='come'){stS.textContent=L(`${R.drv.ta} வந்துகிட்டு இருக்காரு`,`${R.drv.en} is on the way`);
+    if(R.dpos){const mn=Math.max(1,Math.round(hav(R.dpos,pu)*1.3/0.35));stB.textContent=L(`${mn} நிமி-ல வருவாரு`,`Arriving in ${mn} min`)}else stB.textContent=L('Driver கிளம்பிட்டாரு','Driver is on the way')}
+  else if(mode==='here'){const s=Math.max(0,Math.round((Date.now()-CL.toMs(b.arrivedAt))/1000)),free=Math.max(0,180-s);
+    stB.textContent=L('Driver வந்துட்டாரு!','Your driver has arrived');stS.textContent=free?L(`இலவச காத்திருப்பு ${Math.floor(free/60)}:${String(free%60).padStart(2,'0')}`,`Free waiting ${Math.floor(free/60)}:${String(free%60).padStart(2,'0')}`):L('காத்திருப்பு கட்டணம் ஆரம்பம்','Waiting charges apply');
+    if(!R.hereToast){R.hereToast=1;toast(L('Driver வந்துட்டாரு! PIN-ஐ சொல்லுங்க','Your driver is here. Share your PIN'))}}
+  else{stS.textContent=L('பயணத்தில்','On trip');
+    if(R.dpos){const mn=Math.max(1,Math.round(hav(R.dpos,dp)*1.3/0.37));stB.textContent=L(`${mn} நிமி-ல சேருவீங்க`,`${mn} min to drop`)}else stB.textContent=R.destName[S.lang]}
+}
+async function cloudCancel(reason){
+  if(!R||!R.id)return;R.selfCancel=true;
+  try{await F().updateDoc(F().doc(CL.db,'bookings',R.id),{status:'cancelled',cancelReason:reason||'customer',updatedAt:F().serverTimestamp()})}catch(e){toast(CL.errText(e,S.lang==='ta'))}
+  stopWatch();forgetRide();
+}
+function cloudPayChange(pm){if(CL&&R&&R.id)F().updateDoc(F().doc(CL.db,'bookings',R.id),{pay:pm,updatedAt:F().serverTimestamp()}).catch(()=>{})}
+function cloudRate(stars,tip){if(CL&&R&&R.id&&(stars||tip))F().updateDoc(F().doc(CL.db,'bookings',R.id),{rating:stars||0,tip:tip||0,updatedAt:F().serverTimestamp()}).catch(()=>{})}
+function cloudTicket(x){
+  if(!CL||!CUID)return;
+  F().addDoc(F().collection(CL.db,'tickets'),{uid:CUID,type:x.type,title:x.title,phone:x.phone||S.phone,cust:S.name,trip:x.trip||'',note:x.note||'',
+    lat:x.lat||null,lon:x.lon||null,status:'open',date:Date.now(),createdAt:F().serverTimestamp()}).catch(e=>toast(CL.errText(e,S.lang==='ta')));
+}
+async function cloudSchedule(rec){
+  if(!CL||!CUID)return null;
+  const v=VEH.find(x=>x.id===rec.veh.id)||VEH[1];
+  const to=rec.kind==='schedule'&&S.dest&&P[S.dest]?placeOf(S.dest):{key:null,ta:rec.to.ta,en:rec.to.en,lat:null,lon:null};
+  try{const ref=await F().addDoc(F().collection(CL.db,'bookings'),{customerUid:CUID,custName:S.name,custPhone:'+91'+S.phone,src:'app',kind:rec.kind,
+      from:placeOf(S.from),to,path:[],veh:v.id,vehTa:v.ta,vehEn:v.en,km:rec.km||0,base:v.base,fare:rec.fare,pay:rec.pay||'cash',note:rec.note||null,
+      status:'scheduled',when:rec.when,createdAt:F().serverTimestamp(),updatedAt:F().serverTimestamp()});
+    return ref.id}catch(e){toast(CL.errText(e,S.lang==='ta'));return null}
+}
+function loadQrLib(){return new Promise((res,rej)=>{if(window.QRCode)return res();const sc=document.createElement('script');sc.src='https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';sc.onload=res;sc.onerror=rej;document.head.appendChild(sc)})}
+function upiLink(amt,ref){return `upi://pay?pa=${encodeURIComponent(CFG.upi)}&pn=${encodeURIComponent('Vellore Call Taxi')}&am=${amt}&cu=INR&tn=${encodeURIComponent('Ride '+(ref||''))}`}
+function realQr(el,amt,ref){if(!CFG.upi||!el)return;loadQrLib().then(()=>{el.innerHTML='';new window.QRCode(el,{text:upiLink(amt,ref),width:120,height:120,correctLevel:window.QRCode.CorrectLevel.M})}).catch(()=>{})}
+
+
+/* ---------- interactive Vellore map: drag, pinch, wheel, double-tap, fling ---------- */
+const AREAS=[
+  {ta:'காட்பாடி',en:'Katpadi',lat:12.9690,lon:79.1440},{ta:'காந்தி நகர்',en:'Gandhi Nagar',lat:12.9550,lon:79.1390},
+  {ta:'பிரம்மபுரம்',en:'Brahmapuram',lat:12.9850,lon:79.1450},{ta:'விருதம்பட்டு',en:'Viruthampet',lat:12.9480,lon:79.1220},
+  {ta:'சத்துவாச்சாரி',en:'Sathuvachari',lat:12.9370,lon:79.1640},{ta:'தோட்டப்பாளையம்',en:'Thottapalayam',lat:12.9265,lon:79.1420},
+  {ta:'கொசப்பேட்டை',en:'Kosapet',lat:12.9300,lon:79.1250},{ta:'வேலூர் டவுன்',en:'Vellore Town',lat:12.9220,lon:79.1330},
+  {ta:'சாய்நாதபுரம்',en:'Sainathapuram',lat:12.9150,lon:79.1440},{ta:'அல்லாபுரம்',en:'Allapuram',lat:12.9050,lon:79.1350},
+  {ta:'பாகாயம்',en:'Bagayam',lat:12.8890,lon:79.1350},{ta:'திருமலைக்கோடி',en:'Thirumalaikodi',lat:12.8730,lon:79.0920}
+];
+const COS=Math.cos(12.94*Math.PI/180);
+const RIVER=[[79.04,12.9440],[79.08,12.9475],[79.11,12.9452],[79.135,12.9468],[79.16,12.9490],[79.19,12.9462],[79.23,12.9478]];
+const hsh=(a,b)=>{let h=(Math.imul(a,374761393)+Math.imul(b,668265263))|0;h=Math.imul(h^(h>>>13),1274126177);return((h^(h>>>16))>>>0)/4294967295};
+const CELL=.0011,LX=i=>i*CELL+(hsh(i,7)-.5)*CELL*.35,LY=j=>j*CELL*.9+(hsh(j,11)-.5)*CELL*.3;
+const WB=(()=>{let sd=7;const r=()=>(sd=(sd*9301+49297)%233280)/233280;const a=[];for(let i=0;i<220;i++)a.push([79.06+r()*.14,12.86+r()*.14,.002+r()*.005,.0015+r()*.004]);return a})();
+const ramp=(v,a,b)=>Math.max(0,Math.min(1,(v-a)/(b-a)));
+
+function makeMap(cv,o={}){
+  const ctx=cv.getContext('2d'),dpr=Math.min(2,window.devicePixelRatio||1);
+  const cam={lat:P.home.lat,lon:P.home.lon,s:20000},MIN=2500,MAX=700000;
+  const clamp=s=>Math.max(MIN,Math.min(MAX,s));
+  let W=0,H=0,anim=null,wheelT=0;
+  const X=lon=>W/2+(lon-cam.lon)*cam.s*COS,Y=lat=>H/2+(cam.lat-lat)*cam.s;
+  const toLL=(x,y)=>({lon:cam.lon+(x-W/2)/(cam.s*COS),lat:cam.lat-(y-H/2)/cam.s});
+  function size(){const r=cv.getBoundingClientRect();W=r.width;H=r.height;cv.width=Math.round(W*dpr);cv.height=Math.round(H*dpr);ctx.setTransform(dpr,0,0,dpr,0,0)}
+  const end=()=>o.onEnd&&o.onEnd({lat:cam.lat,lon:cam.lon});
+  const pan=(dx,dy)=>{cam.lon-=dx/(cam.s*COS);cam.lat+=dy/cam.s};
+  function zoomAt(x,y,f){const ll=toLL(x,y);cam.s=clamp(cam.s*f);cam.lon=ll.lon-(x-W/2)/(cam.s*COS);cam.lat=ll.lat+(y-H/2)/cam.s}
+  function flyTo(lat,lon,s,ms=550){const a={...cam},b={lat,lon,s:clamp(s)},t0=performance.now();o.onStart&&o.onStart();
+    anim=now=>{let k=Math.min(1,(now-t0)/ms);k=1-Math.pow(1-k,3);cam.lat=a.lat+(b.lat-a.lat)*k;cam.lon=a.lon+(b.lon-a.lon)*k;cam.s=a.s*Math.pow(b.s/a.s,k);if(k>=1){anim=null;end()}}}
+  function zoomAtAnim(x,y,f){const ll=toLL(x,y),s2=clamp(cam.s*f);flyTo(ll.lat+(y-H/2)/s2,ll.lon-(x-W/2)/(s2*COS),s2,320)}
+  function fit(pts,pad=40,top=0){if(!W)size();const la=pts.map(p=>p.lat),lo=pts.map(p=>p.lon);
+    const dLa=Math.max(.004,Math.max(...la)-Math.min(...la)),dLo=Math.max(.004,Math.max(...lo)-Math.min(...lo));
+    cam.s=clamp(Math.min((W-pad*2)/(dLo*COS),(H-pad*2-top)/dLa));
+    cam.lat=(Math.max(...la)+Math.min(...la))/2+top/2/cam.s;cam.lon=(Math.max(...lo)+Math.min(...lo))/2}
+
+  /* gestures */
+  const pts=new Map();let moved=false,lastT=0,vx=0,vy=0,lastTap=0,down=null;
+  const pos=e=>{const r=cv.getBoundingClientRect();return{x:e.clientX-r.left,y:e.clientY-r.top}};
+  const cen=()=>{let x=0,y=0;pts.forEach(p=>{x+=p.x;y+=p.y});return{x:x/pts.size,y:y/pts.size}};
+  const spr=c=>{let d=0;pts.forEach(p=>{d+=Math.hypot(p.x-c.x,p.y-c.y)});return d/pts.size};
+  cv.addEventListener('pointerdown',e=>{e.preventDefault();try{cv.setPointerCapture(e.pointerId)}catch(_){}
+    pts.set(e.pointerId,pos(e));anim=null;if(pts.size===1){moved=false;vx=vy=0;lastT=performance.now();down=pos(e);o.onStart&&o.onStart()}else moved=true});
+  cv.addEventListener('pointermove',e=>{if(!pts.has(e.pointerId))return;
+    const c0=cen(),s0=spr(c0);pts.set(e.pointerId,pos(e));const c1=cen(),s1=spr(c1);
+    const dx=c1.x-c0.x,dy=c1.y-c0.y;pan(dx,dy);if(pts.size>1&&s0>4)zoomAt(c1.x,c1.y,s1/s0);
+    const now=performance.now(),dt=Math.max(1,now-lastT);vx=.6*vx+.4*dx/dt;vy=.6*vy+.4*dy/dt;lastT=now;
+    if(down&&Math.hypot(c1.x-down.x,c1.y-down.y)>5)moved=true});
+  const up=e=>{if(!pts.has(e.pointerId))return;pts.delete(e.pointerId);if(pts.size){vx=vy=0;return}
+    const now=performance.now();
+    if(!moved){if(now-lastTap<320){const p=pos(e);lastTap=0;zoomAtAnim(p.x,p.y,2.4);return}lastTap=now;end();return}
+    if(now-lastT>90)vx=vy=0;
+    if(Math.hypot(vx,vy)>.25){let t0=now;anim=n=>{const dt=n-t0;t0=n;pan(vx*dt,vy*dt);const d=Math.pow(.9,dt/16);vx*=d;vy*=d;if(Math.hypot(vx,vy)<.02){anim=null;end()}}}
+    else end()};
+  cv.addEventListener('pointerup',up);cv.addEventListener('pointercancel',up);
+  cv.addEventListener('wheel',e=>{e.preventDefault();const p=pos(e);if(!wheelT&&o.onStart)o.onStart();anim=null;
+    zoomAt(p.x,p.y,Math.exp(-e.deltaY*(e.ctrlKey?.01:.0018)));clearTimeout(wheelT);wheelT=setTimeout(()=>{wheelT=0;end()},220)},{passive:false});
+
+  /* drawing */
+  const cars=Array.from({length:6},(_,i)=>({e:ROADS[(i*3)%ROADS.length],t:hsh(i,3),s:.0012+hsh(i,5)*.0018,k:['auto','bike','car','suv'][i%4]}));
+  function frame(ts){
+    if(!document.body.contains(cv))return;
+    const r=cv.getBoundingClientRect();if(r.width!==W||r.height!==H)size();
+    if(anim)anim(ts);
+    const css=getComputedStyle(document.documentElement),c=n=>css.getPropertyValue(n).trim();
+    ctx.fillStyle=c('--map-land');ctx.fillRect(0,0,W,H);
+    const tl=toLL(0,0),br=toLL(W,H);
+    // neighbourhood blocks (far view)
+    const aBlk=1-ramp(cam.s,60000,120000);
+    if(aBlk>0){ctx.globalAlpha=aBlk;ctx.fillStyle=c('--map-block');WB.forEach(b=>{const x=X(b[0]),y=Y(b[1]+b[3]),w=b[2]*cam.s*COS,h=b[3]*cam.s;if(x>W||y>H||x+w<0||y+h<0)return;ctx.beginPath();ctx.roundRect(x,y,w,h,Math.min(8,w/4));ctx.fill()});ctx.globalAlpha=1}
+    // streets + buildings (close view)
+    const aSt=ramp(cam.s,16000,32000),aBd=ramp(cam.s,55000,110000);
+    const i0=Math.floor(tl.lon/CELL)-1,i1=Math.ceil(br.lon/CELL)+1,j0=Math.floor(br.lat/(CELL*.9))-1,j1=Math.ceil(tl.lat/(CELL*.9))+1;
+    if(aSt>0&&(i1-i0)*(j1-j0)<4000){
+      const sw=Math.max(2,cam.s*.00007);
+      if(aBd>0){ctx.globalAlpha=aBd;ctx.fillStyle=c('--map-bldg');
+        for(let i=i0;i<i1;i++)for(let j=j0;j<j1;j++){const x0=X(LX(i)),x1=X(LX(i+1)),y0=Y(LY(j+1)),y1=Y(LY(j));const m=sw/2+3,cw=(x1-x0-2*m)/3,ch=(y1-y0-2*m)/2;
+          for(let a=0;a<3;a++)for(let b=0;b<2;b++){const h=hsh(i*7+a,j*13+b);if(h<.16)continue;const g=2+h*3;ctx.beginPath();ctx.roundRect(x0+m+a*cw+g,y0+m+b*ch+g,cw-2*g,ch-2*g,2);ctx.fill()}}
+        ctx.globalAlpha=1}
+      ctx.globalAlpha=aSt;ctx.strokeStyle=c('--map-road');ctx.lineWidth=sw;ctx.beginPath();
+      for(let i=i0;i<=i1;i++){const x=X(LX(i));ctx.moveTo(x,0);ctx.lineTo(x,H)}
+      for(let j=j0;j<=j1;j++){const y=Y(LY(j));ctx.moveTo(0,y);ctx.lineTo(W,y)}
+      ctx.stroke();ctx.globalAlpha=1}
+    // Palar river
+    ctx.strokeStyle=c('--map-river');ctx.lineWidth=Math.max(10,cam.s*.0016);ctx.lineCap='round';ctx.lineJoin='round';ctx.beginPath();
+    RIVER.forEach(([lo,la],i)=>i?ctx.lineTo(X(lo),Y(la)):ctx.moveTo(X(lo),Y(la)));ctx.stroke();
+    const rl=RIVER.find(([lo])=>X(lo)>20)||RIVER[0];
+    ctx.fillStyle=c('--map-label');ctx.font='italic 600 11px Hind Madurai, sans-serif';ctx.fillText(S.lang==='ta'?'பாலாறு':'Palar River',Math.max(8,X(rl[0])),Y(rl[1])-Math.max(8,cam.s*.0009));
+    // main roads
+    const rw=Math.min(30,Math.max(7,cam.s*.00012));
+    [[c('--map-edge'),rw+4],[c('--map-road'),rw]].forEach(([col,w])=>{ctx.strokeStyle=col;ctx.lineWidth=w;ctx.beginPath();ROADS.forEach(([a,b])=>{ctx.moveTo(X(P[a].lon),Y(P[a].lat));ctx.lineTo(X(P[b].lon),Y(P[b].lat))});ctx.stroke()});
+    // route
+    const path=o.path;
+    const LP=o.line?o.line():(path&&path.length>1?path.map(k=>P[k]):null);
+    if(LP&&LP.length>1){ctx.strokeStyle=c('--navy');ctx.lineWidth=Math.max(6,rw*.6);ctx.beginPath();LP.forEach((p,i)=>i?ctx.lineTo(X(p.lon),Y(p.lat)):ctx.moveTo(X(p.lon),Y(p.lat)));ctx.stroke();
+      ctx.setLineDash([2,10]);ctx.strokeStyle='#FFD84D';ctx.lineWidth=3;ctx.lineDashOffset=-(ts/40%12);ctx.stroke();ctx.setLineDash([])}
+    // vehicles
+    if(o.cars)cars.forEach(v=>{v.t+=v.s;if(v.t>1){v.t=0;v.e=ROADS[Math.floor(Math.random()*ROADS.length)]}const a=P[v.e[0]],b=P[v.e[1]];
+      const ax=X(a.lon),ay=Y(a.lat),bx=X(b.lon),by=Y(b.lat),x=ax+(bx-ax)*v.t,y=ay+(by-ay)*v.t;
+      ctx.save();ctx.translate(x,y);ctx.rotate(Math.atan2(by-ay,bx-ax));ctx.fillStyle='#13284F';ctx.beginPath();ctx.roundRect(-9,-6,18,12,4);ctx.fill();ctx.fillStyle='#FFD84D';ctx.beginPath();ctx.roundRect(-6,-4,v.k==='bike'?6:12,8,2);ctx.fill();ctx.restore()});
+    // places
+    Object.keys(P).forEach(k=>{if((o.hide||[]).includes(k))return;if(CUSTOM.includes(k)&&!(path&&path.includes(k))&&!o.hide)return;
+      const p=P[k],x=X(p.lon),y=Y(p.lat);if(x<-60||x>W+60||y<-40||y>H+40)return;
+      const isDest=path&&k===path[path.length-1],isFrom=path&&k===path[0],isHome=k==='home';
+      if(isHome&&!isFrom&&!isDest){const pulse=(ts/1200)%1;ctx.fillStyle=`rgba(44,81,150,${.35*(1-pulse)})`;ctx.beginPath();ctx.arc(x,y,10+pulse*18,0,7);ctx.fill();
+        ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(x,y,9,0,7);ctx.fill();ctx.fillStyle='#2C5196';ctx.beginPath();ctx.arc(x,y,6,0,7);ctx.fill()}
+      else if(isDest||isFrom){ctx.fillStyle=isFrom?'#1E8A5A':'#13284F';ctx.beginPath();ctx.arc(x,y-18,11,0,7);ctx.fill();ctx.beginPath();ctx.moveTo(x-7,y-12);ctx.lineTo(x,y);ctx.lineTo(x+7,y-12);ctx.fill();ctx.fillStyle='#FFD84D';ctx.beginPath();ctx.arc(x,y-18,5,0,7);ctx.fill()}
+      else{ctx.fillStyle=c('--surface');ctx.strokeStyle=c('--map-label');ctx.lineWidth=2;ctx.beginPath();ctx.arc(x,y,4,0,7);ctx.fill();ctx.stroke()}
+      const big=isDest||isFrom||isHome;ctx.font=(big?'700 12.5px ':'600 11px ')+'Hind Madurai, sans-serif';const lb=p[S.lang];const tw=ctx.measureText(lb).width;
+      const lx=Math.min(Math.max(x+10,6),W-tw-10),ly=(isDest||isFrom)?y-34:y-8;
+      ctx.fillStyle=c('--surface');ctx.globalAlpha=.88;ctx.beginPath();ctx.roundRect(lx-4,ly-12,tw+8,17,5);ctx.fill();ctx.globalAlpha=1;
+      ctx.fillStyle=big?c('--fg'):c('--map-label');ctx.fillText(lb,lx,ly)});
+    (o.pins||[]).forEach(q=>{const x=X(q.lon),y=Y(q.lat);ctx.fillStyle=q.col;ctx.beginPath();ctx.arc(x,y-18,11,0,7);ctx.fill();ctx.beginPath();ctx.moveTo(x-7,y-12);ctx.lineTo(x,y);ctx.lineTo(x+7,y-12);ctx.fill();ctx.fillStyle='#FFD84D';ctx.beginPath();ctx.arc(x,y-18,5,0,7);ctx.fill()});
+    // live driver
+    if(o.driver){const d=o.driver();if(d){const x=X(d.lon),y=Y(d.lat),ang=Math.atan2(Y(d.nlat)-y,X(d.nlon)-x)||0;const pl=(ts/900)%1;
+      ctx.fillStyle=`rgba(30,58,110,${.25*(1-pl)})`;ctx.beginPath();ctx.arc(x,y,16+pl*16,0,7);ctx.fill();
+      ctx.save();ctx.translate(x,y);ctx.rotate(ang);ctx.fillStyle='#fff';ctx.beginPath();ctx.roundRect(-16,-11,32,22,8);ctx.fill();
+      ctx.fillStyle='#13284F';ctx.beginPath();ctx.roundRect(-14,-9,28,18,6);ctx.fill();ctx.fillStyle='#FFD84D';ctx.beginPath();ctx.roundRect(-3,-6,11,12,3);ctx.fill();ctx.restore()}}
+    // scale bar
+    if(o.scale){const mpp=111320/cam.s;const nice=[5,10,20,50,100,200,500,1000,2000,5000].find(v=>v/mpp>=70)||5000;const px=nice/mpp,sx=16,sy=H-42;
+      ctx.fillStyle=c('--surface');ctx.globalAlpha=.9;ctx.beginPath();ctx.roundRect(sx-6,sy-18,px+12,28,8);ctx.fill();ctx.globalAlpha=1;
+      ctx.strokeStyle=c('--fg');ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(sx,sy-4);ctx.lineTo(sx,sy+2);ctx.lineTo(sx+px,sy+2);ctx.lineTo(sx+px,sy-4);ctx.stroke();
+      ctx.fillStyle=c('--fg');ctx.font='700 11px Hind Madurai, sans-serif';ctx.fillText(nice>=1000?nice/1000+' '+T[S.lang].km:nice+' '+T[S.lang].m,sx+2,sy-7)}
+    mapLoop=requestAnimationFrame(frame);
+  }
+  size();mapLoop=requestAnimationFrame(frame);
+  return{cam,fit,flyTo,zoomBy:f=>flyTo(cam.lat,cam.lon,cam.s*f,300),setView:(lat,lon,s)=>{cam.lat=lat;cam.lon=lon;cam.s=clamp(s)},center:()=>({lat:cam.lat,lon:cam.lon})};
+}
+
+
+splash();
+</script>
+
 </body>
 </html>

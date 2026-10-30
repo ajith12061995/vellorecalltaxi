@@ -1,0 +1,1305 @@
+<!doctype html>
+<html lang="ta">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#13284F">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="robots" content="noindex">
+<link rel="icon" href="../icon-192.png">
+<link rel="apple-touch-icon" href="../icon-192.png">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{height:100%}body{margin:0;font-family:system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+<script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
+<script type="module">import('../vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
+</head>
+<body>
+<title>Vellore Call Taxi Office</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+Thambi+2:wght@500;600;700;800&family=Hind+Madurai:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: one phone-width app column; map is the stage, a white bottom sheet carries the actions. */
+:root{
+  --yellow:#FFD84D; --yellow-soft:#FFF5C9; --yellow-ink:#7A5A00;
+  --navy:#1E3A6E; --navy-2:#2C5196; --navy-soft:#E6EDF9;
+  --bg:#F4F6FA; --surface:#FFFFFF; --surface-2:#F8F9FC;
+  --fg:#13284F; --muted:#5F6E89; --line:#E2E7F1;
+  --map-land:#EDF1F7; --map-block:#E3E9F2; --map-road:#FFFFFF; --map-edge:#D3DBE8; --map-river:#CBE1F4; --map-label:#56657F; --map-bldg:#D6DEEA;
+  --ok:#1E8A5A; --danger:#C23B3B;
+  --shadow:0 10px 30px rgba(19,40,79,.12);
+  --display:"Baloo Thambi 2","Hind Madurai",system-ui,sans-serif;
+  --body:"Hind Madurai","Noto Sans Tamil",system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --yellow:#FFD84D; --yellow-soft:#3A3417; --yellow-ink:#FFE38A;
+  --navy:#8FB0EE; --navy-2:#A9C3F5; --navy-soft:#1E2D4B;
+  --bg:#0D1628; --surface:#152240; --surface-2:#1A2A4C; --fg:#EAF0FB; --muted:#9AA8C3; --line:#26375C;
+  --map-land:#101C33; --map-block:#14223D; --map-road:#2A3B5E; --map-edge:#1B2A47; --map-river:#173556; --map-label:#8C9BB8; --map-bldg:#1D2E50;
+  --ok:#4CC28C; --danger:#F07A7A; --shadow:0 10px 30px rgba(0,0,0,.4); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --yellow:#FFD84D; --yellow-soft:#3A3417; --yellow-ink:#FFE38A;
+  --navy:#8FB0EE; --navy-2:#A9C3F5; --navy-soft:#1E2D4B;
+  --bg:#0D1628; --surface:#152240; --surface-2:#1A2A4C; --fg:#EAF0FB; --muted:#9AA8C3; --line:#26375C;
+  --map-land:#101C33; --map-block:#14223D; --map-road:#2A3B5E; --map-edge:#1B2A47; --map-river:#173556; --map-label:#8C9BB8; --map-bldg:#1D2E50;
+  --ok:#4CC28C; --danger:#F07A7A; --shadow:0 10px 30px rgba(0,0,0,.4); color-scheme:dark}
+
+html,body{height:100%}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;overflow:hidden}
+*{box-sizing:border-box}
+button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
+button:focus-visible,input:focus-visible{outline:3px solid var(--yellow);outline-offset:2px}
+.app{position:relative;height:100%;max-width:440px;margin:0 auto;background:var(--surface);overflow:hidden}
+@media (min-width:520px){.app{height:calc(100% - 32px);margin-block:16px;border-radius:28px;box-shadow:var(--shadow);border:1px solid var(--line)}}
+.screen{position:absolute;inset:0;display:flex;flex-direction:column;background:var(--surface);animation:in .32s ease both}
+@keyframes in{from{opacity:.4;transform:translateY(10px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+.pad{padding-left:max(18px,env(safe-area-inset-left,0px));padding-right:max(18px,env(safe-area-inset-right,0px))}
+h1,h2,h3{font-family:var(--display);margin:0;line-height:1.15;text-wrap:balance}
+.muted{color:var(--muted)}
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;height:54px;border-radius:16px;background:var(--navy);color:#fff;font-weight:700;font-size:16px;transition:transform .12s, opacity .2s}
+:root[data-theme="dark"] .btn{color:#0D1628}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .btn{color:#0D1628}}
+.btn:active{transform:scale(.98)}
+.btn[disabled]{opacity:.4;cursor:not-allowed}
+.btn.yellow{background:var(--yellow);color:#13284F}
+
+/* splash */
+#splash{background:#13284F;color:#fff;align-items:center;justify-content:center;gap:22px}
+.roofsign{background:var(--yellow);color:#13284F;border-radius:14px 14px 6px 6px;padding:14px 22px 10px;text-align:center;box-shadow:0 14px 0 -6px #0b1a36, 0 0 0 4px rgba(255,216,77,.25);animation:pop .6s cubic-bezier(.2,1.4,.4,1) both}
+.roofsign b{display:block;font-family:var(--display);font-size:30px;font-weight:800;letter-spacing:.06em}
+.roofsign span{font-family:var(--display);font-size:17px;font-weight:600}
+@keyframes pop{from{transform:scale(.6);opacity:0}}
+.road{width:220px;height:6px;border-radius:3px;background:repeating-linear-gradient(90deg,#FFD84D 0 26px,transparent 26px 44px);background-size:44px 6px;animation:roll .6s linear infinite;opacity:.8}
+@keyframes roll{to{background-position:-44px 0}}
+.tag{font-size:13px;letter-spacing:.14em;text-transform:uppercase;opacity:.7}
+
+/* onboarding */
+.hero{background:linear-gradient(170deg,var(--yellow) 0%,var(--yellow-soft) 100%);padding-top:48px;padding-bottom:28px;display:flex;flex-direction:column;gap:10px;border-radius:0 0 32px 32px}
+.hero h1{font-size:30px;color:#13284F}
+.hero p{margin:0;color:#3D4D6E}
+.hero .mini{display:inline-flex;align-self:flex-start;background:#13284F;color:var(--yellow);font-family:var(--display);font-weight:700;padding:4px 12px;border-radius:999px;font-size:13px;letter-spacing:.06em}
+.body{flex:1;display:flex;flex-direction:column;gap:16px;padding-top:24px;padding-bottom:max(20px,env(safe-area-inset-bottom,0px));overflow:auto}
+.langcard{display:flex;align-items:center;justify-content:space-between;padding:18px;border:2px solid var(--line);border-radius:18px;text-align:left;background:var(--surface)}
+.langcard.sel{border-color:var(--navy);background:var(--navy-soft)}
+.langcard b{font-family:var(--display);font-size:22px}
+.radio{width:22px;height:22px;border-radius:50%;border:2px solid var(--line)}
+.sel .radio{border:7px solid var(--navy)}
+.field{display:flex;align-items:center;gap:10px;height:58px;border:2px solid var(--line);border-radius:16px;padding:0 16px;background:var(--surface)}
+.field:focus-within{border-color:var(--navy)}
+.field input{flex:1;min-width:0;border:0;outline:0;background:none;font:inherit;font-size:19px;color:var(--fg);letter-spacing:.04em}
+.field .cc{font-weight:700;padding-right:10px;border-right:1px solid var(--line)}
+.otp{display:flex;gap:12px}
+.otp input{width:100%;min-width:0;height:62px;text-align:center;font-size:26px;font-family:var(--display);font-weight:700;border:2px solid var(--line);border-radius:16px;background:var(--surface);color:var(--fg)}
+.otp input:focus{border-color:var(--navy);outline:0}
+.note{background:var(--yellow-soft);color:var(--yellow-ink);border-radius:14px;padding:10px 14px;font-size:13.5px}
+.err{color:var(--danger);font-size:13.5px;min-height:18px}
+.linkbtn{color:var(--navy);font-weight:700;font-size:14px}
+.fine{font-size:12.5px;text-align:center}
+
+/* home */
+.mapwrap{position:relative;flex:1 1 auto;min-height:230px}
+canvas.map{position:absolute;inset:0;width:100%;height:100%;display:block}
+.topbar{position:absolute;top:max(14px,env(safe-area-inset-top,0px));left:max(14px,env(safe-area-inset-left,0px));right:max(14px,env(safe-area-inset-right,0px));display:flex;align-items:center;gap:10px;z-index:2}
+.chipbtn{height:42px;min-width:42px;border-radius:14px;background:var(--surface);box-shadow:var(--shadow);display:flex;align-items:center;justify-content:center;gap:6px;padding:0 12px;font-weight:700;font-size:13.5px}
+.greet{flex:1;min-width:0;background:var(--surface);box-shadow:var(--shadow);border-radius:14px;padding:6px 12px;line-height:1.2}
+.greet small{display:block;color:var(--muted);font-size:12px}
+.greet b{font-family:var(--display);font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+.locate{position:absolute;right:max(14px,env(safe-area-inset-right,0px));bottom:30px;z-index:2}
+.nearby{position:absolute;left:max(14px,env(safe-area-inset-left,0px));bottom:30px;z-index:2;background:var(--navy);color:#fff;border-radius:999px;padding:6px 12px;font-size:12.5px;font-weight:600;display:flex;align-items:center;gap:6px}
+:root[data-theme="dark"] .nearby{color:#0D1628}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .nearby{color:#0D1628}}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--yellow);box-shadow:0 0 0 0 rgba(255,216,77,.7);animation:ping 1.6s infinite}
+@keyframes ping{70%{box-shadow:0 0 0 8px rgba(255,216,77,0)}100%{box-shadow:0 0 0 0 rgba(255,216,77,0)}}
+.sheet{position:relative;z-index:3;margin-top:-22px;background:var(--surface);border-radius:26px 26px 0 0;box-shadow:0 -8px 24px rgba(19,40,79,.08);display:flex;flex-direction:column;gap:16px;padding-top:12px;padding-bottom:14px;max-height:62%;overflow:auto}
+.grab{width:40px;height:5px;border-radius:3px;background:var(--line);align-self:center}
+.where{display:flex;align-items:center;gap:12px;height:58px;border-radius:18px;background:var(--surface-2);border:1px solid var(--line);padding:0 8px 0 16px;text-align:left;width:100%}
+.where span{flex:1;font-family:var(--display);font-weight:700;font-size:19px}
+.where i{width:42px;height:42px;border-radius:13px;background:var(--yellow);display:flex;align-items:center;justify-content:center}
+.chips{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;margin-inline:-2px;padding:2px}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;display:flex;align-items:center;gap:6px;height:38px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:var(--surface);font-size:13.5px;font-weight:600;white-space:nowrap}
+.sec{display:flex;align-items:baseline;justify-content:space-between}
+.sec h3{font-size:17px}
+.services{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.svc{display:flex;flex-direction:column;align-items:center;gap:6px;font-size:12.5px;font-weight:600;text-align:center;line-height:1.2}
+.svc i{width:100%;aspect-ratio:1;max-width:72px;border-radius:18px;background:var(--navy-soft);display:flex;align-items:center;justify-content:center}
+.svc:first-child i{background:var(--yellow)}
+.offers{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;padding-bottom:2px}
+.offers::-webkit-scrollbar{display:none}
+.offer{flex:none;width:78%;scroll-snap-align:start;border-radius:20px;padding:16px;display:flex;flex-direction:column;gap:6px;position:relative;overflow:hidden;min-height:120px}
+.offer b{font-family:var(--display);font-size:20px;line-height:1.15}
+.offer small{opacity:.85;font-size:12.5px}
+.offer .code{align-self:flex-start;margin-top:auto;border:1.5px dashed currentColor;border-radius:8px;padding:2px 10px;font-weight:700;letter-spacing:.08em;font-size:13px}
+.offer.o1{background:#13284F;color:#FFD84D}
+.offer.o2{background:#FFD84D;color:#13284F}
+.offer.o3{background:#2C5196;color:#fff}
+.offer svg{position:absolute;right:-14px;bottom:-12px;opacity:.18}
+.sample{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.recent{display:flex;flex-direction:column}
+.row{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--line);text-align:left;width:100%}
+.row:last-child{border-bottom:0}
+.row .ic{width:40px;height:40px;border-radius:12px;background:var(--surface-2);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;flex:none}
+.row div{flex:1;min-width:0}
+.row b{display:block;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row small{color:var(--muted);font-size:12.5px}
+.nav{display:grid;grid-template-columns:repeat(5,1fr);border-top:1px solid var(--line);background:var(--surface);padding-bottom:max(6px,env(safe-area-inset-bottom,0px));position:relative;z-index:4}
+.nav button{display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 0 4px;font-size:11.5px;font-weight:600;color:var(--muted)}
+.nav button.on{color:var(--navy)}
+.nav button.on svg{background:var(--yellow-soft);border-radius:10px}
+.nav svg{width:44px;height:28px;padding:3px 10px}
+
+/* search */
+.head{display:flex;align-items:center;gap:10px;padding-top:max(14px,env(safe-area-inset-top,0px));padding-bottom:10px}
+.head h2{font-size:20px;flex:1}
+.back{width:42px;height:42px;border-radius:14px;background:var(--surface-2);border:1px solid var(--line);display:flex;align-items:center;justify-content:center}
+.route-in{display:flex;gap:12px;background:var(--surface-2);border:1px solid var(--line);border-radius:18px;padding:10px 12px}
+.rail{display:flex;flex-direction:column;align-items:center;padding-top:14px;gap:0}
+.rail .a{width:10px;height:10px;border-radius:50%;background:var(--ok)}
+.rail .l{width:2px;flex:1;min-height:28px;background:repeating-linear-gradient(var(--muted) 0 3px,transparent 3px 6px)}
+.rail .b{width:10px;height:10px;border-radius:2px;background:var(--danger)}
+.ins{flex:1;min-width:0;display:flex;flex-direction:column}
+.ins input{height:44px;border:0;outline:0;background:none;font:inherit;font-size:16px;color:var(--fg);min-width:0}
+.ins input:first-child{border-bottom:1px solid var(--line)}
+.ins input:focus{color:var(--navy)}
+.mic{width:44px;height:44px;border-radius:14px;background:var(--yellow);display:flex;align-items:center;justify-content:center;align-self:flex-end;flex:none}
+.list{flex:1;overflow:auto;padding-bottom:20px}
+.tagline{font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);padding:16px 0 4px}
+
+/* fare */
+.fare-sheet{gap:12px;max-height:68%}
+.trip{display:flex;gap:10px;align-items:center;font-size:13.5px}
+.trip b{font-family:var(--display);font-size:16px}
+.pill{display:inline-flex;align-items:center;gap:4px;background:var(--navy-soft);color:var(--navy);border-radius:999px;padding:3px 10px;font-weight:700;font-size:12.5px;white-space:nowrap}
+.veh{display:flex;align-items:center;gap:12px;padding:12px;border-radius:18px;border:2px solid var(--line);text-align:left;width:100%;background:var(--surface);transition:border-color .15s, background .15s}
+.veh.sel{border-color:var(--navy);background:var(--navy-soft)}
+.veh .vi{width:58px;height:44px;border-radius:12px;background:var(--yellow-soft);display:flex;align-items:center;justify-content:center;flex:none}
+.veh div{flex:1;min-width:0}
+.veh b{font-family:var(--display);font-size:17px;display:block}
+.veh small{color:var(--muted);font-size:12.5px}
+.veh .price{text-align:right;flex:none}
+.veh .price b{font-size:20px;font-variant-numeric:tabular-nums}
+.veh .price s{color:var(--muted);font-size:12px}
+.payrow{display:flex;gap:8px}
+.pay{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;height:44px;border-radius:14px;border:1.5px solid var(--line);font-weight:700;font-size:14px}
+.pay.sel{border-color:var(--navy);background:var(--navy-soft);color:var(--navy)}
+
+
+canvas.map{touch-action:none;cursor:grab;-webkit-user-select:none;user-select:none}
+canvas.map:active{cursor:grabbing}
+.zoomctl{position:absolute;right:max(14px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:8px;z-index:2}
+.zoomctl .chipbtn{font-size:22px;font-weight:700;width:44px;height:44px;padding:0}
+.hint{position:absolute;left:50%;transform:translateX(-50%);top:calc(max(14px,env(safe-area-inset-top,0px)) + 56px);z-index:2;background:rgba(19,40,79,.88);color:#fff;font-size:12.5px;font-weight:600;padding:6px 12px;border-radius:999px;white-space:nowrap;transition:opacity .4s;pointer-events:none}
+.hint.gone{opacity:0}
+.pin{position:absolute;left:50%;top:50%;z-index:3;pointer-events:none;transform:translate(-50%,-97%);transition:transform .2s cubic-bezier(.3,1.6,.5,1)}
+.pin.lift{transform:translate(-50%,calc(-97% - 16px))}
+.pinshadow{position:absolute;left:50%;top:50%;width:18px;height:7px;border-radius:50%;background:rgba(19,40,79,.4);transform:translate(-50%,-50%);z-index:2;pointer-events:none;transition:.2s}
+.pin.lift + .pinshadow{width:10px;opacity:.45}
+.pickcard{display:flex;flex-direction:column;gap:12px;padding-top:16px;padding-bottom:max(16px,env(safe-area-inset-bottom,0px));border-top:1px solid var(--line);background:var(--surface);border-radius:24px 24px 0 0;margin-top:-20px;position:relative;z-index:4;box-shadow:0 -8px 24px rgba(19,40,79,.08)}
+.addr{display:flex;gap:12px;align-items:flex-start;min-height:52px}
+.addr .ic{width:44px;height:44px;border-radius:14px;background:var(--yellow-soft);color:var(--yellow-ink);display:flex;align-items:center;justify-content:center;flex:none}
+.addr div{min-width:0}
+.addr b{font-family:var(--display);font-size:19px;display:block;line-height:1.2}
+.addr small{color:var(--muted);font-size:13px;font-variant-numeric:tabular-nums}
+.addr b,.addr small{transition:opacity .15s}
+.addr.loading b,.addr.loading small{opacity:.35}
+.kind{font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.row.onmap b{color:var(--navy)}
+.row.onmap .ic{background:var(--yellow);border-color:var(--yellow);color:#13284F}
+.ins input[readonly]{cursor:pointer}
+.greet.tap{cursor:pointer;text-align:left}
+
+
+[hidden]{display:none!important}
+.radar{position:absolute;left:50%;top:50%;z-index:2;pointer-events:none}
+.radar i{position:absolute;left:-60px;top:-60px;width:120px;height:120px;border-radius:50%;border:2px solid var(--navy-2);background:rgba(44,81,150,.10);animation:radar 2.4s ease-out infinite;opacity:0}
+.radar i:nth-child(2){animation-delay:.8s}.radar i:nth-child(3){animation-delay:1.6s}
+@keyframes radar{0%{transform:scale(.2);opacity:.9}100%{transform:scale(1.7);opacity:0}}
+.ride-sheet{gap:14px;max-height:66%}
+.searchrow{display:flex;gap:14px;align-items:center}
+.searchrow>div{min-width:0}
+.searchrow .vi{width:62px;height:48px;border-radius:14px;background:var(--yellow-soft);display:flex;align-items:center;justify-content:center;flex:none;animation:bob .8s ease-in-out infinite alternate}
+@keyframes bob{to{transform:translateY(-4px)}}
+.searchrow h3{font-size:19px}
+.bar{height:6px;border-radius:3px;background:var(--line);overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--navy),var(--navy-2));border-radius:3px;animation:fill 4.2s linear forwards}
+@keyframes fill{to{width:100%}}
+.btn.ghost{background:transparent;color:var(--danger)!important;border:1.5px solid var(--line);height:48px}
+.tripcard{display:flex;gap:12px;padding:12px 14px;border-radius:16px;background:var(--surface-2);border:1px solid var(--line)}
+.tripcard .rail{padding-top:6px}
+.tripcard .rail .l{min-height:22px}
+.stops{flex:1;min-width:0;display:flex;flex-direction:column;gap:10px;font-size:14px}
+.stops b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stops small{color:var(--muted);font-size:11.5px;text-transform:uppercase;letter-spacing:.08em;font-weight:700}
+.amt{text-align:right;flex:none}
+.amt b{font-family:var(--display);font-size:21px;font-variant-numeric:tabular-nums}
+.status b{font-size:17px}
+.chipbtn.sos{background:#C23B3B;color:#fff;font-weight:800;letter-spacing:.08em;box-shadow:0 6px 18px rgba(194,59,59,.35)}
+.chipbtn.ff{position:absolute;right:max(14px,env(safe-area-inset-right,0px));bottom:34px;z-index:2;font-size:12.5px}
+.pinbox{display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--yellow-soft);border-radius:16px;padding:10px 14px}
+.pinbox span{font-size:13px;color:var(--yellow-ink);font-weight:600;line-height:1.3}
+.pinbox b{display:flex;gap:6px;flex:none}
+.pinbox i{font-style:normal;width:34px;height:40px;border-radius:10px;background:var(--surface);color:var(--fg);display:flex;align-items:center;justify-content:center;font-family:var(--display);font-size:22px;font-weight:800;box-shadow:0 2px 0 var(--line)}
+.drv{display:flex;align-items:center;gap:12px}
+.drv>div:not(.vehbox){flex:1;min-width:0}
+.drv b{font-family:var(--display);font-size:18px;display:block}
+.drv small{color:var(--muted);font-size:12.5px}
+.drv .avatar{width:50px;height:50px;font-size:22px;border-radius:16px}
+.vehbox{display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex:none}
+.plate{background:#FFD84D;color:#111;border:2px solid #111;border-radius:6px;padding:1px 8px;font-weight:700;font-size:13.5px;letter-spacing:.06em;white-space:nowrap}
+.acts{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.acts button{display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 0;border-radius:14px;background:var(--surface-2);border:1px solid var(--line);font-size:12px;font-weight:600}
+.acts button svg{color:var(--navy)}
+.modal{position:absolute;inset:0;z-index:30;display:flex;flex-direction:column;justify-content:flex-end;background:rgba(10,20,40,.45);animation:fade .2s}
+@keyframes fade{from{opacity:0}}
+.modal .card{background:var(--surface);border-radius:24px 24px 0 0;padding-top:20px;padding-bottom:max(18px,env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:12px;max-height:82%;overflow:auto;animation:in .25s}
+.modal h3{font-size:20px}
+.reason{display:flex;align-items:center;gap:12px;padding:12px 14px;border:1.5px solid var(--line);border-radius:14px;text-align:left;width:100%;font-weight:600}
+.reason .radio{flex:none}
+.reason.sel{border-color:var(--navy);background:var(--navy-soft)}
+.reason.sel .radio{border:7px solid var(--navy)}
+.chatlog{display:flex;flex-direction:column;gap:8px;min-height:120px;max-height:240px;overflow:auto;padding:4px 0}
+.msg{max-width:78%;padding:8px 12px;border-radius:14px;font-size:14px}
+.msg.me{align-self:flex-end;background:#1E3A6E;color:#fff;border-bottom-right-radius:4px}
+.msg.dr{align-self:flex-start;background:var(--surface-2);border:1px solid var(--line);border-bottom-left-radius:4px}
+.sosbig{height:64px;border-radius:18px;background:#C23B3B;color:#fff;font-family:var(--display);font-size:20px;font-weight:800;width:100%;letter-spacing:.06em}
+.donehero{background:linear-gradient(170deg,var(--yellow),var(--yellow-soft));padding-top:40px;padding-bottom:24px;border-radius:0 0 32px 32px;display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center;color:#13284F}
+.check{width:72px;height:72px;border-radius:50%;background:#13284F;display:flex;align-items:center;justify-content:center;animation:pop .5s cubic-bezier(.2,1.5,.4,1)}
+.bill{display:flex;flex-direction:column;gap:8px;padding:14px 16px;border:1px solid var(--line);border-radius:18px}
+.bill div{display:flex;justify-content:space-between;gap:12px;font-size:14.5px;font-variant-numeric:tabular-nums}
+.bill .tot{border-top:1px dashed var(--line);padding-top:10px;font-family:var(--display);font-size:20px;font-weight:700}
+.qr{display:flex;gap:14px;align-items:center;padding:14px;border-radius:18px;background:var(--surface-2);border:1px solid var(--line)}
+.qr svg{flex:none;border-radius:10px;background:#fff;padding:6px}
+.stars{display:flex;gap:6px;justify-content:center}
+.stars button{width:48px;height:48px;font-size:36px;line-height:1;color:var(--line);transition:transform .15s,color .15s}
+.stars button.on{color:#F5B400;transform:scale(1.08)}
+.tags{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.chip.sel{background:var(--navy-soft);border-color:var(--navy);color:var(--navy)}
+textarea{width:100%;min-height:70px;border:1.5px solid var(--line);border-radius:14px;padding:10px 12px;font:inherit;background:var(--surface);color:var(--fg);resize:vertical}
+
+
+.vsvg .wh{transform-box:fill-box;transform-origin:center}
+.vsvg .bd{transform-box:fill-box}
+.veh .vi,.searchrow .vi{position:relative;overflow:hidden;width:68px;height:48px}
+.veh .vi::after,.searchrow .vi::after{content:"";position:absolute;left:0;right:0;bottom:4px;height:2px;background:repeating-linear-gradient(90deg,var(--muted) 0 8px,transparent 8px 14px);background-size:14px 2px;opacity:0;transition:opacity .2s}
+.veh.sel .vi::after,.searchrow .vi::after{opacity:.5;animation:road .45s linear infinite}
+.veh.sel .vsvg .wh,.searchrow .vsvg .wh{animation:spin .55s linear infinite}
+.veh.sel .vsvg .bd,.searchrow .vsvg .bd{animation:bump .28s ease-in-out infinite alternate}
+.veh:not(.sel):hover .vsvg{transform:translateX(2px);transition:transform .2s}
+.searchrow .vi{animation:none}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes bump{to{transform:translateY(-1.2px)}}
+@keyframes road{to{background-position:-14px 0}}
+
+
+.fleet{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;padding:2px 2px 6px}
+.fleet::-webkit-scrollbar{display:none}
+.fcard{flex:none;width:62%;max-width:240px;scroll-snap-align:start;position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:4px;text-align:left;padding:16px 16px 12px;border-radius:22px;border:1px solid var(--line);background:var(--surface);min-height:190px;overflow:hidden}
+.fcard b{font-family:var(--display);font-size:20px;line-height:1.1}
+.fcard small{color:var(--muted);font-size:13px;line-height:1.3}
+.fcard.hot{background:var(--navy);border-color:var(--navy)}
+.fcard.hot b,.fcard.hot small,.fcard.hot .farr{color:#fff}
+.fcard.hot .fseat{background:rgba(255,255,255,.16);color:#fff}
+:root[data-theme="dark"] .fcard.hot b,:root[data-theme="dark"] .fcard.hot small,:root[data-theme="dark"] .fcard.hot .farr{color:#0D1628}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .fcard.hot b,:root:not([data-theme="light"]) .fcard.hot small,:root:not([data-theme="light"]) .fcard.hot .farr{color:#0D1628}}
+.fseat{font-size:11.5px;font-weight:700;padding:2px 8px;border-radius:999px;background:var(--yellow-soft);color:var(--yellow-ink)}
+.fart{margin-top:auto;align-self:flex-end;margin-right:-10px;margin-bottom:-6px;filter:drop-shadow(0 8px 6px rgba(19,40,79,.18))}
+.fcard:active .fart{transform:translateX(6px);transition:transform .2s}
+.fcard:hover .vsvg .wh{animation:spin .6s linear infinite}
+.farr{position:absolute;left:16px;bottom:14px;font-style:normal;font-size:20px;color:var(--fg)}
+
+.sheet>*,.body>*{flex-shrink:0}
+
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.stats div{background:var(--surface-2);border:1px solid var(--line);border-radius:16px;padding:10px 12px;display:flex;flex-direction:column}
+.stats b{font-family:var(--display);font-size:20px;font-variant-numeric:tabular-nums}
+.stats small{color:var(--muted);font-size:12px}
+.trow .tv{width:52px;background:var(--yellow-soft);border-color:transparent}
+.trow .tv svg{width:46px;height:28px}
+.tamt{flex:none;text-align:right;display:flex;flex-direction:column;align-items:flex-end}
+.tamt b{font-family:var(--display);font-size:17px;font-variant-numeric:tabular-nums}
+.tamt small{color:var(--muted);font-size:12px}
+.st{font-style:normal;font-size:12px;font-weight:700;padding:2px 10px;border-radius:999px}
+.st.cx{background:rgba(194,59,59,.12);color:var(--danger)}
+.empty{display:flex;flex-direction:column;align-items:center;text-align:center;gap:8px;padding:40px 10px;color:var(--muted)}
+.empty h3{color:var(--fg)}
+.empty .btn{margin-top:8px;max-width:260px}
+.minimap{position:relative;height:200px;border-radius:20px;overflow:hidden;border:1px solid var(--line)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.two .btn:only-child{grid-column:1/-1}
+.btn.wa{background:#1E8A5A;color:#fff!important;text-decoration:none;text-align:center;font-size:15px}
+.receipt{background:#fff;color:#13284F;border-radius:18px;border:1px solid #E2E7F1;padding:18px 18px 22px;display:flex;flex-direction:column;gap:14px;position:relative;box-shadow:0 10px 30px rgba(19,40,79,.10)}
+.receipt::after{content:"";position:absolute;left:10px;right:10px;bottom:-7px;height:14px;background:radial-gradient(circle at 7px 0,transparent 6px,#fff 6.5px) 0 0/14px 14px repeat-x}
+.rhead{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;padding-bottom:12px;border-bottom:2px solid #FFD84D}
+.rbrand{display:flex;gap:10px;align-items:center;min-width:0}
+.rbrand b{font-family:var(--display);font-size:17px;display:block;line-height:1.1}
+.rbrand small{font-size:11px;color:#5F6E89}
+.rsign{background:#FFD84D;color:#13284F;font-family:var(--display);font-weight:800;font-size:13px;letter-spacing:.08em;padding:4px 8px;border-radius:8px 8px 3px 3px;border:1.5px solid #13284F;flex:none}
+.rinv{display:flex;flex-direction:column;align-items:flex-end;text-align:right;flex:none}
+.rinv b{font-size:13px;font-variant-numeric:tabular-nums}
+.rinv small{font-size:11px;color:#5F6E89}
+.rsec{display:flex;flex-direction:column;gap:6px;padding-bottom:12px;border-bottom:1px dashed #D3DBE8}
+.rsec:last-of-type{border-bottom:0}
+.rrow{display:flex;justify-content:space-between;gap:12px;font-size:13.5px}
+.rrow span{color:#5F6E89;flex:none}
+.rrow b{text-align:right;font-weight:600;min-width:0;font-variant-numeric:tabular-nums}
+.rtot{font-family:var(--display);font-size:19px;padding-top:4px}
+.rtot span{color:#13284F}
+.rthanks{margin:0;text-align:center;font-size:13px;color:#5F6E89}
+.walcard{background:#13284F;color:#fff;border-radius:24px;padding:20px;display:flex;flex-direction:column;gap:4px;position:relative;overflow:hidden}
+.walcard::before{content:"";position:absolute;right:-40px;top:-40px;width:160px;height:160px;border-radius:50%;background:rgba(255,216,77,.16)}
+.walcard small{opacity:.75}
+.walcard b{font-family:var(--display);font-size:40px;line-height:1.1;color:#FFD84D;font-variant-numeric:tabular-nums}
+.walcard span{font-size:13px;opacity:.8;margin-bottom:10px}
+.walcard .btn{color:#13284F!important}
+.refer{display:flex;align-items:center;gap:12px;padding:14px;border-radius:18px;background:var(--yellow-soft)}
+.refer div{flex:1;min-width:0;display:flex;flex-direction:column}
+.refer b{font-family:var(--display);font-size:17px;color:var(--yellow-ink)}
+.refer small{font-size:12.5px;color:var(--yellow-ink);opacity:.85}
+.code{flex:none;display:flex;flex-direction:column;align-items:center;border:1.5px dashed var(--yellow-ink);border-radius:12px;padding:6px 10px;font-weight:800;letter-spacing:.08em;color:var(--yellow-ink)}
+.code i{font-style:normal;font-size:11px;font-weight:600;letter-spacing:0;opacity:.8}
+.row .ic.in{background:rgba(30,138,90,.12);color:var(--ok);font-weight:800;font-size:18px;border-color:transparent}
+.row .ic.out{background:rgba(194,59,59,.10);color:var(--danger);font-weight:800;font-size:18px;border-color:transparent}
+b.pos{color:var(--ok)}
+
+
+.wherewrap{display:flex;gap:10px}
+.wherewrap .where{flex:1;min-width:0}
+.micbig{flex:none;width:58px;height:58px;border-radius:18px;background:#13284F;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 16px rgba(19,40,79,.25)}
+.upnext{display:flex;align-items:center;gap:12px;width:100%;text-align:left;padding:12px 14px;border-radius:18px;background:var(--yellow-soft);border:1px solid transparent}
+.upnext .ic{width:40px;height:40px;border-radius:12px;background:var(--yellow);color:#13284F;display:flex;align-items:center;justify-content:center;flex:none}
+.upnext div{flex:1;min-width:0}
+.upnext small{display:block;font-size:12px;color:var(--yellow-ink);font-weight:600}
+.upnext b{display:block;font-family:var(--display);font-size:16px;color:var(--yellow-ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.upnext i{font-style:normal;font-size:20px;color:var(--yellow-ink)}
+.st.up{background:var(--navy-soft);color:var(--navy);white-space:nowrap}
+.kindtag{align-self:flex-start;background:var(--navy);color:#fff;border-radius:999px;padding:3px 12px;font-weight:700;font-size:12.5px}
+:root[data-theme="dark"] .kindtag{color:#0D1628}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .kindtag{color:#0D1628}}
+.bill div b{text-align:right}
+.whenrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.whenrow .chip svg{width:16px;height:16px}
+.selbox{width:100%;height:52px;border-radius:14px;border:2px solid var(--line);background:var(--surface);color:var(--fg);font:inherit;font-size:17px;padding:0 12px}
+.pickrow{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:16px;background:var(--surface-2);border:1px solid var(--line)}
+.pickrow div{flex:1;min-width:0}
+.pickrow small{display:block;font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;font-weight:700}
+.pickrow b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dotg,.dotr{width:12px;height:12px;flex:none;border-radius:50%;background:var(--ok)}
+.dotr{border-radius:3px;background:var(--danger)}
+.pkgs{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.pkg{display:flex;flex-direction:column;align-items:center;padding:10px 4px;border-radius:14px;border:2px solid var(--line);background:var(--surface)}
+.pkg b{font-family:var(--display);font-size:16px;white-space:nowrap}
+.pkg small{font-size:11.5px;color:var(--muted)}
+.pkg.sel{border-color:var(--navy);background:var(--navy-soft)}
+.veh[disabled]{opacity:.45;cursor:not-allowed}
+.seg{display:grid;grid-template-columns:1fr 1fr;background:var(--surface-2);border:1px solid var(--line);border-radius:16px;padding:4px}
+.seg button{height:42px;border-radius:12px;font-weight:700;color:var(--muted)}
+.seg button.on{background:var(--navy);color:#fff}
+:root[data-theme="dark"] .seg button.on{color:#0D1628}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .seg button.on{color:#0D1628}}
+.vwrap{display:flex;flex-direction:column;align-items:center;gap:10px;padding:6px 0}
+.vmic{width:92px;height:92px;border-radius:50%;background:#13284F;display:flex;align-items:center;justify-content:center;position:relative}
+.vmic.on::before,.vmic.on::after{content:"";position:absolute;inset:0;border-radius:50%;border:3px solid #FFD84D;animation:radar 1.6s ease-out infinite}
+.vmic.on::after{animation-delay:.8s}
+.chip.ex{font-weight:500;color:var(--muted)}
+
+
+.helphero{background:linear-gradient(160deg,var(--yellow),var(--yellow-soft));border-radius:22px;padding:16px;display:flex;flex-direction:column;gap:12px}
+.helphero b{font-family:var(--display);font-size:20px;color:#13284F}
+.helphero .field{border-color:transparent}
+.lastride{display:flex;flex-direction:column;gap:10px;padding:14px;border:1px solid var(--line);border-radius:18px}
+.lastride b{font-family:var(--display);font-size:17px;display:block}
+.lastride small{color:var(--muted);font-size:12.5px}
+.fgrp{display:flex;flex-direction:column;gap:8px;margin-bottom:10px}
+details.faq{border:1px solid var(--line);border-radius:14px;background:var(--surface);overflow:hidden}
+details.faq summary{cursor:pointer;list-style:none;padding:12px 40px 12px 14px;font-weight:600;position:relative}
+details.faq summary::-webkit-details-marker{display:none}
+details.faq summary::after{content:"+";position:absolute;right:14px;top:50%;transform:translateY(-50%);font-size:20px;color:var(--navy);transition:transform .2s}
+details.faq[open] summary::after{transform:translateY(-50%) rotate(45deg)}
+details.faq[open]{border-color:var(--navy)}
+details.faq p{margin:0;padding:0 14px 14px;color:var(--muted);font-size:14px;line-height:1.5}
+.helpcta{display:flex;flex-direction:column;gap:12px;padding:16px;border-radius:20px;background:var(--navy-soft)}
+.helpcta b{font-family:var(--display);font-size:18px;display:block}
+.helpcta small{color:var(--muted);font-size:13px}
+.helpcta .btn svg{width:18px;height:18px}
+.photo{display:flex;align-items:center;justify-content:center;height:48px;border:1.5px dashed var(--line);border-radius:14px;color:var(--navy);font-weight:600;cursor:pointer}
+.eclist{display:flex;flex-wrap:wrap;gap:6px}
+.btn.dashed{background:var(--surface-2);color:var(--fg)!important;border:1.5px dashed var(--line)}
+
+/* placeholder pages */
+.soon{border:1px dashed var(--line);border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:8px;background:var(--surface-2)}
+.soon ul{margin:0;padding-left:18px;display:grid;gap:4px}
+.badge{align-self:flex-start;background:var(--yellow);color:#13284F;border-radius:999px;padding:2px 10px;font-weight:700;font-size:12px}
+.prof{display:flex;align-items:center;gap:14px}
+.avatar{width:58px;height:58px;border-radius:18px;background:var(--yellow);color:#13284F;display:flex;align-items:center;justify-content:center;font-family:var(--display);font-weight:800;font-size:26px;flex:none}
+
+.toast{position:absolute;left:50%;bottom:calc(86px + env(safe-area-inset-bottom,0px));transform:translate(-50%,20px);background:#13284F;color:#fff;padding:10px 16px;border-radius:14px;font-size:13.5px;font-weight:600;opacity:0;transition:.25s;z-index:20;width:max-content;max-width:calc(100% - 32px);text-align:center;pointer-events:none}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+
+/* ---------- owner panel ---------- */
+.app{max-width:none!important;margin:0!important;border-radius:0!important;border:0!important;box-shadow:none!important;height:100%!important;background:var(--bg)!important}
+.toast{position:fixed}
+.modal{position:fixed;z-index:60}
+@media (min-width:861px){.modal{justify-content:center;align-items:center;padding:24px}.modal .card{border-radius:24px;max-width:560px;width:100%;max-height:88%}}
+.olay{display:grid;grid-template-columns:236px minmax(0,1fr);height:100%}
+.side{background:#13284F;color:#fff;display:flex;flex-direction:column;gap:16px;padding:18px 12px;overflow:auto}
+.brand{display:flex;gap:10px;align-items:center;padding:0 6px}
+.brand b{font-family:var(--display);font-size:16px;display:block;line-height:1.15}
+.brand small{font-size:11.5px;opacity:.7}
+.snav{display:flex;flex-direction:column;gap:2px}
+.snav button{display:flex;align-items:center;gap:10px;height:44px;padding:0 12px;border-radius:12px;color:rgba(255,255,255,.78);font-weight:600;text-align:left}
+.snav button svg{width:22px;height:22px;flex:none}
+.snav button:hover{background:rgba(255,255,255,.06)}
+.snav button.on{background:rgba(255,216,77,.16);color:#FFD84D}
+.snav em,.nav em,.cnt{font-style:normal;background:#C23B3B;color:#fff;border-radius:999px;font-size:11px;font-weight:700;min-width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;padding:0 6px}
+.snav em{margin-left:auto}
+.newbk{height:46px;border-radius:14px;background:#FFD84D;color:#13284F;font-weight:800}
+.sfoot{margin-top:auto;display:flex;gap:8px}
+.sfoot button{flex:1;height:36px;border-radius:10px;border:1px solid rgba(255,255,255,.22);color:#fff;font-size:12.5px;font-weight:600}
+.main{overflow:auto;padding-block:22px 48px;padding-left:max(24px,env(safe-area-inset-left,0px));padding-right:max(24px,env(safe-area-inset-right,0px));min-width:0}
+.mob,.fab{display:none!important}
+@media (max-width:860px){.olay{grid-template-columns:1fr;grid-template-rows:minmax(0,1fr) auto}.side{display:none}.mob{display:grid!important}
+  .fab{display:flex!important;position:fixed;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(84px + env(safe-area-inset-bottom,0px));width:58px;height:58px;border-radius:18px;background:#FFD84D;color:#13284F;font-size:32px;font-weight:700;align-items:center;justify-content:center;box-shadow:0 8px 20px rgba(19,40,79,.3);z-index:20}
+  .main{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:16px 90px}}
+.nav.n5{grid-template-columns:repeat(5,1fr)}
+.nav button{position:relative}
+.nav em{position:absolute;top:2px;left:calc(50% + 6px)}
+.mhead{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:16px;flex-wrap:wrap}
+.mhead h1{font-size:28px}
+.mhead p{margin:2px 0 0;font-size:13.5px}
+.btn.hd{width:auto;padding:0 18px;height:46px}
+.btn.sm{width:auto;height:36px;padding:0 14px;font-size:13.5px;border-radius:10px;flex:none}
+.livetag{display:inline-flex;align-items:center;gap:6px;font-weight:800;font-size:12px;letter-spacing:.14em;color:var(--ok)}
+.livetag i{width:8px;height:8px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 0 rgba(30,138,90,.6);animation:ping2 1.4s infinite}
+@keyframes ping2{70%{box-shadow:0 0 0 10px rgba(30,138,90,0)}100%{box-shadow:0 0 0 0 rgba(30,138,90,0)}}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:16px}
+.kpis>*{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:14px 16px;display:flex;flex-direction:column;text-align:left;gap:2px}
+.kpis small{color:var(--muted);font-size:12.5px;font-weight:600}
+.kpis b{font-family:var(--display);font-size:28px;line-height:1.15;font-variant-numeric:tabular-nums}
+.kpis b span{font-size:16px;color:var(--muted)}
+.kpis .hot{background:var(--yellow-soft);border-color:var(--yellow)}
+.kpis .hot b,.kpis .hot small{color:var(--yellow-ink)}
+.dgrid{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:14px}
+@media (max-width:1060px){.dgrid{grid-template-columns:minmax(0,1fr)}}
+.dcol{display:flex;flex-direction:column;gap:14px;min-width:0}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:16px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.ph{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.ph h3{font-size:17px}
+.legend{display:flex;gap:12px;font-size:12px;color:var(--muted);flex-wrap:wrap}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px;vertical-align:-1px}
+.omap{position:relative;height:440px;border-radius:14px;overflow:hidden;border:1px solid var(--line)}
+@media (max-width:860px){.omap{height:320px}}
+.alert{padding:10px 12px;border-radius:12px;font-size:13.5px;font-weight:600}
+.alert.red{background:rgba(194,59,59,.10);color:var(--danger)}
+.alert.amber{background:rgba(245,180,0,.16);color:var(--yellow-ink)}
+.lrow{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
+.lrow:last-child{border-bottom:0}
+.lrow>div{flex:1;min-width:0}
+.lrow b{display:block;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lrow small{color:var(--muted);font-size:12.5px}
+.bst,.dst,.sst,.stype{font-style:normal;font-size:11.5px;font-weight:700;padding:3px 10px;border-radius:999px;white-space:nowrap;flex:none;display:inline-block}
+.bst.searching{background:rgba(194,59,59,.12);color:var(--danger)}
+.bst.assigned,.dst.pickup,.sst.progress{background:rgba(245,180,0,.18);color:var(--yellow-ink)}
+.bst.ontrip,.dst.trip,.stype{background:var(--navy-soft);color:var(--navy)}
+.bst.done,.dst.avail,.sst.closed{background:rgba(30,138,90,.12);color:var(--ok)}
+.bst.cancelled,.dst.off{background:var(--surface-2);color:var(--muted);border:1px solid var(--line)}
+.bst.scheduled{background:var(--surface-2);color:var(--navy);border:1px solid var(--line)}
+.sst.open{background:rgba(194,59,59,.12);color:var(--danger)}
+.stype.sos{background:#C23B3B;color:#fff}
+.act{display:flex;align-items:center;gap:10px;font-size:13.5px;padding:6px 0}
+.act i{width:8px;height:8px;border-radius:50%;background:var(--navy-2);flex:none}
+.act span{flex:1;min-width:0}
+.act small{color:var(--muted);font-size:12px;white-space:nowrap}
+.tabs{display:flex;gap:6px;margin-bottom:12px;overflow-x:auto;scrollbar-width:none}
+.tabs button{height:38px;padding:0 14px;border-radius:12px;font-weight:700;font-size:13.5px;color:var(--muted);border:1px solid var(--line);background:var(--surface);white-space:nowrap}
+.tabs button.on{background:#13284F;color:#fff;border-color:#13284F}
+.tabs em{font-style:normal;opacity:.7;font-weight:600}
+.table{background:var(--surface);border:1px solid var(--line);border-radius:18px;overflow-x:auto}
+.tr{display:grid;grid-template-columns:96px 1.1fr 1.6fr 1.3fr 90px 130px 230px;gap:12px;align-items:center;padding:12px 16px;border-bottom:1px solid var(--line);min-width:990px}
+.tr:last-child{border-bottom:0}
+.tr.th{font-size:11.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);background:var(--surface-2)}
+.tr>span{min-width:0}
+.tr b{display:block;font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tr small{display:block;color:var(--muted);font-size:12px}
+.tid{font-weight:700;font-variant-numeric:tabular-nums}
+.acts2{display:flex;gap:10px;align-items:center;justify-content:flex-end}
+.tr.t4{grid-template-columns:1.2fr 1fr 1fr 1fr;min-width:560px}
+.tr.t5{grid-template-columns:1.4fr 1fr .6fr 1fr 1fr;min-width:560px}
+.cell{width:96px;height:40px;border:1.5px solid var(--line);border-radius:10px;padding:0 10px;font:inherit;background:var(--surface);color:var(--fg);font-variant-numeric:tabular-nums}
+.cell:focus{border-color:var(--navy);outline:0}
+.pv{font-weight:700;font-variant-numeric:tabular-nums}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:12px}
+.dcard,.scard{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:14px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.dcard.blk{opacity:.6}
+.dtop{display:flex;align-items:center;gap:10px}
+.dtop>div{flex:1;min-width:0}
+.dtop b{display:block;font-family:var(--display);font-size:16px}
+.dtop small{color:var(--muted);font-size:12.5px}
+.dcard .vi,.scard .vi{width:58px;height:40px;border-radius:12px;background:var(--yellow-soft);display:flex;align-items:center;justify-content:center;flex:none}
+.dmid{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.dmid small{color:var(--muted);font-size:12.5px}
+.dnums{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.dnums div{background:var(--surface-2);border-radius:12px;padding:8px 10px;display:flex;flex-direction:column;min-width:0}
+.dnums b{font-family:var(--display);font-size:16px;font-variant-numeric:tabular-nums}
+.dnums b.neg{color:var(--danger)}
+.dnums small{color:var(--muted);font-size:11.5px}
+.dact{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.scard>b{font-size:15px}
+.scard>small{color:var(--muted);font-size:12.5px}
+.scard.sos{border-color:#C23B3B}
+.scard .dtop small{flex:1}
+.snote{margin:0;background:var(--surface-2);border-radius:10px;padding:8px 10px;font-size:13px}
+.amtbig{font-family:var(--display);font-size:22px;flex:none}
+.utr{display:flex;align-items:center;gap:10px;background:var(--surface-2);border-radius:12px;padding:8px 12px}
+.utr b{flex:1;font-variant-numeric:tabular-nums;letter-spacing:.06em}
+.utr small{color:var(--muted);font-weight:700}
+.chart{position:relative;display:grid;grid-template-columns:auto 1fr;gap:8px;height:260px;padding:12px 12px 8px;border:1px solid var(--line);border-radius:14px}
+.yax{display:flex;flex-direction:column;justify-content:space-between;font-size:10.5px;color:var(--muted);padding-bottom:20px;font-variant-numeric:tabular-nums}
+.bars{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;align-items:end;background:linear-gradient(var(--line) 1px,transparent 1px) 0 0/100% calc((100% - 20px)/2)}
+.bcol{height:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:4px;padding:0}
+.bar{position:relative;width:min(70%,34px);background:var(--navy-2);border-radius:4px 4px 0 0;min-height:2px;transition:background .15s}
+.bcol.today .bar{background:var(--navy)}
+.bcol.hl .bar{background:#F5B400}
+.bar em{position:absolute;bottom:100%;left:50%;transform:translateX(-50%);font-style:normal;font-size:11px;font-weight:700;color:var(--fg);white-space:nowrap;padding-bottom:2px}
+.bcol small{height:16px;font-size:11px;color:var(--muted)}
+.ctip{position:absolute;right:12px;top:8px;background:#13284F;color:#fff;font-size:12px;font-weight:600;padding:4px 10px;border-radius:8px}
+.hbars{display:flex;flex-direction:column;gap:12px}
+.hb{display:grid;grid-template-columns:90px minmax(0,1fr) 84px 28px;gap:10px;align-items:center;font-size:13.5px}
+.hb div{height:12px;background:var(--surface-2);border-radius:6px;overflow:hidden}
+.hb i{display:block;height:100%;background:var(--navy-2);border-radius:0 4px 4px 0}
+.hb b{text-align:right;font-variant-numeric:tabular-nums}
+.hb small{color:var(--muted);text-align:right}
+.lrow2{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 0;font-size:14px}
+.lrow2.col{flex-direction:column;align-items:stretch}
+.field.sm{height:44px;width:140px;padding:0 12px;flex:none}
+.field.sm input{font-size:16px}
+.cc.r{border-right:0;border-left:1px solid var(--line);padding:0 0 0 10px}
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.frow label{display:flex;flex-direction:column;gap:6px}
+@media (max-width:520px){.frow{grid-template-columns:1fr}}
+.estim{display:flex;flex-direction:column;padding:12px 14px;border-radius:14px;background:var(--navy-soft)}
+.estim b{font-family:var(--display);font-size:26px;font-variant-numeric:tabular-nums}
+.estim span{font-size:13.5px}
+.estim small{color:var(--muted);font-size:12.5px}
+.selbox{width:100%;height:48px;border-radius:14px;border:2px solid var(--line);background:var(--surface);color:var(--fg);font:inherit;font-size:15px;padding:0 12px}
+.ologin{min-height:100%;display:flex;align-items:center;justify-content:center;background:linear-gradient(160deg,#13284F,#2C5196);padding-block:24px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.lcard{width:100%;max-width:420px;background:var(--surface);border-radius:24px;padding:24px;display:flex;flex-direction:column;gap:12px;box-shadow:0 20px 50px rgba(0,0,0,.3)}
+.lcard h1{font-size:26px}
+.lang2{display:flex;gap:8px;justify-content:center}
+.lang2 button{height:34px;padding:0 14px;border-radius:999px;border:1.5px solid var(--line);font-weight:700;font-size:13px;color:var(--muted)}
+.lang2 button.on{background:var(--navy-soft);color:var(--navy);border-color:var(--navy)}
+.reason svg{width:22px;height:22px;color:var(--navy);flex:none}
+</style>
+
+<div class="app" id="app"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* shared with the customer app: icons, places, fares, map engine */
+const I = {
+  bike:`<svg class="vsvg" width="58" height="36" viewBox="0 0 64 40" fill="none" aria-hidden="true"><g class="bd"><path d="M14 30L26 20H40L50 30" stroke="#13284F" stroke-width="2.6" stroke-linejoin="round"/><path d="M14 27H28" stroke="#8A96AD" stroke-width="2.4" stroke-linecap="round"/><path d="M23 19Q27 12 36 13L41 19Z" fill="#FFD84D" stroke="#13284F" stroke-width="2"/><path d="M15 16H27L25 20H17Z" fill="#13284F"/><path d="M42 10L47 22" stroke="#13284F" stroke-width="2.6" stroke-linecap="round"/><path d="M39 10H45" stroke="#13284F" stroke-width="2.4" stroke-linecap="round"/><circle cx="48" cy="15" r="2.2" fill="#FFD84D" stroke="#13284F" stroke-width="1.2"/></g><g class="wh"><circle cx="14" cy="30" r="7" fill="#13284F"/><circle cx="14" cy="30" r="3.5" fill="#C9D3E6"/><path d="M10.8 30H17.1M14 26.9V33.1" stroke="#13284F" stroke-width="1.3"/></g><g class="wh"><circle cx="50" cy="30" r="7" fill="#13284F"/><circle cx="50" cy="30" r="3.5" fill="#C9D3E6"/><path d="M46.9 30H53.1M50 26.9V33.1" stroke="#13284F" stroke-width="1.3"/></g></svg>`,
+  auto:`<svg class="vsvg" width="58" height="36" viewBox="0 0 64 40" fill="none" aria-hidden="true"><g class="bd"><path d="M8 20V11Q9 6 16 6H38Q42 6 43 10L44 20Z" fill="#202124" stroke="#4A4F57" stroke-width="1.4"/><path d="M12 11H37V19H12Z" fill="#3B4252"/><path d="M14 12H24V18H14Z" fill="#F7C600" opacity=".9"/><path d="M5 31V20H44L50 21Q56 23 57 28V31Z" fill="#F7C600" stroke="#13284F" stroke-width="2" stroke-linejoin="round"/><path d="M43 9H46L50.5 20H45Z" fill="#CFE3F5" stroke="#13284F" stroke-width="1.2"/><path d="M8 25H42" stroke="#13284F" stroke-width="1.6"/><circle cx="55" cy="25" r="1.8" fill="#fff" stroke="#13284F"/></g><g class="wh"><circle cx="15" cy="31" r="5.2" fill="#13284F"/><circle cx="15" cy="31" r="2.6" fill="#C9D3E6"/><path d="M12.7 31H17.3M15 28.7V33.3" stroke="#13284F" stroke-width="1.3"/></g><g class="wh"><circle cx="50" cy="31" r="5.2" fill="#13284F"/><circle cx="50" cy="31" r="2.6" fill="#C9D3E6"/><path d="M47.7 31H52.3M50 28.7V33.3" stroke="#13284F" stroke-width="1.3"/></g></svg>`,
+  car:`<svg class="vsvg" width="58" height="36" viewBox="0 0 64 40" fill="none" aria-hidden="true"><g class="bd"><path d="M5 30V24Q5 21 9 21L15 20L21 12.5Q22 11 24 11H39Q41 11 42 12.5L49 19L57 21Q60 22 60 26V30Z" fill="#FFFFFF" stroke="#13284F" stroke-width="2" stroke-linejoin="round"/><path d="M23 13H31V19H18ZM33 13H39L44.5 19H33Z" fill="#BFD3F2" stroke="#13284F" stroke-width="1.3" stroke-linejoin="round"/><path d="M6 24.5H59" stroke="#FFD84D" stroke-width="2.6"/><rect x="27" y="6.5" width="10" height="4" rx="1" fill="#FFD84D" stroke="#13284F" stroke-width="1.2"/><circle cx="58" cy="23.5" r="1.5" fill="#FFD84D"/><path d="M5.5 22.5H8" stroke="#D9443B" stroke-width="2.2"/></g><g class="wh"><circle cx="16" cy="31" r="5.5" fill="#13284F"/><circle cx="16" cy="31" r="2.8" fill="#C9D3E6"/><path d="M13.5 31H18.5M16 28.5V33.5" stroke="#13284F" stroke-width="1.3"/></g><g class="wh"><circle cx="49" cy="31" r="5.5" fill="#13284F"/><circle cx="49" cy="31" r="2.8" fill="#C9D3E6"/><path d="M46.5 31H51.5M49 28.5V33.5" stroke="#13284F" stroke-width="1.3"/></g></svg>`,
+  mini:`<svg class="vsvg" width="58" height="36" viewBox="0 0 64 40" fill="none" aria-hidden="true"><g class="bd"><path d="M6 30V14Q6 9 11 9H38Q41 9 43 12L49 19L56 21Q58 22 58 25V30Z" fill="#FFD84D" stroke="#13284F" stroke-width="2" stroke-linejoin="round"/><path d="M10 12H22V19H10ZM24 12H35V19H24ZM37 12H40.5L45 19H37Z" fill="#fff" stroke="#13284F" stroke-width="1.4" stroke-linejoin="round"/><path d="M23 12V28" stroke="#13284F" stroke-width="1"/><circle cx="56" cy="24" r="1.6" fill="#fff" stroke="#13284F"/><path d="M6 21H8" stroke="#D9443B" stroke-width="2.4"/><rect x="19" y="4.5" width="10" height="4" rx="1" fill="#FFD84D" stroke="#13284F" stroke-width="1.2"/></g><g class="wh"><circle cx="15" cy="31" r="5.5" fill="#13284F"/><circle cx="15" cy="31" r="2.8" fill="#C9D3E6"/><path d="M12.5 31H17.5M15 28.5V33.5" stroke="#13284F" stroke-width="1.3"/></g><g class="wh"><circle cx="47" cy="31" r="5.5" fill="#13284F"/><circle cx="47" cy="31" r="2.8" fill="#C9D3E6"/><path d="M44.5 31H49.5M47 28.5V33.5" stroke="#13284F" stroke-width="1.3"/></g></svg>`,
+  suv:`<svg class="vsvg" width="58" height="36" viewBox="0 0 64 40" fill="none" aria-hidden="true"><g class="bd"><path d="M4 30V17Q4 12 9 12L13 11H45Q47 11 49 13L54 19L60 21Q62 22 62 26V30Z" fill="#3D66B0" stroke="#13284F" stroke-width="2" stroke-linejoin="round"/><path d="M9 14H20V19H8ZM22 14H33V19H22ZM35 14H45L49.5 19H35Z" fill="#D6E4FA" stroke="#13284F" stroke-width="1.3" stroke-linejoin="round"/><path d="M12 8.5H44" stroke="#13284F" stroke-width="2" stroke-linecap="round"/><path d="M5 24H61" stroke="#FFD84D" stroke-width="2.6"/><circle cx="60" cy="23.5" r="1.6" fill="#FFD84D"/><path d="M4.5 21H7" stroke="#D9443B" stroke-width="2.2"/><rect x="24" y="3.5" width="10" height="4" rx="1" fill="#FFD84D" stroke="#13284F" stroke-width="1.2"/></g><g class="wh"><circle cx="16" cy="31" r="6" fill="#13284F"/><circle cx="16" cy="31" r="3.0" fill="#C9D3E6"/><path d="M13.3 31H18.7M16 28.3V33.7" stroke="#13284F" stroke-width="1.3"/></g><g class="wh"><circle cx="51" cy="31" r="6" fill="#13284F"/><circle cx="51" cy="31" r="3.0" fill="#C9D3E6"/><path d="M48.3 31H53.7M51 28.3V33.7" stroke="#13284F" stroke-width="1.3"/></g></svg>`,
+  trav:`<svg class="vsvg" width="58" height="36" viewBox="0 0 64 40" fill="none" aria-hidden="true"><g class="bd"><path d="M3 30V9Q3 6 6 6H47Q50 6 52 9L57 17L61 19Q62 20 62 23V30Z" fill="#FFFFFF" stroke="#13284F" stroke-width="2" stroke-linejoin="round"/><path d="M7 10H16V17H7ZM18 10H27V17H18ZM29 10H38V17H29ZM40 10H47.5L52 17H40Z" fill="#BFD3F2" stroke="#13284F" stroke-width="1.3" stroke-linejoin="round"/><path d="M4 22H61" stroke="#FFD84D" stroke-width="3"/><path d="M38 18V29" stroke="#13284F" stroke-width="1"/><rect x="22" y="2" width="10" height="4" rx="1" fill="#FFD84D" stroke="#13284F" stroke-width="1.2"/><circle cx="60.5" cy="24.5" r="1.5" fill="#FFD84D"/><path d="M3.5 25H6" stroke="#D9443B" stroke-width="2.2"/></g><g class="wh"><circle cx="14" cy="31" r="5.5" fill="#13284F"/><circle cx="14" cy="31" r="2.8" fill="#C9D3E6"/><path d="M11.5 31H16.5M14 28.5V33.5" stroke="#13284F" stroke-width="1.3"/></g><g class="wh"><circle cx="50" cy="31" r="5.5" fill="#13284F"/><circle cx="50" cy="31" r="2.8" fill="#C9D3E6"/><path d="M47.5 31H52.5M50 28.5V33.5" stroke="#13284F" stroke-width="1.3"/></g></svg>`,
+  bus:`<svg class="vsvg" width="58" height="36" viewBox="0 0 64 40" fill="none" aria-hidden="true"><g class="bd"><path d="M2 30V8Q2 4 6 4H57Q61 4 61 8V30Z" fill="#FFD84D" stroke="#13284F" stroke-width="2" stroke-linejoin="round"/><path d="M5 8H13V16H5ZM15 8H23V16H15ZM25 8H33V16H25ZM35 8H43V16H35ZM45 8H52V16H45Z" fill="#BFD3F2" stroke="#13284F" stroke-width="1.2"/><path d="M54 8H59V28H54Z" fill="#BFD3F2" stroke="#13284F" stroke-width="1.2"/><path d="M2 20H54" stroke="#13284F" stroke-width="2.4"/><circle cx="59" cy="26" r="1.4" fill="#fff" stroke="#13284F"/></g><g class="wh"><circle cx="13" cy="31" r="5.5" fill="#13284F"/><circle cx="13" cy="31" r="2.8" fill="#C9D3E6"/><path d="M10.5 31H15.5M13 28.5V33.5" stroke="#13284F" stroke-width="1.3"/></g><g class="wh"><circle cx="46" cy="31" r="5.5" fill="#13284F"/><circle cx="46" cy="31" r="2.8" fill="#C9D3E6"/><path d="M43.5 31H48.5M46 28.5V33.5" stroke="#13284F" stroke-width="1.3"/></g></svg>`,
+  search:`<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#13284F" stroke-width="2.5" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>`,
+  mic:`<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#13284F" stroke-width="2.4" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0014 0M12 18v3"/></svg>`,
+  back:`<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>`,
+  pin:`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 22s7-6.5 7-12a7 7 0 10-14 0c0 5.5 7 12 7 12z"/><circle cx="12" cy="10" r="2.5"/></svg>`,
+  home:`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="M3 11l9-7 9 7v9a1 1 0 01-1 1h-5v-6h-6v6H4a1 1 0 01-1-1z"/></svg>`,
+  hosp:`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="3" width="18" height="18" rx="4"/><path d="M12 8v8M8 12h8"/></svg>`,
+  train:`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="5" y="3" width="14" height="13" rx="3"/><path d="M5 10h14M8 20l2-4M16 20l-2-4"/></svg>`,
+  clock:`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>`,
+  gps:`<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>`,
+  now:`<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#13284F" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></svg>`,
+  sched:`<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4M12 14v3l2 1"/></svg>`,
+  rent:`<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2M9 2h6"/></svg>`,
+  out:`<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20L10 4h4l6 16M12 8v2M12 13v2M12 18v1"/></svg>`,
+  navHome:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="M3 11l9-7 9 7v9a1 1 0 01-1 1h-5v-6h-6v6H4a1 1 0 01-1-1z"/></svg>`,
+  navTrips:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="6" cy="18" r="2.5"/><circle cx="18" cy="6" r="2.5"/><path d="M8.5 18H15a3 3 0 000-6H9a3 3 0 010-6h6.5"/></svg>`,
+  navWallet:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><rect x="3" y="6" width="18" height="14" rx="3"/><path d="M3 10h18M16 15h2"/></svg>`,
+  navHelp:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 114 2c-1 .7-1.5 1.2-1.5 2.5M12 17h.01"/></svg>`,
+  navMe:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/></svg>`,
+  cash:`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/></svg>`,
+  upi:`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h3v3h-3zM20 14v7h-6"/></svg>`
+};
+
+
+/* ---------- Vellore places (approx. coordinates) ---------- */
+const P = {
+  home:{ta:'காந்தி நகர், காட்பாடி',en:'Gandhi Nagar, Katpadi',lat:12.9550,lon:79.1390,ic:'home'},
+  katpadi:{ta:'காட்பாடி ஜங்ஷன்',en:'Katpadi Junction',sub:'Railway station',lat:12.9716,lon:79.1376,ic:'train'},
+  vit:{ta:'VIT பல்கலைக்கழகம்',en:'VIT University',sub:'Katpadi',lat:12.9692,lon:79.1559,ic:'pin'},
+  cmc:{ta:'CMC மருத்துவமனை',en:'CMC Hospital',sub:'Ida Scudder Road',lat:12.9246,lon:79.1356,ic:'hosp'},
+  newbus:{ta:'புதிய பேருந்து நிலையம்',en:'New Bus Stand',sub:'Vellore',lat:12.9349,lon:79.1435,ic:'pin'},
+  oldbus:{ta:'பழைய பேருந்து நிலையம்',en:'Old Bus Stand',sub:'Vellore town',lat:12.9180,lon:79.1330,ic:'pin'},
+  fort:{ta:'வேலூர் கோட்டை',en:'Vellore Fort',sub:'Jalakandeswarar Temple',lat:12.9206,lon:79.1295,ic:'pin'},
+  golden:{ta:'ஸ்ரீபுரம் தங்கக் கோவில்',en:'Sripuram Golden Temple',sub:'Thirumalaikodi',lat:12.8710,lon:79.0880,ic:'pin'},
+  sathu:{ta:'சத்துவாச்சாரி',en:'Sathuvachari',sub:'Vellore',lat:12.9370,lon:79.1640,ic:'pin'},
+  bagayam:{ta:'பாகாயம்',en:'Bagayam',sub:'Vellore',lat:12.8890,lon:79.1350,ic:'pin'}
+};
+let ROADS=[['home','katpadi'],['home','vit'],['katpadi','vit'],['home','newbus'],['newbus','sathu'],['newbus','oldbus'],['oldbus','fort'],['fort','cmc'],['cmc','oldbus'],['oldbus','bagayam'],['bagayam','golden'],['newbus','cmc'],['vit','sathu']];
+function hav(a,b){const R=6371,r=Math.PI/180,dl=(b.lat-a.lat)*r,dn=(b.lon-a.lon)*r;const x=Math.sin(dl/2)**2+Math.cos(a.lat*r)*Math.cos(b.lat*r)*Math.sin(dn/2)**2;return 2*R*Math.asin(Math.sqrt(x))}
+function route(from,to){ // dijkstra on the tiny road graph
+  const d={},prev={},q=new Set(Object.keys(P));Object.keys(P).forEach(k=>d[k]=Infinity);d[from]=0;
+  while(q.size){let u=null;q.forEach(k=>{if(u===null||d[k]<d[u])u=k});q.delete(u);if(u===to)break;
+    ROADS.forEach(([a,b])=>{let v=a===u?b:b===u?a:null;if(v&&q.has(v)){const nd=d[u]+hav(P[u],P[v]);if(nd<d[v]){d[v]=nd;prev[v]=u}}})}
+  const path=[to];while(path[0]!==from&&prev[path[0]])path.unshift(prev[path[0]]);
+  const viaKm=d[to]*1.25,directKm=hav(P[from],P[to])*1.35;
+  if((from==='pick'||from==='drop'||to==='pick'||to==='drop')&&directKm<viaKm)return {path:[from,to],km:Math.max(1.2,directKm)};
+  return {path,km:Math.max(1.2,viaKm)};
+}
+I.sedan=I.car;
+const VEH=[
+  {id:'bike',en:'Bike',ta:'பைக்',seats:1,base:25,per:7,eta:2},
+  {id:'auto',en:'Auto',ta:'ஆட்டோ',seats:3,base:40,per:16,eta:3},
+  {id:'mini',en:'Mini',ta:'Mini கார்',seats:4,base:100,per:16,eta:4,models:'Swift · Wagon R'},
+  {id:'sedan',en:'Sedan',ta:'Sedan கார்',seats:4,base:130,per:19,eta:5,models:'Dzire · Aura · Etios'},
+  {id:'suv',en:'SUV',ta:'SUV',seats:6,base:180,per:22,eta:6,models:'Ertiga · Rumion',tag:'7-seater'},
+  {id:'trav',en:'Traveller',ta:'Traveller',seats:12,base:600,per:28,eta:25,models:'Tempo Traveller',tag:'12-seater'},
+  {id:'bus',en:'Mini Bus',ta:'Mini Bus',seats:24,base:1200,per:40,eta:40,models:'Mini bus · AC / Non-AC',tag:'24-seater'}
+];
+const fare=(v,km)=>Math.round((v.base+v.per*Math.max(0,km-1.5))/5)*5;
+
+
+Object.assign(I,{
+  phone:`<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="M5 3h4l2 5-2.5 1.5a11 11 0 006 6L16 13l5 2v4a2 2 0 01-2 2A16 16 0 013 5a2 2 0 012-2z"/></svg>`,
+  chat:`<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="M4 5h16v11H9l-5 4z"/></svg>`,
+  share:`<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="M8.2 10.8l7.6-4.4M8.2 13.2l7.6 4.4"/></svg>`,
+  shield:`<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/></svg>`,
+  tick:`<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#FFD84D" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7"/></svg>`
+});
+Object.assign(I,{
+  navEarn:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>`,
+  gear:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg>`,
+  more:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>`
+});
+
+/* position along a lat/lon polyline at fraction f */
+function along(pts,f){
+  const seg=[];let tot=0;for(let i=1;i<pts.length;i++){const d=hav(pts[i-1],pts[i]);seg.push(d);tot+=d}
+  let want=Math.max(0,Math.min(1,f))*tot,i=0;while(i<seg.length-1&&want>seg[i]){want-=seg[i];i++}
+  const a=pts[i],b=pts[i+1]||pts[i],k=seg[i]?want/seg[i]:1;
+  return{lat:a.lat+(b.lat-a.lat)*k,lon:a.lon+(b.lon-a.lon)*k,nlat:b.lat,nlon:b.lon,idx:i};
+}
+
+/* ---------- interactive Vellore map: drag, pinch, wheel, double-tap, fling ---------- */
+const AREAS=[
+  {ta:'காட்பாடி',en:'Katpadi',lat:12.9690,lon:79.1440},{ta:'காந்தி நகர்',en:'Gandhi Nagar',lat:12.9550,lon:79.1390},
+  {ta:'பிரம்மபுரம்',en:'Brahmapuram',lat:12.9850,lon:79.1450},{ta:'விருதம்பட்டு',en:'Viruthampet',lat:12.9480,lon:79.1220},
+  {ta:'சத்துவாச்சாரி',en:'Sathuvachari',lat:12.9370,lon:79.1640},{ta:'தோட்டப்பாளையம்',en:'Thottapalayam',lat:12.9265,lon:79.1420},
+  {ta:'கொசப்பேட்டை',en:'Kosapet',lat:12.9300,lon:79.1250},{ta:'வேலூர் டவுன்',en:'Vellore Town',lat:12.9220,lon:79.1330},
+  {ta:'சாய்நாதபுரம்',en:'Sainathapuram',lat:12.9150,lon:79.1440},{ta:'அல்லாபுரம்',en:'Allapuram',lat:12.9050,lon:79.1350},
+  {ta:'பாகாயம்',en:'Bagayam',lat:12.8890,lon:79.1350},{ta:'திருமலைக்கோடி',en:'Thirumalaikodi',lat:12.8730,lon:79.0920}
+];
+const COS=Math.cos(12.94*Math.PI/180);
+const RIVER=[[79.04,12.9440],[79.08,12.9475],[79.11,12.9452],[79.135,12.9468],[79.16,12.9490],[79.19,12.9462],[79.23,12.9478]];
+const hsh=(a,b)=>{let h=(Math.imul(a,374761393)+Math.imul(b,668265263))|0;h=Math.imul(h^(h>>>13),1274126177);return((h^(h>>>16))>>>0)/4294967295};
+const CELL=.0011,LX=i=>i*CELL+(hsh(i,7)-.5)*CELL*.35,LY=j=>j*CELL*.9+(hsh(j,11)-.5)*CELL*.3;
+const WB=(()=>{let sd=7;const r=()=>(sd=(sd*9301+49297)%233280)/233280;const a=[];for(let i=0;i<220;i++)a.push([79.06+r()*.14,12.86+r()*.14,.002+r()*.005,.0015+r()*.004]);return a})();
+const ramp=(v,a,b)=>Math.max(0,Math.min(1,(v-a)/(b-a)));
+
+function makeMap(cv,o={}){
+  const ctx=cv.getContext('2d'),dpr=Math.min(2,window.devicePixelRatio||1);
+  const cam={lat:P.home.lat,lon:P.home.lon,s:20000},MIN=2500,MAX=700000;
+  const clamp=s=>Math.max(MIN,Math.min(MAX,s));
+  let W=0,H=0,anim=null,wheelT=0;
+  const X=lon=>W/2+(lon-cam.lon)*cam.s*COS,Y=lat=>H/2+(cam.lat-lat)*cam.s;
+  const toLL=(x,y)=>({lon:cam.lon+(x-W/2)/(cam.s*COS),lat:cam.lat-(y-H/2)/cam.s});
+  function size(){const r=cv.getBoundingClientRect();W=r.width;H=r.height;cv.width=Math.round(W*dpr);cv.height=Math.round(H*dpr);ctx.setTransform(dpr,0,0,dpr,0,0)}
+  const end=()=>o.onEnd&&o.onEnd({lat:cam.lat,lon:cam.lon});
+  const pan=(dx,dy)=>{cam.lon-=dx/(cam.s*COS);cam.lat+=dy/cam.s};
+  function zoomAt(x,y,f){const ll=toLL(x,y);cam.s=clamp(cam.s*f);cam.lon=ll.lon-(x-W/2)/(cam.s*COS);cam.lat=ll.lat+(y-H/2)/cam.s}
+  function flyTo(lat,lon,s,ms=550){const a={...cam},b={lat,lon,s:clamp(s)},t0=performance.now();o.onStart&&o.onStart();
+    anim=now=>{let k=Math.min(1,(now-t0)/ms);k=1-Math.pow(1-k,3);cam.lat=a.lat+(b.lat-a.lat)*k;cam.lon=a.lon+(b.lon-a.lon)*k;cam.s=a.s*Math.pow(b.s/a.s,k);if(k>=1){anim=null;end()}}}
+  function zoomAtAnim(x,y,f){const ll=toLL(x,y),s2=clamp(cam.s*f);flyTo(ll.lat+(y-H/2)/s2,ll.lon-(x-W/2)/(s2*COS),s2,320)}
+  function fit(pts,pad=40,top=0){if(!W)size();const la=pts.map(p=>p.lat),lo=pts.map(p=>p.lon);
+    const dLa=Math.max(.004,Math.max(...la)-Math.min(...la)),dLo=Math.max(.004,Math.max(...lo)-Math.min(...lo));
+    cam.s=clamp(Math.min((W-pad*2)/(dLo*COS),(H-pad*2-top)/dLa));
+    cam.lat=(Math.max(...la)+Math.min(...la))/2+top/2/cam.s;cam.lon=(Math.max(...lo)+Math.min(...lo))/2}
+
+  /* gestures */
+  const pts=new Map();let moved=false,lastT=0,vx=0,vy=0,lastTap=0,down=null;
+  const pos=e=>{const r=cv.getBoundingClientRect();return{x:e.clientX-r.left,y:e.clientY-r.top}};
+  const cen=()=>{let x=0,y=0;pts.forEach(p=>{x+=p.x;y+=p.y});return{x:x/pts.size,y:y/pts.size}};
+  const spr=c=>{let d=0;pts.forEach(p=>{d+=Math.hypot(p.x-c.x,p.y-c.y)});return d/pts.size};
+  cv.addEventListener('pointerdown',e=>{e.preventDefault();try{cv.setPointerCapture(e.pointerId)}catch(_){}
+    pts.set(e.pointerId,pos(e));anim=null;if(pts.size===1){moved=false;vx=vy=0;lastT=performance.now();down=pos(e);o.onStart&&o.onStart()}else moved=true});
+  cv.addEventListener('pointermove',e=>{if(!pts.has(e.pointerId))return;
+    const c0=cen(),s0=spr(c0);pts.set(e.pointerId,pos(e));const c1=cen(),s1=spr(c1);
+    const dx=c1.x-c0.x,dy=c1.y-c0.y;pan(dx,dy);if(pts.size>1&&s0>4)zoomAt(c1.x,c1.y,s1/s0);
+    const now=performance.now(),dt=Math.max(1,now-lastT);vx=.6*vx+.4*dx/dt;vy=.6*vy+.4*dy/dt;lastT=now;
+    if(down&&Math.hypot(c1.x-down.x,c1.y-down.y)>5)moved=true});
+  const up=e=>{if(!pts.has(e.pointerId))return;pts.delete(e.pointerId);if(pts.size){vx=vy=0;return}
+    const now=performance.now();
+    if(!moved){if(now-lastTap<320){const p=pos(e);lastTap=0;zoomAtAnim(p.x,p.y,2.4);return}lastTap=now;end();return}
+    if(now-lastT>90)vx=vy=0;
+    if(Math.hypot(vx,vy)>.25){let t0=now;anim=n=>{const dt=n-t0;t0=n;pan(vx*dt,vy*dt);const d=Math.pow(.9,dt/16);vx*=d;vy*=d;if(Math.hypot(vx,vy)<.02){anim=null;end()}}}
+    else end()};
+  cv.addEventListener('pointerup',up);cv.addEventListener('pointercancel',up);
+  cv.addEventListener('wheel',e=>{e.preventDefault();const p=pos(e);if(!wheelT&&o.onStart)o.onStart();anim=null;
+    zoomAt(p.x,p.y,Math.exp(-e.deltaY*(e.ctrlKey?.01:.0018)));clearTimeout(wheelT);wheelT=setTimeout(()=>{wheelT=0;end()},220)},{passive:false});
+
+  /* drawing */
+  const cars=Array.from({length:6},(_,i)=>({e:ROADS[(i*3)%ROADS.length],t:hsh(i,3),s:.0012+hsh(i,5)*.0018,k:['auto','bike','car','suv'][i%4]}));
+  function frame(ts){
+    if(!document.body.contains(cv))return;
+    const r=cv.getBoundingClientRect();if(r.width!==W||r.height!==H)size();
+    if(anim)anim(ts);
+    const css=getComputedStyle(document.documentElement),c=n=>css.getPropertyValue(n).trim();
+    ctx.fillStyle=c('--map-land');ctx.fillRect(0,0,W,H);
+    const tl=toLL(0,0),br=toLL(W,H);
+    // neighbourhood blocks (far view)
+    const aBlk=1-ramp(cam.s,60000,120000);
+    if(aBlk>0){ctx.globalAlpha=aBlk;ctx.fillStyle=c('--map-block');WB.forEach(b=>{const x=X(b[0]),y=Y(b[1]+b[3]),w=b[2]*cam.s*COS,h=b[3]*cam.s;if(x>W||y>H||x+w<0||y+h<0)return;ctx.beginPath();ctx.roundRect(x,y,w,h,Math.min(8,w/4));ctx.fill()});ctx.globalAlpha=1}
+    // streets + buildings (close view)
+    const aSt=ramp(cam.s,16000,32000),aBd=ramp(cam.s,55000,110000);
+    const i0=Math.floor(tl.lon/CELL)-1,i1=Math.ceil(br.lon/CELL)+1,j0=Math.floor(br.lat/(CELL*.9))-1,j1=Math.ceil(tl.lat/(CELL*.9))+1;
+    if(aSt>0&&(i1-i0)*(j1-j0)<4000){
+      const sw=Math.max(2,cam.s*.00007);
+      if(aBd>0){ctx.globalAlpha=aBd;ctx.fillStyle=c('--map-bldg');
+        for(let i=i0;i<i1;i++)for(let j=j0;j<j1;j++){const x0=X(LX(i)),x1=X(LX(i+1)),y0=Y(LY(j+1)),y1=Y(LY(j));const m=sw/2+3,cw=(x1-x0-2*m)/3,ch=(y1-y0-2*m)/2;
+          for(let a=0;a<3;a++)for(let b=0;b<2;b++){const h=hsh(i*7+a,j*13+b);if(h<.16)continue;const g=2+h*3;ctx.beginPath();ctx.roundRect(x0+m+a*cw+g,y0+m+b*ch+g,cw-2*g,ch-2*g,2);ctx.fill()}}
+        ctx.globalAlpha=1}
+      ctx.globalAlpha=aSt;ctx.strokeStyle=c('--map-road');ctx.lineWidth=sw;ctx.beginPath();
+      for(let i=i0;i<=i1;i++){const x=X(LX(i));ctx.moveTo(x,0);ctx.lineTo(x,H)}
+      for(let j=j0;j<=j1;j++){const y=Y(LY(j));ctx.moveTo(0,y);ctx.lineTo(W,y)}
+      ctx.stroke();ctx.globalAlpha=1}
+    // Palar river
+    ctx.strokeStyle=c('--map-river');ctx.lineWidth=Math.max(10,cam.s*.0016);ctx.lineCap='round';ctx.lineJoin='round';ctx.beginPath();
+    RIVER.forEach(([lo,la],i)=>i?ctx.lineTo(X(lo),Y(la)):ctx.moveTo(X(lo),Y(la)));ctx.stroke();
+    const rl=RIVER.find(([lo])=>X(lo)>20)||RIVER[0];
+    ctx.fillStyle=c('--map-label');ctx.font='italic 600 11px Hind Madurai, sans-serif';ctx.fillText(S.lang==='ta'?'பாலாறு':'Palar River',Math.max(8,X(rl[0])),Y(rl[1])-Math.max(8,cam.s*.0009));
+    // main roads
+    const rw=Math.min(30,Math.max(7,cam.s*.00012));
+    [[c('--map-edge'),rw+4],[c('--map-road'),rw]].forEach(([col,w])=>{ctx.strokeStyle=col;ctx.lineWidth=w;ctx.beginPath();ROADS.forEach(([a,b])=>{ctx.moveTo(X(P[a].lon),Y(P[a].lat));ctx.lineTo(X(P[b].lon),Y(P[b].lat))});ctx.stroke()});
+    // route
+    const path=o.path;
+    const LP=o.line?o.line():(path&&path.length>1?path.map(k=>P[k]):null);
+    if(LP&&LP.length>1){ctx.strokeStyle=c('--navy');ctx.lineWidth=Math.max(6,rw*.6);ctx.beginPath();LP.forEach((p,i)=>i?ctx.lineTo(X(p.lon),Y(p.lat)):ctx.moveTo(X(p.lon),Y(p.lat)));ctx.stroke();
+      ctx.setLineDash([2,10]);ctx.strokeStyle='#FFD84D';ctx.lineWidth=3;ctx.lineDashOffset=-(ts/40%12);ctx.stroke();ctx.setLineDash([])}
+    // vehicles
+    if(o.cars)cars.forEach(v=>{v.t+=v.s;if(v.t>1){v.t=0;v.e=ROADS[Math.floor(Math.random()*ROADS.length)]}const a=P[v.e[0]],b=P[v.e[1]];
+      const ax=X(a.lon),ay=Y(a.lat),bx=X(b.lon),by=Y(b.lat),x=ax+(bx-ax)*v.t,y=ay+(by-ay)*v.t;
+      ctx.save();ctx.translate(x,y);ctx.rotate(Math.atan2(by-ay,bx-ax));ctx.fillStyle='#13284F';ctx.beginPath();ctx.roundRect(-9,-6,18,12,4);ctx.fill();ctx.fillStyle='#FFD84D';ctx.beginPath();ctx.roundRect(-6,-4,v.k==='bike'?6:12,8,2);ctx.fill();ctx.restore()});
+    // places
+    Object.keys(P).forEach(k=>{if((o.hide||[]).includes(k))return;if(CUSTOM.includes(k)&&!(path&&path.includes(k))&&!o.hide)return;
+      const p=P[k],x=X(p.lon),y=Y(p.lat);if(x<-60||x>W+60||y<-40||y>H+40)return;
+      const isDest=path&&k===path[path.length-1],isFrom=path&&k===path[0],isHome=k==='home';
+      if(isHome&&!isFrom&&!isDest){const pulse=(ts/1200)%1;ctx.fillStyle=`rgba(44,81,150,${.35*(1-pulse)})`;ctx.beginPath();ctx.arc(x,y,10+pulse*18,0,7);ctx.fill();
+        ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(x,y,9,0,7);ctx.fill();ctx.fillStyle='#2C5196';ctx.beginPath();ctx.arc(x,y,6,0,7);ctx.fill()}
+      else if(isDest||isFrom){ctx.fillStyle=isFrom?'#1E8A5A':'#13284F';ctx.beginPath();ctx.arc(x,y-18,11,0,7);ctx.fill();ctx.beginPath();ctx.moveTo(x-7,y-12);ctx.lineTo(x,y);ctx.lineTo(x+7,y-12);ctx.fill();ctx.fillStyle='#FFD84D';ctx.beginPath();ctx.arc(x,y-18,5,0,7);ctx.fill()}
+      else{ctx.fillStyle=c('--surface');ctx.strokeStyle=c('--map-label');ctx.lineWidth=2;ctx.beginPath();ctx.arc(x,y,4,0,7);ctx.fill();ctx.stroke()}
+      const big=isDest||isFrom||isHome;ctx.font=(big?'700 12.5px ':'600 11px ')+'Hind Madurai, sans-serif';const lb=p[S.lang];const tw=ctx.measureText(lb).width;
+      const lx=Math.min(Math.max(x+10,6),W-tw-10),ly=(isDest||isFrom)?y-34:y-8;
+      ctx.fillStyle=c('--surface');ctx.globalAlpha=.88;ctx.beginPath();ctx.roundRect(lx-4,ly-12,tw+8,17,5);ctx.fill();ctx.globalAlpha=1;
+      ctx.fillStyle=big?c('--fg'):c('--map-label');ctx.fillText(lb,lx,ly)});
+    (o.pins||[]).forEach(q=>{const x=X(q.lon),y=Y(q.lat);ctx.fillStyle=q.col;ctx.beginPath();ctx.arc(x,y-18,11,0,7);ctx.fill();ctx.beginPath();ctx.moveTo(x-7,y-12);ctx.lineTo(x,y);ctx.lineTo(x+7,y-12);ctx.fill();ctx.fillStyle='#FFD84D';ctx.beginPath();ctx.arc(x,y-18,5,0,7);ctx.fill()});
+    if(o.fleet)o.fleet().forEach(f=>{const x=X(f.lon),y=Y(f.lat);if(x<-20||x>W+20||y<-20||y>H+20)return;
+      ctx.fillStyle='rgba(19,40,79,.25)';ctx.beginPath();ctx.arc(x,y+2,12,0,7);ctx.fill();
+      ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(x,y,12,0,7);ctx.fill();ctx.fillStyle=f.col;ctx.beginPath();ctx.arc(x,y,9.5,0,7);ctx.fill();
+      ctx.fillStyle=f.col==='#F5B400'?'#13284F':'#fff';ctx.font='800 11px Hind Madurai, sans-serif';ctx.textAlign='center';ctx.fillText(f.tag,x,y+4);ctx.textAlign='left';
+      if(cam.s>30000){ctx.font='700 10.5px Hind Madurai, sans-serif';const tw=ctx.measureText(f.label).width;ctx.fillStyle=c('--surface');ctx.globalAlpha=.92;ctx.beginPath();ctx.roundRect(x+14,y-8,tw+8,16,4);ctx.fill();ctx.globalAlpha=1;ctx.fillStyle=c('--fg');ctx.fillText(f.label,x+18,y+4)}});
+    // live driver
+    if(o.driver){const d=o.driver();if(d){const x=X(d.lon),y=Y(d.lat),ang=Math.atan2(Y(d.nlat)-y,X(d.nlon)-x)||0;const pl=(ts/900)%1;
+      ctx.fillStyle=`rgba(30,58,110,${.25*(1-pl)})`;ctx.beginPath();ctx.arc(x,y,16+pl*16,0,7);ctx.fill();
+      ctx.save();ctx.translate(x,y);ctx.rotate(ang);ctx.fillStyle='#fff';ctx.beginPath();ctx.roundRect(-16,-11,32,22,8);ctx.fill();
+      ctx.fillStyle='#13284F';ctx.beginPath();ctx.roundRect(-14,-9,28,18,6);ctx.fill();ctx.fillStyle='#FFD84D';ctx.beginPath();ctx.roundRect(-3,-6,11,12,3);ctx.fill();ctx.restore()}}
+    // scale bar
+    if(o.scale){const mpp=111320/cam.s;const nice=[5,10,20,50,100,200,500,1000,2000,5000].find(v=>v/mpp>=70)||5000;const px=nice/mpp,sx=16,sy=H-42;
+      ctx.fillStyle=c('--surface');ctx.globalAlpha=.9;ctx.beginPath();ctx.roundRect(sx-6,sy-18,px+12,28,8);ctx.fill();ctx.globalAlpha=1;
+      ctx.strokeStyle=c('--fg');ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(sx,sy-4);ctx.lineTo(sx,sy+2);ctx.lineTo(sx+px,sy+2);ctx.lineTo(sx+px,sy-4);ctx.stroke();
+      ctx.fillStyle=c('--fg');ctx.font='700 11px Hind Madurai, sans-serif';ctx.fillText(nice>=1000?nice/1000+' '+T[S.lang].km:nice+' '+T[S.lang].m,sx+2,sy-7)}
+    mapLoop=requestAnimationFrame(frame);
+  }
+  size();mapLoop=requestAnimationFrame(frame);
+  return{cam,fit,flyTo,zoomBy:f=>flyTo(cam.lat,cam.lon,cam.s*f,300),setView:(lat,lon,s)=>{cam.lat=lat;cam.lon=lon;cam.s=clamp(s)},center:()=>({lat:cam.lat,lon:cam.lon})};
+}
+
+
+
+/* ================= VELLORE CALL TAXI — OWNER / DISPATCHER PANEL ================= */
+const T={ta:{km:'கி.மீ',m:'மீ',near:'அருகில்',from:'ல இருந்து'},en:{km:'km',m:'m',near:'Near',from:'from'}};
+const CUSTOM=['pick','drop'];
+let mapLoop=null,SIM=null;
+const S={lang:'ta',phone:'',logged:false,role:'owner',sec:'dash'};
+try{Object.assign(S,JSON.parse(localStorage.getItem('vcto')||'{}'))}catch(e){}
+const save=()=>{try{localStorage.setItem('vcto',JSON.stringify({lang:S.lang,phone:S.phone,logged:S.logged,role:S.role,sec:S.sec}))}catch(e){}};
+const L=(ta,en)=>S.lang==='ta'?ta:en;
+const pn=k=>P[k]?P[k][S.lang]:k;
+const inr=n=>'₹'+Math.round(n).toLocaleString('en-IN');
+const esc=v=>String(v==null?'':v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
+const vname=id=>{const v=VEH.find(x=>x.id===id);return v?v[S.lang]:id};
+const tm=ts=>new Date(ts).toLocaleTimeString(S.lang==='ta'?'ta-IN':'en-IN',{hour:'numeric',minute:'2-digit'});
+const dt=ts=>new Date(ts).toLocaleString(S.lang==='ta'?'ta-IN':'en-IN',{day:'numeric',month:'short',hour:'numeric',minute:'2-digit'});
+const ago=ts=>{const m=Math.round((Date.now()-ts)/6e4);return m<1?L('இப்போ','just now'):m<60?L(`${m} நிமி முன்`,`${m} min ago`):L(`${Math.round(m/60)} மணி முன்`,`${Math.round(m/60)} hr ago`)};
+const LMK=['home','katpadi','vit','cmc','newbus','oldbus','fort','golden','sathu','bagayam'];
+
+/* ---------- data ---------- */
+function seedO(){
+  const now=Date.now(),cfg={fares:{},comm:10,minbal:100,upi:'',office:'',staff:[{name:'Staff 1',phone:'9000000001'}]};
+  VEH.forEach(v=>cfg.fares[v.id]={base:v.base,per:v.per});
+  const drv=[
+    ['d1','செல்வம் R','Selvam R','9876500001','auto','TN 23 Q 7788','Bajaj RE','avail','katpadi',329,4.8,18],
+    ['d2','ரவிக்குமார் M','Ravikumar M','9876500002','sedan','TN 23 CA 3344','Swift Dzire','avail','cmc',540,4.9,210],
+    ['d3','சுரேஷ் P','Suresh P','9876500003','mini','TN 23 CA 2108','Maruti Swift','avail','newbus',85,4.8,120],
+    ['d4','பாலாஜி T','Balaji T','9876500004','suv','TN 23 CB 5566','Maruti Ertiga','avail','sathu',610,4.9,400],
+    ['d5','கார்த்திக் S','Karthik S','9876500005','bike','TN 23 BK 1290','Honda Shine','avail','vit',210,4.9,95],
+    ['d6','முருகேசன் K','Murugesan K','9876500006','trav','TN 23 CD 4410','Tempo Traveller','off','fort',900,4.8,300],
+    ['d7','சண்முகம் V','Shanmugam V','9876500007','bus','TN 23 CE 9021','Mini Bus','off','oldbus',1200,4.7,60],
+    ['d8','இளங்கோ A','Elango A','9876500008','auto','TN 23 R 4521','Bajaj RE','avail','oldbus',260,4.6,240]];
+  const D=drv.map(([id,ta,en,phone,veh,plate,model,status,at,wallet,rating,ins])=>({id,ta,en,phone,veh,plate,model,status,lat:P[at].lat+(Math.random()-.5)*.004,lon:P[at].lon+(Math.random()-.5)*.004,wallet,rating,docs:{dl:400,rc:900,ins,permit:210,fc:95},blocked:false}));
+  const CN=[['பிரியா','Priya','9840011122'],['அருண்','Arun','9840022233'],['லட்சுமி','Lakshmi','9840033344'],['முகமது','Mohammed','9840044455'],['திவ்யா','Divya','9840055566'],['சரவணன்','Saravanan','9840066677'],['கீதா','Geetha','9840077788'],['ராஜா','Raja','9840088899']];
+  const bk=[];let n=1;
+  const mk=(o)=>{const r=route(o.from,o.to),f=fareO(o.veh,r.km);const c=CN[(n*3)%CN.length];const b={id:'B'+String(1000+n++),cust:{name:c[S.lang==='ta'?0:1],phone:c[2]},km:+r.km.toFixed(1),fare:f,pay:'cash',src:'app',created:now,when:now,prog:0,...o};bk.push(b);return b};
+  // completed history (7 days)
+  for(let d=6;d>=0;d--){const cnt=d===0?6:7+((d*5)%6);for(let i=0;i<cnt;i++){const a=LMK[(d+i)%LMK.length],z=LMK[(d*3+i+4)%LMK.length];if(a===z)continue;
+    const dr=D[(d+i)%6],t=new Date();t.setDate(t.getDate()-d);t.setHours(7+i,(i*13)%60,0,0);if(t.getTime()>now-36e5)t.setTime(now-36e5*(cnt-i));
+    mk({from:a,to:z,veh:dr.veh,driver:dr.id,status:'done',created:t.getTime(),when:t.getTime(),done:t.getTime()+18*6e4,pay:['cash','upi','cash','wallet'][i%4],src:i%3?'app':'phone',sample:true})}}
+  mk({from:'cmc',to:'katpadi',veh:'auto',driver:'d1',status:'assigned',src:'app',prog:.2});
+  mk({from:'vit',to:'newbus',veh:'bike',driver:'d5',status:'ontrip',src:'app',prog:.3});
+  mk({from:'oldbus',to:'golden',veh:'sedan',status:'searching',src:'app',pay:'upi'});
+  mk({from:'home',to:'cmc',veh:'trav',status:'scheduled',when:now+20*36e5,src:'app',pay:'upi'});
+  mk({from:'katpadi',to:'fort',veh:'suv',driver:'d4',status:'scheduled',when:now+5*36e5,src:'phone'});
+  D.find(x=>x.id==='d1').status='pickup';D.find(x=>x.id==='d5').status='trip';
+  const rch=[{id:'RC1',driver:'d3',amt:500,utr:'412398765432',date:now-25*6e4,status:'pending'},{id:'RC2',driver:'d8',amt:1000,utr:'412300011122',date:now-90*6e4,status:'pending'}];
+  const sup=[{id:'R1A2B',type:'callback',cust:'லட்சுமி / Lakshmi',phone:'9840033344',title:{ta:'கட்டணம் / பணம் · இப்போவே',en:'Fare / payment · Right now'},date:now-12*6e4,status:'open'},
+    {id:'R3C4D',type:'lost',cust:'அருண் / Arun',phone:'9840022233',title:{ta:'பொருள் மறந்தது: கருப்பு bag',en:'Lost item: black bag'},trip:'B1004',date:now-55*6e4,status:'progress',note:'Driver-கிட்ட கேட்டாச்சு'},
+    {id:'R5E6F',type:'complaint',cust:'கீதா / Geetha',phone:'9840077788',title:{ta:'அதிக கட்டணம் கேட்டாங்க',en:'Charged extra'},trip:'B1009',date:now-3*36e5,status:'open'}];
+  return{cfg,drv:D,bk,rch,sup,act:[]};
+}
+function fareO(veh,km){const f=(DB&&DB.cfg&&DB.cfg.fares[veh])||VEH.find(v=>v.id===veh);return Math.round((f.base+f.per*Math.max(0,km-1.5))/5)*5}
+let DB=null;try{DB=JSON.parse(localStorage.getItem('vcto_db')||'null')}catch(e){}
+if(!DB||!DB.drv)DB=seedO();
+const saveDB=()=>{try{localStorage.setItem('vcto_db',JSON.stringify(DB))}catch(e){}};
+const drvById=id=>DB.drv.find(d=>d.id===id);
+const isToday=ts=>new Date(ts).toDateString()===new Date().toDateString();
+function log(ta,en){DB.act.unshift({ta,en,date:Date.now()});DB.act=DB.act.slice(0,40)}
+
+/* ---------- live simulation (demo) ---------- */
+function simStep(){
+  let changed=false;
+  DB.bk.forEach(b=>{
+    if(b.status==='assigned'){b.prog=Math.min(1,(b.prog||0)+.035);const d=drvById(b.driver);if(d){const p=P[b.from];d.lat+=(p.lat-d.lat)*.08;d.lon+=(p.lon-d.lon)*.08}
+      if(b.prog>=1){b.status='ontrip';b.prog=0;if(d)d.status='trip';log(`${b.id} பயணம் ஆரம்பம் (PIN சரி)`,`${b.id} trip started (PIN verified)`);changed=true}}
+    else if(b.status==='ontrip'){b.prog=Math.min(1,(b.prog||0)+.025);const d=drvById(b.driver);
+      if(d){const pts=route(b.from,b.to).path.map(k=>P[k]),q=along(pts,b.prog);d.lat=q.lat;d.lon=q.lon}
+      if(b.prog>=1){b.status='done';b.done=Date.now();if(d){d.status='avail';const c=Math.round(b.fare*DB.cfg.comm/100);d.wallet-=c}
+        log(`${b.id} முடிஞ்சது · ${inr(b.fare)} (${b.pay})`,`${b.id} completed · ${inr(b.fare)} (${b.pay})`);changed=true}}
+  });
+  if(changed)saveDB();
+  return changed;
+}
+function startSim(onChange){clearInterval(SIM);SIM=setInterval(()=>{if(simStep()&&onChange)onChange()},1000)}
+
+/* ---------- shell ---------- */
+const app=document.getElementById('app');
+function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(toast.h);toast.h=setTimeout(()=>el.classList.remove('show'),2600)}
+function modal(html,bind){const m=document.createElement('div');m.className='modal';m.innerHTML=`<div class="card pad">${html}</div>`;document.body.appendChild(m);const close=()=>m.remove();m.onclick=e=>{if(e.target===m)close()};bind&&bind(m,close);return close}
+const SECS=()=>[['dash','navHome',L('இன்று','Today')],['book','navTrips','Bookings'],['drv','navMe','Drivers'],['sup','navHelp',L('உதவி','Support')],
+  ...(S.role==='owner'?[['appr','navWallet',L('Approvals','Approvals')],['rep','navEarn',L('Reports','Reports')],['set','gear',L('Settings','Settings')]]:[])];
+function badge(k){if(k==='book')return DB.bk.filter(b=>b.status==='searching'||(b.status==='scheduled'&&!b.driver)).length;if(k==='sup')return DB.sup.filter(s=>s.status==='open').length;if(k==='appr')return DB.rch.filter(r=>r.status==='pending').length;return 0}
+function layout(){
+  const secs=SECS();if(!secs.some(s=>s[0]===S.sec))S.sec='dash';
+  const mob=secs.slice(0,4).concat([['more','more',L('மேலும்','More')]]);
+  app.innerHTML=`<div class="olay"><aside class="side"><div class="brand"><span class="rsign">TAXI</span><div><b>Vellore Call Taxi</b><small>${S.role==='owner'?'Owner':'Staff'} panel</small></div></div>
+    <nav class="snav">${secs.map(([k,ic,l])=>`<button data-sec="${k}" class="${S.sec===k?'on':''}">${I[ic]}<span>${l}</span>${badge(k)?`<em>${badge(k)}</em>`:''}</button>`).join('')}</nav>
+    <button class="newbk" id="nb1">+ ${L('புது Booking','New booking')}</button>
+    <div class="sfoot"><button id="lg1">${S.lang==='ta'?'English':'தமிழ்'}</button><button id="lo1">Logout</button></div></aside>
+   <main class="main" id="main"></main>
+   <nav class="nav mob n5">${mob.map(([k,ic,l])=>`<button data-sec="${k}" class="${S.sec===k||(k==='more'&&!mob.slice(0,4).some(x=>x[0]===S.sec))?'on':''}">${I[ic]}${l}${badge(k)?`<em>${badge(k)}</em>`:''}</button>`).join('')}</nav></div>
+   <button class="fab" id="nb2" aria-label="New booking">+</button>`;
+  app.querySelectorAll('[data-sec]').forEach(b=>b.onclick=()=>{if(b.dataset.sec==='more'){moreSheet();return}S.sec=b.dataset.sec;save();show()});
+  document.getElementById('nb1').onclick=document.getElementById('nb2').onclick=()=>newBooking();
+  document.getElementById('lg1').onclick=()=>{S.lang=S.lang==='ta'?'en':'ta';save();show()};
+  document.getElementById('lo1').onclick=logout;
+}
+function moreSheet(){const rest=SECS().slice(4);
+  modal(`<h3>${L('மேலும்','More')}</h3>${rest.map(([k,ic,l])=>`<button class="reason" data-s2="${k}">${I[ic]}${l}${badge(k)?` <em class="cnt">${badge(k)}</em>`:''}</button>`).join('')}
+   <button class="reason" id="lg2">அ ${S.lang==='ta'?'English':'தமிழ்'}</button><button class="reason" id="lo2" style="color:var(--danger)">⏻ Logout</button>`,(m,close)=>{
+    m.querySelectorAll('[data-s2]').forEach(b=>b.onclick=()=>{close();S.sec=b.dataset.s2;save();show()});
+    m.querySelector('#lg2').onclick=()=>{close();S.lang=S.lang==='ta'?'en':'ta';save();show()};m.querySelector('#lo2').onclick=()=>{close();logout()}});
+}
+function logout(){clearInterval(SIM);if(CL){OUNS.forEach(u=>u());OUNS=[];CL.logout()}S.logged=false;save();login()}
+function show(){cancelAnimationFrame(mapLoop);layout();({dash,book,drv:drivers,sup:support,appr:approvals,rep:reports,set:settings})[S.sec]()}
+const main=()=>document.getElementById('main');
+const head=(t,sub,act='')=>`<div class="mhead"><div><h1>${t}</h1>${sub?`<p class="muted">${sub}</p>`:''}</div>${act}</div>`;
+const stPill=s=>`<em class="bst ${s}">${({searching:L('Driver தேடல்','Needs driver'),assigned:L('Pickup-க்கு போறாங்க','To pickup'),ontrip:L('பயணத்தில்','On trip'),done:L('முடிந்தது','Completed'),cancelled:L('ரத்து','Cancelled'),scheduled:L('முன்பதிவு','Scheduled')})[s]}</em>`;
+const dPill=s=>`<em class="dst ${s}">${({avail:L('காலி','Available'),pickup:L('Pickup-க்கு','To pickup'),trip:L('பயணத்தில்','On trip'),off:'Offline'})[s]}</em>`;
+
+/* ---------- login ---------- */
+function login(){
+  if(CL)return cloudLogin();
+  app.innerHTML=`<section class="ologin"><div class="lcard"><div class="brand"><span class="rsign">TAXI</span><div><b>Vellore Call Taxi</b><small>Owner / Staff panel</small></div></div>
+    <h1>${L('உள்ளே வாங்க','Sign in')}</h1>
+    <div class="seg"><button class="${S.role==='owner'?'on':''}" data-r="owner">Owner</button><button class="${S.role==='staff'?'on':''}" data-r="staff">Staff</button></div>
+    <label class="kind" for="ph">${L('மொபைல் நம்பர்','Mobile number')}</label><div class="field"><span class="cc">+91</span><input id="ph" inputmode="numeric" maxlength="10" value="${esc(S.phone)}"></div>
+    <label class="kind" for="otp">OTP</label><div class="field"><input id="otp" inputmode="numeric" maxlength="4" placeholder="1234"></div>
+    <div class="note">Demo OTP: 1234</div><div class="err" id="le"></div>
+    <button class="btn" id="lgn">${L('உள்ளே போ','Sign in')}</button>
+    <div class="lang2"><button data-l="ta" class="${S.lang==='ta'?'on':''}">தமிழ்</button><button data-l="en" class="${S.lang==='en'?'on':''}">English</button></div></div></section>`;
+  app.querySelectorAll('[data-r]').forEach(b=>b.onclick=()=>{S.role=b.dataset.r;login()});
+  app.querySelectorAll('[data-l]').forEach(b=>b.onclick=()=>{S.lang=b.dataset.l;save();login()});
+  document.getElementById('lgn').onclick=()=>{const ph=document.getElementById('ph').value.replace(/\D/g,''),o=document.getElementById('otp').value;
+    if(!/^[6-9]\d{9}$/.test(ph)){document.getElementById('le').textContent=L('10 இலக்க நம்பர் கொடுங்க','Enter a 10-digit number');return}
+    if(o!=='1234'){document.getElementById('le').textContent=L('OTP தவறு','Wrong OTP');return}
+    S.phone=ph;S.logged=true;S.sec='dash';save();startSim(liveRefresh);show()};
+}
+function liveRefresh(){if(document.querySelector('.modal'))return;if(S.sec==='dash'){refreshDashLists()}else if(S.sec==='book'){book()}}
+
+/* ---------- dashboard ---------- */
+function kpisInner(){
+  const today=DB.bk.filter(b=>b.status==='done'&&isToday(b.done||b.when));
+  const rev=today.reduce((a,b)=>a+b.fare,0),comm=Math.round(rev*DB.cfg.comm/100);
+  const on=DB.drv.filter(d=>d.status!=='off').length;
+  return `    <div><small>${L('முடிந்த பயணம்','Rides done')}</small><b>${today.length}</b></div>
+    <div><small>${L('வசூல்','Fares')}</small><b>${inr(rev)}</b></div>
+    <div><small>${L(`Commission (${DB.cfg.comm}%)`,`Commission (${DB.cfg.comm}%)`)}</small><b>${inr(comm)}</b></div>
+    <div><small>${L('Online drivers','Drivers online')}</small><b>${on}<span>/${DB.drv.length}</span></b></div>
+    <button data-go="book" class="${badge('book')?'hot':''}"><small>${L('Driver தேவை','Need a driver')}</small><b>${badge('book')}</b></button>
+    <button data-go="sup" class="${badge('sup')?'hot':''}"><small>${L('Open requests','Open requests')}</small><b>${badge('sup')}</b></button>`;
+}
+function dash(){
+  const today=DB.bk.filter(b=>b.status==='done'&&isToday(b.done||b.when));
+  const rev=today.reduce((a,b)=>a+b.fare,0),comm=Math.round(rev*DB.cfg.comm/100);
+  const on=DB.drv.filter(d=>d.status!=='off').length;
+  const alerts=[...DB.drv.filter(d=>d.wallet<DB.cfg.minbal).map(d=>({c:'red',t:L(`${d.ta} wallet ${inr(d.wallet)} — online போக முடியாது`,`${d.en}: wallet ${inr(d.wallet)}, cannot go online`)})),
+    ...DB.drv.filter(d=>d.docs.ins<30).map(d=>({c:'amber',t:L(`${d.ta} (${d.plate}) insurance ${d.docs.ins} நாள்ல முடியும்`,`${d.plate} insurance expires in ${d.docs.ins} days`)})),
+    ...DB.sup.filter(s=>s.type==='sos'&&s.status!=='closed').map(s=>({c:'red',t:'SOS: '+s.cust}))];
+  main().innerHTML=`${head(L('இன்று','Today'),new Date().toLocaleDateString(S.lang==='ta'?'ta-IN':'en-IN',{weekday:'long',day:'numeric',month:'long'}),`<span class="livetag"><i></i>LIVE</span>`)}
+   <div class="kpis" id="kpis">${kpisInner()}</div>
+   <div class="dgrid">
+    <section class="panel mappanel"><div class="ph"><h3>${L('எல்லா வண்டியும்','Fleet map')}</h3><div class="legend"><span><i style="background:#1E8A5A"></i>${L('காலி','Free')}</span><span><i style="background:#F5B400"></i>${L('Pickup-க்கு','To pickup')}</span><span><i style="background:#1E3A6E"></i>${L('பயணத்தில்','On trip')}</span></div></div>
+      <div class="omap"><canvas class="map" id="map"></canvas><div class="zoomctl" style="bottom:12px"><button class="chipbtn" id="zi">+</button><button class="chipbtn" id="zo">−</button></div></div></section>
+    <div class="dcol">
+      ${alerts.length?`<section class="panel"><div class="ph"><h3>${L('கவனிக்க','Needs attention')}</h3></div>${alerts.map(a=>`<div class="alert ${a.c}">${a.t}</div>`).join('')}</section>`:''}
+      <section class="panel"><div class="ph"><h3>${L('Live bookings','Live bookings')}</h3><button class="linkbtn" data-go="book">${L('எல்லாம்','All')} →</button></div><div id="livelist"></div></section>
+      <section class="panel"><div class="ph"><h3>${L('நடப்பவை','Activity')}</h3></div><div id="actlist"></div></section>
+    </div></div>`;
+  app.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>{S.sec=b.dataset.go;save();show()});
+  const m=makeMap(document.getElementById('map'),{fleet:()=>DB.drv.filter(d=>d.status!=='off').map(d=>({lat:d.lat,lon:d.lon,col:d.status==='avail'?'#1E8A5A':d.status==='pickup'?'#F5B400':'#1E3A6E',tag:VEH.find(v=>v.id===d.veh).en[0],label:d.plate.slice(-4)}))});
+  m.fit(LMK.filter(k=>k!=='golden').map(k=>P[k]),30,0);
+  document.getElementById('zi').onclick=()=>m.zoomBy(2);document.getElementById('zo').onclick=()=>m.zoomBy(.5);
+  refreshDashLists();
+}
+function liveRows(list){return list.length?list.map(b=>{const d=drvById(b.driver);return `<div class="lrow"><div><b>${b.id} · ${pn(b.from)} → ${pn(b.to)}</b><small>${vname(b.veh)} · ${d?d[S.lang]+' · '+d.plate:L('Driver இல்லை','No driver')} · ${b.status==='scheduled'?dt(b.when):ago(b.created)}</small></div>${stPill(b.status)}${(b.status==='searching'||b.status==='scheduled'&&!b.driver)?`<button class="btn sm" data-as="${b.id}">${L('Assign','Assign')}</button>`:''}</div>`}).join(''):`<p class="muted" style="margin:0">${L('இப்போ live booking இல்லை','No live bookings right now')}</p>`}
+function refreshDashLists(){
+  const ll=document.getElementById('livelist');if(!ll)return;
+  const kk=document.getElementById('kpis');if(kk){kk.innerHTML=kpisInner();kk.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>{S.sec=b.dataset.go;save();show()})}
+  ll.innerHTML=liveRows(DB.bk.filter(b=>['searching','assigned','ontrip'].includes(b.status)||(b.status==='scheduled'&&!b.driver)));
+  document.getElementById('actlist').innerHTML=DB.act.length?DB.act.slice(0,6).map(a=>`<div class="act"><i></i><span>${a[S.lang]}</span><small>${ago(a.date)}</small></div>`).join(''):`<p class="muted" style="margin:0">${L('Booking நிலை மாறும்போது இங்கே காட்டும்','Status changes appear here')}</p>`;
+  ll.querySelectorAll('[data-as]').forEach(b=>b.onclick=()=>assignSheet(DB.bk.find(x=>x.id===b.dataset.as)));
+}
+
+/* ---------- bookings ---------- */
+let BT='live';
+function book(){
+  const tabs=[['live',L('Live','Live')],['sched',L('முன்பதிவு','Scheduled')],['done',L('முடிந்தவை','Completed')],['cx',L('ரத்து','Cancelled')]];
+  const f={live:b=>['searching','assigned','ontrip'].includes(b.status),sched:b=>b.status==='scheduled',done:b=>b.status==='done',cx:b=>b.status==='cancelled'}[BT];
+  const list=DB.bk.filter(f).sort((a,b)=>BT==='sched'?a.when-b.when:(b.done||b.created)-(a.done||a.created)).slice(0,60);
+  const scroll=main()?main().scrollTop:0;
+  main().innerHTML=`${head('Bookings',L('App-ல வந்தது + phone-ல நீங்க போட்டது','From the app and from phone calls'),`<button class="btn yellow hd" id="nb3">+ ${L('Phone booking','Phone booking')}</button>`)}
+   <div class="tabs">${tabs.map(([k,l])=>`<button class="${BT===k?'on':''}" data-bt="${k}">${l} <em>${DB.bk.filter({live:f2=>['searching','assigned','ontrip'].includes(f2.status),sched:f2=>f2.status==='scheduled',done:f2=>f2.status==='done',cx:f2=>f2.status==='cancelled'}[k]).length}</em></button>`).join('')}</div>
+   <div class="table">${list.length?`<div class="tr th"><span>ID</span><span>${L('Customer','Customer')}</span><span>${L('வழி','Route')}</span><span>${L('வண்டி / Driver','Vehicle / driver')}</span><span>${L('கட்டணம்','Fare')}</span><span>${L('நிலை','Status')}</span><span></span></div>`+
+    list.map(b=>{const d=drvById(b.driver);return `<div class="tr"><span class="tid">${b.id}<small>${b.src==='phone'?'☎ Phone':'App'}${b.sample?' · sample':''}</small></span>
+     <span><b>${esc(b.cust.name)}</b><small>+91 ${b.cust.phone}</small></span>
+     <span><b>${pn(b.from)} → ${pn(b.to)}</b><small>${b.km} ${L('கி.மீ','km')} · ${b.status==='scheduled'?'⏰ '+dt(b.when):dt(b.done||b.created)}</small></span>
+     <span><b>${vname(b.veh)}</b><small>${d?d[S.lang]+' · '+d.plate:'—'}</small></span>
+     <span><b>${inr(b.fare)}</b><small>${b.pay.toUpperCase()}</small></span>
+     <span>${stPill(b.status)}</span>
+     <span class="acts2">${b.status==='scheduled'?`<button class="linkbtn" data-dn="${b.id}">${L('இப்போ அனுப்பு','Dispatch now')}</button>`:''}${(b.status==='searching'||b.status==='scheduled')?`<button class="btn sm" data-as="${b.id}">${b.driver?L('மாற்று','Reassign'):L('Assign','Assign')}</button>`:''}${['searching','scheduled','assigned'].includes(b.status)?`<button class="linkbtn" data-cx="${b.id}" style="color:var(--danger)">${L('ரத்து','Cancel')}</button>`:''}</span></div>`}).join('')
+    :`<div class="empty"><h3>${L('இங்கே booking இல்லை','No bookings here')}</h3></div>`}</div>`;
+  main().scrollTop=scroll;
+  document.getElementById('nb3').onclick=()=>newBooking();
+  app.querySelectorAll('[data-bt]').forEach(b=>b.onclick=()=>{BT=b.dataset.bt;book()});
+  app.querySelectorAll('[data-as]').forEach(b=>b.onclick=()=>assignSheet(DB.bk.find(x=>x.id===b.dataset.as)));
+  app.querySelectorAll('[data-dn]').forEach(x=>x.onclick=()=>{const bk=DB.bk.find(y=>y.id===x.dataset.dn);const st=bk.driver?'assigned':'searching';if(CL){cw(F().updateDoc(bkRef(bk),{status:st,updatedAt:ts()}));return}bk.status=st;bk.prog=0;if(bk.driver){const d=drvById(bk.driver);if(d)d.status='pickup'}saveDB();book()});
+  app.querySelectorAll('[data-cx]').forEach(b=>b.onclick=()=>{const bk=DB.bk.find(x=>x.id===b.dataset.cx);
+    modal(`<h3>${bk.id} ${L('ரத்து செய்யவா?','— cancel?')}</h3><p class="muted" style="margin:0">${esc(bk.cust.name)} · ${pn(bk.from)} → ${pn(bk.to)}</p><div class="note">${L('Customer-க்கும் driver-க்கும் தகவல் போகும் (Firebase connect ஆனதும்).','The customer and driver are notified (once Firebase is connected).')}</div>
+      <button class="btn ghost" id="y">${L('ஆமா, ரத்து செய்','Yes, cancel')}</button><button class="btn" id="n">${L('வேண்டாம்','Keep it')}</button>`,(m,close)=>{m.querySelector('#n').onclick=close;
+      m.querySelector('#y').onclick=()=>{if(CL){cw(F().updateDoc(bkRef(bk),{status:'cancelled',cancelReason:'office',updatedAt:ts()}));close();toast(L('ரத்து ஆச்சு','Cancelled'));return}const d=drvById(bk.driver);if(d&&bk.status==='assigned')d.status='avail';bk.status='cancelled';log(`${bk.id} ரத்து (office)`,`${bk.id} cancelled by office`);saveDB();close();show();toast(L('ரத்து ஆச்சு','Cancelled'))}})});
+}
+function nearest(veh,from,exclude){const pt=typeof from==='object'?from:P[from];if(!pt||pt.lat==null)return DB.drv.filter(d=>d.veh===veh&&d.status==='avail'&&!d.blocked&&d.id!==exclude).map(d=>({d,km:0}));return DB.drv.filter(d=>d.veh===veh&&d.status==='avail'&&!d.blocked&&d.id!==exclude).map(d=>({d,km:hav(d,pt)*1.3})).sort((a,b)=>a.km-b.km)}
+function assignSheet(b){
+  const list=nearest(b.veh,b.fromC&&b.fromC.lat!=null?b.fromC:b.from,b.driver),off=DB.drv.filter(d=>d.veh===b.veh&&d.status!=='avail');
+  modal(`<h3>${b.id}: ${L('Driver assign','Assign a driver')}</h3><p class="muted" style="margin:0">${vname(b.veh)} · ${pn(b.from)} → ${pn(b.to)} · ${inr(b.fare)}${b.status==='scheduled'?' · ⏰ '+dt(b.when):''}</p>
+    ${list.length?list.map((x,i)=>`<button class="reason ${i===0?'sel':''}" data-d="${x.d.id}"><i class="radio"></i><span style="flex:1"><b>${x.d[S.lang]}</b> · ${x.d.plate}<br><small class="muted">${x.km.toFixed(1)} ${L('கி.மீ தூரம்','km away')} · ~${Math.max(2,Math.round(x.km/0.35))} ${L('நிமி','min')} · ★${x.d.rating}${x.d.wallet<DB.cfg.minbal?' · '+L('wallet குறைவு','low wallet'):''}</small></span>${i===0?`<em class="dst avail">${L('அருகில்','Nearest')}</em>`:''}</button>`).join('')
+      :`<div class="warn">${L(`இப்போ காலியா இருக்கிற ${vname(b.veh)} இல்லை.`,`No ${vname(b.veh)} is free right now.`)}${off.length?' '+off.map(d=>`${d[S.lang]} (${({pickup:L('pickup','to pickup'),trip:L('பயணத்தில்','on trip'),off:'offline'})[d.status]})`).join(', '):''}</div>`}
+    <button class="btn" id="asg" ${list.length?'':'disabled'}>${L('Assign பண்ணு','Assign')}</button>`,(m,close)=>{
+    let sel=list[0]&&list[0].d.id;
+    m.querySelectorAll('[data-d]').forEach(x=>x.onclick=()=>{sel=x.dataset.d;m.querySelectorAll('[data-d]').forEach(y=>y.classList.toggle('sel',y===x))});
+    m.querySelector('#asg').onclick=()=>{if(!sel)return;
+      if(CL){const d=drvById(sel),upd={driverPhone:d.id,driverName:d.en,plate:d.plate,vehModel:d.model,assignedAt:ts(),updatedAt:ts()};if(b.status==='searching')upd.status='assigned';cw(F().updateDoc(bkRef(b),upd));close();toast(L(`${d.ta}-க்கு ride அனுப்பியாச்சு`,`Sent to ${d.en}`));return}
+      const d=drvById(sel),prev=drvById(b.driver);if(prev&&b.status==='assigned')prev.status='avail';
+      b.driver=sel;if(b.status==='searching'){b.status='assigned';b.prog=0;d.status='pickup'}
+      log(`${b.id} → ${d.ta} (${d.plate})`,`${b.id} → ${d.en} (${d.plate})`);saveDB();close();show();
+      toast(L(`${d.ta}-க்கு ride போயிடுச்சு. Customer-க்கு driver விவரம் SMS (Firebase-க்கு அப்புறம்)`,`Sent to ${d.en}. Customer gets driver details by SMS (after Firebase)`))};
+  });
+}
+function newBooking(){
+  let veh='auto',when='now',pay='cash';
+  modal(`<h3>${L('புது phone booking','New phone booking')}</h3>
+    <div class="frow"><div class="field" style="height:50px"><span class="cc">+91</span><input id="nph" inputmode="numeric" maxlength="10" placeholder="${L('Customer நம்பர்','Customer number')}"></div>
+      <div class="field" style="height:50px"><input id="nnm" maxlength="30" placeholder="${L('Customer பெயர்','Customer name')}"></div></div>
+    <div class="frow"><label><span class="kind">Pickup</span><select class="selbox" id="nfr">${LMK.map(k=>`<option value="${k}">${pn(k)}</option>`).join('')}</select></label>
+      <label><span class="kind">Drop</span><select class="selbox" id="nto">${LMK.map((k,i)=>`<option value="${k}" ${i===3?'selected':''}>${pn(k)}</option>`).join('')}</select></label></div>
+    <span class="kind">${L('வண்டி','Vehicle')}</span><div class="tags" style="justify-content:flex-start">${VEH.map(v=>`<button class="chip ${v.id===veh?'sel':''}" data-v="${v.id}">${v[S.lang]}</button>`).join('')}</div>
+    <div class="frow"><div><span class="kind">${L('எப்போ','When')}</span><div class="seg" style="margin-top:6px"><button class="on" data-w="now">${L('இப்போ','Now')}</button><button data-w="later">${L('பின்னாடி','Later')}</button></div><input type="datetime-local" class="selbox" id="nwh" hidden style="margin-top:8px"></div>
+      <div><span class="kind">${L('பணம்','Payment')}</span><div class="seg" style="margin-top:6px"><button class="on" data-p="cash">Cash</button><button data-p="upi">UPI</button></div></div></div>
+    <div class="estim" id="est"></div><div class="err" id="ne"></div>
+    <button class="btn yellow" id="nsv">${L('Booking போடு','Create booking')}</button>`,(m,close)=>{
+    const $=q=>m.querySelector(q);
+    const upd=()=>{const fr=$('#nfr').value,to=$('#nto').value;if(fr===to){$('#est').innerHTML=`<span class="muted">${L('Pickup, drop வேற வேற இடமா இருக்கணும்','Pickup and drop must differ')}</span>`;return}
+      const r=route(fr,to),nn=nearest(veh,fr)[0];$('#est').innerHTML=`<b>${inr(fareO(veh,r.km))}</b><span>${r.km.toFixed(1)} ${L('கி.மீ','km')} · ${vname(veh)}</span><small>${when==='now'?(nn?L(`அருகில்: ${nn.d.ta}, ${nn.km.toFixed(1)} கி.மீ — தானா assign ஆகும்`,`Nearest: ${nn.d.en}, ${nn.km.toFixed(1)} km — auto-assigned`):L('இப்போ காலியான driver இல்லை — பின்னாடி assign பண்ணலாம்','No free driver now — assign later')):L('முன்பதிவு — driver பின்னாடி assign பண்ணலாம்','Scheduled — assign a driver later')}</small>`};
+    $('#nfr').onchange=$('#nto').onchange=upd;
+    m.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>{veh=b.dataset.v;m.querySelectorAll('[data-v]').forEach(x=>x.classList.toggle('sel',x===b));upd()});
+    m.querySelectorAll('[data-w]').forEach(b=>b.onclick=()=>{when=b.dataset.w;m.querySelectorAll('[data-w]').forEach(x=>x.classList.toggle('on',x===b));$('#nwh').hidden=when!=='later';upd()});
+    m.querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>{pay=b.dataset.p;m.querySelectorAll('[data-p]').forEach(x=>x.classList.toggle('on',x===b))});
+    const ph=$('#nph');ph.oninput=()=>{ph.value=ph.value.replace(/\D/g,'').slice(0,10);const old=DB.bk.find(b=>b.cust.phone===ph.value);if(old&&!$('#nnm').value)$('#nnm').value=old.cust.name};
+    upd();
+    $('#nsv').onclick=()=>{const fr=$('#nfr').value,to=$('#nto').value,e=$('#ne');
+      if(!/^[6-9]\d{9}$/.test(ph.value)){e.textContent=L('Customer நம்பர் சரியா கொடுங்க','Enter a valid customer number');return}
+      if(fr===to){e.textContent=L('Pickup, drop வேற வேற இடமா இருக்கணும்','Pickup and drop must differ');return}
+      let w=Date.now();if(when==='later'){w=new Date($('#nwh').value).getTime();if(!w||w<Date.now()+15*6e4){e.textContent=L('குறைந்தது 15 நிமிடம் பின்னாடி நேரம் கொடுங்க','Pick a time at least 15 minutes ahead');return}}
+      if(['trav','bus'].includes(veh)&&w<Date.now()+3*36e5){e.textContent=L('Traveller / Mini Bus-க்கு குறைந்தது 3 மணி நேரம் முன்னாடி','Travellers and mini buses need 3 hours’ notice');return}
+      const r=route(fr,to),id='B'+String(1000+DB.bk.length+1),nn=when==='now'?nearest(veh,fr)[0]:null;
+      if(CL){const vv=VEH.find(v=>v.id===veh);const data={customerUid:null,custName:$('#nnm').value.trim()||'Customer',custPhone:'+91'+ph.value,src:'phone',kind:when==='later'?'schedule':'ride',from:placeK(fr),to:placeK(to),path:r.path.map(k=>({lat:P[k].lat,lon:P[k].lon})),veh,vehTa:vv.ta,vehEn:vv.en,km:+r.km.toFixed(1),base:+((DB.cfg.fares[veh]||{}).base||vv.base),fare:fareO(veh,r.km),pay,status:when==='later'?'scheduled':nn?'assigned':'searching',when:w,createdAt:ts(),updatedAt:ts()};
+        if(nn)Object.assign(data,{driverPhone:nn.d.id,driverName:nn.d.en,plate:nn.d.plate,vehModel:nn.d.model,assignedAt:ts()});
+        close();BT=data.status==='scheduled'?'sched':'live';S.sec='book';save();show();
+        cw(F().addDoc(F().collection(CL.db,'bookings'),data).then(()=>toast(nn?L(`${nn.d.ta}-க்கு assign ஆச்சு`,`Assigned to ${nn.d.en}`):L('Booking சேமிச்சாச்சு','Booking saved'))));return}
+      const b={id,cust:{name:$('#nnm').value.trim()||L('Customer','Customer'),phone:ph.value},from:fr,to,veh,km:+r.km.toFixed(1),fare:fareO(veh,r.km),pay,src:'phone',created:Date.now(),when:w,prog:0,
+        status:when==='later'?'scheduled':nn?'assigned':'searching',driver:nn?nn.d.id:null};
+      if(nn)nn.d.status='pickup';DB.bk.push(b);log(`${id} phone booking${nn?' → '+nn.d.ta:''}`,`${id} phone booking${nn?' → '+nn.d.en:''}`);saveDB();close();BT=b.status==='scheduled'?'sched':'live';S.sec='book';save();show();
+      toast(nn?L(`${id}: ${nn.d.ta} assign ஆனார்`,`${id}: assigned to ${nn.d.en}`):L(`${id} சேமிச்சாச்சு`,`${id} saved`))};
+  });
+}
+
+/* ---------- drivers ---------- */
+function drivers(){
+  main().innerHTML=`${head('Drivers',L(`${DB.drv.length} drivers · ${DB.drv.filter(d=>d.status!=='off').length} online`,`${DB.drv.length} drivers · ${DB.drv.filter(d=>d.status!=='off').length} online`),S.role==='owner'?`<button class="btn yellow hd" id="ad">+ ${L('Driver சேர்','Add driver')}</button>`:'')}
+   <div class="cards">${DB.drv.map(d=>{const tdy=DB.bk.filter(b=>b.driver===d.id&&b.status==='done'&&isToday(b.done||b.when));const exp=Object.entries(d.docs).filter(([k,v])=>v<30);
+    return `<div class="dcard ${d.blocked?'blk':''}"><div class="dtop"><span class="vi">${I[d.veh]}</span><div><b>${d[S.lang]}</b><small>+91 ${d.phone}</small></div>${d.blocked?`<em class="dst off">${L('தடை','Blocked')}</em>`:dPill(d.status)}</div>
+     <div class="dmid"><span class="plate">${d.plate}</span><small>${vname(d.veh)} · ${d.model} · ★${d.rating}</small></div>
+     <div class="dnums"><div><b class="${d.wallet<DB.cfg.minbal?'neg':''}">${inr(d.wallet)}</b><small>Wallet</small></div><div><b>${tdy.length}</b><small>${L('இன்று ride','Rides today')}</small></div><div><b>${inr(tdy.reduce((a,b)=>a+b.fare,0))}</b><small>${L('இன்று வசூல்','Fares today')}</small></div></div>
+     ${exp.length?`<div class="alert amber">${exp.map(([k,v])=>`${k.toUpperCase()}: ${v} ${L('நாள்','days')}`).join(' · ')}</div>`:''}
+     ${S.role==='owner'?`<div class="dact"><button class="linkbtn" data-blk="${d.id}">${d.blocked?L('தடையை நீக்கு','Unblock'):L('தடை செய்','Block')}</button><button class="linkbtn" data-dw="${d.id}">${L('Wallet சரிசெய்','Adjust wallet')}</button></div>`:''}</div>`}).join('')}</div>`;
+  const ad=document.getElementById('ad');if(ad)ad.onclick=addDriver;
+  app.querySelectorAll('[data-blk]').forEach(b=>b.onclick=()=>{const d=drvById(b.dataset.blk);if(CL){cw(F().updateDoc(F().doc(CL.db,'drivers',d.id),{blocked:!d.blocked,...(!d.blocked?{online:false}:{}),updatedAt:ts()}));toast(d.blocked?L('தடை நீக்கப்பட்டது','Unblocked'):L('தடை செய்யப்பட்டது','Blocked'));return}d.blocked=!d.blocked;if(d.blocked&&d.status==='avail')d.status='off';log(`${d.ta} ${d.blocked?'தடை':'தடை நீக்கம்'}`,`${d.en} ${d.blocked?'blocked':'unblocked'}`);saveDB();drivers()});
+  app.querySelectorAll('[data-dw]').forEach(b=>b.onclick=()=>{const d=drvById(b.dataset.dw);
+    modal(`<h3>${d[S.lang]} · Wallet ${inr(d.wallet)}</h3><div class="field" style="height:50px"><span class="cc">₹</span><input id="wa" inputmode="numeric" placeholder="${L('தொகை','Amount')}"></div>
+      <div class="two"><button class="btn" id="wp">+ ${L('சேர்','Add')}</button><button class="btn ghost" id="wm">− ${L('கழி','Deduct')}</button></div>`,(m,close)=>{
+      const go=s=>{const a=parseInt(m.querySelector('#wa').value)||0;if(a<=0)return;if(CL){cw(F().updateDoc(F().doc(CL.db,'drivers',d.id),{wallet:F().increment(s*a),updatedAt:ts()}));close();return}d.wallet+=s*a;log(`${d.ta} wallet ${s>0?'+':'−'}${inr(a)} (office)`,`${d.en} wallet ${s>0?'+':'−'}${inr(a)} (office)`);saveDB();close();drivers()};
+      m.querySelector('#wp').onclick=()=>go(1);m.querySelector('#wm').onclick=()=>go(-1)})});
+}
+function addDriver(){
+  let veh='auto';
+  modal(`<h3>${L('புது driver','Add a driver')}</h3>
+    <div class="field" style="height:50px"><input id="an" maxlength="30" placeholder="${L('பெயர்','Name')}"></div>
+    <div class="field" style="height:50px"><span class="cc">+91</span><input id="ap" inputmode="numeric" maxlength="10" placeholder="${L('மொபைல்','Mobile')}"></div>
+    <span class="kind">${L('வண்டி','Vehicle')}</span><div class="tags" style="justify-content:flex-start">${VEH.map(v=>`<button class="chip ${v.id===veh?'sel':''}" data-v="${v.id}">${v[S.lang]}</button>`).join('')}</div>
+    <div class="frow"><div class="field" style="height:50px"><input id="apl" maxlength="14" placeholder="TN 23 AB 1234" style="text-transform:uppercase"></div><div class="field" style="height:50px"><input id="am" maxlength="24" placeholder="${L('Model','Model')}"></div></div>
+    <div class="note">${L('இந்த நம்பர்ல driver app-ல login பண்ணலாம். ஆவணங்களை அப்புறம் upload பண்ணலாம்.','The driver logs in to the driver app with this number. Documents can be added later.')}</div>
+    <div class="err" id="ae"></div><button class="btn" id="as">${L('சேமி','Save')}</button>`,(m,close)=>{
+    m.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>{veh=b.dataset.v;m.querySelectorAll('[data-v]').forEach(x=>x.classList.toggle('sel',x===b))});
+    m.querySelector('#as').onclick=()=>{const n=m.querySelector('#an').value.trim(),p=m.querySelector('#ap').value.replace(/\D/g,''),pl=m.querySelector('#apl').value.trim().toUpperCase();
+      if(n.length<2||!/^[6-9]\d{9}$/.test(p)||pl.length<6){m.querySelector('#ae').textContent=L('பெயர், 10 இலக்க நம்பர், வண்டி எண் கொடுங்க','Enter name, 10-digit number and plate');return}
+      if(DB.drv.some(d=>d.phone===p)){m.querySelector('#ae').textContent=L('இந்த நம்பர் ஏற்கனவே இருக்கு','This number is already added');return}
+      if(CL){const D=365*864e5,n0=Date.now();cw(F().setDoc(F().doc(CL.db,'drivers','+91'+p),{name:n,veh,plate:pl,model:m.querySelector('#am').value.trim()||VEH.find(v=>v.id===veh).en,wallet:0,rating:5,online:false,blocked:false,docs:{dl:n0+D,rc:n0+D,ins:n0+D,permit:n0+D,fc:n0+D},createdAt:ts(),updatedAt:ts()}));close();toast(L(`${n} சேர்க்கப்பட்டார். இந்த நம்பர்ல Driver app-ல login பண்ணலாம்`,`${n} added. They can log in to the driver app now`));return}
+      DB.drv.push({id:'d'+Date.now().toString(36),ta:n,en:n,phone:p,veh,plate:pl,model:m.querySelector('#am').value.trim()||vname(veh),status:'off',lat:P.home.lat,lon:P.home.lon,wallet:0,rating:5,docs:{dl:365,rc:365,ins:365,permit:365,fc:365},blocked:false});
+      log(`புது driver: ${n}`,`New driver: ${n}`);saveDB();close();drivers();toast(L(`${n} சேர்க்கப்பட்டார்`,`${n} added`))};
+  });
+}
+
+/* ---------- support ---------- */
+let ST='open';
+function support(){
+  const list=DB.sup.filter(s=>ST==='all'||(ST==='open'?s.status!=='closed':s.status==='closed'));
+  const TN={sos:'SOS',callback:'Call me back',complaint:'Complaint',lost:L('பொருள் மறந்தது','Lost item')};
+  main().innerHTML=`${head(L('உதவி requests','Support'),L('Customer call-back, complaint, lost item, SOS','Call-backs, complaints, lost items and SOS'))}
+   <div class="tabs">${[['open',L('திறந்தவை','Open')],['closed',L('முடிந்தவை','Closed')],['all',L('எல்லாம்','All')]].map(([k,l])=>`<button class="${ST===k?'on':''}" data-st="${k}">${l}</button>`).join('')}</div>
+   <div class="cards">${list.length?list.map(s=>`<div class="scard ${s.type}"><div class="dtop"><em class="stype ${s.type}">${TN[s.type]}</em><small class="muted">${s.id} · ${ago(s.date)}</small><em class="sst ${s.status}">${({open:L('புதுசு','New'),progress:L('பார்த்துகிட்டு இருக்கோம்','In progress'),closed:L('முடிந்தது','Closed')})[s.status]}</em></div>
+     <b>${esc(s.title[S.lang])}</b><small>${esc(s.cust)} · +91 ${s.phone}${s.trip?' · '+s.trip:''}</small>${s.lat?`<a class="linkbtn" href="https://www.google.com/maps?q=${s.lat},${s.lon}" target="_blank" rel="noopener">${L('Location பார்','Open location')} ↗</a>`:''}${s.note?`<p class="snote">${esc(s.note)}</p>`:''}
+     <div class="dact">${s.status!=='closed'?`<button class="btn sm" data-sp="${s.id}">${s.status==='open'?L('கூப்பிட்டாச்சு','Called them'):L('குறிப்பு சேர்','Add note')}</button><button class="linkbtn" data-sc="${s.id}">${L('முடிச்சாச்சு','Close')}</button>`:`<button class="linkbtn" data-so="${s.id}">${L('மறுபடி திற','Reopen')}</button>`}</div></div>`).join('')
+     :`<div class="empty"><h3>${L('எதுவும் இல்லை','Nothing here')}</h3><p class="muted">${L('எல்லா request-உம் முடிஞ்சாச்சு','All requests are handled')}</p></div>`}</div>`;
+  app.querySelectorAll('[data-st]').forEach(b=>b.onclick=()=>{ST=b.dataset.st;support()});
+  app.querySelectorAll('[data-sp]').forEach(b=>b.onclick=()=>{const s=DB.sup.find(x=>x.id===b.dataset.sp);
+    modal(`<h3>${s.id} · ${esc(s.cust)}</h3><textarea id="sn" maxlength="300" placeholder="${L('என்ன பேசினீங்க / என்ன பண்ணீங்க','What was discussed or done')}">${esc(s.note||'')}</textarea><button class="btn" id="ss">${L('சேமி','Save')}</button>`,(m,close)=>{
+      m.querySelector('#ss').onclick=()=>{if(CL){cw(F().updateDoc(F().doc(CL.db,'tickets',s._id),{note:m.querySelector('#sn').value.trim(),status:'progress',handledBy:CL.phone,updatedAt:ts()}));close();return}s.note=m.querySelector('#sn').value.trim();s.status='progress';log(`${s.id} update`,`${s.id} updated`);saveDB();close();support()}})});
+  app.querySelectorAll('[data-sc]').forEach(b=>b.onclick=()=>{const s=DB.sup.find(x=>x.id===b.dataset.sc);if(CL){cw(F().updateDoc(F().doc(CL.db,'tickets',s._id),{status:'closed',updatedAt:ts()}));return}s.status='closed';log(`${s.id} முடிந்தது`,`${s.id} closed`);saveDB();show()});
+  app.querySelectorAll('[data-so]').forEach(b=>b.onclick=()=>{const s=DB.sup.find(x=>x.id===b.dataset.so);if(CL){cw(F().updateDoc(F().doc(CL.db,'tickets',s._id),{status:'open',updatedAt:ts()}));return}s.status='open';saveDB();show()});
+}
+
+/* ---------- approvals ---------- */
+function approvals(){
+  const pend=DB.rch.filter(r=>r.status==='pending'),done=DB.rch.filter(r=>r.status!=='pending');
+  main().innerHTML=`${head(L('Wallet recharge approvals','Wallet recharge approvals'),L('Driver UPI-ல அனுப்பின பணம் உங்க account-ல வந்ததை பார்த்துட்டு approve பண்ணுங்க','Check the money reached your account before approving'))}
+   <div class="cards">${pend.length?pend.map(r=>{const d=drvById(r.driver);return `<div class="scard"><div class="dtop"><span class="vi sm">${I[d.veh]}</span><div style="flex:1;min-width:0"><b>${d[S.lang]}</b><small>${d.plate} · ${ago(r.date)}</small></div><b class="amtbig">${inr(r.amt)}</b></div>
+     <div class="utr"><small>UTR</small><b>${esc(r.utr)}</b><button class="linkbtn" data-cp="${esc(r.utr)}">Copy</button></div>
+     <div class="dact"><button class="btn sm" data-ok="${r.id}">${L('பணம் வந்தது — Approve','Received — approve')}</button><button class="linkbtn" data-no="${r.id}" style="color:var(--danger)">${L('நிராகரி','Reject')}</button></div></div>`}).join('')
+     :`<div class="empty"><h3>${L('காத்திருக்கும் request இல்லை','No pending requests')}</h3></div>`}</div>
+   ${done.length?`<div class="sec" style="margin-top:18px"><h3>${L('முன்னாடி','Earlier')}</h3></div><div class="table">${done.slice(0,20).map(r=>{const d=drvById(r.driver);return `<div class="tr t4"><span>${d?d[S.lang]:''}</span><span>${inr(r.amt)}</span><span>UTR ${esc(r.utr)}</span><span><em class="sst ${r.status==='approved'?'closed':'open'}">${r.status==='approved'?L('Approve ஆச்சு','Approved'):L('நிராகரிப்பு','Rejected')}</em></span></div>`}).join('')}</div>`:''}`;
+  app.querySelectorAll('[data-cp]').forEach(b=>b.onclick=()=>navigator.clipboard.writeText(b.dataset.cp).then(()=>toast('UTR copied')).catch(()=>toast(b.dataset.cp)));
+  app.querySelectorAll('[data-ok]').forEach(b=>b.onclick=()=>{const r=DB.rch.find(x=>x.id===b.dataset.ok),d=drvById(r.driver);if(CL){const bt=F().writeBatch(CL.db);bt.update(F().doc(CL.db,'recharges',r.id),{status:'approved',approvedAt:ts(),approvedBy:CL.phone});bt.update(F().doc(CL.db,'drivers',d.id),{wallet:F().increment(r.amt),updatedAt:ts()});cw(bt.commit().then(()=>toast(L(`${d.ta} wallet-ல ${inr(r.amt)} சேர்ந்தது`,`${inr(r.amt)} added to ${d.en}'s wallet`))));return}r.status='approved';d.wallet+=r.amt;log(`${d.ta} wallet +${inr(r.amt)} approve`,`${d.en} wallet +${inr(r.amt)} approved`);saveDB();show();toast(L(`${d.ta} wallet-ல ${inr(r.amt)} சேர்ந்தது`,`${inr(r.amt)} added to ${d.en}'s wallet`))});
+  app.querySelectorAll('[data-no]').forEach(b=>b.onclick=()=>{const r=DB.rch.find(x=>x.id===b.dataset.no);if(CL){cw(F().updateDoc(F().doc(CL.db,'recharges',r.id),{status:'rejected',approvedAt:ts(),approvedBy:CL.phone}));toast(L('நிராகரிச்சாச்சு','Rejected'));return}r.status='rejected';saveDB();show();toast(L('நிராகரிச்சாச்சு. Driver-க்கு தகவல் போகும்','Rejected. The driver is informed'))});
+}
+
+/* ---------- reports ---------- */
+function reports(){
+  const days=[...Array(7)].map((_,i)=>{const d=new Date();d.setHours(0,0,0,0);d.setDate(d.getDate()-6+i);return d});
+  const done=DB.bk.filter(b=>b.status==='done'&&(b.done||b.when)>=days[0].getTime());
+  const per=days.map(d=>done.filter(b=>new Date(b.done||b.when).toDateString()===d.toDateString()).reduce((a,b)=>a+b.fare,0));
+  const nice=Math.max(1000,Math.ceil(Math.max(...per)/1000)*1000);
+  const tot=done.reduce((a,b)=>a+b.fare,0),comm=Math.round(tot*DB.cfg.comm/100);
+  const byV=VEH.map(v=>({v,n:done.filter(b=>b.veh===v.id).length,s:done.filter(b=>b.veh===v.id).reduce((a,b)=>a+b.fare,0)})).filter(x=>x.n).sort((a,b)=>b.s-a.s);
+  const byD=DB.drv.map(d=>({d,n:done.filter(b=>b.driver===d.id).length,s:done.filter(b=>b.driver===d.id).reduce((a,b)=>a+b.fare,0)})).filter(x=>x.n).sort((a,b)=>b.s-a.s);
+  const mx=Math.max(...byV.map(x=>x.s),1);
+  const src=done.filter(b=>b.src==='phone').length;
+  main().innerHTML=`${head(L('Reports · 7 நாள்','Reports · last 7 days'),L('பழைய நாட்கள் sample data','Older days are sample data'))}
+   <div class="kpis k4"><div><small>${L('மொத்த ride','Rides')}</small><b>${done.length}</b></div><div><small>${L('மொத்த வசூல்','Fares')}</small><b>${inr(tot)}</b></div><div><small>${L(`Commission ${DB.cfg.comm}%`,`Commission ${DB.cfg.comm}%`)}</small><b>${inr(comm)}</b></div><div><small>${L('Phone booking','Phone bookings')}</small><b>${done.length?Math.round(src/done.length*100):0}%</b></div></div>
+   <div class="dgrid">
+    <section class="panel"><div class="ph"><h3>${L('தினசரி வசூல்','Fares per day')}</h3></div>
+     <div class="chart big" role="img" aria-label="${L('7 நாள் வசூல்','Fares for 7 days')}"><div class="yax"><span>${inr(nice)}</span><span>${inr(nice/2)}</span><span>₹0</span></div>
+      <div class="bars">${days.map((d,i)=>`<button class="bcol ${i===6?'today':''}" data-v="${inr(per[i])}" data-d="${d.toLocaleDateString(S.lang==='ta'?'ta-IN':'en-IN',{weekday:'long',day:'numeric',month:'short'})}"><span class="bar" style="height:${(per[i]/nice*100).toFixed(1)}%">${i===6||per[i]===Math.max(...per)?`<em>${inr(per[i])}</em>`:''}</span><small>${d.toLocaleDateString(S.lang==='ta'?'ta-IN':'en-IN',{weekday:'short'})}</small></button>`).join('')}</div><div class="ctip" id="ctip" hidden></div></div></section>
+    <section class="panel"><div class="ph"><h3>${L('வண்டி வகை வாரியா','By vehicle type')}</h3></div>
+     <div class="hbars">${byV.map(x=>`<div class="hb"><span>${x.v[S.lang]}</span><div><i style="width:${(x.s/mx*100).toFixed(1)}%"></i></div><b>${inr(x.s)}</b><small>${x.n}</small></div>`).join('')}</div></section></div>
+   <section class="panel" style="margin-top:14px"><div class="ph"><h3>${L('Driver வாரியா','By driver')}</h3></div>
+    <div class="table">${`<div class="tr th t5"><span>Driver</span><span>${L('வண்டி','Vehicle')}</span><span>${L('Ride','Rides')}</span><span>${L('வசூல்','Fares')}</span><span>Commission</span></div>`+byD.map(x=>`<div class="tr t5"><span><b>${x.d[S.lang]}</b></span><span>${x.d.plate}</span><span>${x.n}</span><span>${inr(x.s)}</span><span>${inr(x.s*DB.cfg.comm/100)}</span></div>`).join('')}</div></section>`;
+  const tip=document.getElementById('ctip');
+  app.querySelectorAll('.bcol').forEach(b=>{const s=()=>{tip.hidden=false;tip.textContent=`${b.dataset.d}: ${b.dataset.v}`;app.querySelectorAll('.bcol').forEach(x=>x.classList.toggle('hl',x===b))};b.onmouseenter=s;b.onclick=s;b.onfocus=s});
+}
+
+/* ---------- settings ---------- */
+function settings(){
+  const c=DB.cfg;
+  main().innerHTML=`${head('Settings',L('இங்கே மாத்தினது Customer, Driver app-ல Firebase connect ஆனதும் தெரியும்','Changes reach the customer and driver apps once Firebase is connected'),`<button class="btn yellow hd" id="sv">${L('சேமி','Save')}</button>`)}
+   <section class="panel"><div class="ph"><h3>${L('கட்டணம் (நகரத்துக்குள்)','City fares')}</h3></div>
+    <div class="table">${`<div class="tr th t4"><span>${L('வண்டி','Vehicle')}</span><span>${L('அடிப்படை (முதல் 1.5 கி.மீ)','Base (first 1.5 km)')}</span><span>${L('ஒரு கி.மீ','Per km')}</span><span>${L('5 கி.மீ ride','5 km ride')}</span></div>`+VEH.map(v=>`<div class="tr t4"><span><b>${v[S.lang]}</b></span>
+      <span><input class="cell" data-f="${v.id}.base" inputmode="numeric" value="${c.fares[v.id].base}" aria-label="${v.en} base"></span><span><input class="cell" data-f="${v.id}.per" inputmode="numeric" value="${c.fares[v.id].per}" aria-label="${v.en} per km"></span><span class="pv" data-pv="${v.id}">${inr(fareO(v.id,5))}</span></div>`).join('')}</div></section>
+   <div class="dgrid" style="margin-top:14px">
+    <section class="panel"><div class="ph"><h3>${L('Driver விதிகள்','Driver rules')}</h3></div>
+     <label class="lrow2"><span>${L('Commission (ஒவ்வொரு ride-க்கும்)','Commission per ride')}</span><span class="field sm"><input id="cm" inputmode="numeric" value="${c.comm}"><span class="cc r">%</span></span></label>
+     <label class="lrow2"><span>${L('Online போக குறைந்தபட்ச wallet','Minimum wallet to go online')}</span><span class="field sm"><span class="cc">₹</span><input id="mb" inputmode="numeric" value="${c.minbal}"></span></label></section>
+    <section class="panel"><div class="ph"><h3>${L('Business விவரம்','Business details')}</h3></div>
+     <label class="lrow2 col"><span>${L('உங்க UPI ID (customer QR, driver recharge-க்கு)','Your UPI ID (customer QR and driver recharge)')}</span><span class="field"><input id="up" maxlength="50" placeholder="name@bank" value="${esc(c.upi)}"></span></label>
+     <label class="lrow2 col"><span>${L('Office phone (customer app "எங்களை அழை")','Office phone (customer app "Call us")')}</span><span class="field"><span class="cc">+91</span><input id="of" inputmode="numeric" maxlength="10" value="${esc(c.office)}"></span></label></section></div>
+   <section class="panel" style="margin-top:14px"><div class="ph"><h3>Staff</h3><button class="linkbtn" id="as">+ ${L('Staff சேர்','Add staff')}</button></div>
+    ${c.staff.map((s,i)=>`<div class="lrow"><div><b>${esc(s.name)}</b><small>+91 ${s.phone} · ${L('Bookings, drivers, support மட்டும்','Bookings, drivers and support only')}</small></div><button class="linkbtn" data-rs="${i}" style="color:var(--danger)">${L('நீக்கு','Remove')}</button></div>`).join('')}</section>
+   ${CL?'':`<section class="panel" style="margin-top:14px"><div class="ph"><h3>${L('Demo data','Demo data')}</h3></div><p class="muted" style="margin:0 0 10px">${L('Sample bookings, drivers எல்லாத்தையும் ஆரம்ப நிலைக்கு கொண்டு வரும்.','Resets all sample bookings and drivers.')}</p><button class="btn ghost" id="rst" style="max-width:260px">${L('Demo data reset','Reset demo data')}</button></section>`}`;
+  app.querySelectorAll('.cell').forEach(i=>i.oninput=()=>{i.value=i.value.replace(/\D/g,'').slice(0,5);const [v,k]=i.dataset.f.split('.');c.fares[v][k]=+i.value||0;app.querySelector(`[data-pv="${v}"]`).textContent=inr(fareO(v,5))});
+  document.getElementById('sv').onclick=()=>{const cm=+document.getElementById('cm').value,mb=+document.getElementById('mb').value,of=document.getElementById('of').value.replace(/\D/g,''),up=document.getElementById('up').value.trim();
+    if(!(cm>=0&&cm<=40)){toast(L('Commission 0 முதல் 40% வரை','Commission must be 0–40%'));return}
+    if(up&&!/^[\w.\-]{2,}@[a-zA-Z]{2,}$/.test(up)){toast(L('UPI ID சரியா இல்லை (name@bank)','UPI ID looks wrong (name@bank)'));return}
+    if(of&&!/^[6-9]\d{9}$/.test(of)){toast(L('Office நம்பர் 10 இலக்கம்','Office number must be 10 digits'));return}
+    if(CL){cw(F().setDoc(F().doc(CL.db,'config','app'),{fares:c.fares,comm:cm,minbal:mb||0,office:of,upi:up,updatedAt:ts()},{merge:true}).then(()=>toast(L('சேமிச்சாச்சு. எல்லா app-லயும் உடனே மாறும்','Saved. All apps update right away'))));return}
+    Object.assign(c,{comm:cm,minbal:mb||0,office:of,upi:up});log('Settings மாற்றம்','Settings changed');saveDB();toast(L('சேமிச்சாச்சு','Saved'))};
+  document.getElementById('as').onclick=()=>modal(`<h3>${L('Staff சேர்','Add staff')}</h3><div class="field" style="height:50px"><input id="sn" maxlength="30" placeholder="${L('பெயர்','Name')}"></div><div class="field" style="height:50px"><span class="cc">+91</span><input id="sp" inputmode="numeric" maxlength="10"></div><div class="err" id="se"></div><button class="btn" id="ss">${L('சேமி','Save')}</button>`,(m,close)=>{
+    m.querySelector('#ss').onclick=()=>{const n=m.querySelector('#sn').value.trim(),p=m.querySelector('#sp').value.replace(/\D/g,'');if(n.length<2||!/^[6-9]\d{9}$/.test(p)){m.querySelector('#se').textContent=L('பெயர், 10 இலக்க நம்பர் கொடுங்க','Enter a name and a 10-digit number');return}
+      if(CL){cw(F().setDoc(F().doc(CL.db,'staff','+91'+p),{name:n,role:'staff',createdAt:ts()}));close();setTimeout(settings,500);return}
+      c.staff.push({name:n,phone:p});saveDB();close();settings()}});
+  app.querySelectorAll('[data-rs]').forEach(b=>b.onclick=()=>{if(CL){const st=c.staff[+b.dataset.rs];cw(F().deleteDoc(F().doc(CL.db,'staff','+91'+st.phone)));setTimeout(settings,500);return}c.staff.splice(+b.dataset.rs,1);saveDB();settings()});
+  const rstb=document.getElementById('rst');if(rstb)rstb.onclick=()=>modal(`<h3>${L('Demo data reset பண்ணவா?','Reset demo data?')}</h3><button class="btn ghost" id="y">${L('ஆமா','Yes, reset')}</button><button class="btn" id="n">${L('வேண்டாம்','Cancel')}</button>`,(m,close)=>{m.querySelector('#n').onclick=close;m.querySelector('#y').onclick=()=>{DB=null;DB=seedO();saveDB();close();show();toast('Reset')}});
+}
+
+/* ---------- boot ---------- */
+
+/* ================= CLOUD: Firebase (live on GitHub Pages; demo everywhere else) ================= */
+let CL=null,OUNS=[],LIVE={},RAWB=[],RAWD=[],RAWR=[],RAWT=[],RTIMER=null,SEEN=null;
+const ON_PAGES=/github\.io$/.test(location.hostname);
+const cloudP=(window.CLOUD_READY||Promise.resolve(null)).then(c=>{CL=c||null;return CL}).catch(()=>null);
+const F=()=>CL.fs;const ts=()=>F().serverTimestamp();
+const shortB=id=>'B'+id.slice(0,5).toUpperCase();
+const placeK=k=>({key:k,ta:P[k].ta,en:P[k].en,lat:P[k].lat,lon:P[k].lon});
+function cardScreen(h,p,btn,fn){app.innerHTML=`<section class="ologin"><div class="lcard"><div class="brand"><span class="rsign">TAXI</span><div><b>Vellore Call Taxi</b><small>Owner / Staff panel</small></div></div><h1>${h}</h1><p class="muted" style="margin:0">${p}</p><button class="btn" id="cb">${btn}</button></div></section>`;document.getElementById('cb').onclick=fn}
+async function cloudBootO(){
+  const c=await cloudP;
+  if(!c){if(ON_PAGES){cardScreen(L('Internet இல்லை','You are offline'),L('Connection-ஐ பார்த்துட்டு மறுபடி முயற்சி பண்ணுங்க.','Check your connection and try again.'),L('மறுபடி முயற்சி','Try again'),()=>location.reload());return true}return false}
+  const u=await CL.waitUser();
+  if(!u){login();return true}
+  await enterCloud();return true;
+}
+async function enterCloud(){
+  let s=null;try{s=await F().getDoc(F().doc(CL.db,'staff',CL.phone))}catch(e){}
+  if(!s||!s.exists()){cardScreen(L('அனுமதி இல்லை','No access'),L(`${CL.phone} இந்த panel-க்கு சேர்க்கப்படல. Owner-கிட்ட Settings → Staff-ல சேர்க்க சொல்லுங்க.`,`${CL.phone} is not added to this panel. Ask the owner to add you under Settings → Staff.`),L('வேற நம்பர்ல login','Log in with another number'),()=>CL.logout().then(login));return}
+  const d=s.data();S.role=d.role==='owner'?'owner':'staff';S.phone=CL.phone.replace('+91','');S.logged=true;S.name=d.name||'';save();
+  DB={cfg:{fares:{},comm:10,minbal:100,upi:'',office:'',staff:[]},drv:[],bk:[],rch:[],sup:[],act:[]};
+  VEH.forEach(v=>DB.cfg.fares[v.id]={base:v.base,per:v.per});
+  watchAll();show();
+}
+function oerr(e){console.warn(e);if(e&&e.code==='permission-denied')toast(L('அனுமதி இல்லை (rules)','Permission denied (rules)'))}
+function watchAll(){
+  OUNS.forEach(u=>u());OUNS=[];SEEN=null;
+  OUNS.push(F().onSnapshot(F().query(F().collection(CL.db,'bookings'),F().orderBy('createdAt','desc'),F().limit(400)),s=>{RAWB=s.docs.map(d=>({_id:d.id,...d.data()}));remap()},oerr));
+  OUNS.push(F().onSnapshot(F().collection(CL.db,'drivers'),s=>{RAWD=s.docs.map(d=>({_id:d.id,...d.data()}));remap()},oerr));
+  OUNS.push(F().onSnapshot(F().collection(CL.db,'live'),s=>{LIVE={};s.docs.forEach(d=>LIVE[d.id]=d.data());remap(true)},oerr));
+  OUNS.push(F().onSnapshot(F().collection(CL.db,'recharges'),s=>{RAWR=s.docs.map(d=>({_id:d.id,...d.data()}));remap()},oerr));
+  OUNS.push(F().onSnapshot(F().collection(CL.db,'tickets'),s=>{RAWT=s.docs.map(d=>({_id:d.id,...d.data()}));remap()},oerr));
+  OUNS.push(F().onSnapshot(F().doc(CL.db,'config','app'),s=>{if(s.exists()){const d=s.data();
+    Object.assign(DB.cfg,{comm:d.comm!=null?+d.comm:10,minbal:d.minbal!=null?+d.minbal:100,upi:d.upi||'',office:d.office||''});
+    if(d.fares)Object.keys(d.fares).forEach(k=>{DB.cfg.fares[k]={...(DB.cfg.fares[k]||{}),...d.fares[k]}})}remap()},oerr));
+  OUNS.push(F().onSnapshot(F().collection(CL.db,'staff'),s=>{DB.cfg.staff=s.docs.filter(d=>(d.data().role||'staff')!=='owner').map(d=>({name:d.data().name||'',phone:d.id.replace('+91','')}));remap()},oerr));
+}
+function chime(){try{const a=new (window.AudioContext||window.webkitAudioContext)();[0,.3].forEach(t=>{const o=a.createOscillator(),g=a.createGain();o.frequency.value=t?1046:784;o.connect(g);g.connect(a.destination);g.gain.setValueAtTime(.2,a.currentTime+t);g.gain.exponentialRampToValueAtTime(.001,a.currentTime+t+.28);o.start(a.currentTime+t);o.stop(a.currentTime+t+.3)})}catch(e){}}
+function remap(liveOnly){
+  const now=Date.now();
+  DB.bk=RAWB.map(b=>({id:shortB(b._id),_id:b._id,cust:{name:b.custName||'—',phone:(b.custPhone||'').replace('+91','')},
+    from:b.from&&b.from.key&&P[b.from.key]?b.from.key:(b.from?b.from[S.lang]||b.from.ta:'—'),to:b.to&&b.to.key&&P[b.to.key]?b.to.key:(b.to?b.to[S.lang]||b.to.ta:'—'),
+    fromC:b.from,toC:b.to,veh:b.veh||'auto',km:+b.km||0,fare:+b.fare||0,pay:b.pay||'cash',src:b.src||'app',status:b.status||'searching',kind:b.kind||'ride',
+    driver:b.driverPhone||null,created:CL.toMs(b.createdAt)||b.when||now,when:b.when||CL.toMs(b.createdAt)||now,done:CL.toMs(b.doneAt)||null,reason:b.cancelReason||''}));
+  const busy={};RAWB.forEach(b=>{if(b.driverPhone&&(b.status==='assigned'||b.status==='ontrip'))busy[b.driverPhone]=b.status});
+  DB.drv=RAWD.map(d=>{const l=LIVE[d._id]||{};const fresh=l.updatedAt&&now-CL.toMs(l.updatedAt)<3*60e3;const online=!!(d.online&&fresh);
+    const days=k=>d.docs&&d.docs[k]?Math.round((d.docs[k]-now)/864e5):999;
+    return{id:d._id,ta:d.name||d._id,en:d.name||d._id,phone:d._id.replace('+91',''),veh:d.veh||'auto',plate:d.plate||'',model:d.model||'',
+      status:busy[d._id]==='ontrip'?'trip':busy[d._id]?'pickup':online?'avail':'off',lat:l.lat!=null?l.lat:P.home.lat,lon:l.lon!=null?l.lon:P.home.lon,
+      wallet:+d.wallet||0,rating:d.rating||5,docs:{dl:days('dl'),rc:days('rc'),ins:days('ins'),permit:days('permit'),fc:days('fc')},blocked:!!d.blocked}});
+  DB.rch=RAWR.filter(r=>DB.drv.some(d=>d.id===r.driverPhone)).map(r=>({id:r._id,driver:r.driverPhone,amt:+r.amt||0,utr:r.utr||'',date:r.date||CL.toMs(r.createdAt),status:r.status||'pending'})).sort((a,b)=>b.date-a.date);
+  DB.sup=RAWT.map(t=>({id:'R'+t._id.slice(0,5).toUpperCase(),_id:t._id,type:t.type||'callback',cust:t.cust||'—',phone:t.phone||'',title:t.title||{ta:'',en:''},trip:t.trip||'',
+    date:t.date||CL.toMs(t.createdAt),status:t.status||'open',note:t.note||'',lat:t.lat,lon:t.lon})).sort((a,b)=>b.date-a.date);
+  const STT={searching:['Driver தேடல்','needs a driver'],assigned:['driver assign ஆச்சு','driver assigned'],ontrip:['பயணம் ஆரம்பம்','trip started'],done:['முடிஞ்சது','completed'],cancelled:['ரத்து','cancelled'],scheduled:['முன்பதிவு','scheduled']};
+  DB.act=RAWB.map(b=>({b,t:CL.toMs(b.updatedAt)||CL.toMs(b.createdAt)||0})).sort((x,y)=>y.t-x.t).slice(0,8).map(({b,t})=>{const st=STT[b.status]||[b.status,b.status];
+    return{ta:`${shortB(b._id)} · ${b.custName||''} · ${st[0]}${b.driverName?' · '+b.driverName:''}`,en:`${shortB(b._id)} · ${b.custName||''} · ${st[1]}${b.driverName?' · '+b.driverName:''}`,date:t||now}});
+  // alert the desk about new work
+  const ids=new Set([...DB.bk.filter(b=>b.status==='searching').map(b=>'b'+b._id),...DB.sup.filter(s=>s.status==='open').map(s=>'t'+s._id)]);
+  if(SEEN){const fresh=[...ids].filter(x=>!SEEN.has(x));if(fresh.length){chime();const sos=DB.sup.find(s=>s.type==='sos'&&s.status==='open'&&fresh.includes('t'+s._id));
+    toast(sos?'SOS: '+sos.cust:fresh.some(x=>x[0]==='b')?L('புது booking வந்திருக்கு','New booking'):L('புது உதவி request','New support request'))}}
+  SEEN=ids;
+  clearTimeout(RTIMER);RTIMER=setTimeout(()=>rerender(liveOnly),150);
+}
+function rerender(liveOnly){
+  if(!S.logged||document.querySelector('.modal'))return;
+  if(S.sec==='dash'){refreshDashLists();if(!liveOnly)updBadges();return}
+  if(liveOnly&&S.sec!=='drv')return;
+  if(S.sec==='set')return;
+  const sc=main()?main().scrollTop:0;show();if(main())main().scrollTop=sc;
+}
+function updBadges(){app.querySelectorAll('[data-sec]').forEach(b=>{const n=badge(b.dataset.sec);let em=b.querySelector('em');if(n){if(!em){em=document.createElement('em');b.appendChild(em)}em.textContent=n}else if(em)em.remove()})}
+const cw=(p)=>p.catch(e=>{oerr(e);toast(CL.errText(e,S.lang==='ta'))});
+function bkRef(b){return F().doc(CL.db,'bookings',b._id)}
+function cloudLogin(){
+  app.innerHTML=`<section class="ologin"><div class="lcard"><div class="brand"><span class="rsign">TAXI</span><div><b>Vellore Call Taxi</b><small>Owner / Staff panel</small></div></div>
+    <h1>${L('உள்ளே வாங்க','Sign in')}</h1><p class="muted" style="margin:0">${L('Owner அல்லது staff நம்பர்ல login பண்ணுங்க','Use the owner or staff number')}</p>
+    <label class="kind" for="ph">${L('மொபைல் நம்பர்','Mobile number')}</label><div class="field"><span class="cc">+91</span><input id="ph" inputmode="numeric" maxlength="10" value="${esc(S.phone)}"></div>
+    <div id="ow" hidden><label class="kind" for="otp">OTP</label><div class="field"><input id="otp" inputmode="numeric" maxlength="6" autocomplete="one-time-code" placeholder="••••••"></div></div>
+    <div class="err" id="le"></div><button class="btn" id="lgn">${L('OTP அனுப்பு','Send OTP')}</button>
+    <div class="lang2"><button data-l="ta" class="${S.lang==='ta'?'on':''}">தமிழ்</button><button data-l="en" class="${S.lang==='en'?'on':''}">English</button></div></div></section>`;
+  app.querySelectorAll('[data-l]').forEach(b=>b.onclick=()=>{S.lang=b.dataset.l;save();cloudLogin()});
+  const ph=document.getElementById('ph'),otp=document.getElementById('otp'),b=document.getElementById('lgn'),le=document.getElementById('le'),ow=document.getElementById('ow');let stage=0;
+  ph.oninput=()=>{ph.value=ph.value.replace(/\D/g,'').slice(0,10);le.textContent=''};otp.oninput=()=>{otp.value=otp.value.replace(/\D/g,'').slice(0,6);le.textContent='';if(otp.value.length===6)b.click()};
+  b.onclick=()=>{
+    if(!stage){if(!/^[6-9]\d{9}$/.test(ph.value)){le.textContent=L('10 இலக்க நம்பர் கொடுங்க','Enter a 10-digit number');return}
+      b.disabled=true;b.textContent=L('OTP அனுப்புது…','Sending OTP…');
+      CL.sendOtp(ph.value).then(()=>{stage=1;ph.disabled=true;ow.hidden=false;b.disabled=false;b.textContent=L('உள்ளே போ','Sign in');otp.focus()}).catch(e=>{b.disabled=false;b.textContent=L('OTP அனுப்பு','Send OTP');le.textContent=CL.errText(e,S.lang==='ta')});return}
+    if(otp.value.length!==6){le.textContent=L('6 இலக்க OTP போடுங்க','Enter the 6-digit OTP');return}
+    b.disabled=true;CL.verifyOtp(otp.value).then(()=>enterCloud()).catch(e=>{b.disabled=false;le.textContent=CL.errText(e,S.lang==='ta');otp.value='';otp.focus()});
+  };
+  setTimeout(()=>ph.focus(),200);
+}
+
+app.innerHTML='<section class="ologin"><div class="lcard"><div class="brand"><span class="rsign">TAXI</span><div><b>Vellore Call Taxi</b><small>Loading…</small></div></div></div></section>';
+cloudP.then(async()=>{if(await cloudBootO())return;if(S.logged){startSim(liveRefresh);show()}else login()});
+
+</script>
+
+</body>
+</html>
