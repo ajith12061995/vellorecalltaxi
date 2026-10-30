@@ -14,7 +14,10 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="./maps-config.js"></script>
 <script>(function(){if(!window.GMAPS_KEY)return;var l='ta';try{var s=JSON.parse(localStorage.getItem('vct')||'{}');if(s.lang)l=s.lang}catch(e){}document.write('<script src="https://maps.googleapis.com/maps/api/js?key='+encodeURIComponent(window.GMAPS_KEY)+'&libraries=places&language='+l+'&region=IN&v=weekly"><\/script>')})();</script>
-<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{height:100%}body{margin:0;font-family:system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{height:100%}body{margin:0;font-family:system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}
+.hasdot{position:relative}.hasdot::after{content:"";position:absolute;top:6px;right:10px;width:10px;height:10px;border-radius:50%;background:#D9443B;border:2px solid var(--surface)}
+.chatlog .msg.dr small,.chatlog .msg.me small{display:block;font-size:10px;opacity:.6;margin-top:2px}
+</style>
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('./vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 </head>
@@ -942,12 +945,46 @@ function rideScreen(){
 }
 
 function callSheet(){
+  if(CL&&R&&R.b&&R.b.driverPhone&&['assigned','ontrip'].includes(R.b.status)){const dp=R.b.driverPhone;
+    modal(`<h3>${L(`${esc(R.drv.ta)}-ஐ கூப்பிட`,`Call ${esc(R.drv.en)}`)}</h3><a class="btn" href="tel:${dp}">${I.phone} ${L('Driver-ஐ அழை','Call driver')}</a>${CFG.office?`<a class="btn ghost" href="tel:+91${CFG.office}">${L('Office-ஐ அழை','Call our office')}</a>`:''}<p class="muted" style="margin:0;font-size:12px">${L('Ride நடக்கும்போது மட்டும் இந்த call வசதி இருக்கும்.','Calling is available only during the ride.')}</p>`,()=>{});return}
   modal(`<h3>${L(`${R.drv.ta}-ஐ கூப்பிட`,`Call ${R.drv.en}`)}</h3>
     <p class="muted" style="margin:0">${L('Driver-க்கு உங்க நம்பர் தெரியாது. Call ஒரு masked நம்பர் வழியா போகும்.','Your number stays hidden from the driver. Calls go through a masked number.')}</p>
     <div class="note">${L('Masked calling service connect பண்ணும்போது இந்த button நேரடியா call பண்ணும்.','This button will place the call once the masked-calling service is connected.')}</div>
     ${CL&&CFG.office?`<a class="btn yellow" href="tel:+91${CFG.office}">${L('Office-ஐ அழை','Call our office')} · +91 ${CFG.office}</a>`:''}<button class="btn" id="mok">${L('சரி','OK')}</button>`,(m,close)=>m.querySelector('#mok').onclick=close);
 }
-function chatSheet(){
+const CHAT_ME='c',CHAT_BTN='.acts [data-a=chat]';
+/* ---------- live chat (customer ↔ driver), stored in bookings/{id}/chat ---------- */
+let CHATUNSUB=null,CHATBID=null,CHATMSGS=[],CHATSEEN=0,CHATDRAW=null;
+function chatStart(bid){if(!CL||!bid||CHATBID===bid)return;chatStop();CHATBID=bid;CHATSEEN=-1;
+  CHATUNSUB=F().onSnapshot(F().collection(CL.db,'bookings',bid,'chat'),s=>{
+    CHATMSGS=s.docs.map(d=>d.data()).sort((a,b)=>(a.ms||0)-(b.ms||0));
+    const other=CHATMSGS.filter(m=>m.from!==CHAT_ME);
+    if(CHATSEEN<0)CHATSEEN=CHATDRAW?CHATMSGS.length:CHATMSGS.length-other.filter(m=>m.ms>Date.now()-6e4).length;
+    if(CHATDRAW){CHATDRAW();CHATSEEN=CHATMSGS.length}
+    else if(CHATMSGS.length>CHATSEEN){const last=CHATMSGS[CHATMSGS.length-1];if(last.from!==CHAT_ME){chatPing(last.text)}}
+    chatDot();
+  },()=>{});}
+function chatStop(){if(CHATUNSUB){CHATUNSUB();CHATUNSUB=null}CHATBID=null;CHATMSGS=[];CHATSEEN=0;CHATDRAW=null}
+function chatDot(){const b=document.querySelector(CHAT_BTN);if(b)b.classList.toggle('hasdot',!CHATDRAW&&CHATMSGS.length>CHATSEEN)}
+function chatSend(txt){txt=(txt||'').trim().slice(0,300);if(!txt||!CHATBID)return;
+  F().addDoc(F().collection(CL.db,'bookings',CHATBID,'chat'),{from:CHAT_ME,text:txt,ms:Date.now(),at:F().serverTimestamp()}).catch(e=>toast(CL.errText(e,S.lang==='ta')))}
+function chatOpen(title,quick){
+  modal(`<h3>${esc(title)}</h3><div class="chatlog" id="clog"></div><div class="tags" style="justify-content:flex-start">${quick.map((q,i)=>`<button class="chip" data-cq="${i}">${esc(q)}</button>`).join('')}</div>
+    <div class="field" style="height:50px"><input id="cmsg" placeholder="${L('Message type பண்ணுங்க','Type a message')}" maxlength="300"><button class="linkbtn" id="csnd">${L('அனுப்பு','Send')}</button></div>`,(m)=>{
+    const log=m.querySelector('#clog');
+    CHATDRAW=()=>{if(!document.body.contains(log)){CHATDRAW=null;chatDot();return}
+      log.innerHTML=CHATMSGS.length?CHATMSGS.map(x=>`<div class="msg ${x.from===CHAT_ME?'me':'dr'}"><span></span><small>${new Date(x.ms||Date.now()).toLocaleTimeString(S.lang==='ta'?'ta-IN':'en-IN',{hour:'numeric',minute:'2-digit'})}</small></div>`).join('')
+        :`<p class="muted" style="margin:auto;font-size:13px;text-align:center">${L('Message அனுப்புங்க. Ride முடிஞ்சதும் chat மூடிடும்.','Send a message. Chat closes when the ride ends.')}</p>`;
+      [...log.querySelectorAll('.msg span')].forEach((el,i)=>el.textContent=CHATMSGS[i].text);log.scrollTop=log.scrollHeight;CHATSEEN=CHATMSGS.length;chatDot()};
+    m.querySelectorAll('[data-cq]').forEach(b=>b.onclick=()=>chatSend(quick[+b.dataset.cq]));
+    const inp=m.querySelector('#cmsg');m.querySelector('#csnd').onclick=()=>{chatSend(inp.value);inp.value=''};inp.onkeydown=e=>{if(e.key==='Enter'){chatSend(inp.value);inp.value=''}};
+    CHATDRAW();
+    const iv=setInterval(()=>{if(!document.body.contains(log)){clearInterval(iv);CHATDRAW=null;chatDot()}},500);
+  });
+}
+function chatPing(t){toast(L('Driver: ','Driver: ')+t);try{navigator.vibrate&&navigator.vibrate([120,60,120])}catch(e){}}
+function chatSheet(){if(CL&&R&&R.id&&R.b&&R.b.driverPhone){chatStart(R.id);chatOpen(R.drv[S.lang],S.lang==='ta'?['நான் gate-ல நிக்கிறேன்','5 நிமிஷம் ஆகும்','எங்கே இருக்கீங்க?','வந்துட்டேன்']:['I’m at the gate','Give me 5 minutes','Where are you?','I’m coming']);return}
+
   const quick=S.lang==='ta'?['நான் gate-ல நிக்கிறேன்','5 நிமிஷம் ஆகும்','எங்கே இருக்கீங்க?','வந்துட்டேன்']:['I’m at the gate','Give me 5 minutes','Where are you?','Coming now'];
   const reply=S.lang==='ta'?'சரி, வந்துடறேன்':'Okay, on my way';
   modal(`<h3>${R.drv[S.lang]}</h3><div class="chatlog" id="log"></div><div class="tags" style="justify-content:flex-start">${quick.map(q=>`<button class="chip" data-q="${q}">${q}</button>`).join('')}</div>
@@ -1606,7 +1643,7 @@ function resumeActive(){
 }
 const rememberRide=()=>{try{localStorage.setItem('vct_ride',JSON.stringify({id:R.id,pin:R.pin}))}catch(e){}};
 const forgetRide=()=>{try{localStorage.removeItem('vct_ride')}catch(e){}};
-function stopWatch(){if(BKUNSUB){BKUNSUB();BKUNSUB=null}if(LIVEUNSUB){LIVEUNSUB();LIVEUNSUB=null}}
+function stopWatch(){chatStop();if(BKUNSUB){BKUNSUB();BKUNSUB=null}if(LIVEUNSUB){LIVEUNSUB();LIVEUNSUB=null}}
 
 async function cloudBook(){
   const r=route(S.from,S.dest),v=VEH.find(x=>x.id===S.veh),f=fare(v,r.km);
@@ -1637,6 +1674,7 @@ function onBooking(b){
   }
   if(b.status==='searching'){if(R.phase!=='search'||!document.getElementById('cxs'))searchingCloud();return}
   if(b.status==='assigned'||b.status==='ontrip'){
+    chatStart(R.id);
     if(b.status==='assigned'&&b.pinTry&&b.pinTry!==R.lastTry){R.lastTry=b.pinTry;
       if(b.pinTry===R.pin){F().updateDoc(F().doc(CL.db,'bookings',R.id),{status:'ontrip',startedAt:F().serverTimestamp(),updatedAt:F().serverTimestamp()}).catch(()=>{});toast(L('PIN சரி! பயணம் ஆரம்பம்','PIN verified. Your trip has started'))}
       else toast(L('Driver போட்ட PIN தப்பு. உங்க PIN-ஐ மறுபடி சொல்லுங்க','The driver entered a wrong PIN. Tell them your PIN again'))}
@@ -1678,7 +1716,7 @@ function rideCloud(){
     R.map=makeMap(document.getElementById('map'),o);R.mo=o;R.fitFor=null;
     rideCloudUpdate(true);rideTimer=setInterval(()=>rideCloudUpdate(false),1000);
     document.getElementById('cx').onclick=cancelSheet;document.getElementById('sos').onclick=safetySheet;
-    app.querySelectorAll('.acts button').forEach(x=>x.onclick=()=>({call:callSheet,chat:chatSheet,share:shareTrip,safety:safetySheet})[x.dataset.a]());
+    app.querySelectorAll('.acts button').forEach(x=>x.onclick=()=>({call:callSheet,chat:chatSheet,share:shareTrip,safety:safetySheet})[x.dataset.a]());chatDot();
   });
 }
 function rideCloudUpdate(refit){

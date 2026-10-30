@@ -79,6 +79,21 @@ service cloud.firestore {
 
       allow delete: if isOwner();
 
+      // Live chat between the customer and the driver of this ride (office can read)
+      match /chat/{msg} {
+        function bk() { return get(/databases/$(database)/documents/bookings/$(id)).data; }
+        allow read: if isStaff()
+          || (signedIn() && bk().customerUid == request.auth.uid)
+          || (isDriver() && bk().driverPhone == phone());
+        allow create: if bk().status in ['assigned', 'arrived', 'ontrip']
+          && request.resource.data.text is string
+          && request.resource.data.text.size() > 0 && request.resource.data.text.size() <= 300
+          && ((request.resource.data.from == 'c' && signedIn() && bk().customerUid == request.auth.uid)
+              || (request.resource.data.from == 'd' && isDriver() && bk().driverPhone == phone())
+              || (request.resource.data.from == 'o' && isStaff()));
+        allow delete: if isOwner();
+      }
+
       // Ride PIN: only the customer and the office can see it
       match /private/{doc} {
         allow read, write: if isStaff()
