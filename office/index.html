@@ -19,7 +19,7 @@
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('../vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV='2026-10-30-3',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV='2026-10-30-4',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('/vellorecalltaxi/version.json',location.origin)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -1305,9 +1305,17 @@ function drivers(){
      <div class="dmid"><span class="plate">${d.plate}</span><small>${vname(d.veh)} · ${d.model} · ★${d.rating}</small></div>
      <div class="dnums"><div><b class="${d.wallet<DB.cfg.minbal?'neg':''}">${inr(d.wallet)}</b><small>Wallet</small></div><div><b>${tdy.length}</b><small>${L('இன்று ride','Rides today')}</small></div><div><b>${inr(tdy.reduce((a,b)=>a+b.fare,0))}</b><small>${L('இன்று வசூல்','Fares today')}</small></div></div>
      ${exp.length?`<div class="alert amber">${exp.map(([k,v])=>`${k.toUpperCase()}: ${v} ${L('நாள்','days')}`).join(' · ')}</div>`:''}
-     ${S.role==='owner'?`<div class="dact"><button class="linkbtn" data-blk="${d.id}">${d.blocked?L('தடையை நீக்கு','Unblock'):L('தடை செய்','Block')}</button><button class="linkbtn" data-dw="${d.id}">${L('Wallet சரிசெய்','Adjust wallet')}</button></div>`:''}</div>`}).join('')}</div>`;
+     ${S.role==='owner'?`<div class="dact"><button class="linkbtn" data-blk="${d.id}">${d.blocked?L('தடையை நீக்கு','Unblock'):L('தடை செய்','Block')}</button><button class="linkbtn" data-dw="${d.id}">${L('Wallet சரிசெய்','Adjust wallet')}</button>${CL?`<button class="linkbtn" data-dd="${d.id}">${L('Document தேதி','Document dates')}</button>`:''}</div>`:''}</div>`}).join('')}</div>`;
   const ad=document.getElementById('ad');if(ad)ad.onclick=addDriver;
   app.querySelectorAll('[data-blk]').forEach(b=>b.onclick=()=>{const d=drvById(b.dataset.blk);if(CL){cw(F().updateDoc(F().doc(CL.db,'drivers',d.id),{blocked:!d.blocked,...(!d.blocked?{online:false}:{}),updatedAt:ts()}));toast(d.blocked?L('தடை நீக்கப்பட்டது','Unblocked'):L('தடை செய்யப்பட்டது','Blocked'));return}d.blocked=!d.blocked;if(d.blocked&&d.status==='avail')d.status='off';log(`${d.ta} ${d.blocked?'தடை':'தடை நீக்கம்'}`,`${d.en} ${d.blocked?'blocked':'unblocked'}`);saveDB();drivers()});
+  app.querySelectorAll('[data-dd]').forEach(b=>b.onclick=()=>{const d=drvById(b.dataset.dd),raw=(RAWD.find(x=>x._id===d.id)||{}).docs||{};
+    const K=[['dl',L('ஓட்டுநர் உரிமம்','Driving licence')],['ins','Insurance'],['permit','Permit'],['fc','FC']];
+    const v=k=>raw[k]?new Date(raw[k]).toISOString().slice(0,10):'';
+    modal(`<h3>${esc(d[S.lang])} · ${L('Document காலாவதி தேதிகள்','Document expiry dates')}</h3><p class="muted" style="margin:0;font-size:13px">${L('Driver புது document காட்டினதும் தேதியை மாத்துங்க. காலாவதி ஆன document இருந்தா driver Online போக முடியாது. காலியா விட்டா check இல்லை.','Update after you see the renewed document. A driver with an expired document cannot go online. Leave blank for no check.')}</p>
+      ${K.map(([k,n])=>`<label class="kind" style="display:block;margin-top:6px">${n}</label><div class="field" style="height:50px"><input type="date" data-k="${k}" value="${v(k)}"></div>`).join('')}
+      <button class="btn" id="dds">${L('சேமி','Save')}</button>`,(m,close)=>{m.querySelector('#dds').onclick=()=>{const up={updatedAt:ts()};
+        m.querySelectorAll('[data-k]').forEach(i=>{up['docs.'+i.dataset.k]=i.value?new Date(i.value+'T23:59:00').getTime():null});
+        cw(F().updateDoc(F().doc(CL.db,'drivers',d.id),up).then(()=>{close();toast(L('சேமிச்சாச்சு','Saved'))}))}})});
   app.querySelectorAll('[data-dw]').forEach(b=>b.onclick=()=>{const d=drvById(b.dataset.dw);
     modal(`<h3>${d[S.lang]} · Wallet ${inr(d.wallet)}</h3><div class="field" style="height:50px"><span class="cc">₹</span><input id="wa" inputmode="numeric" placeholder="${L('தொகை','Amount')}"></div>
       <div class="two"><button class="btn" id="wp">+ ${L('சேர்','Add')}</button><button class="btn ghost" id="wm">− ${L('கழி','Deduct')}</button></div>`,(m,close)=>{
@@ -1353,7 +1361,7 @@ function support(){
 }
 
 /* ---------- approvals ---------- */
-const DOCN={photo:['Photo','Photo'],aadhaarF:['ஆதார் முன்','Aadhaar front'],aadhaarB:['ஆதார் பின்','Aadhaar back'],panF:['PAN','PAN'],dlF:['DL முன்','Licence front'],dlB:['DL பின்','Licence back'],dl:['ஓட்டுநர் உரிமம்','Driving licence'],rcF:['RC முன்','RC front'],rcB:['RC பின்','RC back'],rc:['RC','RC book'],ins:['Insurance','Insurance'],permit:['Permit','Permit'],fc:['FC','Fitness cert.']};
+const DOCN={photo:['Photo','Photo'],aadhaarF:['ஆதார் முன்','Aadhaar front'],aadhaarB:['ஆதார் பின்','Aadhaar back'],panF:['PAN','PAN'],dlF:['DL முன்','Licence front'],dlB:['DL பின்','Licence back'],dl:['ஓட்டுநர் உரிமம்','Driving licence'],rcF:['RC முன்','RC front'],rcB:['RC பின்','RC back'],rc:['RC','RC book'],ins:['Insurance','Insurance'],permit:['Permit','Permit'],fc:['FC','Fitness cert.'],vehF:['வண்டி முன்','Vehicle front'],vehIn:['வண்டி உள்','Vehicle inside'],pcc:['Police சான்று','Police verification']};
 function appsHtml(){const A=(DB.apps||[]).filter(a=>a.status==='pending');if(!CL)return '';
   return `<div class="sec"><h3>${L('புது Driver விண்ணப்பங்கள்','New driver applications')}</h3><span class="sample">${A.length}</span></div>
    <div class="cards" style="margin-bottom:18px">${A.length?A.map(a=>`<div class="scard"><div class="dtop"><span class="vi sm">${I[a.veh]||''}</span><div style="flex:1;min-width:0"><b>${esc(a.name||'')}</b><small>${esc(a.id)} · ${esc(a.plate||'')} · ${vname(a.veh)}</small></div><small class="muted">${ago(CL.toMs(a.submittedAt)||Date.now())}</small></div>
@@ -1369,7 +1377,7 @@ function reviewApp(a){if(!a)return;
     <div class="bill"><div><span>${L('வண்டி','Vehicle')}</span><b>${vname(a.veh)} · ${esc(a.plate)}</b></div><div><span>${L('நிறுவனம் / Model / வருஷம்','Brand / model / year')}</span><b>${esc([a.brand,a.model,a.year].filter(Boolean).join(' · ')||'—')}</b></div>
      <div><span>${L('உரிம எண்','Licence no.')}</span><b>${esc(a.dlNo||'—')}</b></div>
      <div><span>${L('அனுபவம் / பகுதி','Experience / area')}</span><b>${a.years||0} ${L('வருடம்','yrs')} · ${esc(a.area||'—')}</b></div>
-     <div><span>${L('சொந்த வண்டியா','Own vehicle')}</span><b>${a.ownVehicle?L('ஆமா','Yes'):L('இல்லை','No')}</b></div>
+     <div><span>${L('அவசர தொடர்பு','Emergency contact')}</span><b>${esc(a.ecName||'—')} ${a.ecPhone?`· <a href="tel:${esc(a.ecPhone)}">${esc(a.ecPhone)}</a>`:''}</b></div><div><span>Police verification</span><b style="${(a.files||[]).includes('pcc')?'':'color:var(--danger)'}">${(a.files||[]).includes('pcc')?L('கொடுத்திருக்காங்க','Provided'):L('இல்லை — பின்னாடி வாங்குங்க','Not yet — collect later')}</b></div><div><span>${L('சொந்த வண்டியா','Own vehicle')}</span><b>${a.ownVehicle?L('ஆமா','Yes'):L('இல்லை','No')}</b></div>
      ${['dl','ins','permit','fc'].map(k=>`<div><span>${DOCN[k][S.lang==='ta'?0:1]} ${L('காலாவதி','expiry')}</span><b style="${a.exp&&a.exp[k]&&a.exp[k]-now<30*864e5?'color:var(--danger)':''}">${dd(a.exp&&a.exp[k])}</b></div>`).join('')}</div>
     <div id="imgs" style="display:grid;grid-template-columns:1fr 1fr;gap:8px">${(a.files||[]).map(k=>`<a id="im_${k}" target="_blank" rel="noopener" style="display:block;border:1px solid var(--line);border-radius:10px;overflow:hidden;text-decoration:none;color:inherit"><div style="height:110px;display:grid;place-items:center;background:var(--surface-2)"><small class="muted">${L('ஏத்துது…','Loading…')}</small></div><small style="display:block;padding:4px 8px">${DOCN[k]?DOCN[k][S.lang==='ta'?0:1]:k}</small></a>`).join('')}</div>
     <p class="muted" style="margin:0;font-size:12px">${L('Photo-வை தொட்டா பெருசா திறக்கும். Original document-ஐ நேர்ல ஒரு தடவை பார்த்துட்டு approve பண்றது நல்லது.','Tap a photo to open it full size. It’s best to see the original documents once in person before approving.')}</p>
@@ -1380,7 +1388,7 @@ function reviewApp(a){if(!a)return;
     if(ok)ok.onclick=()=>{if(DB.drv.some(d=>d.id===a.id)){toast(L('இந்த நம்பர் ஏற்கனவே driver','This number is already a driver'));return}
       const D=365*864e5,n0=Date.now(),e=a.exp||{};const bt=F().writeBatch(CL.db);
       bt.set(F().doc(CL.db,'drivers',a.id),{name:a.name,veh:a.veh||'auto',plate:a.plate||'',model:[a.brand,a.model].filter(Boolean).join(' ')+(a.year?' ('+a.year+')':'')||vname(a.veh),brand:a.brand||'',year:a.year||null,wallet:0,rating:5,online:false,blocked:false,
-        docs:{dl:e.dl||n0+D,rc:e.rc||n0+D,ins:e.ins||n0+D,permit:e.permit||n0+D,fc:e.fc||n0+D},dlNo:a.dlNo||'',fromApp:true,createdAt:ts(),updatedAt:ts()});
+        docs:{dl:e.dl||null,ins:e.ins||null,permit:e.permit||null,fc:e.fc||null},dlNo:a.dlNo||'',ec:a.ecPhone?[{name:a.ecName||'',phone:a.ecPhone}]:[],pcc:(a.files||[]).includes('pcc'),fromApp:true,createdAt:ts(),updatedAt:ts()});
       bt.update(F().doc(CL.db,'driverApps',a.id),{status:'approved',note:'',decidedAt:ts(),decidedBy:CL.phone,updatedAt:ts()});
       cw(bt.commit().then(()=>{close();toast(L(`${a.name} driver-ஆ சேர்க்கப்பட்டார். Driver link அனுப்புங்க`,`${a.name} is now a driver. Send them the driver link`))}))};
     if(no)no.onclick=()=>{const r=prompt(L('என்ன திருத்தணும்? (driver-க்கு தெரியும்)','What should they fix? (the driver will see this)'),L('DL photo தெளிவா இல்லை','The licence photo is not clear'));if(r==null)return;

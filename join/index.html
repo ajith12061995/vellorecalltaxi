@@ -121,13 +121,16 @@ function shrink(file){return new Promise((res,rej)=>{
 // photo slots: key, Tamil, English, required
 const SLOTS={photo:['உங்க photo','Your photo',1],aadhaarF:['முன் பக்கம்','Front',1],aadhaarB:['பின் பக்கம்','Back',1],panF:['முன் பக்கம்','Front',0],
   dlF:['முன் பக்கம்','Front',1],dlB:['பின் பக்கம்','Back',1],rcF:['முன் பக்கம்','Front',1],rcB:['பின் பக்கம்','Back',1],
-  ins:['Policy முதல் பக்கம்','Policy first page',1],permit:['Permit','Permit',0],fc:['FC','FC',0]};
+  ins:['Policy முதல் பக்கம்','Policy first page',1],permit:['Permit','Permit',0],fc:['FC','FC',0],
+  vehF:['முன் பக்கம் (number plate)','Front (number plate)',1],vehIn:['உள் பக்கம் (seat)','Inside (seats)',0],pcc:['சான்று','Certificate',0]};
 const GROUPS=[['உங்க photo','Your photo',['photo'],'முகம் தெளிவா தெரியணும்','Face clearly visible'],
   ['ஆதார் கார்டு','Aadhaar card',['aadhaarF','aadhaarB'],'Masked Aadhaar (முதல் 8 இலக்கம் மறைச்சது) கொடுக்கலாம்','A masked Aadhaar (first 8 digits hidden) is fine'],
   ['PAN கார்டு (இருந்தா)','PAN card (if you have one)',['panF'],'',''],
   ['ஓட்டுநர் உரிமம் (DL)','Driving licence',['dlF','dlB'],'',''],
   ['RC (வண்டி பதிவு)','RC (registration)',['rcF','rcB'],'',''],
-  ['Insurance · Permit · FC','Insurance · Permit · FC',['ins','permit','fc'],'Permit, FC — வணிக வண்டிக்கு (taxi / auto) கட்டாயம்','Permit and FC are needed for commercial vehicles']];
+  ['Insurance · Permit · FC','Insurance · Permit · FC',['ins','permit','fc'],'Permit, FC — வணிக வண்டிக்கு (taxi / auto) கட்டாயம்','Permit and FC are needed for commercial vehicles'],
+  ['வண்டி photo','Vehicle photos',['vehF','vehIn'],'Number plate தெளிவா தெரியணும்','The number plate must be readable'],
+  ['காவல்துறை சரிபார்ப்பு சான்று (Police verification)','Police verification certificate',['pcc'],'இருந்தா இப்போவே கொடுங்க. இல்லைன்னா approve-க்கு அப்புறம் கேட்போம்','Add it now if you have it; otherwise we will ask for it later']];
 const EXP=[['dl','DL','Licence',1],['ins','Insurance','Insurance',1],['permit','Permit','Permit',0],['fc','FC','FC',0]];
 const OLDKEYS={dl:'dlF',rc:'rcF'};
 // brands and models per vehicle type
@@ -157,7 +160,9 @@ function form(){
       <label for="nm">${L('முழு பெயர் (ஆதார்-ல உள்ள மாதிரி) *','Full name (as on Aadhaar) *')}</label><input id="nm" type="text" maxlength="40" value="${esc(D.name||'')}" autocomplete="name">
       <label for="dln">${L('ஓட்டுநர் உரிம எண் *','Driving licence number *')}</label><input id="dln" type="text" maxlength="20" style="text-transform:uppercase" value="${esc(D.dlNo||'')}" placeholder="TN23 20XX 0001234">
       <div class="row2"><div><label for="exp">${L('அனுபவம் (வருடம்)','Experience (years)')}</label><input id="exp" inputmode="numeric" maxlength="2" value="${esc(D.years||'')}"></div>
-      <div><label for="area">${L('வசிக்கும் பகுதி','Area you live in')}</label><input id="area" type="text" maxlength="40" value="${esc(D.area||'')}" placeholder="${L('உதா. காட்பாடி','e.g. Katpadi')}"></div></div></div>
+      <div><label for="area">${L('வசிக்கும் பகுதி','Area you live in')}</label><input id="area" type="text" maxlength="40" value="${esc(D.area||'')}" placeholder="${L('உதா. காட்பாடி','e.g. Katpadi')}"></div></div>
+      <label>${L('அவசர தொடர்பு (குடும்பத்தினர்) *','Emergency contact (family) *')}</label>
+      <div class="row2"><div><input id="ecn" type="text" maxlength="30" value="${esc(D.ecName||'')}" placeholder="${L('பெயர் / உறவு','Name / relation')}"></div><div><div class="ph"><b>+91</b><input id="ecp" type="tel" inputmode="numeric" maxlength="10" value="${esc((D.ecPhone||'').replace('+91',''))}" placeholder="98765 43210"></div></div></div></div>
     <div class="card"><h2>${L('3. வண்டி','3. Vehicle')}</h2>
       <label style="margin-top:0">${L('வண்டி வகை *','Vehicle type *')}</label>
       <div class="chips">${VEH.map(v=>`<button type="button" class="chip ${v[0]===S.veh?'on':''}" data-v="${v[0]}">${S.lang==='ta'?v[1]:v[2]}</button>`).join('')}</div>
@@ -177,7 +182,7 @@ function form(){
       <button class="btn y" id="sb">${L('Office-க்கு அனுப்பு','Send to office')}</button></div>`;
   const val=id=>(document.getElementById(id)||{}).value||'';
   const snap=()=>{const br=val('br'),mo=val('mo');
-    S.data={...S.data,name:val('nm').trim(),dlNo:val('dln').trim().toUpperCase(),years:val('exp').replace(/\D/g,''),area:val('area').trim(),plate:val('pl').trim().toUpperCase(),
+    S.data={...S.data,name:val('nm').trim(),ecName:val('ecn').trim(),ecPhone:val('ecp').replace(/\D/g,'').slice(0,10),dlNo:val('dln').trim().toUpperCase(),years:val('exp').replace(/\D/g,''),area:val('area').trim(),plate:val('pl').trim().toUpperCase(),
       brand:br===OTHER?val('brx').trim():br,model:(br===OTHER||mo===OTHER)?val('mox').trim():mo,year:+val('yr')||'',ownVehicle:document.getElementById('own').checked,
       exp:Object.fromEntries(EXP.map(([k])=>[k,val('x_'+k)?new Date(val('x_'+k)+'T23:59:00').getTime():((S.data.exp||{})[k]||null)]))}};
   app.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>{snap();S.veh=b.dataset.v;S.data.brand='';S.data.model='';form()});
@@ -189,7 +194,7 @@ function form(){
 }
 async function submit(){
   const e=document.getElementById('e'),D=S.data,had=((S.app&&S.app.files)||[]).map(k=>OLDKEYS[k]||k);
-  const missing=[];if((D.name||'').length<3)missing.push(L('பெயர்','name'));if((D.dlNo||'').length<8)missing.push(L('உரிம எண்','licence number'));
+  const missing=[];if((D.name||'').length<3)missing.push(L('பெயர்','name'));if((D.dlNo||'').length<8)missing.push(L('உரிம எண்','licence number'));if((D.ecName||'').length<2||!/^[6-9]\d{9}$/.test(D.ecPhone||''))missing.push(L('அவசர தொடர்பு','emergency contact'));else if(D.ecPhone===S.phone)missing.push(L('அவசர தொடர்பு (உங்க நம்பர் இல்லாம வேற நம்பர்)','emergency contact (a different number)'));
   if(!D.brand)missing.push(L('நிறுவனம்','brand'));if(!D.model)missing.push('Model');if(!D.year)missing.push(L('வருஷம்','year'));if((D.plate||'').length<6)missing.push(L('வண்டி எண்','plate'));
   GROUPS.forEach(([gta,gen,keys])=>keys.forEach(k=>{const s=SLOTS[k];if(s[2]&&!S.files[k]&&!had.includes(k))missing.push((S.lang==='ta'?gta:gen)+(keys.length>1?' – '+(S.lang==='ta'?s[0]:s[1]):''))}));
   EXP.forEach(([k,ta,en,req])=>{if(req&&!(D.exp||{})[k])missing.push((S.lang==='ta'?ta:en)+L(' காலாவதி தேதி',' expiry date'))});
@@ -200,7 +205,7 @@ async function submit(){
   const keys=Object.keys(S.files),bar=n=>pg.firstChild.style.width=Math.round(n*100)+'%';
   try{
     const ref=F.doc(CL.db,'driverApps',CL.phone);
-    await F.setDoc(ref,{name:D.name,phone:CL.phone,dlNo:D.dlNo,years:+D.years||0,area:D.area||'',veh:S.veh,brand:D.brand,model:D.model,year:+D.year||null,plate:D.plate,ownVehicle:!!D.ownVehicle,exp:D.exp||{},
+    await F.setDoc(ref,{name:D.name,phone:CL.phone,ecName:D.ecName,ecPhone:'+91'+D.ecPhone,dlNo:D.dlNo,years:+D.years||0,area:D.area||'',veh:S.veh,brand:D.brand,model:D.model,year:+D.year||null,plate:D.plate,ownVehicle:!!D.ownVehicle,exp:D.exp||{},
       files:had,status:'pending',note:'',submittedAt:F.serverTimestamp(),updatedAt:F.serverTimestamp()},{merge:true});
     bar(.08);
     for(let i=0;i<keys.length;i++){await F.setDoc(F.doc(CL.db,'driverApps',CL.phone,'files',keys[i]),{data:S.files[keys[i]],at:Date.now()});bar(.08+.88*(i+1)/keys.length)}

@@ -22,7 +22,7 @@
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('../vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV='2026-10-30-3',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV='2026-10-30-4',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('/vellorecalltaxi/version.json',location.origin)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -1076,6 +1076,7 @@ function home(){
        <button class="chipbtn ${low?'lowbal':''}" id="wb">${I.navWallet.replace('<svg ','<svg width="18" height="18" ')} ${inr(DS.wallet)}</button></div>
      <div class="zoomctl" style="bottom:34px"><button class="chipbtn" id="loc" aria-label="My location">${I.gps}</button></div></div>
    <div class="sheet pad"><div class="grab"></div>
+     ${(()=>{const ds=docState();return ds.expired.length?`<div class="warn">⛔ ${L('காலாவதி ஆன document: ','Expired: ')}${ds.expired.join(', ')}. ${L('புதுப்பிக்கும் வரை Online போக முடியாது. புது copy-ஐ office-க்கு அனுப்புங்க.','You can’t go online until it is renewed. Send the new copy to the office.')}</div>`:ds.soon.length?`<div class="warn">⚠️ ${L('சீக்கிரம் காலாவதி: ','Expiring soon: ')}${ds.soon.join(', ')}</div>`:''})()}
      ${low?`<div class="warn">${L(`Wallet-ல ${inr(DS.wallet)} தான் இருக்கு. Online போக குறைந்தது ${inr(MINBAL)} வேணும்.`,`Only ${inr(DS.wallet)} in wallet. You need at least ${inr(MINBAL)} to go online.`)} <button class="linkbtn" id="rc">${L('Recharge பண்ணு','Recharge')}</button></div>`:''}
      ${S.online?`<div class="liveCard"><span class="pulse"></span><div><b>${L('Online-ல இருக்கீங்க','You are online')}</b><small>${L('புது ride request-க்கு காத்திருக்கு…','Waiting for ride requests…')}</small></div></div>
         ${slider('offs',L('Offline ஆக இழுங்க','Slide to go offline'),'red')}
@@ -1092,7 +1093,7 @@ function home(){
     const rc=document.getElementById('rc');if(rc)rc.onclick=()=>{S.tab='wallet';walletTab();recharge()};
     if(S.online){bindSlide('offs',()=>{setOnline(false);home();toast(L('Offline ஆயிட்டீங்க','You are offline'))});
       if(CL)maybeShowReq();else{document.getElementById('dreq').onclick=()=>incoming();REQ=setTimeout(()=>incoming(),7000)}}
-    else bindSlide('ons',()=>{if(DME&&DME.blocked){toast(L('உங்க account நிறுத்தி வைக்கப்பட்டிருக்கு. Owner-ஐ தொடர்பு கொள்ளுங்க','Your account is on hold. Contact the owner'));home();return}if(DS.wallet<MINBAL){toast(L('Wallet recharge பண்ணிட்டு Online போங்க','Recharge your wallet to go online'));home();return}setOnline(true);home();toast(L('Online! Ride request வந்தா சத்தம் வரும்','You are online. Requests will ring'))});
+    else bindSlide('ons',()=>{if(DME&&DME.blocked){toast(L('உங்க account நிறுத்தி வைக்கப்பட்டிருக்கு. Owner-ஐ தொடர்பு கொள்ளுங்க','Your account is on hold. Contact the owner'));home();return}{const ds=docState();if(ds.expired.length){toast(L('காலாவதி ஆன document: ','Expired: ')+ds.expired.join(', ')+L('. புதுப்பிச்சு office-க்கு அனுப்புங்க','. Renew it and tell the office'));home();return}}if(DS.wallet<MINBAL){toast(L('Wallet recharge பண்ணிட்டு Online போங்க','Recharge your wallet to go online'));home();return}setOnline(true);home();toast(L('Online! Ride request வந்தா சத்தம் வரும்','You are online. Requests will ring'))});
   });
 }
 
@@ -1402,9 +1403,15 @@ async function loadMe(){
   watchMe();watchCfgD();watchMine();watchRch();
   return true;
 }
+
+/* document expiry: warn 15 days ahead, block going online once anything has expired */
+const DOCNM={dl:['ஓட்டுநர் உரிமம்','Driving licence'],rc:['RC','RC'],ins:['Insurance','Insurance'],permit:['Permit','Permit'],fc:['FC','FC']};
+function docState(){const out={expired:[],soon:[]};if(!DME||!DME.docs)return out;const now=Date.now();
+  Object.entries(DME.docs).forEach(([k,t])=>{if(!t||!DOCNM[k])return;const nm=DOCNM[k][S.lang==='ta'?0:1],d=Math.ceil((t-now)/864e5);if(t<now)out.expired.push(nm);else if(d<=15)out.soon.push(`${nm} (${d} ${L('நாள்','days')})`)});return out}
 function applyMe(d){DME={id:CL.phone,ta:d.name||'Driver',en:d.name||'Driver',plate:d.plate||'',model:d.model||'',veh:d.veh||'auto',rating:d.rating||5,docs:d.docs||null,blocked:!!d.blocked};DS.wallet=+d.wallet||0}
 function watchMe(){UNS.push(F().onSnapshot(F().doc(CL.db,'drivers',CL.phone),s=>{if(!s.exists())return;const before=DS.wallet;applyMe(s.data());
   if(DME.blocked&&S.online){setOnline(false);toast(L('உங்க account நிறுத்தி வைக்கப்பட்டிருக்கு','Your account is on hold'))}
+  if(S.online&&!J&&docState().expired.length){setOnline(false);toast(L('ஒரு document காலாவதி ஆயிடுச்சு. Offline ஆக்கப்பட்டீங்க','A document has expired. You have been taken offline'))}
   if(!J&&!document.querySelector('.modal')){if(S.tab==='wallet'&&before!==DS.wallet)walletTab();else if(S.tab==='home'&&document.getElementById('ons'))home()}},()=>{}))}
 function watchCfgD(){UNS.push(F().onSnapshot(F().doc(CL.db,'config','app'),s=>{if(!s.exists())return;const d=s.data();
   if(d.comm!=null)COMM=+d.comm;if(d.minbal!=null)MINBAL=+d.minbal;CFGD.upi=d.upi||'';
