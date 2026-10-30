@@ -18,7 +18,7 @@
 <script type="module">import('../vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 </head>
 <body>
-<title>Vellore Call Taxi Office</title>
+<title>Vellore Taxi Office</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+Thambi+2:wght@500;600;700;800&family=Hind+Madurai:wght@400;500;600;700&display=swap">
@@ -1115,7 +1115,7 @@ function badge(k){if(k==='book')return DB.bk.filter(b=>b.status==='searching'||(
 function layout(){
   const secs=SECS();if(!secs.some(s=>s[0]===S.sec))S.sec='dash';
   const mob=secs.slice(0,4).concat([['more','more',L('மேலும்','More')]]);
-  app.innerHTML=`<div class="olay"><aside class="side"><div class="brand"><span class="rsign">TAXI</span><div><b>Vellore Call Taxi</b><small>${S.role==='owner'?'Owner':'Staff'} panel</small></div></div>
+  app.innerHTML=`<div class="olay"><aside class="side"><div class="brand"><span class="rsign">TAXI</span><div><b>Vellore Taxi</b><small>${S.role==='owner'?'Owner':'Staff'} panel</small></div></div>
     <nav class="snav">${secs.map(([k,ic,l])=>`<button data-sec="${k}" class="${S.sec===k?'on':''}">${I[ic]}<span>${l}</span>${badge(k)?`<em>${badge(k)}</em>`:''}</button>`).join('')}</nav>
     <button class="newbk" id="nb1">+ ${L('புது Booking','New booking')}</button>
     <div class="sfoot"><button id="lg1">${S.lang==='ta'?'English':'தமிழ்'}</button><button id="lo1">Logout</button></div></aside>
@@ -1143,7 +1143,7 @@ const dPill=s=>`<em class="dst ${s}">${({avail:L('காலி','Available'),pic
 /* ---------- login ---------- */
 function login(){
   if(CL)return cloudLogin();
-  app.innerHTML=`<section class="ologin"><div class="lcard"><div class="brand"><span class="rsign">TAXI</span><div><b>Vellore Call Taxi</b><small>Owner / Staff panel</small></div></div>
+  app.innerHTML=`<section class="ologin"><div class="lcard"><div class="brand"><span class="rsign">TAXI</span><div><b>Vellore Taxi</b><small>Owner / Staff panel</small></div></div>
     <h1>${L('உள்ளே வாங்க','Sign in')}</h1>
     <div class="seg"><button class="${S.role==='owner'?'on':''}" data-r="owner">Owner</button><button class="${S.role==='staff'?'on':''}" data-r="staff">Staff</button></div>
     <label class="kind" for="ph">${L('மொபைல் நம்பர்','Mobile number')}</label><div class="field"><span class="cc">+91</span><input id="ph" inputmode="numeric" maxlength="10" value="${esc(S.phone)}"></div>
@@ -1422,7 +1422,7 @@ const cloudP=(window.CLOUD_READY||Promise.resolve(null)).then(c=>{CL=c||null;ret
 const F=()=>CL.fs;const ts=()=>F().serverTimestamp();
 const shortB=id=>'B'+id.slice(0,5).toUpperCase();
 const placeK=k=>({key:k,ta:P[k].ta,en:P[k].en,lat:P[k].lat,lon:P[k].lon});
-function cardScreen(h,p,btn,fn){app.innerHTML=`<section class="ologin"><div class="lcard"><div class="brand"><span class="rsign">TAXI</span><div><b>Vellore Call Taxi</b><small>Owner / Staff panel</small></div></div><h1>${h}</h1><p class="muted" style="margin:0">${p}</p><button class="btn" id="cb">${btn}</button></div></section>`;document.getElementById('cb').onclick=fn}
+function cardScreen(h,p,btn,fn){app.innerHTML=`<section class="ologin"><div class="lcard"><div class="brand"><span class="rsign">TAXI</span><div><b>Vellore Taxi</b><small>Owner / Staff panel</small></div></div><h1>${h}</h1><p class="muted" style="margin:0">${p}</p><button class="btn" id="cb">${btn}</button></div></section>`;document.getElementById('cb').onclick=fn}
 async function cloudBootO(){
   const c=await cloudP;
   if(!c){if(ON_PAGES){cardScreen(L('Internet இல்லை','You are offline'),L('Connection-ஐ பார்த்துட்டு மறுபடி முயற்சி பண்ணுங்க.','Check your connection and try again.'),L('மறுபடி முயற்சி','Try again'),()=>location.reload());return true}return false}
@@ -1488,7 +1488,7 @@ function updBadges(){app.querySelectorAll('[data-sec]').forEach(b=>{const n=badg
 const cw=(p)=>p.catch(e=>{oerr(e);toast(CL.errText(e,S.lang==='ta'))});
 function bkRef(b){return F().doc(CL.db,'bookings',b._id)}
 function cloudLogin(){
-  app.innerHTML=`<section class="ologin"><div class="lcard"><div class="brand"><span class="rsign">TAXI</span><div><b>Vellore Call Taxi</b><small>Owner / Staff panel</small></div></div>
+  app.innerHTML=`<section class="ologin"><div class="lcard"><div class="brand"><span class="rsign">TAXI</span><div><b>Vellore Taxi</b><small>Owner / Staff panel</small></div></div>
     <h1>${L('உள்ளே வாங்க','Sign in')}</h1><p class="muted" style="margin:0">${L('Owner அல்லது staff நம்பர்ல login பண்ணுங்க','Use the owner or staff number')}</p>
     <label class="kind" for="ph">${L('மொபைல் நம்பர்','Mobile number')}</label><div class="field"><span class="cc">+91</span><input id="ph" inputmode="numeric" maxlength="10" value="${esc(S.phone)}"></div>
     <div id="ow" hidden><label class="kind" for="otp">OTP</label><div class="field"><input id="otp" inputmode="numeric" maxlength="6" autocomplete="one-time-code" placeholder="••••••"></div></div>
@@ -1507,7 +1507,7 @@ function cloudLogin(){
   setTimeout(()=>ph.focus(),200);
 }
 
-app.innerHTML='<section class="ologin"><div class="lcard"><div class="brand"><span class="rsign">TAXI</span><div><b>Vellore Call Taxi</b><small>Loading…</small></div></div></div></section>';
+app.innerHTML='<section class="ologin"><div class="lcard"><div class="brand"><span class="rsign">TAXI</span><div><b>Vellore Taxi</b><small>Loading…</small></div></div></div></section>';
 cloudP.then(async()=>{if(await cloudBootO())return;if(S.logged){startSim(liveRefresh);show()}else login()});
 
 </script>

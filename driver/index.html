@@ -20,7 +20,7 @@
 <script type="module">import('../vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 </head>
 <body>
-<title>Vellore Call Taxi Driver</title>
+<title>Vellore Taxi Driver</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+Thambi+2:wght@500;600;700;800&family=Hind+Madurai:wght@400;500;600;700&display=swap">
@@ -1009,8 +1009,8 @@ const navLink=(p,txt)=>`<a class="navbtn" href="https://www.google.com/maps/dir/
 
 /* ---------- login ---------- */
 function splash(){
-  go(`<section class="screen" id="splash"><div class="roofsign"><b>TAXI</b><span>வேலூர் கால் டாக்ஸி</span></div><span class="drvtag">DRIVER</span>
-    <div class="road"></div><div class="tag">Vellore Call Taxi · Driver</div></section>`);
+  go(`<section class="screen" id="splash"><div class="roofsign"><b>TAXI</b><span>வேலூர் டாக்ஸி</span></div><span class="drvtag">DRIVER</span>
+    <div class="road"></div><div class="tag">Vellore Taxi · Driver</div></section>`);
   setTimeout(async()=>{if(await cloudBootD())return;S.logged&&S.pid?home():login()},1500);
 }
 function login(){
@@ -1313,7 +1313,7 @@ function profileTab(){
       <button class="row" id="th"><span class="ic">☾</span><div><b>Dark mode</b><small>${document.documentElement.dataset.theme==='dark'?'On':'Off'}</small></div></button>
       ${CL?'':`<button class="row" id="sw"><span class="ic">${I.navHome}</span><div><b>${L('வேற வண்டி (demo)','Switch vehicle (demo)')}</b><small>${L('Owner assign பண்றது','Assigned by owner')}</small></div></button>`}
       <button class="row" id="lo"><span class="ic" style="color:var(--danger)">⏻</span><div><b style="color:var(--danger)">Logout</b><small>+91 ${S.phone}</small></div></button></div>
-    <p class="fine muted"><a href="https://ajith12061995.github.io/vellorecalltaxi/privacy/#drivers" target="_blank" rel="noopener" style="color:inherit">${L('தனியுரிமை & விதிமுறைகள்','Privacy & Terms')}</a> · Vellore Call Taxi · Driver app v0.1</p></div>`),()=>{
+    <p class="fine muted"><a href="https://ajith12061995.github.io/vellorecalltaxi/privacy/#drivers" target="_blank" rel="noopener" style="color:inherit">${L('தனியுரிமை & விதிமுறைகள்','Privacy & Terms')}</a> · Vellore Taxi · Driver app v0.1</p></div>`),()=>{
     bindNav();
     document.getElementById('lg').onclick=()=>{S.lang=S.lang==='ta'?'en':'ta';save();profileTab()};
     document.getElementById('th').onclick=()=>{const r=document.documentElement;r.dataset.theme=r.dataset.theme==='dark'?'light':'dark';profileTab()};

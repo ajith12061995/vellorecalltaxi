@@ -8,7 +8,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="icon" href="./icon-192.png">
-<link rel="apple-touch-icon" href="./icon-192.png">
+<link rel="apple-touch-icon" href="./apple-touch-icon.png">
+<meta name="apple-mobile-web-app-title" content="Vellore Taxi">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="./maps-config.js"></script>
@@ -18,7 +19,7 @@
 <script type="module">import('./vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 </head>
 <body>
-<title>Vellore Call Taxi</title>
+<title>Vellore Taxi</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+Thambi+2:wght@500;600;700;800&family=Hind+Madurai:wght@400;500;600;700&display=swap">
@@ -575,8 +576,8 @@ function toast(msg){const el=document.getElementById('toast');el.textContent=msg
 /* ---------- screens ---------- */
 function splash(){
   if(/^#track-/.test(location.hash)){trackView(location.hash.slice(7));return}
-  go(`<section class="screen" id="splash"><div class="roofsign"><b>TAXI</b><span>வேலூர் கால் டாக்ஸி</span></div>
-    <div class="road"></div><div class="tag">Vellore Call Taxi</div></section>`);
+  go(`<section class="screen" id="splash"><div class="roofsign"><b>TAXI</b><span>வேலூர் டாக்ஸி</span></div>
+    <div class="road"></div><div class="tag">Vellore Taxi</div></section>`);
   setTimeout(async()=>{if(await cloudBoot())return;S.logged?home():langScreen()},1700);
 }
 function langScreen(){
@@ -590,7 +591,7 @@ function langScreen(){
   });
 }
 function login(){
-  go(`<section class="screen"><div class="hero pad"><span class="mini">${t('tagline')}</span><h1>${t('loginH')}</h1><p>${t('loginP')}</p>
+  go(`<section class="screen"><div class="hero pad"><img src="./brand/logo-main.png" alt="Vellore Taxi" style="height:150px;display:block;margin:0 auto 8px" onerror="this.remove()"><span class="mini">${t('tagline')}</span><h1>${t('loginH')}</h1><p>${t('loginP')}</p>
     <div style="display:flex;gap:12px;margin-top:8px;flex-wrap:wrap">${I.bike}${I.auto}${I.mini}${I.car}${I.suv}</div></div>
   <div class="body pad"><label class="muted" for="ph" style="font-weight:600">${t('phone')}</label>
    <div class="field"><span class="cc">+91</span><input id="ph" inputmode="numeric" maxlength="10" autocomplete="tel" value="${S.phone}" placeholder="98765 43210"></div>
@@ -814,7 +815,7 @@ function profile(){
     <button class="row" id="th"><span class="ic">${dark?'☾':'☀'}</span><div><b>${t('theme')}</b><small>${dark?'On':'Off'}</small></div></button>
     <button class="row" id="rq"><span class="ic">${I.chat}</span><div><b>${L('என் requests & உதவி','My requests & help')}</b><small>${TIX.length} ${L('requests','requests')}</small></div></button>
     <button class="row" id="lo"><span class="ic" style="color:var(--danger)">⏻</span><div><b style="color:var(--danger)">${t('logout')}</b><small>+91 ${S.phone}</small></div></button></div>
-    <p class="fine muted"><a href="https://ajith12061995.github.io/vellorecalltaxi/privacy/" target="_blank" rel="noopener" style="color:inherit">${L('தனியுரிமை & விதிமுறைகள்','Privacy & Terms')}</a> · Vellore Call Taxi · Customer app v0.5</p></div>`),()=>{
+    <p class="fine muted"><a href="https://ajith12061995.github.io/vellorecalltaxi/privacy/" target="_blank" rel="noopener" style="color:inherit">${L('தனியுரிமை & விதிமுறைகள்','Privacy & Terms')}</a> · Vellore Taxi · Customer app v0.5</p></div>`),()=>{
     bindNav();
     document.getElementById('lg').onclick=()=>{S.lang=S.lang==='ta'?'en':'ta';save();profile()};
     document.getElementById('th').onclick=()=>{document.documentElement.dataset.theme=dark?'light':'dark';profile()};
@@ -957,8 +958,8 @@ function chatSheet(){
   });
 }
 function shareTrip(){
-  const txt=L(`நான் Vellore Call Taxi-ல பயணம் பண்றேன்: ${R.drv.ta}, ${R.drv.plate} (${R.v.ta}). ${R.fromName.ta} → ${R.destName.ta}.`,
-              `I'm riding with Vellore Call Taxi: ${R.drv.en}, ${R.drv.plate} (${R.v.en}). ${R.fromName.en} → ${R.destName.en}.`);
+  const txt=L(`நான் Vellore Taxi-ல பயணம் பண்றேன்: ${R.drv.ta}, ${R.drv.plate} (${R.v.ta}). ${R.fromName.ta} → ${R.destName.ta}.`,
+              `I'm riding with Vellore Taxi: ${R.drv.en}, ${R.drv.plate} (${R.v.en}). ${R.fromName.en} → ${R.destName.en}.`);
   const link=`${APP_URL}#track-${R.trackId}`,txt2=txt+'\n'+L('Live location','Live location')+': '+link;
   modal(`<h3>${L('பயண விவரத்தை share பண்ணு','Share trip details')}</h3><div class="note" id="stx"></div>
     <p class="muted" style="margin:0;font-size:13px">${L('Link-ஐ திறக்கிறவங்க உங்க வண்டி எங்கே இருக்குன்னு பார்க்கலாம். Live map Firebase connect ஆனதும் வேலை செய்யும்.','Anyone with the link can follow your ride. The live map works once Firebase is connected.')}</p>
@@ -1117,11 +1118,11 @@ function rebook(x){
 function receipt(x){
   const inv=invNo(x),d=new Date(x.date);
   const dt=d.toLocaleString(S.lang==='ta'?'ta-IN':'en-IN',{day:'numeric',month:'short',year:'numeric',hour:'numeric',minute:'2-digit'});
-  const waTxt=`Vellore Call Taxi — ${L('பயண bill','Ride bill')} ${inv}\n${dt}\n${x.from[S.lang]} → ${x.to[S.lang]}\n${x.veh[S.lang]} · ${x.plate||''} · ${x.km||''} km\n${L('மொத்தம்','Total')}: ${inr(total(x))} (${payName(x.pay)})`;
+  const waTxt=`Vellore Taxi — ${L('பயண bill','Ride bill')} ${inv}\n${dt}\n${x.from[S.lang]} → ${x.to[S.lang]}\n${x.veh[S.lang]} · ${x.plate||''} · ${x.km||''} km\n${L('மொத்தம்','Total')}: ${inr(total(x))} (${payName(x.pay)})`;
   go(`<section class="screen"><div class="head pad"><button class="back" id="bk" aria-label="Back">${I.back}</button><h2>${L('பயண Bill','Ride bill')}</h2></div>
    <div class="body pad" style="padding-top:0">
     <div class="receipt" id="rcpt">
-      <div class="rhead"><div class="rbrand"><span class="rsign">TAXI</span><div><b>Vellore Call Taxi</b><small>வேலூர் கால் டாக்ஸி · Katpadi, Vellore</small></div></div>
+      <div class="rhead"><div class="rbrand"><span class="rsign">TAXI</span><div><b>Vellore Taxi</b><small>வேலூர் டாக்ஸி · Katpadi, Vellore</small></div></div>
         <div class="rinv"><small>${L('Bill எண்','Bill no.')}</small><b>${inv}</b><small>${dt}</small></div></div>
       <div class="rsec"><div class="rrow"><span>${L('வாடிக்கையாளர்','Customer')}</span><b>${S.name||'—'} · +91 ${S.phone||''}</b></div>
         <div class="rrow"><span>${t('pickup')}</span><b>${x.from[S.lang]}</b></div><div class="rrow"><span>${t('dropLbl')}</span><b>${x.to[S.lang]}</b></div></div>
@@ -1132,7 +1133,7 @@ function receipt(x){
         ${x.tip?`<div class="rrow"><span>Tip</span><b>${inr(x.tip)}</b></div>`:''}
         <div class="rrow rtot"><span>${L('மொத்தம்','Total')}</span><b>${inr(total(x))}</b></div>
         <div class="rrow"><span>${L('பணம்','Paid by')}</span><b>${payName(x.pay)} ✓</b></div></div>
-      <p class="rthanks">${L('Vellore Call Taxi-ஐ தேர்ந்தெடுத்ததற்கு நன்றி!','Thank you for riding with Vellore Call Taxi!')}</p>
+      <p class="rthanks">${L('Vellore Taxi-ஐ தேர்ந்தெடுத்ததற்கு நன்றி!','Thank you for riding with Vellore Taxi!')}</p>
     </div>
     <div class="two"><button class="btn" id="pdf">${L('PDF Download','Download PDF')}</button>
       <a class="btn wa" href="https://wa.me/?text=${encodeURIComponent(waTxt)}" target="_blank" rel="noopener">${L('WhatsApp-ல அனுப்பு','Send on WhatsApp')}</a></div>
@@ -1714,7 +1715,7 @@ async function cloudSchedule(rec){
     return ref.id}catch(e){toast(CL.errText(e,S.lang==='ta'));return null}
 }
 function loadQrLib(){return new Promise((res,rej)=>{if(window.QRCode)return res();const sc=document.createElement('script');sc.src='https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';sc.onload=res;sc.onerror=rej;document.head.appendChild(sc)})}
-function upiLink(amt,ref){return `upi://pay?pa=${encodeURIComponent(CFG.upi)}&pn=${encodeURIComponent('Vellore Call Taxi')}&am=${amt}&cu=INR&tn=${encodeURIComponent('Ride '+(ref||''))}`}
+function upiLink(amt,ref){return `upi://pay?pa=${encodeURIComponent(CFG.upi)}&pn=${encodeURIComponent('Vellore Taxi')}&am=${amt}&cu=INR&tn=${encodeURIComponent('Ride '+(ref||''))}`}
 function realQr(el,amt,ref){if(!CFG.upi||!el)return;loadQrLib().then(()=>{el.innerHTML='';new window.QRCode(el,{text:upiLink(amt,ref),width:120,height:120,correctLevel:window.QRCode.CorrectLevel.M})}).catch(()=>{})}
 
 

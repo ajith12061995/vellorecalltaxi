@@ -14,5 +14,5 @@
 <circle cx="350" cy="140" r="30" fill="#121212"/><circle cx="350" cy="140" r="12" fill="#cfd6d3"/></g>
 <text x="500" y="600" text-anchor="middle" font-family="Poppins" font-weight="800" font-size="96" fill="#FFFFFF">VELLORE</text>
 <rect x="320" y="628" width="360" height="68" rx="34" fill="#FFC21A"/><text x="500" y="676" text-anchor="middle" font-family="Poppins" font-weight="800" font-size="40" letter-spacing="7" fill="#121212">CALL TAXI</text>
-<text x="500" y="762" text-anchor="middle" font-family="Baloo" font-size="42" fill="#FFC21A">வேலூர் கால் டாக்ஸி</text>
+<text x="500" y="762" text-anchor="middle" font-family="Baloo" font-size="42" fill="#FFC21A">வேலூர் டாக்ஸி</text>
 <text x="500" y="812" text-anchor="middle" font-family="Poppins" font-weight="600" font-size="19" letter-spacing="3" fill="#BFE0D4">SAFE · ANYTIME · EVERYWHERE</text></svg>

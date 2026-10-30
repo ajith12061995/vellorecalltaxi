@@ -1,4 +1,4 @@
-# Vellore Call Taxi
+# Vellore Taxi
 
 Three web apps for a call-taxi business in Vellore, sharing one Firebase project (`vellore-taxi23`).
 
