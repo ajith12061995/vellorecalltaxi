@@ -28,7 +28,7 @@
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('../vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV='2026-10-31-17',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV='2026-10-31-18',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('/vellorecalltaxi/version.json',location.origin)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -1605,7 +1605,7 @@ function S_TIER(){const d=DME||{};if(d.prio==='top')return 1;if(d.prio==='low')r
 function offerAt(b){
   const k=b.kind==='outstation'?'out':b.kind==='rental'?'rental':'local';
   if(k==='local')return svcActive('local')?0:Infinity;
-  const dp=b.dispatch||{};if(dp.review)return Infinity;const open=dp.openAt||0,gap=(dp.gap||DISP.gap)*1000,fall=dp.fall!==undefined?dp.fall:DISP.fall;
+  const dp=b.dispatch||{};if(dp.review&&!dp.reviewUntil)return Infinity;const open=dp.review?dp.reviewUntil:(dp.openAt||0),gap=(dp.gap||DISP.gap)*1000,fall=dp.fall!==undefined?dp.fall:DISP.fall;
   if(svcActive(k))return k==='out'?open+(S_TIER()-1)*gap:open;
   if(svcAllowed(k))return Infinity; // driver switched this service off
   return fall?open+(k==='out'?3:1)*gap:Infinity;

@@ -25,7 +25,7 @@
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('../vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV='2026-10-31-17',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV='2026-10-31-18',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('/vellorecalltaxi/version.json',location.origin)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -584,6 +584,13 @@ details.faq p{margin:0;padding:0 14px 14px;color:var(--muted);font-size:14px;lin
 .dnums b{font-family:var(--display);font-size:16px;font-variant-numeric:tabular-nums}
 .dnums b.neg{color:var(--danger)}
 .dnums small{color:var(--muted);font-size:11.5px}
+ #ringbar{position:fixed;top:10px;left:50%;transform:translateX(-50%);z-index:999;display:flex;align-items:center;gap:10px;flex-wrap:wrap;max-width:min(860px,94vw);padding:10px 14px;border-radius:16px;background:#FFC21A;color:#0B4A36;box-shadow:0 10px 30px rgba(0,0,0,.25);animation:rgpulse 1.2s ease-in-out infinite alternate;cursor:pointer}
+#ringbar.mute{animation:none;background:#FFE9A8}
+#ringbar .bell{font-size:22px;display:inline-block;animation:rgshake .6s ease-in-out infinite}#ringbar.mute .bell{animation:none}
+#ringbar b{font-size:15px}#ringbar small{font-size:12.5px;opacity:.85;flex:1;min-width:160px}#ringbar em{font-style:normal;font-size:12px;font-weight:700;color:#8a1c1c}
+#ringbar button{height:34px;padding:0 12px;border-radius:10px;font-weight:700;background:#0B4A36;color:#fff}#ringbar button#rmu{background:transparent;color:#0B4A36;border:1.5px solid #0B4A36}
+@keyframes rgpulse{from{box-shadow:0 10px 30px rgba(0,0,0,.25),0 0 0 0 rgba(255,194,26,.7)}to{box-shadow:0 10px 30px rgba(0,0,0,.25),0 0 0 10px rgba(255,194,26,0)}}
+@keyframes rgshake{0%,100%{transform:rotate(0)}25%{transform:rotate(-18deg)}75%{transform:rotate(18deg)}}
 .svcrow{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
 .svc{border:1.5px solid var(--line);border-radius:999px;padding:6px 12px;font-size:12.5px;font-weight:700;background:var(--surface);color:var(--muted);cursor:pointer}
 .svc.on{background:var(--navy);border-color:var(--navy);color:#fff}
@@ -1241,7 +1248,7 @@ function dash(){
   refreshDashLists();
 }
 /* ---------- Service permissions, outstation priority, office-first dispatch ---------- */
-const DISPD={win:60,gap:60,fall:true};
+const DISPD={win:60,gap:60,fall:true,review:10};
 const vYear=d=>+d.year||+((String(d.model||'').match(/\b(19|20)\d\d\b/)||[''])[0])||0;
 const isFut=b=>b.when&&b.when>Date.now()+45*60e3;
 const svcOf=d=>({local:!(d.svc&&d.svc.local===false),rental:!!(d.svc&&d.svc.rental),out:!!(d.svc&&d.svc.out)});
@@ -1252,15 +1259,43 @@ const tierName=t=>TIERN[t][S.lang==='ta'?0:1];
 const mmss=ms=>{const x=Math.max(0,Math.ceil(ms/1000));return Math.floor(x/60)+':'+String(x%60).padStart(2,'0')};
 const kTag=b=>b.kind==='outstation'?`<span class="ktag">🛣️ Outstation</span>`:b.kind==='rental'?`<span class="ktag">⏱️ Rental</span>`:'';
 function dispStage(b){
-  if(!b.dispatch||b.status!=='searching')return '';if(b.dispatch.review)return L('🔎 Office சரிபார்ப்பு தேவை · OK பண்ணா தான் drivers-க்கு போகும்','🔎 Needs office review · goes to drivers after you OK it');const now=Date.now(),o=b.dispatch.openAt||0,g=(b.dispatch.gap||60)*1000;
-  if(now<o)return `🏢 ${L('Office நேரம்','Office window')} ${mmss(o-now)} · ${L('நீங்க assign பண்ணலாம்','assign now')}`;
+  if(!b.dispatch||b.status!=='searching')return '';const now=Date.now(),dr=b.dispatch.review,ru=b.dispatch.reviewUntil;
+  if(dr&&(!ru||now<ru))return ru?L(`🔎 சரிபார்ப்பு தேவை · ${mmss(ru-now)}-ல தானா drivers-க்கு போகும்`,`🔎 Needs review · goes to drivers by itself in ${mmss(ru-now)}`):L('🔎 Office சரிபார்ப்பு தேவை','🔎 Needs office review');
+  const o=dr?ru:(b.dispatch.openAt||0),g=(b.dispatch.gap||60)*1000;
+  if(!dr&&now<o)return `🏢 ${L('Office நேரம்','Office window')} ${mmss(o-now)} · ${L('நீங்க assign பண்ணலாம்','assign now')}`;
   const e=now-o;
   if(b.kind==='outstation')return e<g?L('🏆 Top drivers-க்கு போயிருக்கு','🏆 Offered to top drivers'):e<2*g?L('🆕 + புது வண்டி drivers','🆕 + new-vehicle drivers'):e<3*g?L('⭐ + எல்லா outstation drivers','⭐ + all outstation drivers'):(b.dispatch.fall!==false?L('🚕 எல்லா drivers-க்கும்','🚕 All drivers'):L('⭐ Outstation drivers மட்டும்','⭐ Outstation drivers only'));
   return e<g?L('⏱️ Rental drivers-க்கு போயிருக்கு','⏱️ Offered to rental drivers'):(b.dispatch.fall!==false?L('🚕 எல்லா drivers-க்கும்','🚕 All drivers'):L('⏱️ Rental drivers மட்டும்','⏱️ Rental drivers only'));
 }
 const cdHtml=b=>b.dispatch&&b.status==='searching'?`<em class="cd" data-cd="${b._id}">${dispStage(b)}</em>`:'';
 const stPillB=b=>b.status==='assigned'&&isFut(b)?`<em class="bst scheduled">⏰ ${L('Driver உறுதி','Driver confirmed')}</em>`:stPill(b.status);
-setInterval(()=>{document.querySelectorAll('[data-cd]').forEach(el=>{const b=DB&&DB.bk.find(x=>x._id===el.dataset.cd);if(b)el.textContent=dispStage(b)})},1000);
+setInterval(()=>{document.querySelectorAll('[data-cd]').forEach(el=>{const b=DB&&DB.bk.find(x=>x._id===el.dataset.cd);if(b)el.textContent=dispStage(b)});ringCheck()},1000);
+/* ---------- office ringtone: rings until every waiting outstation/rental booking is handled ---------- */
+let RAC=null,RLAST=0,RSNOOZE=0,RTITLE=null;
+function needsDesk(b){if(!b||b.status!=='searching'||!b.dispatch)return false;const d=b.dispatch,now=Date.now();
+  if(d.review)return !d.reviewUntil||now<d.reviewUntil;return now<(d.openAt||0)}
+function ringUnlock(){try{if(!RAC)RAC=new (window.AudioContext||window.webkitAudioContext)();if(RAC.state==='suspended')RAC.resume()}catch(e){}}
+['click','keydown','touchstart'].forEach(ev=>document.addEventListener(ev,ringUnlock,{passive:true}));
+function ringTone(){if(!RAC||RAC.state!=='running')return false;const t0=RAC.currentTime+.02;
+  // bright marimba-style phrase, played twice: E6 G6 C7 G6 · E6 G6 C7 E7
+  const N=[1318.5,1568,2093,1568,1318.5,1568,2093,2637];
+  N.forEach((f,i)=>{const t=t0+i*.16+(i>3?.18:0);[1,2].forEach(h=>{const o=RAC.createOscillator(),g=RAC.createGain();o.type=h===1?'sine':'triangle';o.frequency.value=f*h;
+    g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(h===1?.32:.08,t+.012);g.gain.exponentialRampToValueAtTime(.0001,t+.42);o.connect(g);g.connect(RAC.destination);o.start(t);o.stop(t+.45)})});
+  return true}
+function ringCheck(){
+  if(!DB||!DB.bk)return;const list=DB.bk.filter(needsDesk),now=Date.now();
+  let bar=document.getElementById('ringbar');
+  if(!list.length){if(bar)bar.remove();if(RTITLE!==null){document.title=RTITLE;RTITLE=null}return}
+  if(!bar){bar=document.createElement('div');bar.id='ringbar';document.body.appendChild(bar)}
+  const muted=now<RSNOOZE,ok=RAC&&RAC.state==='running';
+  bar.className=muted?'mute':'';
+  bar.innerHTML=`<span class="bell">🔔</span><b>${L(`${list.length} booking உங்க பதிலுக்கு காத்திருக்கு`,`${list.length} booking${list.length>1?'s':''} waiting for you`)}</b><small>${esc(list.map(b=>`${b.kind==='outstation'?'🛣️':'⏱️'} ${b.id} · ${pn(b.to)}`).join(' · '))}</small>
+    ${ok?'':`<em>${L('ஒலி வர இங்கே ஒரு தடவை click பண்ணுங்க','Click once here to turn on sound')}</em>`}<button id="rgo">${L('பார்','Open')}</button><button id="rmu">${muted?L('ஒலி ON','Sound on'):L('1 நிமி அமைதி','Mute 1 min')}</button>`;
+  bar.querySelector('#rgo').onclick=()=>{const b=list[0];S.sec='book';BT='live';save();show();setTimeout(()=>{b.dispatch.review?reviewSheet(b):assignSheet(b)},200)};
+  bar.querySelector('#rmu').onclick=e=>{e.stopPropagation();RSNOOZE=muted?0:Date.now()+60e3;ringCheck()};
+  if(RTITLE===null)RTITLE=document.title;document.title=(Math.floor(now/1000)%2?'🔔 ':'')+`(${list.length}) ${RTITLE}`;
+  if(!muted&&now-RLAST>3200){if(ringTone())RLAST=now}
+}
 function liveRows(list){return list.length?list.map(b=>{const d=drvById(b.driver);return `<div class="lrow"><div><b>${kTag(b)}${b.id} · ${pn(b.from)} → ${pn(b.to)}</b><small>${vname(b.veh)} · ${d?d[S.lang]+' · '+d.plate:L('Driver இல்லை','No driver')} · ${b.status==='scheduled'||isFut(b)?'⏰ '+dt(b.when):ago(b.created)}</small>${cdHtml(b)}</div>${stPillB(b)}${b.dispatch&&b.dispatch.review&&b.status==='searching'?`<button class="btn sm yellow" data-rv="${b.id}">${L('சரிபார்','Review')}</button>`:''}${(b.status==='searching'||b.status==='scheduled'&&!b.driver)?`<button class="btn sm" data-as="${b.id}">${L('Assign','Assign')}</button>`:''}</div>`}).join(''):`<p class="muted" style="margin:0">${L('இப்போ live booking இல்லை','No live bookings right now')}</p>`}
 function refreshDashLists(){
   const ll=document.getElementById('livelist');if(!ll)return;
@@ -1295,12 +1330,24 @@ function book(){
   app.querySelectorAll('[data-as]').forEach(b=>b.onclick=()=>assignSheet(DB.bk.find(x=>x.id===b.dataset.as)));
   app.querySelectorAll('[data-rv]').forEach(b=>b.onclick=()=>reviewSheet(DB.bk.find(x=>x.id===b.dataset.rv)));
   app.querySelectorAll('[data-dn]').forEach(x=>x.onclick=()=>{const bk=DB.bk.find(y=>y.id===x.dataset.dn);const st=bk.driver?'assigned':'searching';if(CL){cw(F().updateDoc(bkRef(bk),{status:st,updatedAt:ts()}));return}bk.status=st;bk.prog=0;if(bk.driver){const d=drvById(bk.driver);if(d)d.status='pickup'}saveDB();book()});
-  app.querySelectorAll('[data-cx]').forEach(b=>b.onclick=()=>{const bk=DB.bk.find(x=>x.id===b.dataset.cx);
-    modal(`<h3>${bk.id} ${L('ரத்து செய்யவா?','— cancel?')}</h3><p class="muted" style="margin:0">${esc(bk.cust.name)} · ${pn(bk.from)} → ${pn(bk.to)}</p><div class="note">${L('Customer-க்கும் driver-க்கும் தகவல் போகும் (Firebase connect ஆனதும்).','The customer and driver are notified (once Firebase is connected).')}</div>
-      <button class="btn ghost" id="y">${L('ஆமா, ரத்து செய்','Yes, cancel')}</button><button class="btn" id="n">${L('வேண்டாம்','Keep it')}</button>`,(m,close)=>{m.querySelector('#n').onclick=close;
-      m.querySelector('#y').onclick=()=>{if(CL){cw(F().updateDoc(bkRef(bk),{status:'cancelled',cancelReason:'office',updatedAt:ts()}));close();toast(L('ரத்து ஆச்சு','Cancelled'));return}const d=drvById(bk.driver);if(d&&bk.status==='assigned')d.status='avail';bk.status='cancelled';log(`${bk.id} ரத்து (office)`,`${bk.id} cancelled by office`);saveDB();close();show();toast(L('ரத்து ஆச்சு','Cancelled'))}})});
+  app.querySelectorAll('[data-cx]').forEach(b=>b.onclick=()=>cancelSheet(DB.bk.find(x=>x.id===b.dataset.cx)));
 }
 function nearest(veh,from,exclude){const pt=typeof from==='object'?from:P[from];if(!pt||pt.lat==null)return DB.drv.filter(d=>d.veh===veh&&d.status==='avail'&&!d.blocked&&d.id!==exclude).map(d=>({d,km:0}));return DB.drv.filter(d=>d.veh===veh&&d.status==='avail'&&!d.blocked&&d.id!==exclude).map(d=>({d,km:hav(d,pt)*1.3})).sort((a,b)=>a.km-b.km)}
+/* office cancel with a reason; "no vehicle" sends the customer a polite apology */
+function cancelSheet(bk){if(!bk)return;let rs='novehicle';
+  const R=[['novehicle',L('வண்டி இல்லை','No vehicle available')],['customer',L('Customer கேட்டார்','Customer asked')],['office',L('மற்ற காரணம்','Other reason')]];
+  modal(`<h3>${bk.id} ${L('ரத்து செய்யவா?','— cancel?')}</h3><p class="muted" style="margin:0">${esc(bk.cust.name)} · ${pn(bk.from)} → ${pn(bk.to)}</p>
+    <span class="kind">${L('காரணம்','Reason')}</span>${R.map(([k,l],i)=>`<button class="reason ${i===0?'sel':''}" data-rs="${k}"><i class="radio"></i>${l}</button>`).join('')}
+    <div class="note" id="cxmsg"></div>
+    <button class="btn ghost" id="y" style="color:var(--danger)">${L('ஆமா, ரத்து செய்','Yes, cancel')}</button><button class="btn" id="n">${L('வேண்டாம்','Keep it')}</button>`,(m,close)=>{
+    const msg=()=>{m.querySelector('#cxmsg').innerHTML=rs==='novehicle'?`${L('Customer-க்கு போகும் செய்தி:','Message the customer gets:')}<br><b>${SORRY.ta}</b><br><b>${SORRY.en}</b>`:L('Customer-க்கும் driver-க்கும் "ரத்து" என்று தகவல் போகும்.','The customer and driver are told it was cancelled.')};msg();
+    m.querySelectorAll('[data-rs]').forEach(x=>x.onclick=()=>{rs=x.dataset.rs;m.querySelectorAll('[data-rs]').forEach(y=>y.classList.toggle('sel',y===x));msg()});
+    m.querySelector('#n').onclick=close;
+    m.querySelector('#y').onclick=()=>{if(CL){cw(F().updateDoc(bkRef(bk),{status:'cancelled',cancelReason:rs,updatedAt:ts()}));close();toast(L('ரத்து ஆச்சு','Cancelled'));return}
+      const d=drvById(bk.driver);if(d&&bk.status==='assigned')d.status='avail';bk.status='cancelled';bk.reason=rs;log(`${bk.id} ரத்து (office)`,`${bk.id} cancelled by office`);saveDB();close();show();toast(L('ரத்து ஆச்சு','Cancelled'))}});
+}
+const SORRY={ta:'மன்னிக்கவும்! இந்த நேரத்தில் எங்களிடம் வண்டி இல்லாததால் உங்க booking-ஐ ரத்து செய்ய வேண்டியதாயிற்று. Vellore Taxi-ஐ தேர்ந்தெடுத்ததற்கு நன்றி — அடுத்த முறை கண்டிப்பா உங்களுக்கு சேவை செய்வோம் 🙏',
+  en:'We are sorry! No vehicle is available right now, so we had to cancel your booking. Thank you for choosing Vellore Taxi — we look forward to serving you next time 🙏'};
 /* one-way outstation: office checks distance & fare, then releases it to drivers (or assigns one directly) */
 function reviewSheet(b){
   if(!b)return;
@@ -1321,7 +1368,7 @@ function reviewSheet(b){
       if(CL){cw(F().updateDoc(bkRef(b),{fare:f,'dispatch.review':false,'dispatch.reviewedAt':Date.now(),'dispatch.openAt':Date.now(),updatedAt:ts()}));close();toast(L('OK! Top drivers-க்கு அனுப்பியாச்சு','Approved and sent to top drivers'));return}
       b.fare=f;b.dispatch={...b.dispatch,review:false,openAt:Date.now()};saveDB();close();show()};
     m.querySelector('#rvas').onclick=()=>{const f=fv();if(CL&&f>=100&&f!==b.fare)cw(F().updateDoc(bkRef(b),{fare:f,updatedAt:ts()}));b.fare=f||b.fare;close();assignSheet(b)};
-    m.querySelector('#rvcx').onclick=()=>{close();const x=app.querySelector(`[data-cx="${b.id}"]`);if(x)x.click();else if(CL){cw(F().updateDoc(bkRef(b),{status:'cancelled',cancelReason:'office',updatedAt:ts()}));toast(L('ரத்து ஆச்சு','Cancelled'))}};
+    m.querySelector('#rvcx').onclick=()=>{close();cancelSheet(b)};
   });
 }
 function assignSheet(b){
@@ -1555,6 +1602,7 @@ function settings(){
     <p class="muted" style="margin:0 0 8px;font-size:13px">${L('புது Outstation / Rental booking முதல்ல office-க்கு வரும். இந்த நேரத்துக்குள்ள யாரும் assign பண்ணலைன்னா தானா drivers-க்கு போகும்: Outstation-க்கு 🏆 Top driver → 🆕 புது வண்டி (5 வருஷத்துக்குள்) → ⭐ மற்ற outstation drivers → 🚕 எல்லாரும். Top driver = ★4.5+ & 7 நாள்ல 35+ trips.','New outstation and rental bookings come to the office first. If nobody assigns in time, they go to drivers automatically. Outstation order: 🏆 top drivers → 🆕 new vehicles (≤5 yrs) → ⭐ other outstation drivers → 🚕 everyone. Top driver = ★4.5+ and 35+ trips in 7 days.')}</p>
     ${(()=>{const dp={...DISPD,...(c.dispatch||{})};const opt=(arr,v)=>arr.map(([x,l])=>`<option value="${x}" ${+v===x?'selected':''}>${l}</option>`).join('');
       return `<label class="lrow2"><span>${L('Office நேரம் (அதுக்கு அப்புறம் தானா drivers-க்கு)','Office window (then auto to drivers)')}</span><select id="dw" class="selbox" style="max-width:160px">${opt([[10,'10 sec'],[20,'20 sec'],[30,'30 sec'],[60,'1 min'],[120,'2 min'],[300,'5 min']],dp.win)}</select></label>
+      <label class="lrow2"><span>${L('ஒரு வழி Outstation: office சரிபார்க்க நேரம் (அதுக்கு அப்புறம் தானா drivers-க்கு)','One-way outstation: time for office review (then auto to drivers)')}</span><select id="drv" class="selbox" style="max-width:160px">${opt([[2,'2 min'],[5,'5 min'],[10,'10 min'],[15,'15 min'],[30,'30 min']],dp.review)}</select></label>
       <label class="lrow2"><span>${L('ஒவ்வொரு படிக்கும் இடைவெளி','Gap between each level')}</span><select id="dg" class="selbox" style="max-width:160px">${opt([[30,'30 sec'],[60,'1 min'],[120,'2 min'],[300,'5 min']],dp.gap)}</select></label>
       <label class="lrow2"><span>${L('யாரும் எடுக்கலைன்னா எல்லா drivers-க்கும் அனுப்பு','If nobody takes it, send to all drivers')}</span><input type="checkbox" id="dfb" ${dp.fall?'checked':''} style="width:22px;height:22px"></label>`})()}</section>
    <section class="panel" style="margin-top:14px"><div class="ph"><h3>Staff</h3><button class="linkbtn" id="as">+ ${L('Staff சேர்','Add staff')}</button></div>
@@ -1571,7 +1619,7 @@ function settings(){
     if(of&&!/^[6-9]\d{9}$/.test(of)){toast(L('Office நம்பர் 10 இலக்கம்','Office number must be 10 digits'));return}
     if(OUTV.some(id=>!(c.out.rate[id]>0))){toast(L('Outstation கி.மீ விலை 0 ஆக இருக்கக்கூடாது','Outstation per-km fares can’t be 0'));return}
     if(!(c.out.daykm>=100)){toast(L('ஒரு நாள் கி.மீ குறைந்தது 100','Km per day must be at least 100'));return}
-    const dsp={win:+document.getElementById('dw').value,gap:+document.getElementById('dg').value,fall:document.getElementById('dfb').checked};c.dispatch=dsp;
+    const dsp={review:+document.getElementById('drv').value,win:+document.getElementById('dw').value,gap:+document.getElementById('dg').value,fall:document.getElementById('dfb').checked};c.dispatch=dsp;
     if(CL){cw(F().setDoc(F().doc(CL.db,'config','app'),{fares:c.fares,comm:cm,minbal:mb||0,office:of,upi:up,dispatch:dsp,out:c.out,rent:c.rent,updatedAt:ts()},{merge:true}).then(()=>toast(L('சேமிச்சாச்சு. எல்லா app-லயும் உடனே மாறும்','Saved. All apps update right away'))));return}
     Object.assign(c,{comm:cm,minbal:mb||0,office:of,upi:up});log('Settings மாற்றம்','Settings changed');saveDB();toast(L('சேமிச்சாச்சு','Saved'))};
   document.getElementById('as').onclick=()=>modal(`<h3>${L('Staff சேர்','Add staff')}</h3><div class="field" style="height:50px"><input id="sn" maxlength="30" placeholder="${L('பெயர்','Name')}"></div><div class="field" style="height:50px"><span class="cc">+91</span><input id="sp" inputmode="numeric" maxlength="10"></div><div class="err" id="se"></div><button class="btn" id="ss">${L('சேமி','Save')}</button>`,(m,close)=>{
