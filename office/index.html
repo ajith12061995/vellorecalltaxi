@@ -25,7 +25,7 @@
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('../vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV='2026-10-31-28',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV='2026-10-31-29',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('/vellorecalltaxi/version.json',location.origin)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -544,6 +544,28 @@ details.faq p{margin:0;padding:0 14px 14px;color:var(--muted);font-size:14px;lin
 .sst.open{background:rgba(194,59,59,.12);color:var(--danger)}
 .stype.sos{background:#C23B3B;color:#fff}
 .act{display:flex;align-items:center;gap:10px;font-size:13.5px;padding:6px 0}
+.asum{display:flex;align-items:center;gap:8px;margin:-2px 0 10px}.asum span{font-weight:800;font-size:13px;padding:5px 10px;border-radius:999px}.asum small{color:var(--muted);font-size:12px}
+.ok{--c:#1E8A5A}.bad{--c:#C23B3B}.trip{--c:#12664A}.asg{--c:#B07A00}.srch{--c:#B07A00}.sch{--c:#2C5196}
+.asum span{background:color-mix(in srgb,var(--c) 12%,transparent);color:var(--c)}
+.afil{display:flex;gap:6px;margin-bottom:8px;overflow-x:auto;scrollbar-width:none}.afil button{height:30px;padding:0 12px;border-radius:999px;font-size:12.5px;font-weight:700;color:var(--muted);border:1px solid var(--line);background:var(--surface);flex:none}.afil button.on{background:#0B4A36;color:#fff;border-color:#0B4A36}
+.tl{position:relative;display:flex;flex-direction:column}.tl::before{content:"";position:absolute;left:15px;top:10px;bottom:10px;width:2px;background:var(--line)}
+.tlg{position:relative;font-size:11.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:10px 0 4px 40px}
+.ti{position:relative;display:flex;align-items:flex-start;gap:10px;padding:8px 6px 8px 0;border-radius:12px;text-align:left;width:100%;background:none;color:var(--fg);transition:background .15s}
+.ti:hover{background:var(--surface-2)}
+.tdot{position:relative;z-index:1;flex:none;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:900;color:#fff;background:var(--c,#64748b);box-shadow:0 0 0 3px var(--surface)}
+.tdot.big{width:44px;height:44px;font-size:20px;box-shadow:none}
+.tb{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}.tt{display:flex;align-items:center;gap:6px;flex-wrap:wrap}.tt b{font-size:13.5px}.tt span{font-size:13.5px}
+.tb small{color:var(--muted);font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.tdrv{color:var(--fg)!important;opacity:.8}
+.tst{font-style:normal;font-size:11px;font-weight:800;padding:2px 8px;border-radius:999px;background:color-mix(in srgb,var(--c) 12%,transparent);color:var(--c)}
+.tr2{display:flex;flex-direction:column;align-items:flex-end;gap:2px;flex:none}.tr2 b{font-size:13.5px;font-variant-numeric:tabular-nums}.tr2 small{color:var(--muted);font-size:11.5px;white-space:nowrap}
+.amore{width:100%;height:36px;margin-top:6px;border-radius:12px;border:1px dashed var(--line);font-weight:700;font-size:13px;color:var(--navy);background:none}
+.lempty{display:flex;align-items:center;gap:12px;padding:12px;border-radius:14px;background:linear-gradient(135deg,var(--navy-soft),transparent);border:1px dashed var(--line)}
+.lempty .lei{font-size:26px}.lempty div{flex:1;min-width:0}.lempty b{display:block;font-size:14px}.lempty small{color:var(--muted);font-size:12.5px}.lempty .btn{width:auto;padding:0 12px;flex:none}
+.bsh{display:flex;align-items:center;gap:12px}.bsh>div{flex:1;min-width:0}.bfare{font-family:var(--display);font-size:24px}
+.tripcard2{display:grid;grid-template-columns:1fr 1fr;gap:8px}.tripcard2 div{padding:10px 12px;border-radius:12px;background:var(--surface-2)}.tripcard2 small{display:block;font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}.tripcard2 b{font-size:14px}
+.steps2{display:flex;flex-direction:column;gap:0;padding-left:6px}.steps2 div{position:relative;display:flex;align-items:center;gap:10px;padding:6px 0 6px 18px;color:var(--muted);font-size:13.5px}
+.steps2 div::before{content:"";position:absolute;left:4px;top:0;bottom:0;width:2px;background:var(--line)}.steps2 div:first-child::before{top:50%}.steps2 div:last-child::before{bottom:50%}
+.steps2 i{position:absolute;left:0;width:10px;height:10px;border-radius:50%;background:var(--line);z-index:1}.steps2 .on{color:var(--fg);font-weight:600}.steps2 .on i{background:#1E8A5A}.steps2 span{flex:1}.steps2 small{font-size:12px;color:var(--muted)}
 .act i{width:8px;height:8px;border-radius:50%;background:var(--navy-2);flex:none}
 .act span{flex:1;min-width:0}
 .act small{color:var(--muted);font-size:12px;white-space:nowrap}
@@ -1121,7 +1143,7 @@ const esc=v=>String(v==null?'':v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;'
 const vname=id=>{const v=VEH.find(x=>x.id===id);return v?v[S.lang]:id};
 const tm=ts=>new Date(ts).toLocaleTimeString(S.lang==='ta'?'ta-IN':'en-IN',{hour:'numeric',minute:'2-digit'});
 const dt=ts=>new Date(ts).toLocaleString(S.lang==='ta'?'ta-IN':'en-IN',{day:'numeric',month:'short',hour:'numeric',minute:'2-digit'});
-const ago=ts=>{const m=Math.round((Date.now()-ts)/6e4);return m<1?L('இப்போ','just now'):m<60?L(`${m} நிமி முன்`,`${m} min ago`):L(`${Math.round(m/60)} மணி முன்`,`${Math.round(m/60)} hr ago`)};
+const ago=ts=>{const m=Math.round((Date.now()-ts)/6e4);return m<1?L('இப்போ','just now'):m<60?L(`${m} நிமி முன்`,`${m} min ago`):m<1440?L(`${Math.round(m/60)} மணி முன்`,`${Math.round(m/60)} hr ago`):L(`${Math.round(m/1440)} நாள் முன்`,`${Math.round(m/1440)} days ago`)};
 const LMK=['home','katpadi','vit','cmc','newbus','oldbus','fort','golden','sathu','bagayam'];
 
 /* ---------- data ---------- */
@@ -1266,6 +1288,52 @@ function fleetHtml(){const f=fleetStat();
    <div class="fwarn">${f.cant?`<button data-fx="cant">⛔ ${L(`${f.cant} பேர் online வர முடியாது (தடை / document / wallet)`,`${f.cant} can't go online (block / document / wallet)`)}</button>`:''}${f.idle?`<button data-fx="idle">😴 ${L(`${f.idle} பேர் 7 நாளா ஓட்டல`,`${f.idle} haven't driven in 7 days`)}</button>`:''}</div>`}
 function bindFleet(){app.querySelectorAll('[data-fv]').forEach(b=>b.onclick=()=>{DV=b.dataset.fv;DF='all';S.sec='drv';save();show()});
   app.querySelectorAll('[data-fx]').forEach(b=>b.onclick=()=>{DV='';DF=b.dataset.fx;S.sec='drv';save();show()})}
+/* ---------- Today: live empty state + activity timeline ---------- */
+let ACTF='all',ACTN=10;
+const RSN=b=>{const r=b.reason||'';return r==='customer'?L('Customer ரத்து','Customer cancelled'):r==='novehicle'?L('வண்டி இல்லை','No vehicle'):r==='office'?L('Office ரத்து','Office cancelled'):/^noshow/.test(r)?L('Customer வரல','Customer no-show'):/^custask/.test(r)?L('Customer சொன்னார்','Customer asked'):/^driver/.test(r)?L('Driver ரத்து','Driver cancelled'):L('ரத்து','Cancelled')};
+const AST={done:['✓','ok',L('முடிஞ்சது','Completed')],cancelled:['✕','bad',L('ரத்து','Cancelled')],ontrip:['➜','trip',L('பயணத்தில்','On trip')],assigned:['🚕','asg',L('Pickup-க்கு போறார்','Going to pickup')],searching:['⏳','srch',L('Driver தேடல்','Finding driver')],scheduled:['⏰','sch',L('முன்பதிவு','Scheduled')]};
+function liveEmpty(){const f=fleetStat();return `<div class="lempty"><span class="lei">✨</span><div><b>${L('இப்போ live booking இல்லை','No live bookings right now')}</b><small>🟢 ${f.on} ${L('drivers ready','drivers ready')} · ⚪ ${f.off} offline</small></div><button class="btn sm" id="lepb">+ ${L('Phone booking','Phone booking')}</button></div>`}
+function actHtml(){
+  const t0=new Date();t0.setHours(0,0,0,0);const T0=t0.getTime(),Y0=T0-DAY;
+  const tdy=DB.bk.filter(b=>(b.upd||b.created)>=T0);
+  const cnt=k=>tdy.filter(b=>k==='live'?['searching','assigned','ontrip'].includes(b.status):b.status===k).length;
+  const F={all:()=>true,done:b=>b.status==='done',cancelled:b=>b.status==='cancelled',live:b=>['searching','assigned','ontrip','scheduled'].includes(b.status)}[ACTF];
+  const list=DB.bk.filter(F).slice().sort((a,b)=>(b.upd||b.done||b.created)-(a.upd||a.done||a.created));
+  const show=list.slice(0,ACTN);let last='';
+  const grp=t=>t>=T0?L('இன்று','Today'):t>=Y0?L('நேற்று','Yesterday'):new Date(t).toLocaleDateString(S.lang==='ta'?'ta-IN':'en-IN',{weekday:'short',day:'numeric',month:'short'});
+  return `<div class="asum"><span class="ok">✓ ${cnt('done')}</span><span class="bad">✕ ${cnt('cancelled')}</span><span class="trip">🚕 ${cnt('live')}</span><small>${L('இன்று','today')}</small></div>
+   <div class="afil">${[['all',L('எல்லாம்','All')],['done',L('முடிந்தவை','Completed')],['cancelled',L('ரத்து','Cancelled')],['live','Live']].map(([k,l])=>`<button class="${ACTF===k?'on':''}" data-af="${k}">${l}</button>`).join('')}</div>
+   ${show.length?`<div class="tl">${show.map(b=>{const t=b.upd||b.done||b.created,g=grp(t),st=AST[b.status]||['•','',b.status];const hd=g!==last?(last=g,`<div class="tlg">${g}</div>`):'';
+     return `${hd}<button class="ti" data-ab="${b._id}"><span class="tdot ${st[1]}">${st[0]}</span><div class="tb"><div class="tt"><b>${b.id}</b><span>${esc(b.cust.name)}</span>${kTag(b)}<em class="tst ${st[1]}">${b.status==='cancelled'?RSN(b):st[2]}</em></div>
+       <small>${pn(b.from)} → ${pn(b.to)}</small>${b.driverName||b.driver?`<small class="tdrv">🚖 ${esc(b.driverName||(drvById(b.driver)||{}).en||'')}${b.plate?' · '+esc(b.plate):''} · ${vname(b.veh)}</small>`:`<small class="tdrv">${vname(b.veh)}</small>`}</div>
+       <div class="tr2"><b>${b.fare?inr(b.fare+(b.tip||0)):''}</b><small>${ago(t)}</small></div></button>`}).join('')}</div>
+     ${list.length>ACTN?`<button class="amore" id="amore">${L(`இன்னும் ${Math.min(20,list.length-ACTN)} காட்டு`,`Show ${Math.min(20,list.length-ACTN)} more`)}</button>`:''}`
+   :`<p class="muted" style="margin:6px 0">${L('இங்கே எதுவும் இல்லை','Nothing here yet')}</p>`}`;
+}
+function bindAct(al){al.querySelectorAll('[data-af]').forEach(b=>b.onclick=()=>{ACTF=b.dataset.af;ACTN=10;al.innerHTML=actHtml();bindAct(al)});
+  const m=al.querySelector('#amore');if(m)m.onclick=()=>{ACTN+=20;al.innerHTML=actHtml();bindAct(al)};
+  al.querySelectorAll('[data-ab]').forEach(b=>b.onclick=()=>bookSheet(DB.bk.find(x=>x._id===b.dataset.ab)))}
+/* one booking: timeline + the right actions */
+function bookSheet(b){if(!b)return;const d=drvById(b.driver),st=AST[b.status]||['•','',b.status];
+  const steps=[[L('Book ஆச்சு','Booked'),b.created],[L('Driver ஏற்றார்','Driver accepted'),b.tAs],[L('Pickup வந்தார்','Arrived'),b.tAr],[L('பயணம் ஆரம்பம்','Trip started'),b.tSt],
+    b.status==='cancelled'?[RSN(b),b.upd]:[L('முடிஞ்சது','Completed'),b.done]];
+  modal(`<div class="bsh"><span class="tdot big ${st[1]}">${st[0]}</span><div><h3 style="margin:0">${b.id} ${kTag(b)}</h3><small class="muted">${st[2]}${b.status==='cancelled'?' · '+RSN(b):''}</small></div><b class="bfare">${inr(b.fare+(b.tip||0))}</b></div>
+    <div class="tripcard2"><div><small>Pickup</small><b>${pn(b.from)}</b></div><div><small>Drop</small><b>${pn(b.to)}</b></div></div>
+    <div class="steps2">${steps.map(([l,t])=>`<div class="${t?'on':''}"><i></i><span>${l}</span><small>${t?new Date(t).toLocaleTimeString(S.lang==='ta'?'ta-IN':'en-IN',{hour:'numeric',minute:'2-digit'})+(t<Date.now()-DAY?' · '+fmtD(t):''):'—'}</small></div>`).join('')}</div>
+    <div class="bill"><div><span>Customer</span><b>${esc(b.cust.name)}${b.cust.phone?' · +91 '+b.cust.phone:''}</b></div>
+     <div><span>Driver</span><b>${d?esc(d[S.lang])+' · '+esc(d.plate):esc(b.driverName||'—')}</b></div>
+     <div><span>${L('வண்டி','Vehicle')}</span><b>${vname(b.veh)}${b.km?' · '+b.km+' '+L('கி.மீ','km'):''}</b></div>
+     <div><span>${L('கட்டணம்','Fare')}</span><b>${inr(b.fare)}${b.tip?' + tip '+inr(b.tip):''} · ${b.pay.toUpperCase()}</b></div>
+     ${b.rating?`<div><span>Rating</span><b>${'★'.repeat(b.rating)}</b></div>`:''}${b.reason&&b.status==='cancelled'?`<div><span>${L('காரணம்','Reason')}</span><b>${esc(b.reason.replace(/^(driver|noshow|custask):?\s*/,''))||RSN(b)}</b></div>`:''}</div>
+    <div class="two">${b.cust.phone?`<a class="btn ghost" href="tel:+91${b.cust.phone}">📞 Customer</a>`:''}${d?`<a class="btn ghost" href="tel:+91${d.phone}">📞 Driver</a>`:''}</div>
+    ${b.status==='searching'||b.status==='scheduled'?`<button class="btn" id="bsa">${b.dispatch&&b.dispatch.review?L('சரிபார்','Review'):L('Driver assign','Assign a driver')}</button>`:''}
+    ${b.status==='cancelled'&&/^driver/.test(b.reason||'')?`<button class="btn" id="bsr">🔁 ${L('மறுபடி அனுப்பு','Send again')}</button>`:''}
+    ${['searching','scheduled','assigned'].includes(b.status)?`<button class="btn ghost" id="bsc" style="color:var(--danger)">${L('ரத்து செய்','Cancel booking')}</button>`:''}`,(m,close)=>{
+    const a=m.querySelector('#bsa');if(a)a.onclick=()=>{close();b.dispatch&&b.dispatch.review?reviewSheet(b):assignSheet(b)};
+    const r=m.querySelector('#bsr');if(r)r.onclick=()=>{close();reopenSheet(b)};
+    const c=m.querySelector('#bsc');if(c)c.onclick=()=>{close();cancelSheet(b)};
+  });
+}
 function dash(){setTimeout(bindFleet,0);
   const today=DB.bk.filter(b=>b.status==='done'&&isToday(b.done||b.when));
   const rev=today.reduce((a,b)=>a+b.fare,0),comm=Math.round(rev*DB.cfg.comm/100);
@@ -1282,7 +1350,7 @@ function dash(){setTimeout(bindFleet,0);
     <div class="dcol">
       ${alerts.length?`<section class="panel"><div class="ph"><h3>${L('கவனிக்க','Needs attention')}</h3></div>${alerts.map(a=>`<div class="alert ${a.c}">${a.t}</div>`).join('')}</section>`:''}
       <section class="panel"><div class="ph"><h3>${L('Live bookings','Live bookings')}</h3><button class="linkbtn" data-go="book">${L('எல்லாம்','All')} →</button></div><div id="livelist"></div></section>
-      <section class="panel"><div class="ph"><h3>${L('நடப்பவை','Activity')}</h3></div><div id="actlist"></div></section>
+      <section class="panel actp"><div class="ph"><h3>${L('நடப்பவை','Activity')}</h3><span class="livetag"><i></i>LIVE</span></div><div id="actlist"></div></section>
     </div></div>`;
   app.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>{S.sec=b.dataset.go;save();show()});
   const m=makeMap(document.getElementById('map'),{fleet:()=>DB.drv.filter(d=>d.status!=='off').map(d=>({lat:d.lat,lon:d.lon,col:d.status==='avail'?'#1E8A5A':d.status==='pickup'?'#F2A900':'#12664A',tag:VEH.find(v=>v.id===d.veh).en[0],label:d.plate.slice(-4)}))});
@@ -1354,8 +1422,9 @@ function refreshDashLists(){
   const ll=document.getElementById('livelist');if(!ll)return;
   const fl=document.getElementById('fleet');if(fl){fl.innerHTML=fleetHtml();bindFleet()}
   const kk=document.getElementById('kpis');if(kk){kk.innerHTML=kpisInner();kk.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>{S.sec=b.dataset.go;save();show()})}
-  ll.innerHTML=liveRows(DB.bk.filter(b=>['searching','assigned','ontrip'].includes(b.status)||(b.status==='scheduled'&&!b.driver)));
-  document.getElementById('actlist').innerHTML=DB.act.length?DB.act.slice(0,6).map(a=>`<div class="act"><i></i><span>${a[S.lang]}</span><small>${ago(a.date)}</small></div>`).join(''):`<p class="muted" style="margin:0">${L('Booking நிலை மாறும்போது இங்கே காட்டும்','Status changes appear here')}</p>`;
+  const lv=DB.bk.filter(b=>['searching','assigned','ontrip'].includes(b.status)||(b.status==='scheduled'&&!b.driver));
+  ll.innerHTML=lv.length?liveRows(lv):liveEmpty();const pb=ll.querySelector('#lepb');if(pb)pb.onclick=()=>newBooking();
+  const al=document.getElementById('actlist');al.innerHTML=actHtml();bindAct(al);
   ll.querySelectorAll('[data-as]').forEach(b=>b.onclick=()=>assignSheet(DB.bk.find(x=>x.id===b.dataset.as)));
   ll.querySelectorAll('[data-rv]').forEach(b=>b.onclick=()=>reviewSheet(DB.bk.find(x=>x.id===b.dataset.rv)));
 }
@@ -1651,7 +1720,8 @@ function mapBk(b,now){now=now||Date.now();return{id:shortB(b._id),_id:b._id,cust
   from:b.from&&b.from.key&&P[b.from.key]?b.from.key:(b.from?b.from[S.lang]||b.from.ta:'—'),to:b.to&&b.to.key&&P[b.to.key]?b.to.key:(b.to?b.to[S.lang]||b.to.ta:'—'),
   fromC:b.from,toC:b.to,veh:b.veh||'auto',km:+b.km||0,fare:+b.fare||0,tip:+b.tip||0,pay:b.pay||'cash',src:b.src||'app',status:b.status||'searching',kind:b.kind||'ride',dispatch:b.dispatch||null,otype:b.otype||null,ret:b.retAt||null,
   driver:b.driverPhone||null,driverName:b.driverName||'',created:CL.toMs(b.createdAt)||b.when||now,when:b.when||CL.toMs(b.createdAt)||now,done:CL.toMs(b.doneAt)||null,reason:b.cancelReason||'',
-  rating:+b.rating||0,custRating:+b.custRating||0,exclude:b.exclude||[],rebookOf:b.rebookOf||null,upd:CL.toMs(b.updatedAt)||0}}
+  rating:+b.rating||0,custRating:+b.custRating||0,exclude:b.exclude||[],rebookOf:b.rebookOf||null,upd:CL.toMs(b.updatedAt)||0,
+  tAs:CL.toMs(b.assignedAt)||0,tAr:CL.toMs(b.arrivedAt)||0,tSt:CL.toMs(b.startedAt)||0,plate:b.plate||'',vehModel:b.vehModel||''}}
 async function loadHist(days){
   if(!CL){HIST={at:Date.now(),days,rows:DB.bk};return HIST.rows}
   if(HIST.days>=days&&Date.now()-HIST.at<60e3)return HIST.rows;
