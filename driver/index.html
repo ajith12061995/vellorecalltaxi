@@ -28,7 +28,7 @@
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('../vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV='2026-10-31-23',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV='2026-10-31-24',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('/vellorecalltaxi/version.json',location.origin)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -1153,7 +1153,7 @@ function home(){
     bindSmgr();
     const rc=document.getElementById('rc');if(rc)rc.onclick=()=>{S.tab='wallet';walletTab();recharge()};
     if(S.online){bindTap('offs',()=>confirmOff(()=>{setOnline(false);home();toast(L('Offline ஆயிட்டீங்க','You are offline'))}));
-      if(CL)maybeShowReq();else{document.getElementById('dreq').onclick=()=>incoming();REQ=setTimeout(()=>incoming(),7000)}}
+      if(CL)maybeShowReq();else{document.getElementById('dreq').onclick=()=>incoming()}}
     else bindTap('ons',()=>{if(DME&&DME.blocked){toast(L('உங்க account நிறுத்தி வைக்கப்பட்டிருக்கு. Owner-ஐ தொடர்பு கொள்ளுங்க','Your account is on hold. Contact the owner'));home();return}{const ds=docState();if(ds.expired.length){toast(L('காலாவதி ஆன document: ','Expired: ')+ds.expired.join(', ')+L('. புதுப்பிச்சு office-க்கு அனுப்புங்க','. Renew it and tell the office'));home();return}}if(DS.wallet<MINBAL){toast(L('Wallet recharge பண்ணிட்டு Online போங்க','Recharge your wallet to go online'));home();return}setOnline(true);home();toast(L('Online! Ride request வந்தா சத்தம் வரும்','You are online. Requests will ring'))});
   });
 }
@@ -1645,7 +1645,7 @@ function S_TIER(){const d=DME||{};if(d.prio==='top')return 1;if(d.prio==='low')r
   if((+d.rating||5)>=4.5&&wk>=35)return 1;if(d.year&&new Date().getFullYear()-d.year<=5)return 2;return 3}
 function offerAt(b){
   const k=b.kind==='outstation'?'out':b.kind==='rental'?'rental':'local';
-  if(k==='local'){if(!svcActive('local'))return Infinity;if(!b.from||b.from.lat==null)return 0;
+  if(k==='local'){if(!svcActive('local'))return Infinity;if(b.when&&Date.now()-b.when>15*60e3)return Infinity; // stale test/abandoned bookings never ringif(!b.from||b.from.lat==null)return 0;
     const d=hav(POS,b.from);if(d<=LOCAL_R1)return 0;if(d<=LOCAL_R2)return (+b.tip>0)?0:(+b.when||0)+LOCAL_WAVE*1000;return Infinity}
   const dp=b.dispatch||{};if(dp.review&&!dp.reviewUntil)return Infinity;const open=dp.review?dp.reviewUntil:(dp.openAt||0),gap=(dp.gap||DISP.gap)*1000,fall=dp.fall!==undefined?dp.fall:DISP.fall;
   if(svcActive(k))return k==='out'?open+(S_TIER()-1)*gap:open;
