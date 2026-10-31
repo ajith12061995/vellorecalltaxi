@@ -56,7 +56,7 @@ footer{text-align:center;color:var(--mut);font-size:13px;padding:6px 16px 30px}
 a{color:inherit}
 </style>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV='2026-10-31-29',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV='2026-10-31-30',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('/vellorecalltaxi/version.json',location.origin)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -176,7 +176,9 @@ function form(){
       <div class="row2"><div><label for="exp">${L('அனுபவம் (வருடம்)','Experience (years)')}</label><input id="exp" inputmode="numeric" maxlength="2" value="${esc(D.years||'')}"></div>
       <div><label for="area">${L('வசிக்கும் பகுதி','Area you live in')}</label><input id="area" type="text" maxlength="40" value="${esc(D.area||'')}" placeholder="${L('உதா. காட்பாடி','e.g. Katpadi')}"></div></div>
       <label>${L('அவசர தொடர்பு (குடும்பத்தினர்) *','Emergency contact (family) *')}</label>
-      <div class="row2"><div><input id="ecn" type="text" maxlength="30" value="${esc(D.ecName||'')}" placeholder="${L('பெயர் / உறவு','Name / relation')}"></div><div><div class="ph"><b>+91</b><input id="ecp" type="tel" inputmode="numeric" maxlength="10" value="${esc((D.ecPhone||'').replace('+91',''))}" placeholder="98765 43210"></div></div></div></div>
+      <div class="row2"><div><input id="ecn" type="text" maxlength="30" value="${esc(D.ecName||'')}" placeholder="${L('பெயர் / உறவு','Name / relation')}"></div><div><div class="ph"><b>+91</b><input id="ecp" type="tel" inputmode="numeric" maxlength="10" value="${esc((D.ecPhone||'').replace('+91',''))}" placeholder="98765 43210"></div></div></div>
+      <label for="upi">${L('உங்க UPI ID (customer பணம் நேரா உங்களுக்கு வரும்)','Your UPI ID (customers pay you directly)')}</label><input id="upi" type="text" maxlength="50" value="${esc(D.upi||'')}" placeholder="name@okaxis / 98xxxxxx@ybl" autocapitalize="off">
+    </div>
     <div class="card"><h2>${L('3. வண்டி','3. Vehicle')}</h2>
       <label style="margin-top:0">${L('வண்டி வகை *','Vehicle type *')}</label>
       <div class="chips">${VEH.map(v=>`<button type="button" class="chip ${v[0]===S.veh?'on':''}" data-v="${v[0]}">${S.lang==='ta'?v[1]:v[2]}</button>`).join('')}</div>
@@ -196,7 +198,7 @@ function form(){
       <button class="btn y" id="sb">${L('Office-க்கு அனுப்பு','Send to office')}</button></div>`;
   const val=id=>(document.getElementById(id)||{}).value||'';
   const snap=()=>{const br=val('br'),mo=val('mo');
-    S.data={...S.data,name:val('nm').trim(),ecName:val('ecn').trim(),ecPhone:val('ecp').replace(/\D/g,'').slice(0,10),dlNo:val('dln').trim().toUpperCase(),years:val('exp').replace(/\D/g,''),area:val('area').trim(),plate:val('pl').trim().toUpperCase(),
+    S.data={...S.data,name:val('nm').trim(),ecName:val('ecn').trim(),ecPhone:val('ecp').replace(/\D/g,'').slice(0,10),upi:(document.getElementById('upi')?val('upi').trim():''),dlNo:val('dln').trim().toUpperCase(),years:val('exp').replace(/\D/g,''),area:val('area').trim(),plate:val('pl').trim().toUpperCase(),
       brand:br===OTHER?val('brx').trim():br,model:(br===OTHER||mo===OTHER)?val('mox').trim():mo,year:+val('yr')||'',ownVehicle:document.getElementById('own').checked,
       exp:Object.fromEntries(EXP.map(([k])=>[k,val('x_'+k)?new Date(val('x_'+k)+'T23:59:00').getTime():((S.data.exp||{})[k]||null)]))}};
   app.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>{snap();S.veh=b.dataset.v;S.data.brand='';S.data.model='';form()});

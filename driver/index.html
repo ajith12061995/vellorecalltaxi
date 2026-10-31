@@ -28,7 +28,7 @@
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('../vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV='2026-10-31-29',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV='2026-10-31-30',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('/vellorecalltaxi/version.json',location.origin)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -1241,7 +1241,7 @@ function chatOpen(title,quick){
 }
 function chatPing(t){beep();toast(L('Customer: ','Customer: ')+t)}
 function bindCust(){
-  if(CL&&J&&J.id){const cp=J.b&&J.b.custPhone;chatStart(J.id);chatDot();
+  if(CL&&J&&J.id){const cp=J.b&&(J.b.rider&&J.b.rider.phone?'+91'+J.b.rider.phone:J.b.custPhone);chatStart(J.id);chatDot();
     document.getElementById('call').onclick=()=>{if(cp)location.href='tel:'+cp;else toast(L('Customer நம்பர் இல்லை','No customer number'))};
     document.getElementById('chat').onclick=()=>{if(!J.app){toast(L('இது phone booking. Customer-ஐ call பண்ணுங்க','This is a phone booking. Please call the customer'));return}chatOpen(J.cust[S.lang],S.lang==='ta'?['வந்துகிட்டு இருக்கேன்','Pickup-ல நிக்கிறேன்','Traffic, 5 நிமி ஆகும்','எங்கே இருக்கீங்க?']:['On my way','I’m at the pickup','Traffic, 5 more minutes','Where are you?'])};
   }else{
@@ -1343,9 +1343,10 @@ function collect(){
     const pt=document.getElementById('pmtxt'),got=document.getElementById('got');
     const setPm=p=>{pm=p;app.querySelectorAll('[data-pm]').forEach(b=>b.classList.toggle('sel',b.dataset.pm===p));
       pt.innerHTML=p==='cash'?`<span class="bigic">${I.cash.replace('width="18" height="18"','width="30" height="30"')}</span><div><b>${L(`${inr(COL)} cash வாங்குங்க`,`Collect ${inr(COL)} in cash`)}</b><p class="muted" style="margin:4px 0 0;font-size:13px">${L('சில்லறை சரியா கொடுங்க','Give correct change')}</p></div>`
-        :p==='upi'?`<span class="bigic">${I.upi.replace('width="18" height="18"','width="30" height="30"')}</span><div><b>${L(`Customer UPI-ல ${inr(COL)} அனுப்பணும்`,`Customer pays ${inr(COL)} by UPI`)}</b><p class="muted" style="margin:4px 0 0;font-size:13px">${L('Customer app-ல வர்ற QR அல்லது உங்க QR. பணம் வந்ததை phone-ல பார்த்துட்டு confirm பண்ணுங்க.','The QR in the customer app, or yours. Check the money arrived before confirming.')}</p></div>`
+        :p==='upi'?(CL&&me().upi?`<div id="dqr" style="background:#fff;padding:6px;border-radius:10px;flex:none;min-width:132px;min-height:132px"></div><div><b>${L(`Customer இந்த QR-ஐ scan பண்ணி ${inr(COL)} அனுப்பணும்`,`Customer scans this QR to pay ${inr(COL)}`)}</b><p class="muted" style="margin:4px 0 0;font-size:13px">${esc(me().upi)} · ${L('பணம் வந்ததை phone-ல பார்த்துட்டு confirm பண்ணுங்க.','Check the money arrived before confirming.')}</p></div>`
+          :`<span class="bigic">${I.upi.replace('width="18" height="18"','width="30" height="30"')}</span><div><b>${L(`Customer UPI-ல ${inr(COL)} அனுப்பணும்`,`Customer pays ${inr(COL)} by UPI`)}</b><p class="muted" style="margin:4px 0 0;font-size:13px">${CL?L('உங்க UPI ID இன்னும் சேர்க்கல. Office-ஐ சேர்க்க சொல்லுங்க. இப்போதைக்கு உங்க UPI app QR-ஐ காட்டுங்க.','Your UPI ID is not added yet — ask the office. For now, show your UPI app’s QR.'):L('உங்க UPI QR-ஐ காட்டுங்க.','Show your UPI QR.')}</p></div>`)
         :`<span class="bigic">${I.navWallet.replace('<svg ','<svg width="30" height="30" ')}</span><div><b>${L('Customer wallet-ல இருந்து கழிஞ்சது','Paid from customer wallet')}</b><p class="muted" style="margin:4px 0 0;font-size:13px">${L('நீங்க எதுவும் வாங்க வேண்டாம். Owner settlement-ல சேரும்.','Collect nothing. It is settled by the owner.')}</p></div>`;
-      got.textContent=p==='wallet'?L('சரி','OK'):p==='cash'?L(`${inr(COL)} cash வாங்கியாச்சு`,`Collected ${inr(COL)} cash`):L('UPI பணம் வந்தாச்சு','UPI payment received')};
+      got.textContent=p==='wallet'?L('சரி','OK'):p==='cash'?L(`${inr(COL)} cash வாங்கியாச்சு`,`Collected ${inr(COL)} cash`):L('UPI பணம் வந்தாச்சு','UPI payment received');{const dq=document.getElementById('dqr');if(dq)drvQr(dq,COL)}};
     setPm(pm);
     app.querySelectorAll('[data-pm]').forEach(b=>b.onclick=()=>{if(b.dataset.pm!==pm)toast(L(`${payName(b.dataset.pm)}-க்கு மாத்தியாச்சு`,`Switched to ${payName(b.dataset.pm)}`));setPm(b.dataset.pm)});
     got.onclick=()=>{if(paid)return;paid=true;
@@ -1441,7 +1442,7 @@ function profileTab(){
 
 
 /* ================= CLOUD: Firebase (live on GitHub Pages; demo everywhere else) ================= */
-let CL=null,DME=null,UNS=[],REQUNSUB=null,JOBUNSUB=null,GEO=null,LASTLIVE=0,SHOWING=null,REQS=[],RCH=[];
+let RATE=0,CL=null,DME=null,UNS=[],REQUNSUB=null,JOBUNSUB=null,GEO=null,LASTLIVE=0,SHOWING=null,REQS=[],RCH=[];
 const DECL=new Set();const CFGD={upi:''};
 const ON_PAGES=/github\.io$/.test(location.hostname);
 const cloudP=(window.CLOUD_READY||Promise.resolve(null)).then(c=>{CL=c||null;return CL}).catch(()=>null);
@@ -1491,7 +1492,7 @@ async function loadMe(){
 const DOCNM={dl:['ஓட்டுநர் உரிமம்','Driving licence'],rc:['RC','RC'],ins:['Insurance','Insurance'],permit:['Permit','Permit'],fc:['FC','FC']};
 function docState(){const out={expired:[],soon:[]};if(!DME||!DME.docs)return out;const now=Date.now();
   Object.entries(DME.docs).forEach(([k,t])=>{if(!t||!DOCNM[k])return;const nm=DOCNM[k][S.lang==='ta'?0:1],d=Math.ceil((t-now)/864e5);if(t<now)out.expired.push(nm);else if(d<=15)out.soon.push(`${nm} (${d} ${L('நாள்','days')})`)});return out}
-function applyMe(d){const pv=DME&&DME.veh;if(REQUNSUB&&pv&&d.veh&&pv!==d.veh){REQUNSUB();REQUNSUB=null;setTimeout(()=>{if(S.online)listenReq()},0)}DME={id:CL.phone,ta:d.name||'Driver',en:d.name||'Driver',plate:d.plate||'',model:d.model||'',veh:d.veh||'auto',rating:d.rating||5,docs:d.docs||null,blocked:!!d.blocked,svc:d.svc||null,prio:d.prio||'auto',year:+d.year||+((String(d.model||'').match(/\b(19|20)\d\d\b/)||[''])[0])||0};DS.wallet=+d.wallet||0}
+function applyMe(d){const pv=DME&&DME.veh;if(REQUNSUB&&pv&&d.veh&&pv!==d.veh){REQUNSUB();REQUNSUB=null;setTimeout(()=>{if(S.online)listenReq()},0)}DME={id:CL.phone,ta:d.name||'Driver',en:d.name||'Driver',plate:d.plate||'',model:d.model||'',veh:d.veh||'auto',rating:RATE||d.rating||5,docs:d.docs||null,blocked:!!d.blocked,upi:d.upi||'',svc:d.svc||null,prio:d.prio||'auto',year:+d.year||+((String(d.model||'').match(/\b(19|20)\d\d\b/)||[''])[0])||0};DS.wallet=+d.wallet||0}
 function watchMe(){UNS.push(F().onSnapshot(F().doc(CL.db,'drivers',CL.phone),s=>{if(!s.exists())return;const before=DS.wallet;applyMe(s.data());
   if(DME.blocked&&S.online){setOnline(false);toast(L('உங்க account நிறுத்தி வைக்கப்பட்டிருக்கு','Your account is on hold'))}
   if(S.online&&!J&&docState().expired.length){setOnline(false);toast(L('ஒரு document காலாவதி ஆயிடுச்சு. Offline ஆக்கப்பட்டீங்க','A document has expired. You have been taken offline'))}
@@ -1501,6 +1502,7 @@ function watchCfgD(){UNS.push(F().onSnapshot(F().doc(CL.db,'config','app'),s=>{i
   if(d.fares)VEH.forEach(v=>{const f=d.fares[v.id];if(f){if(f.base!=null)v.base=+f.base;if(f.per!=null)v.per=+f.per}})},()=>{}))}
 function watchMine(){UNS.push(F().onSnapshot(F().query(F().collection(CL.db,'bookings'),F().where('driverPhone','==',CL.phone)),snap=>{
   const all=snap.docs.map(d=>({id:d.id,...d.data()}));
+  {const rs=all.filter(b=>b.status==='done'&&+b.rating>0);RATE=rs.length?+(rs.reduce((a,b)=>a+(+b.rating),0)/rs.length).toFixed(1):0;if(DME&&RATE)DME.rating=RATE}
   DS.trips=all.filter(b=>b.status==='done').map(b=>{const f=+b.fare||0,c=Math.round(f*COMM/100);return{id:b.id,date:CL.toMs(b.doneAt)||b.when||Date.now(),fare:f,comm:c,net:f-c,pay:b.pay||'cash',km:+b.km||0,from:{ta:b.from.ta,en:b.from.en},to:{ta:b.to.ta,en:b.to.en},cust:{ta:b.custName||'',en:b.custName||''}}}).sort((a,b)=>b.date-a.date);
   rebuildTx();
   const upk=UPC.map(u=>u.id).join();UPC=all.filter(b=>b.status==='assigned'&&isFutB(b)&&!b.arrivedAt&&!GONOW.has(b.id)).sort((a,b)=>a.when-b.when);
@@ -1548,6 +1550,10 @@ function rqTone(){rqUnlock();if(!RQAC||RQAC.state!=='running')return;const t0=RQ
     g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(h===1?.16:.12,t+.01);g.gain.exponentialRampToValueAtTime(.0001,t+.3);o.connect(g);g.connect(RQAC.destination);o.start(t);o.stop(t+.32)})})}
 function ringReq(){stopReq();const go1=()=>{if(!document.getElementById('acc')){stopReq();return}rqTone();try{navigator.vibrate&&navigator.vibrate([400,150,400,150,400])}catch(e){}};go1();RQT=setInterval(go1,2400)}
 function stopReq(){clearInterval(RQT);RQT=null;try{navigator.vibrate&&navigator.vibrate(0)}catch(e){}}
+/* driver's own UPI QR (customer pays the driver directly) */
+function loadQrD(){return new Promise((res,rej)=>{if(window.QRCode)return res();const sc=document.createElement('script');sc.src='https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';sc.onload=res;sc.onerror=rej;document.head.appendChild(sc)})}
+function drvQr(el,amt){const u=me().upi;if(!u||!el)return;const link=`upi://pay?pa=${encodeURIComponent(u)}&pn=${encodeURIComponent(me().en||'Driver')}&am=${amt}&cu=INR&tn=${encodeURIComponent('Vellore Taxi ride')}`;
+  loadQrD().then(()=>{el.innerHTML='';new window.QRCode(el,{text:link,width:120,height:120,correctLevel:window.QRCode.CorrectLevel.M})}).catch(()=>{el.innerHTML=`<small>${esc(u)}</small>`})}
 function beep(){try{const a=new (window.AudioContext||window.webkitAudioContext)();[0,.35,.7].forEach(t=>{const o=a.createOscillator(),g=a.createGain();o.frequency.value=880;o.connect(g);g.connect(a.destination);g.gain.setValueAtTime(.25,a.currentTime+t);g.gain.exponentialRampToValueAtTime(.001,a.currentTime+t+.3);o.start(a.currentTime+t);o.stop(a.currentTime+t+.3)})}catch(e){}try{navigator.vibrate&&navigator.vibrate([300,150,300])}catch(e){}}
 function listenReq(){
   if(REQUNSUB)return;
@@ -1570,7 +1576,7 @@ function buildJ(b,id){
   const trip=(b.path&&b.path.length>1)?b.path:[{lat:P.pick.lat,lon:P.pick.lon},{lat:P.drop.lat,lon:P.drop.lon}];
   const fare=+b.fare||0;
   return{id,from:'pick',to:'drop',km:+b.km||hav(P.pick,P.drop)*1.3,fare,tip:+b.tip||0,comm:Math.round(fare*COMM/100),pay:b.pay||'cash',
-    cust:{ta:b.custName||'Customer',en:b.custName||'Customer',rating:'—'},pin:null,app:!!b.customerUid,away:hav(POS,P.pick)*1.3,
+    cust:b.rider&&b.rider.name?{ta:b.rider.name+' (பயணி)',en:b.rider.name+' (rider)',rating:'—'}:{ta:b.custName||'Customer',en:b.custName||'Customer',rating:'—'},pin:null,app:!!b.customerUid,away:hav(POS,P.pick)*1.3,
     approach:[{...POS},{lat:POS.lat,lon:P.pick.lon},{lat:P.pick.lat,lon:P.pick.lon}],trip,b};
 }
 let ACCEPTING=null;
