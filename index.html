@@ -37,7 +37,7 @@
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('./vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV='2026-10-31-31',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV='2026-10-31-32',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('/vellorecalltaxi/version.json',location.origin)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -125,6 +125,18 @@ h1,h2,h3{font-family:var(--display);margin:0;line-height:1.15;text-wrap:balance}
 .riderrow{display:flex;align-items:center;gap:10px;width:100%;padding:10px 14px;border-radius:14px;border:1px dashed var(--line);background:var(--surface);text-align:left;color:var(--fg)}
 .riderrow span{font-size:20px}.riderrow div{flex:1;min-width:0}.riderrow small{display:block;font-size:11.5px;color:var(--muted);font-weight:700}.riderrow b{font-size:14px}.riderrow i{font-style:normal;font-size:12.5px;font-weight:700;color:var(--navy)}
 .welcome{display:flex;flex-direction:column;gap:4px;padding:14px 16px;border-radius:16px;background:var(--navy-soft);border:1px solid var(--line)}.welcome small{color:var(--muted);font-size:13px}
+.tpcard{max-height:92vh;overflow:auto}
+.tpsum{display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:16px;background:linear-gradient(135deg,#0B4A36,#12664A);color:#fff}.tpsum span{font-size:20px}.tpsum b{font-size:16px}
+.tpdays{display:flex;gap:8px;overflow-x:auto;scroll-snap-type:x proximity;scrollbar-width:none;margin:10px -2px 0;padding:2px}.tpdays::-webkit-scrollbar{display:none}
+.tpdays button{flex:none;width:62px;display:flex;flex-direction:column;align-items:center;gap:1px;padding:8px 0;border-radius:16px;border:1.5px solid var(--line);background:var(--surface);color:var(--fg);scroll-snap-align:start}
+.tpdays button b{font-family:var(--display);font-size:22px;line-height:1.1}.tpdays button small{font-size:11px;color:var(--muted);font-weight:700}
+.tpdays button.on{background:var(--yellow);border-color:var(--yellow);color:#0B4A36}.tpdays button.on small{color:#0B4A36}
+.tpquick{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}.tpquick button{height:34px;padding:0 12px;border-radius:999px;border:1.5px dashed #1E8A5A;color:#1E8A5A;font-weight:700;font-size:13px;background:none}.tpquick button.on{background:#1E8A5A;color:#fff;border-style:solid}
+.tpper{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:10px}.tpper button{display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 2px;border-radius:14px;border:1px solid var(--line);background:var(--surface-2);font-size:11.5px;font-weight:700;color:var(--muted)}
+.tpper button span{font-size:18px}.tpper button.on{background:#0B4A36;color:#fff;border-color:#0B4A36}.tpper button:disabled{opacity:.35}
+.tpgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:10px;max-height:190px;overflow:auto;padding:2px}
+.tpgrid button{height:42px;border-radius:12px;border:1.5px solid var(--line);background:var(--surface);font-weight:700;font-size:13.5px;color:var(--fg)}.tpgrid button.on{background:var(--yellow);border-color:var(--yellow);color:#0B4A36;box-shadow:0 4px 12px rgba(255,194,26,.4)}
+#otab button{display:flex;flex-direction:column;align-items:center;height:auto;padding:6px 4px;gap:1px}#otab small{font-size:10.5px;font-weight:600;opacity:.85}
 .tipbox{display:flex;flex-direction:column;gap:6px;padding:12px 14px;border-radius:16px;background:var(--yellow-soft);border:1.5px solid var(--yellow)}.tipbox[hidden]{display:none}
 .tiprow{display:flex;gap:6px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;margin:0 -2px;padding:2px}.tiprow::-webkit-scrollbar{display:none}
 .tiprow .chip{flex:0 0 calc((100% - 24px)/5);justify-content:center;scroll-snap-align:start;padding:0;height:40px;font-weight:700}
@@ -1352,18 +1364,41 @@ const timeLabel=ts=>new Date(ts).toLocaleTimeString(S.lang==='ta'?'ta-IN':'en-IN
 const fmtWhen=ts=>dayLabel(ts)+', '+timeLabel(ts);
 const kindName=k=>({schedule:L('முன்பதிவு ride','Scheduled ride'),rental:'Rental',outstation:'Outstation'})[k]||'';
 
+/* ---------- modern date & time picker (shared by Schedule, Local later, Rental, Outstation) ---------- */
+const TPP=[['dawn','🌙','அதிகாலை','Early',0,6],['morn','🌅','காலை','Morning',6,12],['noon','☀️','மதியம்','Afternoon',12,17],['eve','🌆','மாலை','Evening',17,20],['night','🌃','இரவு','Night',20,24]];
+const d0=t=>{const x=new Date(t);x.setHours(0,0,0,0);return x.getTime()};
+const tpLong=ts=>`${dayLabel(ts)} · ${new Date(ts).toLocaleDateString(S.lang==='ta'?'ta-IN':'en-IN',{day:'numeric',month:'short'})} · ${timeLabel(ts)}`;
+function tpRender(box,o){ // o:{min,max,val,onChange}
+  const min=o.min,max=o.max||min+60*864e5;
+  if(!o.val||o.val<min)o.val=min;if(o.val>max)o.val=max;
+  const slotsOf=(day,a,b)=>{const out=[];for(let m=a*60;m<b*60;m+=15){const t=day+m*6e4;if(t>=min&&t<=max)out.push(t)}return out};
+  const days=[];for(let d=d0(min);d<=d0(max);d+=864e5){if(slotsOf(d,0,24).length)days.push(d);if(days.length>=60)break}
+  let day=d0(o.val);if(!days.includes(day))day=days[0];
+  const hr=new Date(o.val).getHours();let per=(TPP.find(p=>hr>=p[4]&&hr<p[5])||TPP[1])[0];
+  const draw=()=>{
+    const P=TPP.map(p=>({p,n:slotsOf(day,p[4],p[5])}));if(!P.find(x=>x.p[0]===per&&x.n.length))per=(P.find(x=>x.n.length)||P[0]).p[0];
+    const cur=P.find(x=>x.p[0]===per),now=Date.now();
+    const quick=day===d0(now)?[[30,L('30 நிமி-ல','In 30 min')],[60,L('1 மணி-ல','In 1 hr')],[120,L('2 மணி-ல','In 2 hrs')]].map(([m,l])=>[Math.ceil((now+m*6e4)/9e5)*9e5,l]).filter(([t])=>t>=min&&t<=max):[];
+    box.innerHTML=`<div class="tpsum"><span>🗓️</span><b>${tpLong(o.val)}</b></div>
+     <div class="tpdays">${days.map(d=>{const dt=new Date(d);return `<button class="${d===day?'on':''}" data-tpd="${d}"><small>${d===d0(now)?L('இன்று','Today'):d===d0(now)+864e5?L('நாளை','Tmrw'):dt.toLocaleDateString(S.lang==='ta'?'ta-IN':'en-IN',{weekday:'short'})}</small><b>${dt.getDate()}</b><small>${dt.toLocaleDateString(S.lang==='ta'?'ta-IN':'en-IN',{month:'short'})}</small></button>`}).join('')}</div>
+     ${quick.length?`<div class="tpquick">${quick.map(([t,l])=>`<button class="${t===o.val?'on':''}" data-tpt="${t}">⚡ ${l}</button>`).join('')}</div>`:''}
+     <div class="tpper">${P.map(({p,n})=>`<button class="${p[0]===per?'on':''}" data-tpp="${p[0]}" ${n.length?'':'disabled'}><span>${p[1]}</span>${S.lang==='ta'?p[2]:p[3]}</button>`).join('')}</div>
+     <div class="tpgrid">${cur.n.map(t=>`<button class="${t===o.val?'on':''}" data-tpt="${t}">${timeLabel(t)}</button>`).join('')||`<p class="muted" style="grid-column:1/-1;margin:6px 0">${L('இந்த நேரத்துல slot இல்லை','No slots in this part of the day')}</p>`}</div>`;
+    box.querySelectorAll('[data-tpd]').forEach(b=>b.onclick=()=>{day=+b.dataset.tpd;const keep=new Date(o.val);let nv=day+(keep.getHours()*60+keep.getMinutes())*6e4;if(nv<min)nv=slotsOf(day,0,24)[0];if(nv>max)nv=slotsOf(day,0,24).slice(-1)[0];o.val=nv;const h=new Date(nv).getHours();per=(TPP.find(p=>h>=p[4]&&h<p[5])||TPP[1])[0];o.onChange&&o.onChange(o.val);draw()});
+    box.querySelectorAll('[data-tpp]').forEach(b=>b.onclick=()=>{per=b.dataset.tpp;const n=slotsOf(day,...TPP.find(p=>p[0]===per).slice(4));if(n.length&&!n.includes(o.val)){o.val=n[0];o.onChange&&o.onChange(o.val)}draw()});
+    box.querySelectorAll('[data-tpt]').forEach(b=>b.onclick=()=>{o.val=+b.dataset.tpt;day=d0(o.val);const h=new Date(o.val).getHours();per=(TPP.find(p=>h>=p[4]&&h<p[5])||TPP[1])[0];o.onChange&&o.onChange(o.val);draw()});
+    const sel=box.querySelector('.tpdays .on');if(sel)sel.scrollIntoView({inline:'center',block:'nearest'});
+  };
+  draw();
+}
 function pickWhen(minM,cb,note){
-  const min=Date.now()+minM*60e3;
-  const slots=o=>{const out=[],d=dayStart(o);for(let m=5*60;m<24*60;m+=15){const t=new Date(d);t.setMinutes(m);if(t.getTime()>=min)out.push(t.getTime())}return out};
-  const days=[0,1,2,3,4,5,6,7].filter(o=>slots(o).length).slice(0,7);
+  const min=Math.ceil((Date.now()+minM*60e3)/9e5)*9e5,o={min,max:min+30*864e5,val:min};
   modal(`<h3>${L('எப்போ போகணும்?','When do you want to go?')}</h3>${note?`<div class="note">${note}</div>`:''}
-    <div class="chips" id="days">${days.map((o,i)=>`<button class="chip ${i===0?'sel':''}" data-d="${o}">${dayLabel(dayStart(o).getTime())}</button>`).join('')}</div>
-    <label class="kind" for="slot">${L('நேரம்','Time')}</label><select id="slot" class="selbox"></select>
-    <button class="btn" id="wok">${L('இந்த நேரம் சரி','Set this time')}</button>`,(m,close)=>{
-    const sl=m.querySelector('#slot');
-    const fill=o=>{sl.innerHTML=slots(o).map(ts=>`<option value="${ts}">${timeLabel(ts)}</option>`).join('')};fill(days[0]);
-    m.querySelectorAll('[data-d]').forEach(b=>b.onclick=()=>{m.querySelectorAll('[data-d]').forEach(x=>x.classList.toggle('sel',x===b));fill(+b.dataset.d)});
-    m.querySelector('#wok').onclick=()=>{close();cb(+sl.value)};
+    <div id="tp"></div><button class="btn" id="wok"></button>`,(m,close)=>{
+    const ok=m.querySelector('#wok'),lab=()=>{ok.textContent=L(`${timeLabel(o.val)}-க்கு உறுதி செய்`,`Confirm ${timeLabel(o.val)}`)};
+    o.onChange=lab;tpRender(m.querySelector('#tp'),o);lab();
+    m.querySelector('.card').classList.add('tpcard');
+    ok.onclick=()=>{close();cb(o.val)};
   });
 }
 
@@ -1555,30 +1590,17 @@ function outFare2(){
 }
 function outWhen(mins,tab){
   const minL=r15(Date.now()+oNotice(OS.veh)*6e4);
-  let L0=OS.leave,R0=OS.ret,cur=tab;
-  const day0=d=>{const x=new Date(d);x.setHours(0,0,0,0);return x.getTime()};
-  const draw=m=>{
-    const isL=cur==='leave',val=isL?L0:R0,min=isL?minL:r15(L0+2*mins*6e4),maxDays=isL?60:10,base=isL?day0(Date.now()):day0(L0);
-    const days=[];for(let i=0;i<=maxDays;i++){const d=base+i*864e5;if(d+864e5>min)days.push(d)}
-    const selDay=day0(val);
-    const slots=[];for(let mm=0;mm<24*60;mm+=15){const ts=selDay+mm*6e4;if(ts>=min)slots.push(ts)}
-    m.querySelector('#ow').innerHTML=`${OS.type==='round'?`<div class="seg"><button class="${isL?'on':''}" data-tab="leave">${L('புறப்படும் நேரம்','Leave on')}</button><button class="${!isL?'on':''}" data-tab="ret">${L('திரும்பும் நேரம்','Return by')}</button></div>`:''}
-      <p class="muted" style="margin:0;font-size:12.5px">${isL?L(`${maxDays} நாள் வரை முன்பதிவு செய்யலாம்`,`Book up to ${maxDays} days ahead`):L(`புறப்பட்டதுல இருந்து ${maxDays} நாள் வரை · போய் வர குறைந்தது ${hm(2*mins)}`,`Up to ${maxDays} days after leaving · the drive alone takes ${hm(2*mins)}`)}</p>
-      <div class="rchips" id="dch">${days.map(d=>`<button data-d="${d}" class="${d===selDay?'sel':''}"><b>${new Date(d).toLocaleDateString(S.lang==='ta'?'ta-IN':'en-IN',{weekday:'short'})}</b><small>${new Date(d).toLocaleDateString(S.lang==='ta'?'ta-IN':'en-IN',{day:'numeric',month:'short'})}</small></button>`).join('')}</div>
-      <label class="kind" for="slot">${L('நேரம்','Time')}</label><select id="slot" class="selbox">${slots.map(ts=>`<option value="${ts}" ${ts===val?'selected':''}>${timeLabel(ts)}</option>`).join('')}</select>`;
-    const sc=m.querySelector('#dch .sel');if(sc)sc.scrollIntoView({inline:'center',block:'nearest'});
-    m.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{cur=b.dataset.tab;draw(m)});
-    m.querySelectorAll('[data-d]').forEach(b=>b.onclick=()=>{const d=+b.dataset.d,tm=val-day0(val);let nv=d+tm;if(nv<min)nv=min;if(isL)L0=nv;else R0=nv;fix();draw(m)});
-    m.querySelector('#slot').onchange=e=>{if(isL)L0=+e.target.value;else R0=+e.target.value;fix();draw(m)};
-  };
-  const fix=()=>{if(L0<minL)L0=minL;if(OS.type==='round'){const mr=r15(L0+2*mins*6e4);if(!R0||R0<mr)R0=r15(mr+2*36e5);if(R0>day0(L0)+11*864e5)R0=r15(mr+2*36e5)}};
-  fix();
-  modal(`<h3>${OS.type==='round'?L('போய் வர நேரம்','Schedule round trip'):L('புறப்படும் நேரம்','Schedule your trip')}</h3><div id="ow" style="display:flex;flex-direction:column;gap:10px"></div>
-    <div class="note" id="osum"></div><button class="btn" id="wok">${L('உறுதி செய்','Confirm')}</button>`,(m,close)=>{
-    const sum=()=>{m.querySelector('#osum').textContent=OS.type==='round'?`${fmtD(L0)} → ${fmtD(R0)}`:fmtD(L0)};
-    const d0=draw;const dr=mm=>{d0(mm);sum()};
-    m.querySelector('#ow').addEventListener('click',()=>setTimeout(sum,0));m.querySelector('#ow').addEventListener('change',()=>setTimeout(sum,0));
-    dr(m);
+  let L0=Math.max(OS.leave||minL,minL),R0=OS.ret,cur=tab||'leave';
+  const fixR=()=>{if(OS.type!=='round')return;const mr=r15(L0+2*mins*6e4);if(!R0||R0<mr||R0>d0(L0)+11*864e5)R0=r15(mr+2*36e5)};fixR();
+  modal(`<h3>${OS.type==='round'?L('போய் வர நேரம்','Schedule round trip'):L('புறப்படும் நேரம்','When do you leave?')}</h3>
+    ${OS.type==='round'?`<div class="seg" id="otab"><button data-tab="leave">↗ ${L('புறப்படும்','Leave on')}<small id="lsum"></small></button><button data-tab="ret">↩ ${L('திரும்பும்','Return by')}<small id="rsum"></small></button></div>`:''}
+    <p class="muted" id="ohint" style="margin:0;font-size:12.5px"></p><div id="tp"></div><button class="btn" id="wok">${L('உறுதி செய்','Confirm')}</button>`,(m,close)=>{
+    m.querySelector('.card').classList.add('tpcard');
+    const sums=()=>{const a=m.querySelector('#lsum'),b=m.querySelector('#rsum');if(a)a.textContent=tpLong(L0);if(b)b.textContent=tpLong(R0)};
+    const draw=()=>{m.querySelectorAll('[data-tab]').forEach(b=>b.classList.toggle('on',b.dataset.tab===cur));sums();
+      const isL=cur==='leave';m.querySelector('#ohint').textContent=isL?L('60 நாள் வரை முன்பதிவு செய்யலாம்','Book up to 60 days ahead'):L(`போய் வர மட்டுமே ~${hm(2*mins)} ஆகும். 10 நாள் வரை தேர்வு பண்ணலாம்.`,`The drive alone takes ~${hm(2*mins)}. Up to 10 days.`);
+      tpRender(m.querySelector('#tp'),isL?{min:minL,max:minL+60*864e5,val:L0,onChange:v=>{L0=v;fixR();sums()}}:{min:r15(L0+2*mins*6e4),max:d0(L0)+11*864e5-6e4,val:R0,onChange:v=>{R0=v;sums()}})};
+    m.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{cur=b.dataset.tab;draw()});draw();
     m.querySelector('#wok').onclick=()=>{OS.leave=L0;if(OS.type==='round')OS.ret=R0;close();outFare2()};
   });
 }
