@@ -25,7 +25,7 @@
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('../vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV='2026-10-31-25',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV='2026-10-31-26',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('/vellorecalltaxi/version.json',location.origin)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -1288,7 +1288,12 @@ const stPillB=b=>b.status==='assigned'&&isFut(b)?`<em class="bst scheduled">⏰ 
 setInterval(()=>{document.querySelectorAll('[data-cd]').forEach(el=>{const b=DB&&DB.bk.find(x=>x._id===el.dataset.cd);if(b)el.textContent=dispStage(b)});ringCheck()},1000);
 /* ---------- office ringtone: rings until every waiting outstation/rental booking is handled ---------- */
 let RAC=null,RLAST=0,RSNOOZE=0,RTITLE=null;
-function needsDesk(b){if(!b||b.status!=='searching')return false;if(!b.dispatch)return b.kind==='ride'&&Date.now()-(b.created||Date.now())>60e3;const d=b.dispatch,now=Date.now();
+let RACK=new Set();try{RACK=new Set(JSON.parse(localStorage.getItem('vcto_ack')||'[]'))}catch(e){}
+const ackDesk=id=>{RACK.add(id);try{localStorage.setItem('vcto_ack',JSON.stringify([...RACK].slice(-200)))}catch(e){}};
+function drvCxDesk(b){if(!b||b.status!=='cancelled'||!/^driver/.test(b.reason||'')||RACK.has(b._id))return false;const now=Date.now();
+  if(b.kind==='outstation'||b.kind==='rental')return (b.when||0)>now-36e5;
+  return b.kind==='ride'&&now-b.created<30*60e3&&now-(b.upd||b.created)>45e3&&!DB.bk.some(x=>x.rebookOf===b._id)}
+function needsDesk(b){if(drvCxDesk(b))return true;if(!b||b.status!=='searching')return false;if(!b.dispatch)return b.kind==='ride'&&Date.now()-(b.created||Date.now())>60e3;const d=b.dispatch,now=Date.now();
   if(d.review)return !d.reviewUntil||now<d.reviewUntil;return now<(d.openAt||0)}
 function ringUnlock(){try{if(!RAC)RAC=new (window.AudioContext||window.webkitAudioContext)();if(RAC.state==='suspended')RAC.resume()}catch(e){}}
 ['click','keydown','touchstart'].forEach(ev=>document.addEventListener(ev,ringUnlock,{passive:true}));
@@ -1310,9 +1315,9 @@ function ringCheck(){
   if(!bar){bar=document.createElement('div');bar.id='ringbar';document.body.appendChild(bar)}
   const muted=now<RSNOOZE,ok=RAC&&RAC.state==='running';
   bar.className=muted?'mute':'';
-  bar.innerHTML=`<span class="bell">🔔</span><b>${L(`${list.length} booking உங்க பதிலுக்கு காத்திருக்கு`,`${list.length} booking${list.length>1?'s':''} waiting for you`)}</b><small>${esc(list.map(b=>`${b.kind==='outstation'?'🛣️':b.kind==='rental'?'⏱️':'🚕 '+L('யாரும் எடுக்கல','no taker')} ${b.id} · ${pn(b.to)}`).join(' · '))}</small>
+  bar.innerHTML=`<span class="bell">🔔</span><b>${L(`${list.length} booking உங்க பதிலுக்கு காத்திருக்கு`,`${list.length} booking${list.length>1?'s':''} waiting for you`)}</b><small>${esc(list.map(b=>`${b.status==='cancelled'?'🔁 '+L('Driver ரத்து','Driver cancelled'):b.kind==='outstation'?'🛣️':b.kind==='rental'?'⏱️':'🚕 '+L('யாரும் எடுக்கல','no taker')} ${b.id} · ${pn(b.to)}`).join(' · '))}</small>
     ${ok?'':`<em>${L('ஒலி வர இங்கே ஒரு தடவை click பண்ணுங்க','Click once here to turn on sound')}</em>`}<button id="rgo">${L('பார்','Open')}</button><button id="rmu">${muted?L('ஒலி ON','Sound on'):L('1 நிமி அமைதி','Mute 1 min')}</button>`;
-  bar.querySelector('#rgo').onclick=()=>{const b=list[0];S.sec='book';BT='live';save();show();setTimeout(()=>{b.dispatch&&b.dispatch.review?reviewSheet(b):assignSheet(b)},200)};
+  bar.querySelector('#rgo').onclick=()=>{const b=list[0];S.sec='book';BT='live';save();show();setTimeout(()=>{b.status==='cancelled'?reopenSheet(b):b.dispatch&&b.dispatch.review?reviewSheet(b):assignSheet(b)},200)};
   bar.querySelector('#rmu').onclick=e=>{e.stopPropagation();RSNOOZE=muted?0:Date.now()+60e3;ringCheck()};
   if(RTITLE===null)RTITLE=document.title;document.title=(Math.floor(now/1000)%2?'🔔 ':'')+`(${list.length}) ${RTITLE}`;
   if(!muted&&now-RLAST>3200){if(ringTone())RLAST=now}
@@ -1358,6 +1363,24 @@ function book(){
 }
 function nearest(veh,from,exclude){const pt=typeof from==='object'?from:P[from];if(!pt||pt.lat==null)return DB.drv.filter(d=>d.veh===veh&&d.status==='avail'&&!d.blocked&&d.id!==exclude).map(d=>({d,km:0}));return DB.drv.filter(d=>d.veh===veh&&d.status==='avail'&&!d.blocked&&d.id!==exclude).map(d=>({d,km:hav(d,pt)*1.3})).sort((a,b)=>a.km-b.km)}
 /* office cancel with a reason; "no vehicle" sends the customer a polite apology */
+/* a driver cancelled: send it to other drivers, assign one, or tell the customer */
+function reopenSheet(b){if(!b)return;const long=b.kind==='outstation'||b.kind==='rental';
+  const upd=()=>{const o={status:'searching',driverPhone:null,driverName:null,plate:null,vehModel:null,assignedAt:null,arrivedAt:null,pinTry:null,cancelReason:null,exclude:[...new Set([...(b.exclude||[]),b.driver].filter(Boolean))],reopenedAt:Date.now(),updatedAt:ts()};
+    if(long){o['dispatch.review']=false;o['dispatch.openAt']=Date.now()}else o.when=Date.now();return o};
+  modal(`<h3>🔁 ${b.id} · ${L('Driver ரத்து செஞ்சார்','Driver cancelled')}</h3>
+    <div class="bill"><div><span>Customer</span><b>${esc(b.cust.name)} · +91 ${b.cust.phone}</b></div><div><span>${L('வழி','Route')}</span><b>${pn(b.from)} → ${pn(b.to)}</b></div>
+     <div><span>${L('நேரம்','Time')}</span><b>${dt(b.when)}</b></div><div><span>${L('வண்டி','Vehicle')}</span><b>${vname(b.veh)}</b></div>
+     <div><span>${L('ரத்து செஞ்ச driver','Driver who cancelled')}</span><b>${esc(b.driverName||(drvById(b.driver)||{}).en||'—')}</b></div><div><span>${L('காரணம்','Reason')}</span><b>${esc((b.reason||'').replace(/^driver:?\s*/,'')||'—')}</b></div></div>
+    <button class="btn" id="ro1">🔁 ${long?L('மற்ற drivers-க்கு அனுப்பு (rating வரிசை)','Send to other drivers (by rating)'):L('மற்ற drivers-க்கு அனுப்பு','Send to other drivers')}</button>
+    <button class="btn ghost" id="ro2">${L('நானே driver assign பண்றேன்','Assign a driver myself')}</button>
+    <div class="two"><button class="btn ghost" id="ro3" style="color:var(--danger)">${L('வண்டி இல்லை · Customer-க்கு சொல்லு','No vehicle · tell the customer')}</button><button class="btn ghost" id="ro4">${L('இதை விடு','Dismiss')}</button></div>
+    <p class="muted" style="margin:0;font-size:12.5px">${L('ரத்து செஞ்ச driver-க்கு இந்த booking மறுபடி போகாது.','The driver who cancelled will not get this booking again.')}</p>`,(m,close)=>{
+    m.querySelector('#ro1').onclick=()=>{ackDesk(b._id);if(CL){cw(F().updateDoc(bkRef(b),upd()).then(()=>{close();toast(L('மற்ற drivers-க்கு அனுப்பியாச்சு','Sent to other drivers'))}));return}b.status='searching';b.driver=null;saveDB();close();show()};
+    m.querySelector('#ro2').onclick=()=>{ackDesk(b._id);const go2=()=>{close();b.status='searching';b.driver=null;assignSheet(b)};if(CL){cw(F().updateDoc(bkRef(b),upd()).then(go2));return}go2()};
+    m.querySelector('#ro3').onclick=()=>{ackDesk(b._id);if(CL){cw(F().updateDoc(bkRef(b),{cancelReason:'novehicle',updatedAt:ts()}).then(()=>{close();toast(L('Customer-க்கு மன்னிப்பு செய்தி போச்சு','Apology sent to the customer'))}));return}close()};
+    m.querySelector('#ro4').onclick=()=>{ackDesk(b._id);close();ringCheck()};
+  });
+}
 function cancelSheet(bk){if(!bk)return;let rs='novehicle';
   const R=[['novehicle',L('வண்டி இல்லை','No vehicle available')],['customer',L('Customer கேட்டார்','Customer asked')],['office',L('மற்ற காரணம்','Other reason')]];
   modal(`<h3>${bk.id} ${L('ரத்து செய்யவா?','— cancel?')}</h3><p class="muted" style="margin:0">${esc(bk.cust.name)} · ${pn(bk.from)} → ${pn(bk.to)}</p>
@@ -1596,7 +1619,7 @@ function mapBk(b,now){now=now||Date.now();return{id:shortB(b._id),_id:b._id,cust
   from:b.from&&b.from.key&&P[b.from.key]?b.from.key:(b.from?b.from[S.lang]||b.from.ta:'—'),to:b.to&&b.to.key&&P[b.to.key]?b.to.key:(b.to?b.to[S.lang]||b.to.ta:'—'),
   fromC:b.from,toC:b.to,veh:b.veh||'auto',km:+b.km||0,fare:+b.fare||0,tip:+b.tip||0,pay:b.pay||'cash',src:b.src||'app',status:b.status||'searching',kind:b.kind||'ride',dispatch:b.dispatch||null,otype:b.otype||null,ret:b.retAt||null,
   driver:b.driverPhone||null,driverName:b.driverName||'',created:CL.toMs(b.createdAt)||b.when||now,when:b.when||CL.toMs(b.createdAt)||now,done:CL.toMs(b.doneAt)||null,reason:b.cancelReason||'',
-  rating:+b.rating||0,custRating:+b.custRating||0}}
+  rating:+b.rating||0,custRating:+b.custRating||0,exclude:b.exclude||[],rebookOf:b.rebookOf||null,upd:CL.toMs(b.updatedAt)||0}}
 async function loadHist(days){
   if(!CL){HIST={at:Date.now(),days,rows:DB.bk};return HIST.rows}
   if(HIST.days>=days&&Date.now()-HIST.at<60e3)return HIST.rows;

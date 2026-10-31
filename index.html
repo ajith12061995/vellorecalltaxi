@@ -37,7 +37,7 @@
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('./vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV='2026-10-31-25',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV='2026-10-31-26',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('/vellorecalltaxi/version.json',location.origin)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -1858,6 +1858,18 @@ function stopWatch(){chatStop();if(BKUNSUB){BKUNSUB();BKUNSUB=null}if(LIVEUNSUB)
 function blockedStop(){if(!CL||!(CFG.blocked||[]).includes('+91'+S.phone))return false;
   modal(`<div style="text-align:center;font-size:38px">⛔</div><h3 style="text-align:center">${L('Booking செய்ய முடியல','Booking not available')}</h3><p style="margin:0;text-align:center">${L('உங்க account தற்காலிகமா நிறுத்தி வைக்கப்பட்டிருக்கு. விவரத்துக்கு எங்க office-ஐ அழைங்க.','Your account is on hold for now. Please call our office.')}</p>
     ${CFG.office?`<a class="btn yellow" href="tel:+91${CFG.office}">${L('Office-ஐ அழை','Call our office')}</a>`:''}<button class="btn ghost" id="bok">${L('சரி','OK')}</button>`,(m,close)=>m.querySelector('#bok').onclick=close);return true}
+/* driver cancelled a local ride → book again at once with the same details; that driver won't get it again */
+async function autoRebook(b){
+  stopWatch();const old=R.id,ex=[...(b.exclude||[]),b.driverPhone].filter(Boolean);
+  const data={};['customerUid','custName','custPhone','src','kind','from','to','path','veh','vehTa','vehEn','km','base','fare','pay','tip'].forEach(k=>{if(b[k]!==undefined)data[k]=b[k]});
+  Object.assign(data,{status:'searching',when:Date.now(),exclude:ex,rebookOf:old,createdAt:F().serverTimestamp(),updatedAt:F().serverTimestamp()});
+  const pin=String(1000+Math.floor(Math.random()*9000));
+  try{const ref=await F().addDoc(F().collection(CL.db,'bookings'),data);await F().setDoc(F().doc(CL.db,'bookings',ref.id,'private','pin'),{pin});
+    Object.assign(R,{id:ref.id,pin,trackId:ref.id.slice(0,8),phase:'search',drv:null,dpos:null,b:data,t0:Date.now(),rebookN:(R.rebookN||0)+1,rebooked:true,lastTry:null});
+    rememberRide();watchBooking();
+    toast(L('உங்க driver ரத்து செஞ்சார். மன்னிக்கவும் — வேற driver-ஐ தேடுறோம்','Your driver cancelled. Sorry — finding you another driver'));
+  }catch(e){toast(CL.errText(e,S.lang==='ta'));forgetRide();recordTrip('cancelled',{reason:b.cancelReason||''});R=null;home()}
+}
 async function cloudBook(){if(blockedStop())return;
   const r=route(S.from,S.dest),v=VEH.find(x=>x.id===S.veh),f=fare(v,r.km);
   if(S.pay==='wallet')S.pay='upi';
@@ -1895,7 +1907,8 @@ function onBooking(b){
     return;
   }
   if(b.status==='done'){stopWatch();forgetRide();R.fare=b.fare;R.boost=+b.tip||0;R.pay=b.pay||R.pay;doneScreen();return}
-  if(b.status==='cancelled'){stopWatch();forgetRide();if(!R.selfCancel){if(b.cancelReason&&b.cancelReason!=='customer'&&!/^driver/.test(b.cancelReason))setTimeout(()=>sorrySheet(b.cancelReason),400);else toast(L('இந்த ride ரத்து ஆயிடுச்சு. மறுபடி book பண்ணுங்க','This ride was cancelled. Please book again'));recordTrip('cancelled',{reason:b.cancelReason||''})}R=null;home()}
+  if(b.status==='cancelled'&&!R.selfCancel&&/^driver/.test(b.cancelReason||'')&&!b.startedAt&&!OFK.includes(b.kind)&&(R.rebookN||0)<3){autoRebook(b);return}
+  if(b.status==='cancelled'){stopWatch();forgetRide();if(!R.selfCancel){if(b.cancelReason&&b.cancelReason!=='customer'&&!/^(driver|noshow|custask)/.test(b.cancelReason))setTimeout(()=>sorrySheet(b.cancelReason),400);else toast(L('இந்த ride ரத்து ஆயிடுச்சு. மறுபடி book பண்ணுங்க','This ride was cancelled. Please book again'));recordTrip('cancelled',{reason:b.cancelReason||''})}R=null;home()}
 }
 function searchingCloud(){
   R.phase='search';const pu={lat:R.b.from.lat,lon:R.b.from.lon};
@@ -1903,7 +1916,7 @@ function searchingCloud(){
      <div class="topbar"><div class="greet"><small>${R.fromName[S.lang]}</small><b>→ ${R.destName[S.lang]}</b></div></div></div>
    <div class="sheet ride-sheet pad"><div class="grab"></div>
      <div class="searchrow"><span class="vi">${I[R.v.id]}</span><div><h3>${L('Driver-ஐ தேடுறோம்…','Finding your driver…')}</h3>
-       <small class="muted" id="sst">${L(`அருகில் இருக்கிற ${R.v.ta} drivers-க்கும் எங்க office-க்கும் request போயிடுச்சு`,`Request sent to nearby ${R.v.en} drivers and our office`)}</small></div></div>
+       <small class="muted" id="sst">${R.rebooked?L('🔁 முந்தைய driver ரத்து செஞ்சார். மன்னிக்கவும் — வேற driver-ஐ தேடுறோம்…','🔁 Your previous driver cancelled. Sorry — finding another driver…'):L(`அருகில் இருக்கிற ${R.v.ta} drivers-க்கும் எங்க office-க்கும் request போயிடுச்சு`,`Request sent to nearby ${R.v.en} drivers and our office`)}</small></div></div>
      <div class="bar"><i style="animation-duration:60s"></i></div>
      <div class="tipbox" id="tipbox" ${R.boost?'':'hidden'}><b>💡 ${L('Tip சேர்த்தா driver சீக்கிரம் கிடைப்பார்','Add a tip to get a driver faster')}</b>
        <small>${L('இன்னும் யாரும் எடுக்கல. Tip முழுசா driver-க்கே போகும்.','No one has accepted yet. The whole tip goes to the driver.')}</small>
@@ -1975,8 +1988,9 @@ function watchMyB(){if(!CL||!CUID||MYBUNSUB)return;
   MYBUNSUB=F().onSnapshot(F().query(F().collection(CL.db,'bookings'),F().where('customerUid','==',CUID)),s=>{
     MYB={};s.docs.forEach(d=>MYB[d.id]=d.data());let ch=false;
     TRIPS.forEach(x=>{const b=x.cid&&MYB[x.cid];if(!b||x.status!=='upcoming')return;
+      if(b.status==='cancelled'&&/^driver/.test(b.cancelReason||'')){if(x.drvName){x.drvName=null;ch=true}return}
       if(b.status==='cancelled'){x.status='cancelled';x.reason=b.cancelReason==='novehicle'?L('வண்டி இல்லை','No vehicle available'):b.cancelReason==='office'?L('Office ரத்து செய்தது','Cancelled by the office'):L('ரத்து','Cancelled');ch=true;
-        if(b.cancelReason&&b.cancelReason!=='customer'&&!/^driver/.test(b.cancelReason))setTimeout(()=>sorrySheet(b.cancelReason),300);return}
+        if(b.cancelReason&&b.cancelReason!=='customer'&&!/^(driver|noshow|custask)/.test(b.cancelReason))setTimeout(()=>sorrySheet(b.cancelReason),300);return}
       if(b.fare&&+b.fare!==+x.fare){x.fare=+b.fare;ch=true}
       if(b.driverName&&x.drvName!==b.driverName){x.drvName=b.driverName;x.drvPlate=b.plate||'';x.drvModel=b.vehModel||'';ch=true}
       if(['assigned','ontrip'].includes(b.status)&&(!isFutB(b)||b.arrivedAt||b.status==='ontrip')&&!R&&x.pin){
@@ -1988,6 +2002,7 @@ function watchMyB(){if(!CL||!CUID||MYBUNSUB)return;
 function dspHtml(x){
   const b=x.cid&&MYB[x.cid],now=Date.now();
   if(!b)return `<div class="dsp"><div class="dt"><b>${L('Booking அனுப்புது…','Sending your booking…')}</b></div><div class="steps"><i class="cur"></i><i></i><i></i></div></div>`;
+  if(b.status==='cancelled'&&/^driver/.test(b.cancelReason||''))return `<div class="dsp"><div class="dt"><b>🔁 ${L('உங்க driver மாறுகிறார்','We are changing your driver')}</b></div><small>${L('முந்தைய driver வர முடியாதுன்னு சொன்னார். மன்னிக்கவும் — எங்க office வேற driver-ஐ ஏற்பாடு செய்யுது. காத்திருங்க.','Your previous driver can’t make it. Sorry — our office is arranging another driver. Please wait.')}</small><div class="steps"><i class="on"></i><i class="cur"></i><i></i></div></div>`;
   if(b.status==='cancelled')return `<div class="dsp"><div class="dt"><b>${L('இந்த booking ரத்து ஆயிடுச்சு','This booking was cancelled')}</b></div></div>`;
   if(b.driverName)return `<div class="dsp ok"><div class="dt"><b>✅ ${L('Driver உறுதி ஆயிட்டார்','Your driver is confirmed')}</b></div><small><b style="color:var(--fg)">${esc(b.driverName)}</b> · ${esc(b.plate||'')} · ${esc(b.vehModel||'')}</small><small>${L('பயண நேரத்துக்கு முன்னாடி driver கிளம்பினதும் live-ஆ இங்கயே track பண்ணலாம்.','When your driver leaves for pickup, you can track them live here.')}</small><div class="steps"><i class="on"></i><i class="on"></i><i class="on"></i></div></div>`;
   const dp=b.dispatch||{},o=dp.review?(dp.reviewUntil||now):(dp.openAt||now),g=(dp.gap||60)*1000;

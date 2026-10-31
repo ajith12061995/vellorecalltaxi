@@ -28,7 +28,7 @@
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('../vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV='2026-10-31-25',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV='2026-10-31-26',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('/vellorecalltaxi/version.json',location.origin)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -1280,7 +1280,7 @@ function jobCancel(){
     <div class="note">${L('அடிக்கடி ரத்து செய்தா rating குறையும். Owner-க்கு தகவல் போகும்.','Frequent cancels lower your rating. The owner is informed.')}</div>
     <button class="btn ghost" id="cy" disabled>${L('ரத்து செய்','Cancel ride')}</button><button class="btn" id="cn">${L('Ride-ஐ தொடரு','Keep the ride')}</button>`,(m,close)=>{
     m.querySelectorAll('.reason').forEach(b=>b.onclick=()=>{m.querySelectorAll('.reason').forEach(x=>x.classList.toggle('sel',x===b));m.querySelector('#cy').disabled=false});
-    m.querySelector('#cn').onclick=close;m.querySelector('#cy').onclick=()=>{if(J&&J.id){const sel=m.querySelector('.reason.sel');cUpd({status:'cancelled',cancelReason:'driver: '+(sel?sel.textContent.trim():'')});stopJob();setTimeout(()=>pushLive(true),300)}J=null;close();home();toast(L('Ride ரத்து ஆச்சு','Ride cancelled'))};
+    m.querySelector('#cn').onclick=close;m.querySelector('#cy').onclick=()=>{if(J&&J.id){const sel=m.querySelector('.reason.sel');cUpd({status:'cancelled',cancelReason:(sel&&+sel.dataset.i===0?'noshow: ':sel&&+sel.dataset.i===1?'custask: ':'driver: ')+(sel?sel.textContent.trim():'')});stopJob();setTimeout(()=>pushLive(true),300)}J=null;close();home();toast(L('Ride ரத்து ஆச்சு','Ride cancelled'))};
   });
 }
 function atPickup(){
@@ -1644,6 +1644,7 @@ function S_TIER(){const d=DME||{};if(d.prio==='top')return 1;if(d.prio==='low')r
   const wk=DS.trips.filter(t=>t.date>Date.now()-7*864e5).length;
   if((+d.rating||5)>=4.5&&wk>=35)return 1;if(d.year&&new Date().getFullYear()-d.year<=5)return 2;return 3}
 function offerAt(b){
+  if(CL&&Array.isArray(b.exclude)&&b.exclude.includes(CL.phone))return Infinity; // this driver already cancelled it
   const k=b.kind==='outstation'?'out':b.kind==='rental'?'rental':'local';
   if(k==='local'){if(!svcActive('local'))return Infinity;if(b.when&&Date.now()-b.when>15*60e3)return Infinity; // stale test/abandoned bookings never ringif(!b.from||b.from.lat==null)return 0;
     const d=hav(POS,b.from);if(d<=LOCAL_R1)return 0;if(d<=LOCAL_R2)return (+b.tip>0)?0:(+b.when||0)+LOCAL_WAVE*1000;return Infinity}
