@@ -37,7 +37,7 @@
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('./vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV='2026-10-31-14',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV='2026-10-31-15',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('/vellorecalltaxi/version.json',location.origin)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -127,6 +127,8 @@ h1,h2,h3{font-family:var(--display);margin:0;line-height:1.15;text-wrap:balance}
 .dsp small{color:var(--muted);font-size:12.5px}.dsp .steps{display:flex;gap:4px}.dsp .steps i{flex:1;height:5px;border-radius:3px;background:var(--line)}.dsp .steps i.on{background:var(--navy)}.dsp .steps i.cur{background:var(--yellow);animation:pulse 1.2s ease-in-out infinite alternate}
 .dsp.ok{border-color:#1E8A5A;background:rgba(30,138,90,.10)}.dsp.ok .dt b{color:#1E8A5A}
 @keyframes pulse{from{opacity:.45}to{opacity:1}}
+.osched{display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:12px 14px;border-radius:16px;border:1.5px solid var(--navy);background:var(--surface);color:var(--fg)}
+.osched div{flex:1;min-width:0}.osched small{display:block;font-size:12px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.06em}.osched b{display:block;font-size:14.5px;margin-top:2px}.osched i{font-style:normal;font-size:24px;color:var(--navy)}
 .note{background:var(--yellow-soft);color:var(--yellow-ink);border-radius:14px;padding:10px 14px;font-size:13.5px}
 .err{color:var(--danger);font-size:13.5px;min-height:18px}
 .linkbtn{color:var(--navy);font-weight:700;font-size:14px}
@@ -747,8 +749,8 @@ function watchNear(){if(!CL||NEARUNSUB)return;
       .map(d=>({id:d.id,lat:d.lat,lon:d.lon,veh:d.veh||'car',rot:(parseInt(d.id.slice(-4),10)*37)%360}));
     const nb=document.getElementById('nbc');if(nb){nb.hidden=!NEAR.length;nb.lastChild.textContent=` ${NEAR.length} ${t('nearby')}`}},()=>{});}
 function home(mode){
-  const RENTM=mode==='rent';S.mode=RENTM?'rent':'';
-  S.tab='home';S.dest=null;if(!RENTM)S.from='home';S.when=null;
+  const RENTM=mode==='rent',OUTM=mode==='out';S.mode=RENTM?'rent':OUTM?'out':'';
+  S.tab='home';S.dest=null;if(!RENTM&&!OUTM)S.from='home';S.when=null;
   const h=new Date().getHours();const g=h<12?t('morning'):h<17?t('afternoon'):t('evening');
   const recents=[['cmc','Auto',' ₹110','2 நாள் முன்','2 days ago'],['katpadi','Bike',' ₹35','போன வாரம்','Last week']];
   go(shell(`<div class="mapwrap"><canvas class="map" id="map"></canvas>
@@ -756,7 +758,7 @@ function home(mode){
        <button class="chipbtn" id="lg" aria-label="Language">${S.lang==='ta'?'EN':'தமிழ்'}</button></div>
      ${CL?`<span class="nearby" id="nbc" ${NEAR.length?'':'hidden'}><i class="dot"></i> ${NEAR.length} ${t('nearby')}</span>`:`<span class="nearby"><i class="dot"></i>6 ${t('nearby')}</span>`}${zoomCtl(34)}</div>
    <div class="sheet pad"><div class="grab"></div>
-     ${RENTM?vrowHtml('rent')+rentHomeHtml():`<div class="wherewrap"><button class="where" id="wh"><span>${t('where')}</span><i>${I.search}</i></button><button class="micbig" id="vmic" aria-label="${L('பேசி book பண்ணு','Book by voice')}">${I.mic.replace('stroke="#0B4A36"','stroke="#FFC21A"')}</button></div>
+     ${RENTM?vrowHtml('rent')+rentHomeHtml():OUTM?vrowHtml('out')+outHomeHtml():`<div class="wherewrap"><button class="where" id="wh"><span>${t('where')}</span><i>${I.search}</i></button><button class="micbig" id="vmic" aria-label="${L('பேசி book பண்ணு','Book by voice')}">${I.mic.replace('stroke="#0B4A36"','stroke="#FFC21A"')}</button></div>
      ${upNextHtml()}
      ${vrowHtml()}
      <div class="chips"><button class="chip" id="pinchip" style="background:var(--yellow);border-color:var(--yellow);color:#0B4A36">${I.pin}${t('pinChip')}</button>${[['cmc','hosp'],['katpadi','train'],['vit','pin'],['golden','pin']].map(([k,ic])=>`<button class="chip" data-p="${k}">${I[ic]}${pn(k)}</button>`).join('')}</div>
@@ -770,23 +772,24 @@ function home(mode){
      bindZoom(m);
      if(RENTM){app.querySelectorAll('[data-rp]').forEach(b=>b.onclick=()=>{RS.pkg=+b.dataset.rp;search()})}
      else document.getElementById('wh').onclick=()=>search();
+     if(OUTM)app.querySelectorAll('[data-city]').forEach(b=>b.onclick=()=>pickCity(+b.dataset.city));
      const pc=document.getElementById('pinchip');if(pc)pc.onclick=()=>picker('drop');
      document.getElementById('lg').onclick=()=>{S.lang=S.lang==='ta'?'en':'ta';save();home()};
      app.querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>{S.dest=b.dataset.p;fareScreen()});
      app.querySelectorAll('[data-trip]').forEach(b=>b.onclick=()=>tripDetail(TRIPS.filter(isDone)[+b.dataset.trip]));
      app.querySelectorAll('[data-veh]').forEach(b=>b.onclick=()=>{S.veh=b.dataset.veh;search();toast(L(`${VEH.find(v=>v.id===S.veh).ta} தேர்வு ஆயிடுச்சு — இடத்தை சொல்லுங்க`,`${VEH.find(v=>v.id===S.veh).en} selected. Now pick your drop`))});
-     app.querySelectorAll('[data-svc]').forEach(b=>b.onclick=()=>({now:()=>RENTM?home():search(),sched:()=>pickWhen(30,ts=>{S.when=ts;search()}),rent:()=>RENTM?null:home('rent'),out:()=>{OS.city=null;outScreen()}})[b.dataset.svc]());
+     app.querySelectorAll('[data-svc]').forEach(b=>b.onclick=()=>({now:()=>RENTM||OUTM?home():search(),sched:()=>pickWhen(30,ts=>{S.when=ts;search()}),rent:()=>RENTM?null:home('rent'),out:()=>OUTM?null:home('out')})[b.dataset.svc]());
      const vm=document.getElementById('vmic');if(vm)vm.onclick=voiceSheet;
      const upn=document.getElementById('upn');if(upn)upn.onclick=()=>upcomingDetail(TRIPS.find(x=>x.id===upn.dataset.id));
    });
 }
 
 function search(){
-  const RM=S.mode==='rent',pk=PKG[RS.pkg];
+  const RM=S.mode==='rent',OM=S.mode==='out',pk=PKG[RS.pkg];
   const fromTxt=S.from==='home'?`${t('current')} · ${pn('home')}${P.home.acc?' (±'+P.home.acc+' '+t('m')+')':''}`:pn(S.from);
-  go(`<section class="screen"><div class="head pad"><button class="back" id="bk" aria-label="Back">${I.back}</button><h2>${RM?L('Rental பயண திட்டம்','Plan your rental'):t('where')}</h2>${RM?`<button class="chip sel" id="rpk" style="margin-left:auto">${I.clock} ${pkLbl(pk)}</button>`:''}</div>
+  go(`<section class="screen"><div class="head pad"><button class="back" id="bk" aria-label="Back">${I.back}</button><h2>${RM?L('Rental பயண திட்டம்','Plan your rental'):OM?L('Outstation பயண திட்டம்','Plan your outstation trip'):t('where')}</h2>${RM?`<button class="chip sel" id="rpk" style="margin-left:auto">${I.clock} ${pkLbl(pk)}</button>`:''}</div>
    <div class="pad"><div class="route-in"><div class="rail"><i class="a"></i><i class="l"></i><i class="b"></i></div>
-     <div class="ins"><input id="pu" readonly value="${fromTxt}" aria-label="${t('pickup')}"><input id="dr" placeholder="${RM?L('எங்கே போகணும்? (விருப்பம்)','Where to? (optional)'):t('drop')}" aria-label="${t('drop')}" autocomplete="off"></div>
+     <div class="ins"><input id="pu" readonly value="${fromTxt}" aria-label="${t('pickup')}"><input id="dr" placeholder="${RM?L('எங்கே போகணும்? (விருப்பம்)','Where to? (optional)'):OM?L('எந்த ஊருக்கு? (திருச்சி, Bengaluru…)','Which town? (Trichy, Bengaluru…)'):t('drop')}" aria-label="${t('drop')}" autocomplete="off"></div>
      <button class="mic" id="mic" aria-label="Voice">${I.mic}</button></div>${RM?`<p class="muted" style="margin:8px 2px 0;font-size:12.5px">${L('Rental-ல drop கட்டாயம் இல்லை. Driver உங்க கூடவே இருப்பார்; வழியில எங்க வேணாலும் நிறுத்தலாம்.','A drop is optional for rentals. The driver stays with you and you can stop anywhere on the way.')}</p>`:''}</div>
    <div class="list pad" id="ls"></div>${RM?`<div class="nodrop"><button class="btn ghost" id="nod">${L('Drop இல்லாம தொடரு','Continue without drop')}</button></div>`:''}</section>`,()=>{
     if(RM){document.getElementById('nod').onclick=()=>{S.dest=null;rentFare()};document.getElementById('rpk').onclick=()=>home('rent')}
@@ -794,13 +797,16 @@ function search(){
     const item=k=>`<button class="row" data-p="${k}"><span class="ic">${I[P[k].ic]}</span><div><b>${pn(k)}</b><small>${P[k].sub||''} · ${(REALMAP?hav(P[S.from],P[k])*1.35:route(S.from,k).km).toFixed(1)} ${t('km')}</small></div></button>`;
     const pinRow=`<button class="row onmap" id="onmap"><span class="ic">${I.pin}</span><div><b>${t('onMap')}</b><small>${t('onMapSub')}</small></div></button>`;
     const render=()=>{const q=dr.value.trim().toLowerCase();const keys=Object.keys(P).filter(k=>k!=='home'&&k!==S.from&&!CUSTOM.includes(k));
+      if(OM){const mm=CITIES.map((c,i)=>[c,i]).filter(([c])=>!q||(c.en+' '+c.ta).toLowerCase().includes(q));
+        ls.innerHTML=pinRow+(mm.length?`<div class="tagline">${L('பிரபலமான ஊர்கள்','Popular destinations')}</div>`+mm.map(([c,i])=>cityRow(c,i)).join(''):'');
+        ls.querySelectorAll('[data-city]').forEach(b=>b.onclick=()=>pickCity(+b.dataset.city));document.getElementById('onmap').onclick=()=>picker('drop');return}
       if(!q){ls.innerHTML=`${pinRow}<div class="tagline">${t('fav')}</div>${['cmc','katpadi'].map(item).join('')}<div class="tagline">${t('popular')}</div>${keys.filter(k=>!['cmc','katpadi'].includes(k)).map(item).join('')}`}
       else{const mm=keys.filter(k=>(P[k].en+' '+P[k].ta+' '+(P[k].sub||'')).toLowerCase().includes(q));ls.innerHTML=pinRow+(mm.length?mm.map(item).join(''):`<p class="muted" style="padding:20px 0">${t('noMatch')}</p>`)}
       ls.querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>{S.dest=b.dataset.p;fareScreen()});
       document.getElementById('onmap').onclick=()=>picker('drop')};
     dr.oninput=()=>{render();if(REALMAP)liveSearch(dr.value)};render();setTimeout(()=>dr.focus(),300);
     document.getElementById('pu').onclick=()=>picker('pick');
-    document.getElementById('bk').onclick=()=>RM?home('rent'):home();document.getElementById('mic').onclick=voiceSheet;
+    document.getElementById('bk').onclick=()=>RM?home('rent'):OM?home('out'):home();document.getElementById('mic').onclick=voiceSheet;
   });
 }
 
@@ -836,6 +842,7 @@ function picker(mode){
 
 function fareScreen(){
   if(S.mode==='rent')return rentFare();
+  if(S.mode==='out')return outFare2();
   if(!VEH.some(v=>v.id===S.veh))S.veh='auto';
   const r=route(S.from,S.dest);const mins=Math.round(r.km/22*60)+3;
   go(`<section class="screen"><div class="mapwrap"><canvas class="map" id="map"></canvas>
@@ -1428,7 +1435,7 @@ function rentFare(){
     app.querySelectorAll('[data-pay]').forEach(b=>b.onclick=()=>{S.pay=b.dataset.pay;app.querySelectorAll('[data-pay]').forEach(x=>x.classList.toggle('sel',x===b))});
     document.getElementById('whenb').onclick=()=>pickWhen(ADV.includes(RS.veh)?180:30,ts=>{RS.when=ts;rentFare()});
     document.getElementById('bk').onclick=document.getElementById('edit').onclick=()=>{RS.atFare=false;search()};
-    const go2=document.getElementById('goout');if(go2)go2.onclick=()=>{S.mode='';OS.city=null;outScreen()};
+    const go2=document.getElementById('goout');if(go2)go2.onclick=()=>{S.mode='out';outFare2()};
     document.getElementById('rinf').onclick=()=>{const v=VEH.find(x=>x.id===RS.veh);modal(`<h3>${v[S.lang]} · ${pkLbl(pk)}</h3>
       <div class="recent"><div class="row"><div><b>${L('Package கட்டணம்','Package fare')}</b><small>${pk.h} ${L('மணி','hrs')}, ${pk.km} ${t('km')} ${L('சேர்த்து','included')}</small></div><b>${inr(rentPrice(v.id,pk.h))}</b></div>
       <div class="row"><div><b>${L('கூடுதல் கி.மீ','Extra km')}</b><small>${L('Package-க்கு மேல','Beyond the package')}</small></div><b>${inr(XKM[v.id])}/${t('km')}</b></div>
@@ -1447,52 +1454,115 @@ function rentFare(){
   });
 }
 
-/* ---------- Outstation ---------- */
-const CITIES=[{ta:'சென்னை',en:'Chennai',km:140},{ta:'பெங்களூரு',en:'Bengaluru',km:215},{ta:'திருப்பதி',en:'Tirupati',km:115},{ta:'திருவண்ணாமலை',en:'Tiruvannamalai',km:85},
-  {ta:'காஞ்சிபுரம்',en:'Kanchipuram',km:70},{ta:'ஏலகிரி',en:'Yelagiri',km:90},{ta:'ஆம்பூர்',en:'Ambur',km:55},{ta:'கிருஷ்ணகிரி',en:'Krishnagiri',km:120},
-  {ta:'புதுச்சேரி',en:'Puducherry',km:165},{ta:'சேலம்',en:'Salem',km:200},{ta:'ஆற்காடு',en:'Arcot',km:25},{ta:'குடியாத்தம்',en:'Gudiyatham',km:35}];
+/* ---------- Outstation: any town (search / map) → route → one way / round trip → leave & return → review ---------- */
+const CITIES=[{ta:'சென்னை',en:'Chennai',km:140,lat:13.0827,lon:80.2707},{ta:'சென்னை விமான நிலையம்',en:'Chennai Airport (MAA)',km:130,lat:12.9941,lon:80.1709},
+  {ta:'பெங்களூரு',en:'Bengaluru',km:215,lat:12.9716,lon:77.5946},{ta:'பெங்களூரு விமான நிலையம்',en:'Bengaluru Airport (BLR)',km:225,lat:13.1986,lon:77.7066},
+  {ta:'திருப்பதி',en:'Tirupati',km:115,lat:13.6288,lon:79.4192},{ta:'திருவண்ணாமலை',en:'Tiruvannamalai',km:85,lat:12.2253,lon:79.0747},
+  {ta:'காஞ்சிபுரம்',en:'Kanchipuram',km:70,lat:12.8342,lon:79.7036},{ta:'ஏலகிரி',en:'Yelagiri',km:90,lat:12.5818,lon:78.6403},
+  {ta:'புதுச்சேரி',en:'Puducherry',km:165,lat:11.9416,lon:79.8083},{ta:'கிருஷ்ணகிரி',en:'Krishnagiri',km:120,lat:12.5266,lon:78.2150},
+  {ta:'சேலம்',en:'Salem',km:200,lat:11.6643,lon:78.1460},{ta:'திருச்சி',en:'Trichy',km:290,lat:10.7905,lon:78.7047},
+  {ta:'ஆம்பூர்',en:'Ambur',km:55,lat:12.7904,lon:78.7166},{ta:'ஆற்காடு',en:'Arcot',km:25,lat:12.9063,lon:79.3193},{ta:'குடியாத்தம்',en:'Gudiyatham',km:35,lat:12.9447,lon:78.8730}];
 const ORATE={mini:11,sedan:12,suv:16,psuv:20,trav:22},OBATA={mini:300,sedan:300,suv:350,psuv:400,trav:500};
-const OS={city:null,type:'one',days:1,veh:'sedan',when:null};
-function outFare(id){const c=CITIES[OS.city];if(!c)return 0;
-  if(OS.type==='one')return Math.round((c.km*ORATE[id]+OBATA[id])/10)*10;
-  const billed=Math.max(c.km*2,250*OS.days);return Math.round((billed*ORATE[id]+OBATA[id]*OS.days)/10)*10}
-function outScreen(){
-  const c=CITIES[OS.city],v=VEH.find(x=>x.id===OS.veh);
-  go(`<section class="screen"><div class="head pad"><button class="back" id="bk" aria-label="Back">${I.back}</button><h2>Outstation</h2></div>
-   <div class="body pad" style="padding-top:0">
-    <div class="seg"><button class="${OS.type==='one'?'on':''}" data-t="one">${L('ஒரு வழி','One way')}</button><button class="${OS.type==='round'?'on':''}" data-t="round">${L('போய் வர','Round trip')}</button></div>
-    <div class="pickrow"><span class="dotg"></span><div><small>${t('pickup')}</small><b>${pn(S.from)}</b></div></div>
-    ${c?`<div class="pickrow"><span class="dotr"></span><div><small>${L('போகும் ஊர்','Destination')}</small><b>${c[S.lang]} · ~${c.km} ${t('km')}</b></div><button class="linkbtn" id="chg">${L('மாற்று','Change')}</button></div>`
-      :`<div class="field"><input id="oq" placeholder="${L('எந்த ஊருக்கு? (சென்னை, திருப்பதி…)','Which city? (Chennai, Tirupati…)')}" autocomplete="off"></div><div class="recent" id="ol"></div>`}
-    ${c?`
-    ${OS.type==='round'?`<span class="kind">${L('எத்தனை நாள்?','How many days?')}</span><div class="pkgs">${[1,2,3,4,5].map(d=>`<button class="pkg ${d===OS.days?'sel':''}" data-days="${d}"><b>${d}</b><small>${L('நாள்','day')}</small></button>`).join('')}</div>`:''}
-    <div class="whenrow"><button class="chip ${OS.when?'sel':''}" id="whenb">${I.clock} ${OS.when?fmtWhen(OS.when):L('புறப்படும் நேரம் தேர்வு','Pick departure time')}</button></div>
-    <div style="display:flex;flex-direction:column;gap:10px">${Object.keys(ORATE).map(id=>{const vv=VEH.find(x=>x.id===id);return `<button class="veh ${id===OS.veh?'sel':''}" data-v="${id}"><span class="vi">${I[id]}</span>
-      <div><b>${vv[S.lang]}${vv.tag?` <span class="pill" style="font-family:var(--body);vertical-align:2px">${vv.tag}</span>`:''}</b><small>₹${ORATE[id]}/${t('km')} · ${L('Driver bata','Driver allowance')} ₹${OBATA[id]}${OS.type==='round'?'/'+L('நாள்','day'):''}</small></div><span class="price"><b>${inr(outFare(id))}</b></span></button>`}).join('')}</div>
-    <p class="fine muted" style="margin:0">${OS.type==='round'?L('போய் வர: நாளுக்கு குறைந்தது 250 கி.மீ கணக்கு. ','Round trip: minimum 250 km per day. '):''}${L('Toll, parking, மாநில permit தனி.','Toll, parking and state permit extra.')}</p>
-    <button class="btn yellow" id="ob">${L(`${v[S.lang]} book · ${inr(outFare(OS.veh))}`,`Book ${v.en} · ${inr(outFare(OS.veh))}`)}</button>`:''}
-   </div></section>`,()=>{
-    document.getElementById('bk').onclick=home;
-    app.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{OS.type=b.dataset.t;outScreen()});
-    const oq=document.getElementById('oq');
-    if(oq){const ol=document.getElementById('ol');const draw=()=>{const q=oq.value.trim().toLowerCase();
-        ol.innerHTML=CITIES.map((x,i)=>[x,i]).filter(([x])=>!q||(x.en+' '+x.ta).toLowerCase().includes(q)).map(([x,i])=>`<button class="row" data-c="${i}"><span class="ic">${I.out.replace('width="28" height="28"','width="20" height="20"')}</span><div><b>${x[S.lang]}</b><small>~${x.km} ${t('km')} · ${L('சுமார்','about')} ${Math.round(x.km/50*60/60*10)/10} ${L('மணி நேரம்','hrs')}</small></div></button>`).join('')||`<p class="muted">${t('noMatch')}</p>`;
-        ol.querySelectorAll('[data-c]').forEach(b=>b.onclick=()=>{OS.city=+b.dataset.c;outScreen()})};
-      oq.oninput=draw;draw();setTimeout(()=>oq.focus(),250)}
-    const chg=document.getElementById('chg');if(chg)chg.onclick=()=>{OS.city=null;outScreen()};
-    app.querySelectorAll('[data-days]').forEach(b=>b.onclick=()=>{OS.days=+b.dataset.days;outScreen()});
-    app.querySelectorAll('.veh').forEach(b=>b.onclick=()=>{OS.veh=b.dataset.v;outScreen()});
-    const wb=document.getElementById('whenb');if(wb)wb.onclick=()=>pickWhen(ADV.includes(OS.veh)?180:60,ts=>{OS.when=ts;outScreen()});
-    const ob=document.getElementById('ob');
-    if(ob)ob.onclick=()=>{
-      const minM=ADV.includes(OS.veh)?180:60;
-      if(!OS.when||OS.when<Date.now()+minM*6e4){pickWhen(minM,ts=>{OS.when=ts;outScreen()},ADV.includes(OS.veh)?L('Tempo Traveller / Maxi Cab-க்கு குறைந்தது 3 மணி நேரம் முன்னாடி book பண்ணணும்','Tempo Travellers and maxi cabs need at least 3 hours’ notice'):L('Outstation-க்கு குறைந்தது 1 மணி நேரம் முன்னாடி book பண்ணுங்க','Book outstation at least 1 hour ahead'));return}
-      const cc=CITIES[OS.city],vv=VEH.find(x=>x.id===OS.veh);
-      saveUpcoming({kind:'outstation',when:OS.when,from:{ta:P[S.from].ta,en:P[S.from].en},
-        to:OS.type==='one'?{ta:cc.ta,en:cc.en}:{ta:`${cc.ta} (போய் வர, ${OS.days} நாள்)`,en:`${cc.en} (round trip, ${OS.days} day${OS.days>1?'s':''})`},
-        veh:{ta:vv.ta,en:vv.en,id:vv.id},fare:outFare(OS.veh),km:OS.type==='one'?cc.km:Math.max(cc.km*2,250*OS.days),pay:S.pay==='wallet'?'upi':S.pay,
-        note:{ta:'Toll, parking, permit தனி',en:'Toll, parking, permit extra'}});
-      OS.when=null;
+const OMIN1=80,OMIND=250; // one way: minimum billed km · round trip: minimum km per day
+const OS={type:'one',veh:'sedan',leave:null,ret:null};
+const r15=ts=>Math.ceil(ts/9e5)*9e5;
+const oNotice=id=>ADV.includes(id)?180:60;
+const cityRow=(c,i)=>`<button class="row" data-city="${i}"><span class="ic">${I.pin}</span><div><b>${c[S.lang]}</b><small>~${c.km} ${t('km')} · ${inr(Math.round((Math.max(c.km,OMIN1)*ORATE.mini+OBATA.mini)/10)*10)} ${L('முதல்','onwards')}</small></div></button>`;
+function outHomeHtml(){
+  return `<div class="wherewrap"><button class="where" id="wh"><span>${L('எந்த ஊருக்கு போகணும்?','Which town are you going to?')}</span><i>${I.search}</i></button></div>
+   <div class="rperks"><span>↗ ${L('ஒரு வழி','One way')}</span><span>⇄ ${L('போய் வர','Round trip')}</span><span>🧾 ${L('முன்கூட்டியே முழு விலை','Full price upfront')}</span></div>
+   <div class="sec"><h3>${L('பிரபலமான ஊர்கள்','Popular destinations')}</h3></div>
+   <div class="recent">${CITIES.slice(0,8).map((c,i)=>cityRow(c,i)).join('')}</div>`;
+}
+function pickCity(i){const c=CITIES[i];setCustom('drop',{lat:c.lat,lon:c.lon});P.drop.ta=c.ta;P.drop.en=c.en;P.drop.sub=c.en;S.dest='drop';S.mode='out';outFare2()}
+function outScreen(){home('out')}
+function oInfo(){const r=route(S.from,S.dest);const km=Math.round(r.km),mins=r.mins||Math.round(r.km/45*60);return{r,km,mins}}
+function oDefaults(mins){
+  const minL=r15(Date.now()+oNotice(OS.veh)*6e4);if(!OS.leave||OS.leave<minL)OS.leave=minL;
+  const minR=OS.leave+2*mins*6e4;if(OS.type==='round'&&(!OS.ret||OS.ret<minR))OS.ret=r15(minR+2*36e5);
+}
+const oDays=()=>{if(OS.type!=='round')return 1;const a=new Date(OS.leave);a.setHours(0,0,0,0);const b=new Date(OS.ret);b.setHours(0,0,0,0);return Math.round((b-a)/864e5)+1};
+function oQuote(id,km){const days=oDays(),billed=OS.type==='one'?Math.max(km,OMIN1):Math.max(km*2,OMIND*days);
+  return{days,billed,kmFare:billed*ORATE[id],bata:OBATA[id]*days,total:Math.round((billed*ORATE[id]+OBATA[id]*days)/10)*10}}
+const fmtD=ts=>new Date(ts).toLocaleString(S.lang==='ta'?'ta-IN':'en-IN',{day:'numeric',month:'short',hour:'numeric',minute:'2-digit'});
+const hm=m=>m>=60?`${Math.floor(m/60)} ${L('மணி','hr')} ${m%60?m%60+' '+t('min'):''}`:`${m} ${t('min')}`;
+function outFare2(){
+  if(!S.dest||!P[S.dest])return home('out');
+  if(!ORATE[OS.veh])OS.veh='sedan';
+  const {r,km,mins}=oInfo();oDefaults(mins);
+  const ids=Object.keys(ORATE),q=oQuote(OS.veh,km),v=VEH.find(x=>x.id===OS.veh);
+  const short=km<25;
+  go(`<section class="screen"><div class="mapwrap"><canvas class="map" id="map"></canvas>
+     <div class="topbar"><button class="chipbtn" id="bk" aria-label="Back">${I.back}</button><button class="greet tap" id="edit"><small>${pn(S.from)}</small><b>→ ${pn(S.dest)}</b></button></div></div>
+   <div class="sheet fare-sheet pad"><div class="grab"></div>
+     <div class="seg"><button class="${OS.type==='one'?'on':''}" data-t="one">↗ ${L('ஒரு வழி','One Way')}</button><button class="${OS.type==='round'?'on':''}" data-t="round">⇄ ${L('போய் வர','Round Trip')}</button></div>
+     <div class="trip" style="display:flex;gap:6px;flex-wrap:wrap"><span class="pill">${km} ${t('km')}</span><span class="pill">~${hm(mins)} ${L('பயணம்','drive')}</span>${OS.type==='round'?`<span class="pill">${q.days} ${L('நாள்','day'+(q.days>1?'s':''))}</span>`:''}</div>
+     ${short?`<div class="rwarn">${L('இது பக்கத்து இடம். Local ride-ல கட்டணம் குறைவா இருக்கும்.','This is close by. A local ride will cost less.')} <button id="golocal">${L('Local-ல பாரு','See local fares')}</button></div>`:''}
+     <button class="osched" id="whenb"><div><small>${OS.type==='round'?L('போய் வர பயணம்','Round trip'):L('புறப்படும் நேரம்','Leaving at')}</small><b>${fmtD(OS.leave)}${OS.type==='round'?' → '+fmtD(OS.ret):''}</b></div><i>›</i></button>
+     <div style="display:flex;flex-direction:column;gap:10px" id="vs">${ids.map(id=>{const vv=VEH.find(x=>x.id===id),qq=oQuote(id,km);return `<button class="veh ${id===OS.veh?'sel':''}" data-v="${id}"><span class="vi">${I[id]}</span>
+       <div><b>${vv[S.lang]} <span class="muted" style="font-family:var(--body);font-size:13px;font-weight:600">· ${vv.seats} ${t('seats')}</span></b><small>${L('Pickup','Pickup')} ${fmtD(OS.leave)}${ADV.includes(id)?' · '+L('3 மணி முன் book','3 hrs notice'):''}</small></div><span class="price"><b>${inr(qq.total)}</b></span></button>`}).join('')}</div>
+     <div class="payrow"><button class="pay ${S.pay==='cash'?'sel':''}" data-pay="cash">${I.cash}${t('payCash')}</button><button class="pay ${S.pay!=='cash'?'sel':''}" data-pay="upi">${I.upi}${t('payUpi')}</button></div>
+     <button class="btn yellow" id="bookb">${L('Booking-ஐ சரிபார்','Review booking')} · ${inr(q.total)}</button></div></section>`,()=>{
+    const m=makeMap(document.getElementById('map'),{path:r.path,line:r.pts?()=>r.pts:undefined});
+    m.fit(r.pts||r.path.map(k=>P[k]),46,64);
+    app.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{OS.type=b.dataset.t;outFare2()});
+    app.querySelectorAll('.veh').forEach(b=>b.onclick=()=>{OS.veh=b.dataset.v;outFare2()});
+    app.querySelectorAll('[data-pay]').forEach(b=>b.onclick=()=>{S.pay=b.dataset.pay;app.querySelectorAll('[data-pay]').forEach(x=>x.classList.toggle('sel',x===b))});
+    document.getElementById('whenb').onclick=()=>outWhen(mins,OS.type==='round'?'leave':'leave');
+    document.getElementById('bk').onclick=document.getElementById('edit').onclick=()=>search();
+    const gl=document.getElementById('golocal');if(gl)gl.onclick=()=>{S.mode='';fareScreen()};
+    document.getElementById('bookb').onclick=()=>outReview(km,mins);
+  });
+}
+function outWhen(mins,tab){
+  const minL=r15(Date.now()+oNotice(OS.veh)*6e4);
+  let L0=OS.leave,R0=OS.ret,cur=tab;
+  const day0=d=>{const x=new Date(d);x.setHours(0,0,0,0);return x.getTime()};
+  const draw=m=>{
+    const isL=cur==='leave',val=isL?L0:R0,min=isL?minL:r15(L0+2*mins*6e4),maxDays=isL?60:10,base=isL?day0(Date.now()):day0(L0);
+    const days=[];for(let i=0;i<=maxDays;i++){const d=base+i*864e5;if(d+864e5>min)days.push(d)}
+    const selDay=day0(val);
+    const slots=[];for(let mm=0;mm<24*60;mm+=15){const ts=selDay+mm*6e4;if(ts>=min)slots.push(ts)}
+    m.querySelector('#ow').innerHTML=`${OS.type==='round'?`<div class="seg"><button class="${isL?'on':''}" data-tab="leave">${L('புறப்படும் நேரம்','Leave on')}</button><button class="${!isL?'on':''}" data-tab="ret">${L('திரும்பும் நேரம்','Return by')}</button></div>`:''}
+      <p class="muted" style="margin:0;font-size:12.5px">${isL?L(`${maxDays} நாள் வரை முன்பதிவு செய்யலாம்`,`Book up to ${maxDays} days ahead`):L(`புறப்பட்டதுல இருந்து ${maxDays} நாள் வரை · போய் வர குறைந்தது ${hm(2*mins)}`,`Up to ${maxDays} days after leaving · the drive alone takes ${hm(2*mins)}`)}</p>
+      <div class="rchips" id="dch">${days.map(d=>`<button data-d="${d}" class="${d===selDay?'sel':''}"><b>${new Date(d).toLocaleDateString(S.lang==='ta'?'ta-IN':'en-IN',{weekday:'short'})}</b><small>${new Date(d).toLocaleDateString(S.lang==='ta'?'ta-IN':'en-IN',{day:'numeric',month:'short'})}</small></button>`).join('')}</div>
+      <label class="kind" for="slot">${L('நேரம்','Time')}</label><select id="slot" class="selbox">${slots.map(ts=>`<option value="${ts}" ${ts===val?'selected':''}>${timeLabel(ts)}</option>`).join('')}</select>`;
+    const sc=m.querySelector('#dch .sel');if(sc)sc.scrollIntoView({inline:'center',block:'nearest'});
+    m.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{cur=b.dataset.tab;draw(m)});
+    m.querySelectorAll('[data-d]').forEach(b=>b.onclick=()=>{const d=+b.dataset.d,tm=val-day0(val);let nv=d+tm;if(nv<min)nv=min;if(isL)L0=nv;else R0=nv;fix();draw(m)});
+    m.querySelector('#slot').onchange=e=>{if(isL)L0=+e.target.value;else R0=+e.target.value;fix();draw(m)};
+  };
+  const fix=()=>{if(L0<minL)L0=minL;if(OS.type==='round'){const mr=r15(L0+2*mins*6e4);if(!R0||R0<mr)R0=r15(mr+2*36e5);if(R0>day0(L0)+11*864e5)R0=r15(mr+2*36e5)}};
+  fix();
+  modal(`<h3>${OS.type==='round'?L('போய் வர நேரம்','Schedule round trip'):L('புறப்படும் நேரம்','Schedule your trip')}</h3><div id="ow" style="display:flex;flex-direction:column;gap:10px"></div>
+    <div class="note" id="osum"></div><button class="btn" id="wok">${L('உறுதி செய்','Confirm')}</button>`,(m,close)=>{
+    const sum=()=>{m.querySelector('#osum').textContent=OS.type==='round'?`${fmtD(L0)} → ${fmtD(R0)}`:fmtD(L0)};
+    const d0=draw;const dr=mm=>{d0(mm);sum()};
+    m.querySelector('#ow').addEventListener('click',()=>setTimeout(sum,0));m.querySelector('#ow').addEventListener('change',()=>setTimeout(sum,0));
+    dr(m);
+    m.querySelector('#wok').onclick=()=>{OS.leave=L0;if(OS.type==='round')OS.ret=R0;close();outFare2()};
+  });
+}
+function outReview(km,mins){
+  const v=VEH.find(x=>x.id===OS.veh),q=oQuote(OS.veh,km),sub=(P.drop&&P.drop.sub||'')+' '+(P[S.dest].en||'');
+  const other=/karnataka|andhra|kerala|puducherry|bengaluru|bangalore|tirupati|pondicherry/i.test(sub);
+  modal(`<h3>${L('Booking சரிபார்ப்பு','Review your booking')}</h3>
+    <div class="tripcard"><div class="rail"><i class="a"></i><i class="l"></i><i class="b"></i></div><div class="stops"><div><small>${t('pickup')} · ${fmtD(OS.leave)}</small><b>${pn(S.from)}</b></div><div><small>${OS.type==='round'?L('போய் திரும்ப','Round trip')+' · '+L('திரும்ப','back by')+' '+fmtD(OS.ret):L('ஒரு வழி','One way')}</small><b>${pn(S.dest)}</b></div></div></div>
+    <div class="recent">
+      <div class="row"><div><b>${v[S.lang]}</b><small>${v.models||''} · ${v.seats} ${t('seats')}</small></div><b>${payName(S.pay==='cash'?'cash':'upi')}</b></div>
+      <div class="row"><div><b>${L('தூரக் கட்டணம்','Distance fare')}</b><small>${q.billed} ${t('km')} × ₹${ORATE[v.id]}${OS.type==='round'?` · ${L(`போய் வர ${km*2} கி.மீ, குறைந்தது நாளுக்கு ${OMIND} கி.மீ`,`${km*2} km both ways, min ${OMIND} km/day`)}`:km<OMIN1?` · ${L(`குறைந்தது ${OMIN1} கி.மீ`,`min ${OMIN1} km`)}`:''}</small></div><b>${inr(q.kmFare)}</b></div>
+      <div class="row"><div><b>${L('Driver bata','Driver allowance')}</b><small>₹${OBATA[v.id]} × ${q.days} ${L('நாள்','day'+(q.days>1?'s':''))}</small></div><b>${inr(q.bata)}</b></div>
+      <div class="row"><div><b style="font-size:17px">${L('மொத்தம்','Total')}</b><small>${L('முன்கூட்டியே சொன்ன விலை','Upfront price')}</small></div><b style="font-size:20px;font-family:var(--display)">${inr(q.total)}</b></div></div>
+    <p class="muted" style="font-size:12.5px;margin:0">${L(`Toll, parking${other?', மாநில permit':''} தனி. கூடுதல் கி.மீ ₹${ORATE[v.id]}/கி.மீ. பயணத்துக்கு 1 மணி நேரம் முன் வரை இலவசமா ரத்து செய்யலாம்.`,`Tolls, parking${other?', state permit':''} extra. Extra km at ₹${ORATE[v.id]}/km. Free cancellation until 1 hour before pickup.`)}</p>
+    <button class="btn yellow" id="ocf">${L('Book பண்ணு','Confirm booking')} · ${inr(q.total)}</button>`,(m,close)=>{
+    m.querySelector('#ocf').onclick=()=>{
+      if(OS.leave<Date.now()+oNotice(v.id)*6e4-6e4){close();toast(L('நேரம் கடந்துடுச்சு. மறுபடி நேரம் தேர்வு பண்ணுங்க','That time has passed. Pick a new time'));OS.leave=null;outFare2();return}
+      close();
+      saveUpcoming({kind:'outstation',otype:OS.type,when:OS.leave,ret:OS.type==='round'?OS.ret:null,from:{ta:P[S.from].ta,en:P[S.from].en},fromC:{lat:P[S.from].lat,lon:P[S.from].lon},
+        to:OS.type==='one'?{ta:P[S.dest].ta,en:P[S.dest].en}:{ta:`${P[S.dest].ta} (போய் வர, ${q.days} நாள்)`,en:`${P[S.dest].en} (round trip, ${q.days} day${q.days>1?'s':''})`},
+        toC:{lat:P[S.dest].lat,lon:P[S.dest].lon},hasDrop:true,veh:{ta:v.ta,en:v.en,id:v.id},fare:q.total,km:q.billed,pay:S.pay==='wallet'?'upi':S.pay,
+        note:{ta:`${OS.type==='round'?'திரும்ப: '+fmtD(OS.ret)+' · ':''}${q.billed} கி.மீ · Toll, parking, permit தனி`,en:`${OS.type==='round'?'Return by '+fmtD(OS.ret)+' · ':''}${q.billed} km · Toll, parking, permit extra`}});
+      OS.leave=OS.ret=null;S.mode='';
     };
   });
 }
@@ -1557,7 +1627,7 @@ function voiceSheet(){
 }
 function applyVoice(p){
   if(p.veh)S.veh=p.veh;
-  if(p.city!=null){OS.city=p.city;if(p.veh&&ORATE[p.veh])OS.veh=p.veh;if(p.when)OS.when=p.when;outScreen();return}
+  if(p.city!=null){S.mode='out';if(p.veh&&ORATE[p.veh])OS.veh=p.veh;if(p.when)OS.leave=p.when;pickCity(p.city);return}
   if(p.when)S.when=p.when;
   if(p.dest&&p.dest!==S.from){S.mode='';S.dest=p.dest;fareScreen();return}
   search();
@@ -1887,9 +1957,9 @@ function dspTick(x){if(!CL||!OFK.includes(x.kind))return;clearInterval(rideTimer
 async function cloudSchedule(rec){
   if(!CL||!CUID)return null;
   const v=VEH.find(x=>x.id===rec.veh.id)||VEH[1];
-  const to=(rec.kind==='schedule'||rec.kind==='rental'&&rec.hasDrop)&&S.dest&&P[S.dest]?placeOf(S.dest):{key:null,ta:rec.to.ta,en:rec.to.en,lat:null,lon:null};
+  const to=(rec.kind==='schedule'||OFK.includes(rec.kind)&&rec.hasDrop)&&S.dest&&P[S.dest]?placeOf(S.dest):{key:null,ta:rec.to.ta,en:rec.to.en,lat:null,lon:null};
   try{const ref=await F().addDoc(F().collection(CL.db,'bookings'),{customerUid:CUID,custName:S.name,custPhone:'+91'+S.phone,src:'app',kind:rec.kind,
-      from:placeOf(S.from),to,path:[],veh:v.id,vehTa:v.ta,vehEn:v.en,km:rec.km||0,hrs:rec.hrs||null,base:v.base,fare:rec.fare,pay:rec.pay||'cash',note:rec.note||null,
+      from:placeOf(S.from),to,path:[],veh:v.id,vehTa:v.ta,vehEn:v.en,km:rec.km||0,hrs:rec.hrs||null,otype:rec.otype||null,retAt:rec.ret||null,base:v.base,fare:rec.fare,pay:rec.pay||'cash',note:rec.note||null,
       ...(OFK.includes(rec.kind)?{status:'searching',dispatch:{openAt:Date.now()+DISPC.win*1000,gap:DISPC.gap,fall:DISPC.fall}}:{status:'scheduled'}),
       when:rec.when,createdAt:F().serverTimestamp(),updatedAt:F().serverTimestamp()});
     if(OFK.includes(rec.kind)&&rec.pin)F().setDoc(F().doc(CL.db,'bookings',ref.id,'private','pin'),{pin:rec.pin}).catch(()=>{});
@@ -1925,8 +1995,8 @@ function liveSearch(q){
   SRT=setTimeout(async()=>{
     let rows=null,src='Photon · © OpenStreetMap';
     try{
-      if(GMAP()){try{rows=await gSuggest(q,P[S.from]);src='powered by Google'}catch(e){rows=null}}
-      if(!rows){const r=await fetch(`${MAPCFG.search}?q=${encodeURIComponent(q)}&lat=12.93&lon=79.14&limit=7&bbox=78.6,12.6,79.6,13.3`);const j=await r.json();
+      if(GMAP()){try{rows=await gSuggest(q,P[S.from],S.mode==='out'?250000:30000);src='powered by Google'}catch(e){rows=null}}
+      if(!rows){const r=await fetch(`${MAPCFG.search}?q=${encodeURIComponent(q)}&lat=12.93&lon=79.14&limit=7${S.mode==='out'?'':'&bbox=78.6,12.6,79.6,13.3'}`);const j=await r.json();
         rows=(j.features||[]).map(f=>{const pr=f.properties||{},c=f.geometry.coordinates;const name=pr.name||(pr.housenumber&&pr.street?pr.housenumber+', '+pr.street:pr.street)||'';
           const sub=[pr.street&&pr.street!==name?pr.street:'',pr.district||pr.locality||'',pr.city||pr.county||''].filter(Boolean).join(', ');return{name,sub,lat:c[1],lon:c[0]}}).filter(x=>x.name)}
     }catch(e){rows=rows||[]}
@@ -2149,7 +2219,7 @@ const ROUTEC={};
 const _graphRoute=route;
 const rKey=(a,b)=>a.lat.toFixed(5)+','+a.lon.toFixed(5)+'|'+b.lat.toFixed(5)+','+b.lon.toFixed(5);
 if(REALMAP){route=function(from,to){const a=P[from],b=P[to];if(!a||!b||a.lat==null||b.lat==null)return _graphRoute(from,to);
-  const k=rKey(a,b),c=ROUTEC[k];if(c&&c.km)return{path:[from,to],km:c.km,pts:c.pts,real:true};
+  const k=rKey(a,b),c=ROUTEC[k];if(c&&c.km)return{path:[from,to],km:c.km,mins:c.mins,pts:c.pts,real:true};
   if(!c)fetchRoute(a,b,k);
   return{path:[from,to],km:Math.max(1.2,hav(a,b)*1.35),pts:[{lat:a.lat,lon:a.lon},{lat:b.lat,lon:b.lon}]}}}
 async function fetchRoute(a,b,k){
@@ -2157,7 +2227,7 @@ async function fetchRoute(a,b,k){
   if(GMAP()){try{ROUTEC[k]=await gRoute(a,b);document.dispatchEvent(new CustomEvent('route-ready',{detail:k}));return}catch(e){}}
   try{const r=await fetch(`${MAPCFG.route}${a.lon},${a.lat};${b.lon},${b.lat}?overview=full&geometries=geojson`);const j=await r.json();const rt=j.routes&&j.routes[0];if(!rt)throw 0;
     let pts=rt.geometry.coordinates.map(c=>({lat:c[1],lon:c[0]}));if(pts.length>400){const st=Math.ceil(pts.length/400);pts=pts.filter((p,i)=>i%st===0||i===pts.length-1)}
-    ROUTEC[k]={km:Math.max(1,rt.distance/1000),pts}}
+    ROUTEC[k]={km:Math.max(1,rt.distance/1000),mins:rt.duration?Math.round(rt.duration/60):null,pts}}
   catch(e){ROUTEC[k]={km:Math.max(1.2,hav(a,b)*1.35),pts:[{lat:a.lat,lon:a.lon},{lat:b.lat,lon:b.lon}]}}
   document.dispatchEvent(new CustomEvent('route-ready',{detail:k}));
 }
@@ -2244,7 +2314,7 @@ async function gRoute(a,b){
   const r=await fetch('https://routes.googleapis.com/directions/v2:computeRoutes',{method:'POST',headers:{'Content-Type':'application/json','X-Goog-Api-Key':window.GMAPS_KEY,'X-Goog-FieldMask':'routes.distanceMeters,routes.duration,routes.polyline.encodedPolyline'},
     body:JSON.stringify({origin:{location:{latLng:{latitude:a.lat,longitude:a.lon}}},destination:{location:{latLng:{latitude:b.lat,longitude:b.lon}}},travelMode:'DRIVE',routingPreference:'TRAFFIC_UNAWARE'})});
   const j=await r.json();const rt=j.routes&&j.routes[0];if(!rt||!rt.distanceMeters)throw new Error('no-route');
-  return{km:Math.max(1,rt.distanceMeters/1000),pts:decodePoly(rt.polyline.encodedPolyline)};
+  return{km:Math.max(1,rt.distanceMeters/1000),mins:rt.duration?Math.round(parseInt(rt.duration)/60):null,pts:decodePoly(rt.polyline.encodedPolyline)};
 }
 const PLUSCODE=/^[23456789CFGHJMPQRVWX]{4,8}\+[23456789CFGHJMPQRVWX]{2,3}/;
 async function gRevGeo(lat,lon){
@@ -2258,11 +2328,11 @@ async function gRevGeo(lat,lon){
   return main?{ta:main,en:main,sub:area}:null;
 }
 let GSESS=null;
-async function gSuggest(q,near){
+async function gSuggest(q,near,rad){
   const {AutocompleteSuggestion,AutocompleteSessionToken}=await google.maps.importLibrary('places');
   if(!GSESS)GSESS=new AutocompleteSessionToken();
   const {suggestions}=await AutocompleteSuggestion.fetchAutocompleteSuggestions({input:q,sessionToken:GSESS,includedRegionCodes:['in'],language:S.lang==='ta'?'ta':'en',
-    locationBias:{center:{lat:near.lat,lng:near.lon},radius:30000}});
+    locationBias:{center:{lat:near.lat,lng:near.lon},radius:Math.min(50000,rad||30000)}});
   return(suggestions||[]).filter(s=>s.placePrediction).map(s=>{const p=s.placePrediction;return{name:(p.mainText&&p.mainText.text)||p.text.text,sub:(p.secondaryText&&p.secondaryText.text)||'',pred:p}});
 }
 async function gPick(x){const place=x.pred.toPlace();await place.fetchFields({fields:['location']});GSESS=null;return{lat:place.location.lat(),lon:place.location.lng()}}
