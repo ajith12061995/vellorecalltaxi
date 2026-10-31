@@ -28,7 +28,7 @@
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('../vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV='2026-10-31-21',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV='2026-10-31-22',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('/vellorecalltaxi/version.json',location.origin)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -501,6 +501,7 @@ details.faq p{margin:0;padding:0 14px 14px;color:var(--muted);font-size:14px;lin
 .duty.on{border-color:#1E8A5A;background:#E9F7EF;color:#14653F}.duty.on .sw{background:#A7DDBF}.duty.on .sw::after{transform:translateX(28px);background:#1E8A5A}
 .duty.tapped{transform:scale(.97)}.duty.tapped .sw::after{transform:translateX(28px);background:#1E8A5A}.duty.on.tapped .sw::after{transform:none;background:#C23B3B}
 :root[data-theme="dark"] .duty{background:#3A1E1E;color:#FFB4B4}:root[data-theme="dark"] .duty.on{background:#16352A;color:#9FE3BF}
+.tipadd{font-style:normal;color:#1E8A5A;font-size:.75em}
 .reqdist{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:16px;background:var(--surface-2);border:1px solid var(--line)}
 .reqdist div{flex:1}.reqdist b{display:block;font-family:var(--display);font-size:26px;line-height:1.1}.reqdist b em{font-style:normal;font-size:14px;color:var(--muted)}.reqdist small{color:var(--muted);font-size:12.5px}.reqdist>i{font-style:normal;font-size:22px;color:var(--muted)}
 .reqact{display:flex;align-items:center;gap:14px}
@@ -1169,6 +1170,7 @@ function incoming(pre){
      approach:[{...POS},{lat:POS.lat,lon:pk.lon},{lat:pk.lat,lon:pk.lon}],trip:r.path.map(k=>({lat:P[k].lat,lon:P[k].lon}))};
   J.away=away;renderReq(J);
 }
+const reqFareHtml=()=>`<small>${L('கட்டணம்','Fare')}</small><b>${inr(J.fare)}${J.tip?`<em class="tipadd"> + ${inr(J.tip)}</em>`:''}</b><span>${J.tip?L('Customer tip சேர்த்திருக்காங்க · ','Customer added a tip · '):''}${L('உங்களுக்கு','You get')} ${inr(J.fare-J.comm+(J.tip||0))} · <em class="pm ${J.pay}">${payName(J.pay)}</em></span>`;
 function renderReq(j){
   J=j;const from=J.from,to=J.to,pk=P[from],away=J.away;
   const SEC=20;
@@ -1176,7 +1178,7 @@ function renderReq(j){
      <div class="topbar"><span class="stpill on"><i></i>${L('புது Ride!','New ride!')}</span></div></div>
    <div class="sheet pad reqsheet"><div class="grab"></div>
      <div class="reqtop"><div class="ring"><svg viewBox="0 0 44 44" width="64" height="64"><circle cx="22" cy="22" r="19" fill="none" stroke="var(--line)" stroke-width="4"/><circle id="rg" cx="22" cy="22" r="19" fill="none" stroke="var(--yellow)" stroke-width="4" stroke-linecap="round" stroke-dasharray="119.4" transform="rotate(-90 22 22)"/></svg><b id="sec">${SEC}</b></div>
-       <div class="reqfare"><small>${L('கட்டணம்','Fare')}</small><b>${inr(J.fare)}</b><span>${L('உங்களுக்கு','You get')} ${inr(J.fare-J.comm)} · <em class="pm ${J.pay}">${payName(J.pay)}</em></span></div></div>
+       <div class="reqfare" id="rqf">${reqFareHtml()}</div></div>
      ${J.b&&J.b.kind&&J.b.kind!=='ride'?`<div class="kband">${J.b.kind==='outstation'?'🛣️ Outstation':'⏱️ Rental'} · ${whenTxt(J.b.when||Date.now())}${J.b.kind==='outstation'&&S_TIER()?` · ${TIERN[S_TIER()][S.lang==='ta'?0:1]}`:''}</div>`:''}
      <div class="reqdist"><div><b>${away.toFixed(1)} <em>${L('கி.மீ','km')}</em></b><small>📍 ${L('Pickup வரை','to pickup')}</small></div><i>→</i><div><b>${J.km.toFixed(1)} <em>${L('கி.மீ','km')}</em></b><small>🏁 ${L('பயணம்','trip')}</small></div></div>
      <div class="tripcard"><div class="rail"><i class="a"></i><i class="l"></i><i class="b"></i></div>
@@ -1319,18 +1321,19 @@ function onTrip(){
   });
 }
 function collect(){
-  const v=VEH.find(x=>x.id===me().veh),base=J.b&&J.b.base!=null?+J.b.base:v.base,dist=J.fare-base;let pm=J.pay,stars=0,paid=false;
+  const v=VEH.find(x=>x.id===me().veh),base=J.b&&J.b.base!=null?+J.b.base:v.base,dist=J.fare-base,COL=J.fare+(J.tip||0);let pm=J.pay,stars=0,paid=false;
   go(`<section class="screen"><div class="donehero pad"><span class="check">${I.tick}</span><h1 style="font-size:26px">${L('Trip முடிஞ்சது!','Trip complete!')}</h1><span>${pn(J.from)} → ${pn(J.to)}</span></div>
    <div class="body pad">
     <div class="bill"><div><span>${L('அடிப்படை கட்டணம்','Base fare')}</span><span>${inr(base)}</span></div><div><span>${L(`தூரம் (${J.km.toFixed(1)} கி.மீ)`,`Distance (${J.km.toFixed(1)} km)`)}</span><span>${inr(dist)}</span></div>
-      <div class="tot"><span>${L('Customer கொடுக்க வேண்டியது','Collect from customer')}</span><span>${inr(J.fare)}</span></div></div>
+      ${J.tip?`<div><span>${L('Customer tip','Customer tip')}</span><span>${inr(J.tip)}</span></div>`:''}
+      <div class="tot"><span>${L('Customer கொடுக்க வேண்டியது','Collect from customer')}</span><span>${inr(COL)}</span></div></div>
     <div id="pay">
       <span class="kind">${L('Customer எப்படி கொடுத்தாங்க?','How did the customer pay?')}</span>
       <div class="payrow" style="margin-top:8px">${['cash','upi'].concat(J.pay==='wallet'?['wallet']:[]).map(p=>`<button class="pay ${p===pm?'sel':''}" data-pm="${p}">${p==='cash'?I.cash:p==='upi'?I.upi:I.navWallet.replace('<svg ','<svg width="18" height="18" ')}${payName(p)}</button>`).join('')}</div>
       <div class="qr" id="pmtxt" style="margin-top:10px"></div>
       <button class="btn" id="got" style="margin-top:12px"></button></div>
     <div id="sum" hidden style="display:flex;flex-direction:column;gap:14px">
-      <div class="earncard"><div><small>${L('உங்க வருமானம்','Your earnings')}</small><b>${inr(J.fare-J.comm)}</b></div>
+      <div class="earncard"><div><small>${L('உங்க வருமானம்','Your earnings')}</small><b>${inr(J.fare-J.comm+(J.tip||0))}</b></div>
         <div class="ec2"><span>${L('Commission','Commission')} ${COMM}%</span><b>−${inr(J.comm)}</b><small>${L('Wallet-ல இருந்து கழிக்கப்பட்டது','Taken from your wallet')}</small></div></div>
       <span class="kind" style="text-align:center">${L(`${J.cust.ta} எப்படி?`,`Rate ${J.cust.en}`)}</span>
       <div class="stars">${[1,2,3,4,5].map(n=>`<button data-s="${n}" aria-label="${n} stars">★</button>`).join('')}</div>
@@ -1339,15 +1342,15 @@ function collect(){
    </div></section>`,()=>{
     const pt=document.getElementById('pmtxt'),got=document.getElementById('got');
     const setPm=p=>{pm=p;app.querySelectorAll('[data-pm]').forEach(b=>b.classList.toggle('sel',b.dataset.pm===p));
-      pt.innerHTML=p==='cash'?`<span class="bigic">${I.cash.replace('width="18" height="18"','width="30" height="30"')}</span><div><b>${L(`${inr(J.fare)} cash வாங்குங்க`,`Collect ${inr(J.fare)} in cash`)}</b><p class="muted" style="margin:4px 0 0;font-size:13px">${L('சில்லறை சரியா கொடுங்க','Give correct change')}</p></div>`
-        :p==='upi'?`<span class="bigic">${I.upi.replace('width="18" height="18"','width="30" height="30"')}</span><div><b>${L(`Customer UPI-ல ${inr(J.fare)} அனுப்பணும்`,`Customer pays ${inr(J.fare)} by UPI`)}</b><p class="muted" style="margin:4px 0 0;font-size:13px">${L('Customer app-ல வர்ற QR அல்லது உங்க QR. பணம் வந்ததை phone-ல பார்த்துட்டு confirm பண்ணுங்க.','The QR in the customer app, or yours. Check the money arrived before confirming.')}</p></div>`
+      pt.innerHTML=p==='cash'?`<span class="bigic">${I.cash.replace('width="18" height="18"','width="30" height="30"')}</span><div><b>${L(`${inr(COL)} cash வாங்குங்க`,`Collect ${inr(COL)} in cash`)}</b><p class="muted" style="margin:4px 0 0;font-size:13px">${L('சில்லறை சரியா கொடுங்க','Give correct change')}</p></div>`
+        :p==='upi'?`<span class="bigic">${I.upi.replace('width="18" height="18"','width="30" height="30"')}</span><div><b>${L(`Customer UPI-ல ${inr(COL)} அனுப்பணும்`,`Customer pays ${inr(COL)} by UPI`)}</b><p class="muted" style="margin:4px 0 0;font-size:13px">${L('Customer app-ல வர்ற QR அல்லது உங்க QR. பணம் வந்ததை phone-ல பார்த்துட்டு confirm பண்ணுங்க.','The QR in the customer app, or yours. Check the money arrived before confirming.')}</p></div>`
         :`<span class="bigic">${I.navWallet.replace('<svg ','<svg width="30" height="30" ')}</span><div><b>${L('Customer wallet-ல இருந்து கழிஞ்சது','Paid from customer wallet')}</b><p class="muted" style="margin:4px 0 0;font-size:13px">${L('நீங்க எதுவும் வாங்க வேண்டாம். Owner settlement-ல சேரும்.','Collect nothing. It is settled by the owner.')}</p></div>`;
-      got.textContent=p==='wallet'?L('சரி','OK'):p==='cash'?L(`${inr(J.fare)} cash வாங்கியாச்சு`,`Collected ${inr(J.fare)} cash`):L('UPI பணம் வந்தாச்சு','UPI payment received')};
+      got.textContent=p==='wallet'?L('சரி','OK'):p==='cash'?L(`${inr(COL)} cash வாங்கியாச்சு`,`Collected ${inr(COL)} cash`):L('UPI பணம் வந்தாச்சு','UPI payment received')};
     setPm(pm);
     app.querySelectorAll('[data-pm]').forEach(b=>b.onclick=()=>{if(b.dataset.pm!==pm)toast(L(`${payName(b.dataset.pm)}-க்கு மாத்தியாச்சு`,`Switched to ${payName(b.dataset.pm)}`));setPm(b.dataset.pm)});
     got.onclick=()=>{if(paid)return;paid=true;
       if(J.id){cloudDone(pm);document.getElementById('pay').hidden=true;const sm=document.getElementById('sum');sm.hidden=false;sm.style.display='flex';return}
-      DS.trips.unshift({id:Date.now().toString(36),date:Date.now(),fare:J.fare,comm:J.comm,net:J.fare-J.comm,pay:pm,km:+J.km.toFixed(1),from:{ta:P[J.from].ta,en:P[J.from].en},to:{ta:P[J.to].ta,en:P[J.to].en},cust:J.cust});
+      DS.trips.unshift({id:Date.now().toString(36),date:Date.now(),fare:J.fare,comm:J.comm,net:J.fare-J.comm+(J.tip||0),pay:pm,km:+J.km.toFixed(1),from:{ta:P[J.from].ta,en:P[J.from].en},to:{ta:P[J.to].ta,en:P[J.to].en},cust:J.cust});
       DS.wallet-=J.comm;DS.tx.unshift({amt:-J.comm,ta:`Commission: ${P[J.to].ta}`,en:`Commission: ${P[J.to].en}`,date:Date.now()});saveDS();
       document.getElementById('pay').hidden=true;const sm=document.getElementById('sum');sm.hidden=false;sm.style.display='flex'};
     app.querySelectorAll('[data-s]').forEach(b=>b.onclick=()=>{stars=+b.dataset.s;if(J&&J.id)cUpd({custRating:stars});app.querySelectorAll('[data-s]').forEach(x=>x.classList.toggle('on',+x.dataset.s<=stars))});
@@ -1550,6 +1553,7 @@ function listenReq(){
   if(REQUNSUB)return;
   REQUNSUB=F().onSnapshot(F().query(F().collection(CL.db,'bookings'),F().where('status','==','searching'),F().where('veh','==',me().veh)),snap=>{
     REQS=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(a.when||0)-(b.when||0));
+    {const cur=REQS.find(x=>x.id===SHOWING),rf=document.getElementById('rqf');if(cur&&J&&J.id===SHOWING&&rf&&(+cur.tip||0)!==(J.tip||0)){J.tip=+cur.tip||0;J.b=cur;rf.innerHTML=reqFareHtml();beep()}}
     if(SHOWING&&SHOWING!==ACCEPTING&&!REQS.some(b=>b.id===SHOWING)&&document.getElementById('acc')){SHOWING=null;J=null;home();toast(L('இந்த ride-ஐ வேற driver எடுத்துட்டாங்க, அல்லது ரத்து ஆயிடுச்சு','Another driver took this ride, or it was cancelled'));return}
     if(document.getElementById('offs'))maybeShowReq();
   },e=>console.warn(e));
@@ -1565,7 +1569,7 @@ function buildJ(b,id){
   P.drop={ta:b.to.ta,en:b.to.en,lat:tl.lat,lon:tl.lon,ic:'pin'};
   const trip=(b.path&&b.path.length>1)?b.path:[{lat:P.pick.lat,lon:P.pick.lon},{lat:P.drop.lat,lon:P.drop.lon}];
   const fare=+b.fare||0;
-  return{id,from:'pick',to:'drop',km:+b.km||hav(P.pick,P.drop)*1.3,fare,comm:Math.round(fare*COMM/100),pay:b.pay||'cash',
+  return{id,from:'pick',to:'drop',km:+b.km||hav(P.pick,P.drop)*1.3,fare,tip:+b.tip||0,comm:Math.round(fare*COMM/100),pay:b.pay||'cash',
     cust:{ta:b.custName||'Customer',en:b.custName||'Customer',rating:'—'},pin:null,app:!!b.customerUid,away:hav(POS,P.pick)*1.3,
     approach:[{...POS},{lat:POS.lat,lon:P.pick.lon},{lat:P.pick.lat,lon:P.pick.lon}],trip,b};
 }
@@ -1589,7 +1593,7 @@ function adoptJob(b){
 function watchJob(id){
   if(JOBUNSUB)JOBUNSUB();
   JOBUNSUB=F().onSnapshot(F().doc(CL.db,'bookings',id),s=>{
-    if(!J||J.id!==id||!s.exists())return;const b=s.data();J.b=b;
+    if(!J||J.id!==id||!s.exists())return;const b=s.data();J.b=b;if(b.status!=='done')J.tip=+b.tip||0;
     if(b.status==='cancelled'||(b.driverPhone&&b.driverPhone!==CL.phone)){stopJob();J=null;pushLive(true);home();toast(L('இந்த ride ரத்து / மாற்றப்பட்டது','This ride was cancelled or reassigned'));return}
     if(b.status==='ontrip'&&(document.getElementById('pinb')||document.getElementById('arr')||document.getElementById('st'))){clearTimeout(J.waitPin);onTrip();toast(L('PIN சரி! Trip ஆரம்பம்','PIN verified. Trip started'))}
   },()=>{});
@@ -1622,6 +1626,7 @@ function driverSos(){
 
 /* ---------- Service Manager · outstation priority · upcoming trips ---------- */
 const DISP={win:60,gap:60,fall:true};
+const LOCAL_R1=3,LOCAL_R2=4,LOCAL_WAVE=25; // local: 0–3 km first; 3–4 km after 25 s (at once if the customer added a tip)
 let UPC=[];const GONOW=new Set();
 const isFutB=b=>b&&b.when&&b.when>Date.now()+45*60e3;
 const whenTxt=ts=>{const d=new Date(ts),n=new Date(),tm=d.toLocaleTimeString(S.lang==='ta'?'ta-IN':'en-IN',{hour:'numeric',minute:'2-digit'});
@@ -1640,7 +1645,8 @@ function S_TIER(){const d=DME||{};if(d.prio==='top')return 1;if(d.prio==='low')r
   if((+d.rating||5)>=4.5&&wk>=35)return 1;if(d.year&&new Date().getFullYear()-d.year<=5)return 2;return 3}
 function offerAt(b){
   const k=b.kind==='outstation'?'out':b.kind==='rental'?'rental':'local';
-  if(k==='local')return svcActive('local')?0:Infinity;
+  if(k==='local'){if(!svcActive('local'))return Infinity;if(!b.from||b.from.lat==null)return 0;
+    const d=hav(POS,b.from);if(d<=LOCAL_R1)return 0;if(d<=LOCAL_R2)return (+b.tip>0)?0:(+b.when||0)+LOCAL_WAVE*1000;return Infinity}
   const dp=b.dispatch||{};if(dp.review&&!dp.reviewUntil)return Infinity;const open=dp.review?dp.reviewUntil:(dp.openAt||0),gap=(dp.gap||DISP.gap)*1000,fall=dp.fall!==undefined?dp.fall:DISP.fall;
   if(svcActive(k))return k==='out'?open+(S_TIER()-1)*gap:open;
   if(svcAllowed(k))return Infinity; // driver switched this service off

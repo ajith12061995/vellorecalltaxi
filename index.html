@@ -37,7 +37,7 @@
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('./vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV='2026-10-31-21',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV='2026-10-31-22',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('/vellorecalltaxi/version.json',location.origin)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -122,6 +122,8 @@ h1,h2,h3{font-family:var(--display);margin:0;line-height:1.15;text-wrap:balance}
 .otp{display:flex;gap:12px}
 .otp input{width:100%;min-width:0;height:62px;text-align:center;font-size:26px;font-family:var(--display);font-weight:700;border:2px solid var(--line);border-radius:16px;background:var(--surface);color:var(--fg)}
 .otp input:focus{border-color:var(--navy);outline:0}
+.tipbox{display:flex;flex-direction:column;gap:6px;padding:12px 14px;border-radius:16px;background:var(--yellow-soft);border:1.5px solid var(--yellow)}.tipbox[hidden]{display:none}
+.tipbox b{font-size:15px;color:var(--yellow-ink)}.tipbox small{color:var(--muted);font-size:12.5px}.tipbox .chip.sel{background:#1E8A5A;border-color:#1E8A5A;color:#fff}
 .dsp{display:flex;flex-direction:column;gap:8px;padding:14px 16px;border-radius:18px;border:1.5px solid var(--navy);background:var(--navy-soft)}
 .dsp .dt{display:flex;align-items:center;gap:10px}.dsp .dt b{flex:1;font-size:15px}.dsp .dt em{font-style:normal;font-family:var(--display);font-size:20px;color:var(--navy);font-variant-numeric:tabular-nums}
 .dsp small{color:var(--muted);font-size:12.5px}.dsp .steps{display:flex;gap:4px}.dsp .steps i{flex:1;height:5px;border-radius:3px;background:var(--line)}.dsp .steps i.on{background:var(--navy)}.dsp .steps i.cur{background:var(--yellow);animation:pulse 1.2s ease-in-out infinite alternate}
@@ -842,7 +844,7 @@ function picker(mode){
 }
 
 /* local: real availability from online drivers near the pickup */
-const NEARKM=10;
+const NEARKM=4; // drivers within 4 km (first 3 km, then up to 4 km)
 function vAvail(v){
   if(!CL||S.when||ADV.includes(v.id))return{ok:true,eta:v.eta,live:false};
   const pu=P[S.from];const ds=NEAR.filter(n=>n.veh===v.id).map(n=>hav(n,pu)).filter(d=>d<=NEARKM);
@@ -1132,20 +1134,21 @@ function cancelSheet(){
 }
 
 function doneScreen(){
-  const base=R.v.base,dist=R.fare-base,now=Date.now();
+  const base=R.v.base,dist=R.fare-base,now=Date.now(),PAY=R.fare+(R.boost||0);
   const qr=(()=>{let s='';for(let y=0;y<21;y++)for(let x=0;x<21;x++){if(((x*7+y*13+x*y)%5)<2)s+=`<rect x="${x*4}" y="${y*4}" width="4" height="4"/>`}return `<svg width="96" height="96" viewBox="0 0 84 84" fill="#0B4A36" aria-label="Sample QR">${s}</svg>`})();
   go(`<section class="screen"><div class="donehero pad"><span class="check">${I.tick}</span><h1 style="font-size:26px">${L('வந்து சேர்ந்தாச்சு!','You have arrived!')}</h1><span>${R.destName[S.lang]}</span></div>
    <div class="body pad" id="db">
      <div class="bill"><div><span>${L('அடிப்படை கட்டணம்','Base fare')}</span><span>₹${base}</span></div>
        <div><span>${L(`தூரம் (${R.km.toFixed(1)} கி.மீ)`,`Distance (${R.km.toFixed(1)} km)`)}</span><span>₹${dist}</span></div>
        <div><span>${L('காத்திருப்பு','Waiting')}</span><span>₹0</span></div>
-       <div class="tot"><span>${L('மொத்தம்','Total')}</span><span>₹${R.fare}</span></div></div>
+       ${R.boost?`<div><span>${L('நீங்க சேர்த்த Tip','Tip you added')}</span><span>₹${R.boost}</span></div>`:''}
+       <div class="tot"><span>${L('மொத்தம்','Total')}</span><span>₹${PAY}</span></div></div>
      <div id="paybox" style="display:flex;flex-direction:column;gap:12px">
        <span class="kind">${L('எப்படி பணம் கொடுக்கப் போறீங்க?','How will you pay?')}</span>
        <div class="payrow"><button class="pay" data-pm="upi">${I.upi}${t('payUpi')}</button><button class="pay" data-pm="cash">${I.cash}${t('payCash')}</button>${CL?'':`<button class="pay" data-pm="wallet">${I.navWallet.replace('<svg ','<svg width="18" height="18" ')}Wallet</button>`}</div>
-       <div id="pmUpi"><div class="qr">${qr}<div><b>${L(`UPI-ல ₹${R.fare} செலுத்துங்க`,`Pay ₹${R.fare} by UPI`)}</b><p class="muted" style="margin:4px 0 0;font-size:13px">${L('இது sample QR. Owner UPI ID set பண்ணதும் உண்மையான QR இங்கே வரும்.','This is a sample QR. Your real UPI QR appears here once the owner UPI ID is set.')}</p></div></div></div>
-       <div id="pmCash"><div class="qr"><span style="width:64px;height:64px;border-radius:16px;background:var(--yellow);color:#0B4A36;display:flex;align-items:center;justify-content:center;flex:none">${I.cash.replace(/width="18" height="18"/,'width="34" height="34"')}</span><div><b>${L(`Driver-கிட்ட ₹${R.fare} cash கொடுங்க`,`Give ₹${R.fare} in cash to your driver`)}</b><p class="muted" style="margin:4px 0 0;font-size:13px">${L('Driver தன் app-ல cash வாங்கினதை confirm பண்ணுவார்.','Your driver confirms the cash in the driver app.')}</p></div></div></div>
-       <div id="pmWal"><div class="qr"><span style="width:64px;height:64px;border-radius:16px;background:#12664A;color:#FFC21A;display:flex;align-items:center;justify-content:center;flex:none">${I.navWallet.replace('<svg ','<svg width="34" height="34" ')}</span><div><b>${L(`Wallet-ல இருந்து ${inr(R.fare)}`,`${inr(R.fare)} from wallet`)}</b><p class="muted" style="margin:4px 0 0;font-size:13px">${WAL.bal>=R.fare?L(`மீதம் ${inr(WAL.bal-R.fare)} இருக்கும்`,`${inr(WAL.bal-R.fare)} will be left`):L(`இருப்பு ${inr(WAL.bal)} தான். UPI அல்லது Cash தேர்வு பண்ணுங்க`,`Only ${inr(WAL.bal)} left. Choose UPI or cash`)}</p></div></div></div>
+       <div id="pmUpi"><div class="qr">${qr}<div><b>${L(`UPI-ல ₹${PAY} செலுத்துங்க`,`Pay ₹${PAY} by UPI`)}</b><p class="muted" style="margin:4px 0 0;font-size:13px">${L('இது sample QR. Owner UPI ID set பண்ணதும் உண்மையான QR இங்கே வரும்.','This is a sample QR. Your real UPI QR appears here once the owner UPI ID is set.')}</p></div></div></div>
+       <div id="pmCash"><div class="qr"><span style="width:64px;height:64px;border-radius:16px;background:var(--yellow);color:#0B4A36;display:flex;align-items:center;justify-content:center;flex:none">${I.cash.replace(/width="18" height="18"/,'width="34" height="34"')}</span><div><b>${L(`Driver-கிட்ட ₹${PAY} cash கொடுங்க`,`Give ₹${PAY} in cash to your driver`)}</b><p class="muted" style="margin:4px 0 0;font-size:13px">${L('Driver தன் app-ல cash வாங்கினதை confirm பண்ணுவார்.','Your driver confirms the cash in the driver app.')}</p></div></div></div>
+       <div id="pmWal"><div class="qr"><span style="width:64px;height:64px;border-radius:16px;background:#12664A;color:#FFC21A;display:flex;align-items:center;justify-content:center;flex:none">${I.navWallet.replace('<svg ','<svg width="34" height="34" ')}</span><div><b>${L(`Wallet-ல இருந்து ${inr(PAY)}`,`${inr(PAY)} from wallet`)}</b><p class="muted" style="margin:4px 0 0;font-size:13px">${WAL.bal>=PAY?L(`மீதம் ${inr(WAL.bal-PAY)} இருக்கும்`,`${inr(WAL.bal-PAY)} will be left`):L(`இருப்பு ${inr(WAL.bal)} தான். UPI அல்லது Cash தேர்வு பண்ணுங்க`,`Only ${inr(WAL.bal)} left. Choose UPI or cash`)}</p></div></div></div>
        <button class="btn" id="paid"></button></div>
      <div id="rate" hidden style="display:flex;flex-direction:column;gap:14px;text-align:center">
        <h2 style="font-size:21px">${L(`${R.drv.ta} எப்படி?`,`How was ${R.drv.en}?`)}</h2>
@@ -1163,8 +1166,8 @@ function doneScreen(){
       document.getElementById('paid').textContent=pm==='upi'?L('UPI-ல கொடுத்தாச்சு','I have paid by UPI'):pm==='wallet'?L('Wallet-ல இருந்து கழி','Pay from wallet'):L('Cash கொடுத்தாச்சு','I have paid in cash')};
     app.querySelectorAll('[data-pm]').forEach(b=>b.onclick=()=>{if(R.pay!==b.dataset.pm)toast(b.dataset.pm==='cash'?L('Cash-க்கு மாத்தியாச்சு','Switched to cash'):b.dataset.pm==='wallet'?L('Wallet-க்கு மாத்தியாச்சு','Switched to wallet'):L('UPI-க்கு மாத்தியாச்சு','Switched to UPI'));setPm(b.dataset.pm);cloudPayChange(b.dataset.pm)});
     setPm(R.pay);
-    if(CL){const box=document.querySelector('#pmUpi .qr');if(box)box.innerHTML=CFG.upi?`<div id="rq" style="background:#fff;padding:6px;border-radius:10px;flex:none;min-width:132px;min-height:132px"></div><div><b>${L(`UPI-ல ${inr(R.fare)} செலுத்துங்க`,`Pay ${inr(R.fare)} by UPI`)}</b><p class="muted" style="margin:4px 0 0;font-size:13px">${L('QR-ஐ scan பண்ணுங்க, அல்லது','Scan the QR, or')} <a href="${upiLink(R.fare,R.id)}">${L('UPI app-ல திற','open your UPI app')}</a></p></div>`:`<div><b>${L(`UPI-ல ${inr(R.fare)} செலுத்துங்க`,`Pay ${inr(R.fare)} by UPI`)}</b><p class="muted" style="margin:4px 0 0;font-size:13px">${L('Driver காட்டுற QR-ல pay பண்ணுங்க.','Pay using the QR your driver shows.')}</p></div>`;realQr(document.getElementById('rq'),R.fare,R.id)}
-    document.getElementById('paid').onclick=()=>{if(R.pay==='wallet'){if(WAL.bal<R.fare){toast(L('Wallet-ல போதுமான பணம் இல்லை','Not enough money in wallet'));return}walTx(-R.fare,`Ride: ${R.destName.ta}`,`Ride: ${R.destName.en}`)}document.getElementById('paybox').hidden=true;rate.hidden=false;rate.style.display='flex';document.getElementById('db').scrollTop=0};
+    if(CL){const box=document.querySelector('#pmUpi .qr');if(box)box.innerHTML=CFG.upi?`<div id="rq" style="background:#fff;padding:6px;border-radius:10px;flex:none;min-width:132px;min-height:132px"></div><div><b>${L(`UPI-ல ${inr(PAY)} செலுத்துங்க`,`Pay ${inr(PAY)} by UPI`)}</b><p class="muted" style="margin:4px 0 0;font-size:13px">${L('QR-ஐ scan பண்ணுங்க, அல்லது','Scan the QR, or')} <a href="${upiLink(PAY,R.id)}">${L('UPI app-ல திற','open your UPI app')}</a></p></div>`:`<div><b>${L(`UPI-ல ${inr(PAY)} செலுத்துங்க`,`Pay ${inr(PAY)} by UPI`)}</b><p class="muted" style="margin:4px 0 0;font-size:13px">${L('Driver காட்டுற QR-ல pay பண்ணுங்க.','Pay using the QR your driver shows.')}</p></div>`;realQr(document.getElementById('rq'),PAY,R.id)}
+    document.getElementById('paid').onclick=()=>{if(R.pay==='wallet'){if(WAL.bal<PAY){toast(L('Wallet-ல போதுமான பணம் இல்லை','Not enough money in wallet'));return}walTx(-PAY,`Ride: ${R.destName.ta}`,`Ride: ${R.destName.en}`)}document.getElementById('paybox').hidden=true;rate.hidden=false;rate.style.display='flex';document.getElementById('db').scrollTop=0};
     rate.querySelectorAll('[data-s]').forEach(b=>b.onclick=()=>{stars=+b.dataset.s;rate.querySelectorAll('[data-s]').forEach(x=>x.classList.toggle('on',+x.dataset.s<=stars));document.getElementById('sub').disabled=false});
     rate.querySelectorAll('[data-tag]').forEach(b=>b.onclick=()=>b.classList.toggle('sel'));
     rate.querySelectorAll('[data-tip]').forEach(b=>b.onclick=()=>{tip=tip===+b.dataset.tip?0:+b.dataset.tip;rate.querySelectorAll('[data-tip]').forEach(x=>x.classList.toggle('sel',+x.dataset.tip===tip))});
@@ -1187,7 +1190,7 @@ function recordTrip(status,x={}){
   const id=Date.now().toString(36).toUpperCase();
   TRIPS.unshift({id,status,from:R.fromName,to:R.destName,fromKey:R.from,destKey:R.dest,
     fromC:{lat:P[R.from].lat,lon:P[R.from].lon},toC:{lat:P[R.dest].lat,lon:P[R.dest].lon},path:R.trip,
-    veh:{ta:R.v.ta,en:R.v.en,id:R.v.id},km:+R.km.toFixed(1),base:R.v.base,fare:R.fare,tip:x.tip||0,pay:R.pay,date:Date.now(),
+    veh:{ta:R.v.ta,en:R.v.en,id:R.v.id},km:+R.km.toFixed(1),base:R.v.base,fare:R.fare,tip:(x.tip||0)+(R.boost||0),pay:R.pay,date:Date.now(),
     stars:x.stars||0,driver:{ta:R.drv.ta,en:R.drv.en},plate:R.drv.plate,model:R.drv.model,reason:x.reason||'',phase:R.phase});
   saveTrips();
 }
@@ -1871,7 +1874,7 @@ function watchBooking(){
   BKUNSUB=F().onSnapshot(F().doc(CL.db,'bookings',R.id),s=>{if(!s.exists()||!R)return;onBooking(s.data())},()=>{});
 }
 function onBooking(b){
-  R.b=b;
+  R.b=b;if(b.status!=='done')R.boost=+b.tip||0;
   if(b.driverPhone&&!LIVEUNSUB){
     R.drv={ta:b.driverName||'Driver',en:b.driverName||'Driver',plate:b.plate||'',model:b.vehModel||'',rating:'',trips:0,phone:b.driverPhone};
     LIVEUNSUB=F().onSnapshot(F().doc(CL.db,'live',b.driverPhone),s=>{if(s.exists()){const d=s.data();if(d.lat)R.dpos={lat:d.lat,lon:d.lon}}},()=>{});
@@ -1885,7 +1888,7 @@ function onBooking(b){
     if(R.phase!=='ride'||!document.getElementById('stB'))rideCloud();else rideCloudUpdate(true);
     return;
   }
-  if(b.status==='done'){stopWatch();forgetRide();R.fare=b.fare;R.pay=b.pay||R.pay;doneScreen();return}
+  if(b.status==='done'){stopWatch();forgetRide();R.fare=b.fare;R.boost=+b.tip||0;R.pay=b.pay||R.pay;doneScreen();return}
   if(b.status==='cancelled'){stopWatch();forgetRide();if(!R.selfCancel){if(b.cancelReason&&b.cancelReason!=='customer'&&b.cancelReason!=='driver')setTimeout(()=>sorrySheet(b.cancelReason),400);else toast(L('இந்த ride ரத்து ஆயிடுச்சு. மறுபடி book பண்ணுங்க','This ride was cancelled. Please book again'));recordTrip('cancelled',{reason:b.cancelReason||''})}R=null;home()}
 }
 function searchingCloud(){
@@ -1895,11 +1898,19 @@ function searchingCloud(){
    <div class="sheet ride-sheet pad"><div class="grab"></div>
      <div class="searchrow"><span class="vi">${I[R.v.id]}</span><div><h3>${L('Driver-ஐ தேடுறோம்…','Finding your driver…')}</h3>
        <small class="muted" id="sst">${L(`அருகில் இருக்கிற ${R.v.ta} drivers-க்கும் எங்க office-க்கும் request போயிடுச்சு`,`Request sent to nearby ${R.v.en} drivers and our office`)}</small></div></div>
-     <div class="bar"><i style="animation-duration:60s"></i></div>${stopsHtml()}
+     <div class="bar"><i style="animation-duration:60s"></i></div>
+     <div class="tipbox" id="tipbox" ${R.boost?'':'hidden'}><b>💡 ${L('Tip சேர்த்தா driver சீக்கிரம் கிடைப்பார்','Add a tip to get a driver faster')}</b>
+       <small>${L('இன்னும் யாரும் எடுக்கல. Tip முழுசா driver-க்கே போகும்.','No one has accepted yet. The whole tip goes to the driver.')}</small>
+       <div class="tags">${[10,20,30].map(x=>`<button class="chip ${R.boost===x?'sel':''}" data-boost="${x}">+₹${x}</button>`).join('')}</div></div>
+     ${stopsHtml()}
      <button class="btn ghost" id="cxs">${L('Booking-ஐ ரத்து செய்','Cancel booking')}</button></div></section>`,()=>{
     const m=makeMap(document.getElementById('map'),{cars:true,pins:[{...pu,col:'#1E8A5A'}],hide:CUSTOM});m.setView(pu.lat,pu.lon,32000);
     document.getElementById('cxs').onclick=cancelSheet;
+    app.querySelectorAll('[data-boost]').forEach(b=>b.onclick=()=>{const v=+b.dataset.boost;if(v<=(R.boost||0)){toast(L('Tip-ஐ கூட்ட மட்டும் தான் முடியும்','You can only raise the tip'));return}
+      R.boost=v;F().updateDoc(F().doc(CL.db,'bookings',R.id),{tip:v,updatedAt:F().serverTimestamp()}).catch(e=>toast(CL.errText(e,S.lang==='ta')));
+      app.querySelectorAll('[data-boost]').forEach(x=>x.classList.toggle('sel',x===b));toast(L(`₹${v} tip சேர்த்தாச்சு. இன்னும் கொஞ்சம் தூரத்துல இருக்கிற drivers-க்கும் போகும்`,`₹${v} tip added. Drivers a little farther away will see it too`))});
     rideTimer=setInterval(()=>{const el=document.getElementById('sst');if(!el||!R)return;const s=Math.round((Date.now()-(R.t0||Date.now()))/1000);
+      const tb=document.getElementById('tipbox');if(tb&&s>=20)tb.hidden=false;
       if(s>120)el.textContent=L('கொஞ்சம் நேரம் ஆகுது. எங்க office staff driver-ஐ assign பண்ணுவாங்க.','Taking a little longer. Our office staff will assign a driver.')},5000);
   });
 }
@@ -1944,7 +1955,7 @@ async function cloudCancel(reason){
   stopWatch();forgetRide();
 }
 function cloudPayChange(pm){if(CL&&R&&R.id)F().updateDoc(F().doc(CL.db,'bookings',R.id),{pay:pm,updatedAt:F().serverTimestamp()}).catch(()=>{})}
-function cloudRate(stars,tip){if(CL&&R&&R.id&&(stars||tip))F().updateDoc(F().doc(CL.db,'bookings',R.id),{rating:stars||0,tip:tip||0,updatedAt:F().serverTimestamp()}).catch(()=>{})}
+function cloudRate(stars,tip){if(CL&&R&&R.id&&(stars||tip))F().updateDoc(F().doc(CL.db,'bookings',R.id),{rating:stars||0,tip:(tip||0)+(R.boost||0),updatedAt:F().serverTimestamp()}).catch(()=>{})}
 function cloudTicket(x){
   if(!CL||!CUID)return;
   F().addDoc(F().collection(CL.db,'tickets'),{uid:CUID,type:x.type,title:x.title,phone:x.phone||S.phone,cust:S.name,trip:x.trip||'',note:x.note||'',

@@ -25,7 +25,7 @@
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('../vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV='2026-10-31-21',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV='2026-10-31-22',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('/vellorecalltaxi/version.json',location.origin)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -1272,7 +1272,7 @@ const stPillB=b=>b.status==='assigned'&&isFut(b)?`<em class="bst scheduled">⏰ 
 setInterval(()=>{document.querySelectorAll('[data-cd]').forEach(el=>{const b=DB&&DB.bk.find(x=>x._id===el.dataset.cd);if(b)el.textContent=dispStage(b)});ringCheck()},1000);
 /* ---------- office ringtone: rings until every waiting outstation/rental booking is handled ---------- */
 let RAC=null,RLAST=0,RSNOOZE=0,RTITLE=null;
-function needsDesk(b){if(!b||b.status!=='searching'||!b.dispatch)return false;const d=b.dispatch,now=Date.now();
+function needsDesk(b){if(!b||b.status!=='searching')return false;if(!b.dispatch)return b.kind==='ride'&&Date.now()-(b.created||Date.now())>60e3;const d=b.dispatch,now=Date.now();
   if(d.review)return !d.reviewUntil||now<d.reviewUntil;return now<(d.openAt||0)}
 function ringUnlock(){try{if(!RAC)RAC=new (window.AudioContext||window.webkitAudioContext)();if(RAC.state==='suspended')RAC.resume()}catch(e){}}
 ['click','keydown','touchstart'].forEach(ev=>document.addEventListener(ev,ringUnlock,{passive:true}));
@@ -1289,9 +1289,9 @@ function ringCheck(){
   if(!bar){bar=document.createElement('div');bar.id='ringbar';document.body.appendChild(bar)}
   const muted=now<RSNOOZE,ok=RAC&&RAC.state==='running';
   bar.className=muted?'mute':'';
-  bar.innerHTML=`<span class="bell">🔔</span><b>${L(`${list.length} booking உங்க பதிலுக்கு காத்திருக்கு`,`${list.length} booking${list.length>1?'s':''} waiting for you`)}</b><small>${esc(list.map(b=>`${b.kind==='outstation'?'🛣️':'⏱️'} ${b.id} · ${pn(b.to)}`).join(' · '))}</small>
+  bar.innerHTML=`<span class="bell">🔔</span><b>${L(`${list.length} booking உங்க பதிலுக்கு காத்திருக்கு`,`${list.length} booking${list.length>1?'s':''} waiting for you`)}</b><small>${esc(list.map(b=>`${b.kind==='outstation'?'🛣️':b.kind==='rental'?'⏱️':'🚕 '+L('யாரும் எடுக்கல','no taker')} ${b.id} · ${pn(b.to)}`).join(' · '))}</small>
     ${ok?'':`<em>${L('ஒலி வர இங்கே ஒரு தடவை click பண்ணுங்க','Click once here to turn on sound')}</em>`}<button id="rgo">${L('பார்','Open')}</button><button id="rmu">${muted?L('ஒலி ON','Sound on'):L('1 நிமி அமைதி','Mute 1 min')}</button>`;
-  bar.querySelector('#rgo').onclick=()=>{const b=list[0];S.sec='book';BT='live';save();show();setTimeout(()=>{b.dispatch.review?reviewSheet(b):assignSheet(b)},200)};
+  bar.querySelector('#rgo').onclick=()=>{const b=list[0];S.sec='book';BT='live';save();show();setTimeout(()=>{b.dispatch&&b.dispatch.review?reviewSheet(b):assignSheet(b)},200)};
   bar.querySelector('#rmu').onclick=e=>{e.stopPropagation();RSNOOZE=muted?0:Date.now()+60e3;ringCheck()};
   if(RTITLE===null)RTITLE=document.title;document.title=(Math.floor(now/1000)%2?'🔔 ':'')+`(${list.length}) ${RTITLE}`;
   if(!muted&&now-RLAST>3200){if(ringTone())RLAST=now}
