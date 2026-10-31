@@ -25,7 +25,7 @@
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('../vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV='2026-10-31-27',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV='2026-10-31-28',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('/vellorecalltaxi/version.json',location.origin)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -594,10 +594,11 @@ details.faq p{margin:0;padding:0 14px 14px;color:var(--muted);font-size:14px;lin
 @keyframes rgshake{0%,100%{transform:rotate(0)}25%{transform:rotate(-18deg)}75%{transform:rotate(18deg)}}
 .neg{color:var(--danger)}
 .fleetp{margin-bottom:16px}
-.fleet{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.fleet{display:grid;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));gap:10px}
 .fc{display:flex;flex-direction:column;align-items:flex-start;gap:4px;padding:10px 12px;border-radius:16px;border:1.5px solid var(--line);background:var(--surface);text-align:left;color:var(--fg);cursor:pointer}
 .fc:hover{border-color:var(--navy)}.fc .fi{width:52px;height:34px;display:flex;align-items:center}.fc .fi svg,.fc .fi img{max-width:52px;max-height:34px}
-.fc b{font-size:14px}.fc .fn{display:flex;gap:8px;font-size:13px;font-weight:700}.fc .fn i{font-style:normal}.fc small{color:var(--muted);font-size:12px}
+.fc>b{font-size:14px}.freg{font-size:12.5px;color:var(--muted);font-weight:700}.freg em{font-style:normal;font-family:var(--display);font-size:22px;color:var(--fg);margin-left:4px}
+.frow{display:flex;justify-content:space-between;gap:8px;width:100%;font-size:13px;white-space:nowrap}.frow b{font-variant-numeric:tabular-nums}.fc .fn{display:flex;gap:8px;font-size:13px;font-weight:700}.fc .fn i{font-style:normal}.fc small{color:var(--muted);font-size:12px}
 .fc.none{border-color:#C23B3B;background:rgba(194,59,59,.07)}.fc.none small{color:#C23B3B;font-weight:700}.fc.empty{opacity:.5}
 .fwarn{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.fwarn button{height:34px;padding:0 12px;border-radius:10px;font-size:13px;font-weight:700;background:var(--yellow-soft);color:var(--yellow-ink);border:1px solid var(--yellow)}
 .fchip{display:flex;align-items:center;gap:10px;margin:0 0 10px;font-weight:700}.fchip button{height:32px;padding:0 10px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--fg);font-size:12.5px}
@@ -1257,9 +1258,11 @@ function fleetStat(){const now=Date.now(),wk=now-7*DAY;
   const all=DB.drv,on=all.filter(d=>d.status!=='off').length;
   return{rows,tot:all.length,on,off:all.length-on,cant:all.filter(cant).length,idle:all.filter(d=>d.status==='off'&&!drove.has(d.id)&&lastOn(d.id)<wk).length}}
 function fleetHtml(){const f=fleetStat();
-  return `<div class="ph"><h3>🚖 ${L('Fleet நிலை','Fleet status')}</h3><span class="muted" style="font-size:13px">${L('மொத்தம்','Total')} <b>${f.tot}</b> · 🟢 Online <b>${f.on}</b> (${pct(f.on,f.tot)}%) · ⚪ Offline <b>${f.off}</b></span></div>
+  return `<div class="ph"><h3>🚖 ${L('Fleet நிலை','Fleet status')}</h3><span class="muted" style="font-size:13px">${L('பதிவு செய்த வண்டிகள்','Registered vehicles')} <b>${f.tot}</b> · 🟢 Online <b>${f.on}</b> (${pct(f.on,f.tot)}%) · ⚪ Offline <b>${f.off}</b></span></div>
    <div class="fleet">${f.rows.map(r=>`<button class="fc ${r.tot&&!(r.free+r.trip)?'none':''} ${r.tot?'':'empty'}" data-fv="${r.v.id}"><span class="fi">${I[r.v.id]}</span><b>${r.v[S.lang]}</b>
-     <span class="fn"><i class="g">🟢 ${r.free}</i><i class="y">🚕 ${r.trip}</i><i class="o">⚪ ${r.off}</i></span><small>${r.tot?L(`${r.tot}-ல ${r.free+r.trip} online`,`${r.free+r.trip} of ${r.tot} online`):L('வண்டி இல்லை','No vehicles')}</small></button>`).join('')}</div>
+     <span class="freg">${L('பதிவு','Registered')} <em>${r.tot}</em></span>
+     <span class="frow"><span>🟢 ${L('காலி','Free')}</span><b>${r.free}</b></span><span class="frow"><span>🚕 ${L('பயணத்தில்','On trip')}</span><b>${r.trip}</b></span><span class="frow"><span>⚪ Offline</span><b>${r.off}</b></span>
+     <small>${r.tot?L(`${r.tot}-ல ${r.free+r.trip} online (${pct(r.free+r.trip,r.tot)}%)`,`${r.free+r.trip} of ${r.tot} online (${pct(r.free+r.trip,r.tot)}%)`):L('வண்டி இல்லை','No vehicles')}</small></button>`).join('')}</div>
    <div class="fwarn">${f.cant?`<button data-fx="cant">⛔ ${L(`${f.cant} பேர் online வர முடியாது (தடை / document / wallet)`,`${f.cant} can't go online (block / document / wallet)`)}</button>`:''}${f.idle?`<button data-fx="idle">😴 ${L(`${f.idle} பேர் 7 நாளா ஓட்டல`,`${f.idle} haven't driven in 7 days`)}</button>`:''}</div>`}
 function bindFleet(){app.querySelectorAll('[data-fv]').forEach(b=>b.onclick=()=>{DV=b.dataset.fv;DF='all';S.sec='drv';save();show()});
   app.querySelectorAll('[data-fx]').forEach(b=>b.onclick=()=>{DV='';DF=b.dataset.fx;S.sec='drv';save();show()})}
