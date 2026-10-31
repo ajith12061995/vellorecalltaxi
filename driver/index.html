@@ -28,7 +28,7 @@
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('../vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV='2026-10-31-19',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV='2026-10-31-20',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('/vellorecalltaxi/version.json',location.origin)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -494,6 +494,18 @@ details.faq p{margin:0;padding:0 14px 14px;color:var(--muted);font-size:14px;lin
 .liveCard small{color:var(--muted)}
 .pulse{width:18px;height:18px;border-radius:50%;background:var(--ok);flex:none;box-shadow:0 0 0 0 rgba(30,138,90,.6);animation:ping2 1.4s infinite}
 @keyframes ping2{70%{box-shadow:0 0 0 14px rgba(30,138,90,0)}100%{box-shadow:0 0 0 0 rgba(30,138,90,0)}}
+.duty{display:flex;align-items:center;gap:14px;width:100%;padding:12px 14px 12px 20px;border-radius:999px;border:2px solid #C23B3B;background:#FFF1F1;color:#8A1C1C;text-align:left;transition:transform .12s}
+.duty div{flex:1}.duty b{display:block;font-family:var(--display);font-size:21px;letter-spacing:.06em}.duty small{display:block;font-size:12.5px;opacity:.8}
+.duty .sw{width:64px;height:36px;border-radius:999px;background:#E6B4B4;position:relative;flex:none;transition:background .2s}
+.duty .sw::after{content:"";position:absolute;top:4px;left:4px;width:28px;height:28px;border-radius:50%;background:#C23B3B;transition:transform .2s,background .2s;box-shadow:0 2px 6px rgba(0,0,0,.2)}
+.duty.on{border-color:#1E8A5A;background:#E9F7EF;color:#14653F}.duty.on .sw{background:#A7DDBF}.duty.on .sw::after{transform:translateX(28px);background:#1E8A5A}
+.duty.tapped{transform:scale(.97)}.duty.tapped .sw::after{transform:translateX(28px);background:#1E8A5A}.duty.on.tapped .sw::after{transform:none;background:#C23B3B}
+:root[data-theme="dark"] .duty{background:#3A1E1E;color:#FFB4B4}:root[data-theme="dark"] .duty.on{background:#16352A;color:#9FE3BF}
+.reqact{display:flex;align-items:center;gap:14px}
+.decl{position:relative;width:64px;height:64px;flex:none;border-radius:50%;background:var(--surface);box-shadow:0 2px 10px rgba(0,0,0,.12)}
+.decl svg{position:absolute;inset:0}.decl i{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-style:normal;font-size:34px;font-weight:800;color:#C23B3B;line-height:1}
+.accbtn{flex:1;height:64px;border-radius:999px;background:#1E8A5A;color:#fff;font-weight:800;font-size:20px;box-shadow:0 6px 18px rgba(30,138,90,.35);transition:transform .12s}
+.accbtn.tapped,.accbtn:active{transform:scale(.97)}
 .slide{--p:0;position:relative;height:62px;border-radius:20px;background:var(--navy);overflow:hidden;display:flex;align-items:center;justify-content:center;user-select:none;-webkit-user-select:none;touch-action:none}
 .slide.green{background:#1E8A5A}.slide.red{background:#C23B3B}
 .slide::before{content:"";position:absolute;inset:0;background:rgba(255,255,255,.18);transform-origin:left;transform:scaleX(var(--p))}
@@ -1043,6 +1055,9 @@ document.addEventListener('visibilitychange',()=>{if(document.visibilityState===
 
 /* slide-to-confirm */
 const slider=(id,label,cls='')=>`<div class="slide ${cls}" id="${id}"><span class="slabel">${label}</span><button class="knob" aria-label="${label}">${'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h13M13 6l6 6-6 6"/></svg>'}</button></div>`;
+/* tap buttons: ON/OFF DUTY toggle and Accept (replaces swipe sliders there) */
+function dutyBtn(on){return `<button class="duty ${on?'on':''}" id="${on?'offs':'ons'}" aria-pressed="${on}"><div><b>${on?'ON DUTY':'OFF DUTY'}</b><small>${on?L('Offline போக tap பண்ணுங்க','Tap to go offline'):L('Online போக tap பண்ணுங்க','Tap to go online')}</small></div><i class="sw"></i></button>`}
+function bindTap(id,done){const el=document.getElementById(id);if(!el)return;let busy=false;el.onclick=()=>{if(busy)return;busy=true;el.classList.add('tapped');try{navigator.vibrate&&navigator.vibrate(30)}catch(e){}setTimeout(()=>{done()},120)}}
 function bindSlide(id,done){const el=document.getElementById(id),k=el.querySelector('.knob');let sx=0,dx=0,drag=false,fired=false;
   const max=()=>el.clientWidth-k.offsetWidth-8;
   const fire=()=>{if(fired)return;fired=true;k.style.transform=`translateX(${max()}px)`;el.classList.add('done');setTimeout(done,180)};
@@ -1111,9 +1126,9 @@ function home(){
      ${(()=>{const ds=docState();return ds.expired.length?`<div class="warn">⛔ ${L('காலாவதி ஆன document: ','Expired: ')}${ds.expired.join(', ')}. ${L('புதுப்பிக்கும் வரை Online போக முடியாது. புது copy-ஐ office-க்கு அனுப்புங்க.','You can’t go online until it is renewed. Send the new copy to the office.')}</div>`:ds.soon.length?`<div class="warn">⚠️ ${L('சீக்கிரம் காலாவதி: ','Expiring soon: ')}${ds.soon.join(', ')}</div>`:''})()}
      ${low?`<div class="warn">${L(`Wallet-ல ${inr(DS.wallet)} தான் இருக்கு. Online போக குறைந்தது ${inr(MINBAL)} வேணும்.`,`Only ${inr(DS.wallet)} in wallet. You need at least ${inr(MINBAL)} to go online.`)} <button class="linkbtn" id="rc">${L('Recharge பண்ணு','Recharge')}</button></div>`:''}
      ${S.online?`<div class="liveCard"><span class="pulse"></span><div><b>${L('Online-ல இருக்கீங்க','You are online')}</b><small>${L('புது ride request-க்கு காத்திருக்கு…','Waiting for ride requests…')}</small></div></div>
-        ${slider('offs',L('Offline ஆக இழுங்க','Slide to go offline'),'red')}
+        ${dutyBtn(true)}
         ${CL?'':`<button class="demo" id="dreq">${L('Demo: ride request கொண்டு வா','Demo: send a ride request')}</button>`}`
-      :`${slider('ons',L('Online ஆக இழுங்க','Slide to go online'))}`}
+      :`${dutyBtn(false)}`}
      ${upcHtml()}
      ${SHOW_SMGR?smgrHtml():''}
      <div class="sec"><h3>${L('இன்று','Today')}</h3><span class="sample">${new Date().toLocaleDateString(S.lang==='ta'?'ta-IN':'en-IN',{day:'numeric',month:'short'})}</span></div>
@@ -1126,9 +1141,9 @@ function home(){
     document.getElementById('wb').onclick=()=>{S.tab='wallet';walletTab()};
     bindSmgr();
     const rc=document.getElementById('rc');if(rc)rc.onclick=()=>{S.tab='wallet';walletTab();recharge()};
-    if(S.online){bindSlide('offs',()=>{setOnline(false);home();toast(L('Offline ஆயிட்டீங்க','You are offline'))});
+    if(S.online){bindTap('offs',()=>{setOnline(false);home();toast(L('Offline ஆயிட்டீங்க','You are offline'))});
       if(CL)maybeShowReq();else{document.getElementById('dreq').onclick=()=>incoming();REQ=setTimeout(()=>incoming(),7000)}}
-    else bindSlide('ons',()=>{if(DME&&DME.blocked){toast(L('உங்க account நிறுத்தி வைக்கப்பட்டிருக்கு. Owner-ஐ தொடர்பு கொள்ளுங்க','Your account is on hold. Contact the owner'));home();return}{const ds=docState();if(ds.expired.length){toast(L('காலாவதி ஆன document: ','Expired: ')+ds.expired.join(', ')+L('. புதுப்பிச்சு office-க்கு அனுப்புங்க','. Renew it and tell the office'));home();return}}if(DS.wallet<MINBAL){toast(L('Wallet recharge பண்ணிட்டு Online போங்க','Recharge your wallet to go online'));home();return}setOnline(true);home();toast(L('Online! Ride request வந்தா சத்தம் வரும்','You are online. Requests will ring'))});
+    else bindTap('ons',()=>{if(DME&&DME.blocked){toast(L('உங்க account நிறுத்தி வைக்கப்பட்டிருக்கு. Owner-ஐ தொடர்பு கொள்ளுங்க','Your account is on hold. Contact the owner'));home();return}{const ds=docState();if(ds.expired.length){toast(L('காலாவதி ஆன document: ','Expired: ')+ds.expired.join(', ')+L('. புதுப்பிச்சு office-க்கு அனுப்புங்க','. Renew it and tell the office'));home();return}}if(DS.wallet<MINBAL){toast(L('Wallet recharge பண்ணிட்டு Online போங்க','Recharge your wallet to go online'));home();return}setOnline(true);home();toast(L('Online! Ride request வந்தா சத்தம் வரும்','You are online. Requests will ring'))});
   });
 }
 
@@ -1156,15 +1171,15 @@ function renderReq(j){
      <div class="tripcard"><div class="rail"><i class="a"></i><i class="l"></i><i class="b"></i></div>
        <div class="stops"><div><small>${t2('pickup')} · ${away.toFixed(1)} ${L('கி.மீ தூரம்','km away')}</small><b>${pn(from)}</b></div><div><small>Drop · ${J.km.toFixed(1)} ${L('கி.மீ பயணம்','km trip')}</small><b>${pn(to)}</b></div></div></div>
      <div class="custrow"><span class="avatar sm">${J.cust.en[0]}</span><b>${J.cust[S.lang]}</b><small>★ ${J.cust.rating}</small></div>
-     ${slider('acc',L('ஏற்க இழுங்க →','Slide to accept →'),'green')}
-     <button class="linkbtn" id="dec" style="align-self:center;color:var(--danger)">${L('வேண்டாம்','Decline')}</button>
+     <div class="reqact"><button class="decl" id="dec" aria-label="${L('வேண்டாம்','Decline')}"><svg viewBox="0 0 44 44" width="64" height="64"><circle cx="22" cy="22" r="19" fill="none" stroke="var(--line)" stroke-width="3"/><circle id="rg2" cx="22" cy="22" r="19" fill="none" stroke="#C23B3B" stroke-width="3" stroke-linecap="round" stroke-dasharray="119.4" transform="rotate(-90 22 22)"/></svg><i>−</i></button>
+       <button class="accbtn" id="acc">${L('ஏற்கிறேன் · Accept','Accept')}</button></div>
    </div></section>`,()=>{
     const m=makeMap(document.getElementById('map'),{driver:()=>({...POS,nlat:pk.lat,nlon:pk.lon}),line:()=>J.trip,pins:[{...pk,col:'#1E8A5A'},{lat:P[to].lat,lon:P[to].lon,col:'#121212'}],hide:CUSTOM});
     m.fit([POS,...J.trip],50,40);
     const t0=Date.now(),rg=document.getElementById('rg'),sc=document.getElementById('sec');
-    TK=setInterval(()=>{const left=Math.max(0,SEC-(Date.now()-t0)/1000);sc.textContent=Math.ceil(left);rg.setAttribute('stroke-dashoffset',(119.4*(1-left/SEC)).toFixed(1));
+    TK=setInterval(()=>{const left=Math.max(0,SEC-(Date.now()-t0)/1000);sc.textContent=Math.ceil(left);rg.setAttribute('stroke-dashoffset',(119.4*(1-left/SEC)).toFixed(1));const r2=document.getElementById('rg2');if(r2)r2.setAttribute('stroke-dashoffset',(119.4*(1-left/SEC)).toFixed(1));
       if(left<=0){if(J&&J.id){DECL.add(J.id);SHOWING=null}J=null;home();toast(L('Request நேரம் முடிஞ்சது','Request timed out'))}},200);
-    bindSlide('acc',()=>J&&J.id?acceptCloud():toPickup());
+    bindTap('acc',()=>J&&J.id?acceptCloud():toPickup());
     document.getElementById('dec').onclick=()=>{if(J&&J.id){DECL.add(J.id);SHOWING=null}J=null;home();toast(L('Request-ஐ விட்டாச்சு','Request declined'))};
   });
 }
