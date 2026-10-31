@@ -28,7 +28,7 @@
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('../vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV='2026-10-31-30',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV='2026-10-31-31',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('/vellorecalltaxi/version.json',location.origin)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -502,6 +502,33 @@ details.faq p{margin:0;padding:0 14px 14px;color:var(--muted);font-size:14px;lin
 .duty.tapped{transform:scale(.97)}.duty.tapped .sw::after{transform:translateX(28px);background:#1E8A5A}.duty.on.tapped .sw::after{transform:none;background:#C23B3B}
 :root[data-theme="dark"] .duty{background:#3A1E1E;color:#FFB4B4}:root[data-theme="dark"] .duty.on{background:#16352A;color:#9FE3BF}
 .tipadd{font-style:normal;color:#1E8A5A;font-size:.75em}
+a.btn{text-decoration:none}
+.menub{position:relative;font-size:20px;font-weight:800;width:46px}.mdot{position:absolute;top:8px;right:8px;width:10px;height:10px;border-radius:50%;background:#C23B3B;box-shadow:0 0 0 2px var(--surface)}
+.tpill{display:flex;align-items:center;gap:8px;height:46px;padding:0 14px;border-radius:999px;background:var(--surface);box-shadow:0 4px 14px rgba(0,0,0,.12);color:var(--fg);margin-left:8px}
+.tpill b{font-size:15px}.tpill span:not(.stdot){font-weight:800;color:#1E8A5A}.tpill i{font-style:normal;color:var(--muted);font-size:18px}
+.stdot{width:10px;height:10px;border-radius:50%;background:#9AA5A0}.stdot.on{background:#1E8A5A;box-shadow:0 0 0 4px rgba(30,138,90,.18)}
+.drw{position:fixed;inset:0;z-index:60;background:rgba(0,0,0,0);transition:background .2s}.drw.on{background:rgba(0,0,0,.45)}
+.drwp{position:absolute;left:0;top:0;bottom:0;width:min(330px,86vw);background:var(--bg,var(--surface));overflow:auto;padding:14px 12px 18px;transform:translateX(-102%);transition:transform .22s ease;box-shadow:8px 0 30px rgba(0,0,0,.2)}
+.drw.on .drwp{transform:none}
+.dhead{display:flex;align-items:center;gap:12px;padding:16px;border-radius:20px;background:linear-gradient(150deg,#0B4A36,#12664A);color:#fff;position:relative;overflow:hidden}
+.dhead::after{content:"";position:absolute;right:-30px;top:-30px;width:120px;height:120px;border-radius:50%;background:radial-gradient(circle,rgba(255,194,26,.35),transparent 70%)}
+.avatar.lg{width:56px;height:56px;font-size:24px;background:#FFC21A;color:#0B4A36;flex:none}
+.dhead b{display:block;font-family:var(--display);font-size:19px}.dhead small{display:block;opacity:.8;font-size:12.5px}.tierb{display:inline-block;margin-top:6px;font-style:normal;font-size:11.5px;font-weight:800;padding:3px 9px;border-radius:999px;background:linear-gradient(90deg,#FFD54A,#FFC21A);color:#0B4A36}
+.dgrid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin:10px 0}.dgrid3 div{padding:8px 10px;border-radius:12px;background:var(--surface-2);border:1px solid var(--line);min-width:0}.dgrid3 small{display:block;font-size:10.5px;color:var(--muted);font-weight:700}.dgrid3 b{display:block;font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dlist{display:flex;flex-direction:column}.dlist button{display:flex;align-items:center;gap:12px;padding:12px 10px;border-radius:12px;text-align:left;color:var(--fg);background:none;width:100%}
+.dlist button:hover{background:var(--surface-2)}.dlist span{width:30px;text-align:center;font-size:19px}.dlist b{flex:1;font-size:15px}.dlist small{font-size:12px;color:var(--muted);font-weight:700}
+.dlist .out b{color:var(--danger)}.nb{font-style:normal;min-width:20px;height:20px;padding:0 6px;border-radius:999px;background:#C23B3B;color:#fff;font-size:11.5px;display:inline-flex;align-items:center;justify-content:center}.nb.g{background:#1E8A5A}
+.seg3{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none}.seg3 button{flex:none;height:36px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:var(--surface);font-weight:700;font-size:13px;color:var(--muted)}.seg3 button.on{background:#0B4A36;color:#fff;border-color:#0B4A36}
+.nlist{display:flex;flex-direction:column;gap:8px}.nitem{display:flex;align-items:flex-start;gap:12px;padding:12px;border-radius:16px;border:1px solid var(--line);background:var(--surface);text-align:left;color:var(--fg);width:100%}
+.nitem.new{border-color:#FFC21A;background:var(--yellow-soft)}.nic{font-size:22px;width:30px;text-align:center}.nitem div{flex:1;min-width:0}.nitem b{display:block;font-size:14.5px}.nitem small{display:block;color:var(--muted);font-size:13px;margin-top:2px}.nitem em{font-style:normal;font-size:11.5px;color:var(--muted);white-space:nowrap}
+.empty2{display:flex;flex-direction:column;align-items:center;gap:8px;padding:40px 0;font-size:36px}.empty2 b{font-size:15px}
+.perfhero{display:flex;align-items:center;gap:14px;padding:16px;border-radius:20px;background:linear-gradient(150deg,#0B4A36,#12664A);color:#fff}.perfhero>span{font-size:36px}.perfhero b{display:block;font-family:var(--display);font-size:20px;color:#FFD54A}.perfhero small{opacity:.9;font-size:13px}
+.pgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.pgrid div{padding:10px 12px;border-radius:14px;background:var(--surface-2);border:1px solid var(--line)}.pgrid small{display:block;font-size:11.5px;color:var(--muted)}.pgrid b{font-family:var(--display);font-size:19px}.pgrid b span{font-size:12px;color:var(--muted)}.pgrid .bad{border-color:#C23B3B}.pgrid .bad b{color:#C23B3B}
+.pbar{height:12px;border-radius:999px;background:var(--surface-2);overflow:hidden;border:1px solid var(--line)}.pbar i{display:block;height:100%;background:linear-gradient(90deg,#1E8A5A,#FFC21A)}
+.tips{padding:14px 16px;border-radius:16px;background:var(--yellow-soft);font-size:13.5px}.tips ul{margin:6px 0 0;padding-left:18px;display:flex;flex-direction:column;gap:4px}
+.dst2{font-style:normal;font-size:12px;font-weight:800;padding:3px 9px;border-radius:999px;background:var(--surface-2)}.dst2.ok{color:#1E8A5A}.dst2.warn2{color:#B07A00;background:var(--yellow-soft)}.dst2.bad{color:#fff;background:#C23B3B}
+.qrbox{background:#fff;padding:12px;border-radius:18px;box-shadow:0 6px 20px rgba(0,0,0,.12);min-width:244px;min-height:244px;display:flex;align-items:center;justify-content:center}
+.faq{border:1px solid var(--line);border-radius:14px;padding:12px 14px;background:var(--surface)}.faq summary{font-weight:700;cursor:pointer}.faq p{margin:8px 0 0;color:var(--muted);font-size:14px;line-height:1.5}
 .reqdist{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:16px;background:var(--surface-2);border:1px solid var(--line)}
 .reqdist div{flex:1}.reqdist b{display:block;font-family:var(--display);font-size:26px;line-height:1.1}.reqdist b em{font-style:normal;font-size:14px;color:var(--muted)}.reqdist small{color:var(--muted);font-size:12.5px}.reqdist>i{font-style:normal;font-size:22px;color:var(--muted)}
 .reqact{display:flex;align-items:center;gap:14px}
@@ -1130,7 +1157,7 @@ function bindNav(){app.querySelectorAll('.nav button').forEach(b=>b.onclick=()=>
 function home(){
   S.tab='home';const d=me(),today=DS.trips.filter(x=>isToday(x.date)),net=today.reduce((a,x)=>a+x.net,0);const low=DS.wallet<MINBAL;
   go(shell(`<div class="mapwrap"><canvas class="map" id="map"></canvas>
-     <div class="topbar"><span class="stpill ${S.online?'on':''}"><i></i>${S.online?'Online':'Offline'}</span><div style="flex:1"></div>
+     <div class="topbar"><button class="chipbtn menub" id="menu" aria-label="Menu">☰${unread()?'<i class="mdot"></i>':''}</button><button class="tpill" id="tpill"><span class="stdot ${S.online?'on':''}"></span><b>${today.length} ${L('trips','trips')}</b><span>${inr(net)}</span><i>›</i></button><div style="flex:1"></div>
        <button class="chipbtn ${low?'lowbal':''}" id="wb">${I.navWallet.replace('<svg ','<svg width="18" height="18" ')} ${inr(DS.wallet)}</button></div>
      <div class="zoomctl" style="bottom:34px"><button class="chipbtn" id="loc" aria-label="My location">${I.gps}</button></div></div>
    <div class="sheet pad"><div class="grab"></div>
@@ -1150,6 +1177,7 @@ function home(){
     const m=makeMap(document.getElementById('map'),{driver:()=>({...POS,nlat:POS.lat,nlon:POS.lon+.0001}),cars:!CL&&S.online});m.setView(POS.lat,POS.lon,26000);
     document.getElementById('loc').onclick=()=>m.flyTo(POS.lat,POS.lon,60000);
     document.getElementById('wb').onclick=()=>{S.tab='wallet';walletTab()};
+    document.getElementById('menu').onclick=drawer;document.getElementById('tpill').onclick=()=>{S.tab='earn';earnTab()};
     bindSmgr();
     const rc=document.getElementById('rc');if(rc)rc.onclick=()=>{S.tab='wallet';walletTab();recharge()};
     if(S.online){bindTap('offs',()=>confirmOff(()=>{setOnline(false);home();toast(L('Offline ஆயிட்டீங்க','You are offline'))}));
@@ -1443,7 +1471,7 @@ function profileTab(){
 
 /* ================= CLOUD: Firebase (live on GitHub Pages; demo everywhere else) ================= */
 let RATE=0,CL=null,DME=null,UNS=[],REQUNSUB=null,JOBUNSUB=null,GEO=null,LASTLIVE=0,SHOWING=null,REQS=[],RCH=[];
-const DECL=new Set();const CFGD={upi:''};
+const DECL=new Set();const CFGD={upi:'',office:''};
 const ON_PAGES=/github\.io$/.test(location.hostname);
 const cloudP=(window.CLOUD_READY||Promise.resolve(null)).then(c=>{CL=c||null;return CL}).catch(()=>null);
 const F=()=>CL.fs;
@@ -1498,13 +1526,16 @@ function watchMe(){UNS.push(F().onSnapshot(F().doc(CL.db,'drivers',CL.phone),s=>
   if(S.online&&!J&&docState().expired.length){setOnline(false);toast(L('ஒரு document காலாவதி ஆயிடுச்சு. Offline ஆக்கப்பட்டீங்க','A document has expired. You have been taken offline'))}
   if(!J&&!document.querySelector('.modal')){if(S.tab==='wallet'&&before!==DS.wallet)walletTab();else if(S.tab==='home'&&(document.getElementById('ons')||(document.getElementById('ons')||document.getElementById('offs'))))home()}},()=>{}))}
 function watchCfgD(){UNS.push(F().onSnapshot(F().doc(CL.db,'config','app'),s=>{if(!s.exists())return;const d=s.data();
-  if(d.comm!=null)COMM=+d.comm;if(d.minbal!=null)MINBAL=+d.minbal;CFGD.upi=d.upi||'';if(d.dispatch)Object.assign(DISP,d.dispatch);
+  if(d.comm!=null)COMM=+d.comm;if(d.minbal!=null)MINBAL=+d.minbal;CFGD.upi=d.upi||'';CFGD.office=d.office||'';
+  {const na=Array.isArray(d.announce)?d.announce:[],top=na[0];const fresh=top&&(!ANN[0]||ANN[0].id!==top.id)&&top.t>seenAt();ANN=na;
+   if(fresh&&ANN.length&&!J&&!document.querySelector('.modal')){beep();toast('📢 '+(top.title||L('Office அறிவிப்பு','Office notice')));if(S.tab==='home'&&document.getElementById('menu'))home()}}if(d.dispatch)Object.assign(DISP,d.dispatch);
   if(d.fares)VEH.forEach(v=>{const f=d.fares[v.id];if(f){if(f.base!=null)v.base=+f.base;if(f.per!=null)v.per=+f.per}})},()=>{}))}
 function watchMine(){UNS.push(F().onSnapshot(F().query(F().collection(CL.db,'bookings'),F().where('driverPhone','==',CL.phone)),snap=>{
   const all=snap.docs.map(d=>({id:d.id,...d.data()}));
   {const rs=all.filter(b=>b.status==='done'&&+b.rating>0);RATE=rs.length?+(rs.reduce((a,b)=>a+(+b.rating),0)/rs.length).toFixed(1):0;if(DME&&RATE)DME.rating=RATE}
   DS.trips=all.filter(b=>b.status==='done').map(b=>{const f=+b.fare||0,c=Math.round(f*COMM/100);return{id:b.id,date:CL.toMs(b.doneAt)||b.when||Date.now(),fare:f,comm:c,net:f-c,pay:b.pay||'cash',km:+b.km||0,from:{ta:b.from.ta,en:b.from.en},to:{ta:b.to.ta,en:b.to.en},cust:{ta:b.custName||'',en:b.custName||''}}}).sort((a,b)=>b.date-a.date);
   rebuildTx();
+  {const wk=Date.now()-7*864e5;DS.cx7=all.filter(b=>b.status==='cancelled'&&/^driver/.test(b.cancelReason||'')&&(CL.toMs(b.updatedAt)||b.when||0)>=wk).length}
   const upk=UPC.map(u=>u.id).join();UPC=all.filter(b=>b.status==='assigned'&&isFutB(b)&&!b.arrivedAt&&!GONOW.has(b.id)).sort((a,b)=>a.when-b.when);
   const act=all.find(b=>b.status==='ontrip'||(b.status==='assigned'&&!UPC.some(u=>u.id===b.id)));
   if(act&&!J)adoptJob(act);
@@ -1677,6 +1708,103 @@ function bindSmgr(){app.querySelectorAll('[data-sv]').forEach(b=>b.onclick=()=>{
     else go2()})}
 function upcHtml(){if(!UPC.length)return '';
   return `<div class="sec"><h3>${L('வரவிருக்கும் பயணங்கள்','Upcoming trips')}</h3><span class="sample">${UPC.length}</span></div>`+UPC.slice(0,3).map(b=>`<div class="upc"><span style="font-size:22px">${b.kind==='outstation'?'🛣️':b.kind==='rental'?'⏱️':'🕒'}</span><div><b>${whenTxt(b.when)}</b><small>${esc((b.from||{})[S.lang]||'')} → ${esc((b.to||{})[S.lang]||'')} · ${inr(+b.fare||0)}</small></div><button class="btn sm" data-go="${b.id}">${L('Pickup-க்கு கிளம்பு','Leave for pickup')}</button></div>`).join('')}
+
+/* ================= Driver menu (☰): profile card + useful pages ================= */
+let ANN=[];
+const drvId=()=>'VCT-'+String(S.phone||'').slice(-5);
+const seenAt=()=>{try{return +localStorage.getItem('vct_drv_seen')||0}catch(e){return 0}};
+function notes(){
+  const out=[],now=Date.now();
+  ANN.forEach(a=>out.push({t:a.t||0,k:'office',ic:'📢',title:a.title||'',msg:a.msg||''}));
+  if(DS.wallet<MINBAL)out.push({t:now,k:'acct',ic:'👛',title:L('Wallet குறைவு','Low wallet'),msg:L(`Wallet-ல ${inr(DS.wallet)} தான் இருக்கு. Online போக குறைந்தது ${inr(MINBAL)} வேணும். Recharge பண்ணுங்க.`,`Only ${inr(DS.wallet)} in your wallet. You need ${inr(MINBAL)} to go online. Please recharge.`),go:'wallet'});
+  const ds=docState();ds.expired.forEach(n=>out.push({t:now,k:'acct',ic:'⛔',title:L('Document காலாவதி','Document expired'),msg:L(`${n} காலாவதி ஆயிடுச்சு. புது copy-ஐ office-க்கு அனுப்புங்க.`,`${n} has expired. Send the renewed copy to the office.`),go:'docs'}));
+  ds.soon.forEach(n=>out.push({t:now-1,k:'acct',ic:'⚠️',title:L('சீக்கிரம் காலாவதி','Expiring soon'),msg:n,go:'docs'}));
+  UPC.forEach(b=>out.push({t:CL&&b.assignedAt?CL.toMs(b.assignedAt):now-2,k:'trip',ic:b.kind==='outstation'?'🛣️':'⏱️',title:L('வரவிருக்கும் பயணம்','Upcoming trip'),msg:`${whenTxt(b.when)} · ${(b.from||{})[S.lang]||''} → ${(b.to||{})[S.lang]||''} · ${inr(+b.fare||0)}`}));
+  RCH.slice().sort((a,b)=>(b.date||0)-(a.date||0)).slice(0,5).forEach(r=>out.push({t:CL&&r.approvedAt?CL.toMs(r.approvedAt):r.date||0,k:'acct',ic:r.status==='approved'?'✅':r.status==='rejected'?'❌':'⏳',
+    title:r.status==='approved'?L('Recharge ஏத்துக்கிட்டாங்க','Recharge approved'):r.status==='rejected'?L('Recharge நிராகரிப்பு','Recharge rejected'):L('Recharge காத்திருக்கு','Recharge pending'),msg:`${inr(+r.amt||0)} · UTR ${r.utr||''}`,go:'wallet'}));
+  DS.trips.slice(0,5).forEach(x=>out.push({t:x.date,k:'trip',ic:'🏁',title:L('Trip முடிஞ்சது','Trip completed'),msg:`${x.from[S.lang]} → ${x.to[S.lang]} · ${L('உங்க வருமானம்','You earned')} ${inr(x.net)}`}));
+  return out.sort((a,b)=>b.t-a.t);
+}
+const unread=()=>{const s=seenAt();return notes().filter(n=>n.t>s&&n.k!=='trip').length};
+function drawer(){
+  const d=me(),v=VEH.find(x=>x.id===d.veh)||{},t=S_TIER(),u=unread(),tn=TIERN[t][S.lang==='ta'?0:1];
+  const items=[['home','🏠',L('Home','Home')],['earn','💰',L('வருமானம்','Earnings'),inr(DS.trips.filter(x=>isToday(x.date)).reduce((a,x)=>a+x.net,0))],['wallet','👛','Wallet',inr(DS.wallet)],
+    ['notes','🔔',L('அறிவிப்புகள்','Notifications'),u?`<em class="nb">${u}</em>`:''],['perf','📈',L('என் Performance','My performance'),tn],['docs','📄',L('என் Documents','My documents'),docState().expired.length?'<em class="nb">!</em>':''],
+    ...(UPC.length?[['upc','🗓️',L('வரவிருக்கும் பயணங்கள்','Upcoming trips'),`<em class="nb g">${UPC.length}</em>`]]:[]),
+    ['qr','📲',L('Customer app QR','Customer app QR'),L('புது customer சேருங்க','Bring new customers')],['faq','❓',L('உதவி & கேள்விகள்','Help & FAQs')],
+    ...(CFGD.office?[['call','📞',L('Office-ஐ அழை','Call the office'),'+91 '+CFGD.office]]:[]),['set','⚙️',L('அமைப்புகள்','Settings')],['out','⏻','Logout']];
+  const el=document.createElement('div');el.className='drw';el.innerHTML=`<div class="drwp">
+    <div class="dhead"><span class="avatar lg">${esc((d.en||'D')[0])}</span><div><b>${esc(d[S.lang]||'')}</b><small>+91 ${S.phone} · ★ ${d.rating||5}</small><em class="tierb">${['','🏆','🆕','⭐'][t]} ${tn}</em></div></div>
+    <div class="dgrid3"><div><small>${L('வண்டி எண்','Vehicle no.')}</small><b>${esc(d.plate||'—')}</b></div><div><small>Driver ID</small><b>${drvId()}</b></div><div><small>${L('வகை','Type')}</small><b>${esc(v[S.lang]||'')}</b></div></div>
+    <div class="dlist">${items.map(([k,ic,l,x])=>`<button data-dm="${k}" class="${k==='out'?'out':''}"><span>${ic}</span><b>${l}</b>${x?`<small>${x}</small>`:''}</button>`).join('')}</div>
+    <p class="fine muted" style="margin:10px 4px 0">Vellore Taxi · Driver · ${typeof APPV!=='undefined'?APPV:''}</p></div>`;
+  app.appendChild(el);requestAnimationFrame(()=>el.classList.add('on'));
+  const close=()=>{el.classList.remove('on');setTimeout(()=>el.remove(),220)};
+  el.onclick=e=>{if(e.target===el)close()};
+  el.querySelectorAll('[data-dm]').forEach(b=>b.onclick=()=>{close();const k=b.dataset.dm;setTimeout(()=>({home,earn:()=>{S.tab='earn';earnTab()},wallet:()=>{S.tab='wallet';walletTab()},notes:notesScreen,perf:perfScreen,docs:docsScreen,
+    upc:()=>{S.tab='home';home();setTimeout(()=>{const x=document.querySelector('.upc');if(x)x.scrollIntoView({behavior:'smooth',block:'center'})},300)},qr:qrScreen,faq:faqScreen,call:()=>{location.href='tel:+91'+CFGD.office},set:()=>{S.tab='me';profileTab()},
+    out:()=>modal(`<h3>${L('Logout பண்ணவா?','Log out?')}</h3><button class="btn" id="n">${L('வேண்டாம்','No')}</button><button class="btn ghost" id="y" style="color:var(--danger)">Logout</button>`,(m,c)=>{m.querySelector('#n').onclick=c;m.querySelector('#y').onclick=()=>{c();setOnline(false);if(CL){stopAllD();DME=null;CL.logout()}S.logged=false;S.pid=null;save();login()}})})[k](),230)});
+}
+const subHead=(t)=>`<div class="head pad"><button class="back" id="bk" aria-label="Back">${I.back}</button><h2>${t}</h2></div>`;
+const backHome=()=>{const b=document.getElementById('bk');if(b)b.onclick=()=>{S.tab='home';home()}};
+function notesScreen(){let tab='all';
+  const draw=()=>{const all=notes(),s=seenAt(),list=all.filter(n=>tab==='all'||n.k===tab);
+    go(`<section class="screen">${subHead(L('அறிவிப்புகள்','Notifications'))}<div class="body pad" style="padding-top:0">
+      <div class="seg3">${[['all',L('எல்லாம்','All')],['office',L('Office','Office')],['trip',L('பயணம்','Trips')],['acct',L('கணக்கு','Account')]].map(([k,l])=>`<button class="${tab===k?'on':''}" data-nt="${k}">${l}</button>`).join('')}</div>
+      ${list.length?`<div class="nlist">${list.map(n=>`<button class="nitem ${n.t>s&&n.k!=='trip'?'new':''}" ${n.go?`data-ng="${n.go}"`:''}><span class="nic">${n.ic}</span><div><b>${esc(n.title)}</b><small>${esc(n.msg)}</small></div><em>${n.t?whenTxt(n.t).replace(/, .*/,'')+'':''}</em></button>`).join('')}</div>`
+        :`<div class="empty2">🔕<b>${L('இப்போ அறிவிப்பு இல்லை','No notifications right now')}</b></div>`}</div></section>`,()=>{
+      backHome();app.querySelectorAll('[data-nt]').forEach(b=>b.onclick=()=>{tab=b.dataset.nt;draw()});
+      app.querySelectorAll('[data-ng]').forEach(b=>b.onclick=()=>({wallet:()=>{S.tab='wallet';walletTab()},docs:docsScreen})[b.dataset.ng]());
+      try{localStorage.setItem('vct_drv_seen',String(Date.now()))}catch(e){}});};
+  draw();
+}
+function perfScreen(){
+  const d=me(),t=S_TIER(),wk=Date.now()-7*864e5,d7=DS.trips.filter(x=>x.date>=wk),td=DS.trips.filter(x=>isToday(x.date));
+  const cx=DS.cx7||0,rate=(d7.length+cx)?Math.round(cx*100/(d7.length+cx)):0,need=Math.max(0,35-d7.length);
+  go(`<section class="screen">${subHead(L('என் Performance','My performance'))}<div class="body pad" style="padding-top:0">
+    <div class="perfhero t${t}"><span>${['','🏆','🆕','⭐'][t]}</span><div><b>${TIERN[t][S.lang==='ta'?0:1]}</b><small>${t===1?L('நீங்க தான் முதல்ல Outstation request பெறுவீங்க. சூப்பர்!','You get outstation requests first. Great work!'):L(`Top driver ஆக: ★4.5+ rating & வாரத்துக்கு 35 trips. இன்னும் ${need} trips தான்!`,`To become a top driver: ★4.5+ and 35 trips a week. Just ${need} more trips!`)}</small></div></div>
+    <div class="pgrid"><div><small>Rating</small><b>★ ${d.rating||5}</b></div><div><small>${L('இன்று trips','Trips today')}</small><b>${td.length}</b></div><div><small>${L('7 நாள் trips','Trips · 7 days')}</small><b>${d7.length}</b></div>
+      <div><small>${L('7 நாள் வருமானம்','Earned · 7 days')}</small><b>${inr(d7.reduce((a,x)=>a+x.net,0))}</b></div><div class="${rate>20?'bad':''}"><small>${L('ரத்து (7 நாள்)','Cancels · 7 days')}</small><b>${cx} <span>${rate}%</span></b></div><div><small>${L('Online நேரம் இன்று','Online today')}</small><b>${Math.floor(onMinutes()/60)}:${String(onMinutes()%60).padStart(2,'0')}</b></div></div>
+    <div class="sec"><h3>${L('வாரத்து இலக்கு','Weekly goal')}</h3><span class="sample">${d7.length}/35</span></div><div class="pbar"><i style="width:${Math.min(100,d7.length/35*100)}%"></i></div>
+    <div class="tips"><b>💡 ${L('அதிக ride கிடைக்க','Get more rides')}</b><ul>
+      <li>${L('காலை 7–10, மாலை 5–9 மணி busy நேரம். அந்த நேரம் ON DUTY-ல இருங்க.','7–10 am and 5–9 pm are busy. Stay on duty then.')}</li>
+      <li>${L('Katpadi station, CMC, VIT, பேருந்து நிலையம் பக்கத்துல நின்னா request சீக்கிரம் வரும்.','Wait near Katpadi station, CMC, VIT or the bus stands to get requests faster.')}</li>
+      <li>${L('ரத்து பண்ணாம இருந்தா rating-உம் priority-உம் ஏறும்.','Fewer cancellations raise your rating and priority.')}</li>
+      <li>${L('வண்டி சுத்தமா, AC சரியா இருந்தா customer ★5 கொடுப்பாங்க.','A clean car and working AC earn ★5 from customers.')}</li></ul></div>
+  </div></section>`,backHome);
+}
+function docsScreen(){
+  const D=(DME&&DME.docs)||{},now=Date.now();
+  const rows=[['dl',L('ஓட்டுநர் உரிமம் (DL)','Driving licence')],['rc','RC'],['ins','Insurance'],['permit','Permit'],['fc',L('FC (Fitness)','Fitness certificate')]];
+  go(`<section class="screen">${subHead(L('என் Documents','My documents'))}<div class="body pad" style="padding-top:0">
+    <div class="recent">${rows.map(([k,n])=>{const t=D[k],dd=t?Math.ceil((t-now)/864e5):null,cl=dd==null?'':dd<0?'bad':dd<=15?'warn2':'ok';
+      return `<div class="row"><span class="ic">${dd==null?'📄':dd<0?'⛔':dd<=15?'⚠️':'✅'}</span><div><b>${n}</b><small>${t?L('முடியும் தேதி ','Expires ')+new Date(t).toLocaleDateString(S.lang==='ta'?'ta-IN':'en-IN',{day:'numeric',month:'short',year:'numeric'}):L('தேதி பதிவு இல்லை','No date on record')}</small></div><em class="dst2 ${cl}">${dd==null?'—':dd<0?L('காலாவதி','Expired'):dd<=15?dd+' '+L('நாள்','days'):L('சரி','Valid')}</em></div>`}).join('')}</div>
+    <div class="note">${L('Document புதுப்பிச்சா புது copy-ஐ office-க்கு WhatsApp-ல அனுப்புங்க. Office தேதியை மாத்தினதும் இங்க தானா மாறும்.','When you renew a document, WhatsApp the new copy to the office. Dates here update as soon as the office changes them.')}</div>
+    ${CFGD.office?`<a class="btn" href="https://wa.me/91${CFGD.office}?text=${encodeURIComponent('Vellore Taxi driver '+drvId()+' · '+(me().plate||'')+': புது document அனுப்புறேன்')}" target="_blank" rel="noopener">💬 ${L('Office-க்கு WhatsApp பண்ணு','WhatsApp the office')}</a>`:''}
+  </div></section>`,backHome);
+}
+function qrScreen(){
+  const link='https://ajith12061995.github.io/vellorecalltaxi/';
+  go(`<section class="screen">${subHead(L('Customer app QR','Customer app QR'))}<div class="body pad" style="padding-top:0;align-items:center;text-align:center">
+    <p class="muted" style="margin:0">${L('இந்த QR-ஐ customer-க்கு காட்டுங்க. Scan பண்ணா Vellore Taxi app திறக்கும். அடுத்த தடவை அவங்க நேரா app-ல book பண்ணுவாங்க — உங்களுக்கு அதிக ride!','Show this QR to customers. Scanning opens the Vellore Taxi app, so next time they book in the app — more rides for you!')}</p>
+    <div id="cqr" class="qrbox"></div><b style="font-size:13px;word-break:break-all">${link}</b>
+    <a class="btn" target="_blank" rel="noopener" href="https://wa.me/?text=${encodeURIComponent('🚖 Vellore Taxi — வேலூர்ல Auto, Car, Rental, Outstation ஒரே app-ல book பண்ணுங்க: '+link)}">💬 ${L('WhatsApp-ல share பண்ணு','Share on WhatsApp')}</a>
+  </div></section>`,()=>{backHome();loadQrD().then(()=>{const el=document.getElementById('cqr');if(el){el.innerHTML='';new window.QRCode(el,{text:link,width:220,height:220,correctLevel:window.QRCode.CorrectLevel.M})}}).catch(()=>{})});
+}
+const FAQD=[
+ ['Online போக முடியலையே, ஏன்?','Why can’t I go online?','Wallet-ல குறைந்தபட்ச தொகை இல்லாம இருக்கலாம், ஒரு document காலாவதி ஆகியிருக்கலாம், அல்லது office account-ஐ நிறுத்தி வச்சிருக்கலாம். ☰ → அறிவிப்புகள்-ல காரணம் தெரியும்.','Your wallet may be below the minimum, a document may have expired, or the office may have paused your account. ☰ → Notifications shows the reason.'],
+ ['Commission எப்படி கழிக்கப்படுது?','How is commission taken?','ஒவ்வொரு trip முடிஞ்சதும் கட்டணத்துல இருந்து commission உங்க wallet-ல இருந்து தானா கழியும். Customer கொடுக்கிற tip முழுசா உங்களுக்கே.','After each trip the commission is taken from your wallet automatically. Customer tips are all yours.'],
+ ['Wallet recharge எப்படி?','How do I recharge my wallet?','Wallet → Recharge. Office UPI-க்கு பணம் அனுப்பி UTR எண்ணை போடுங்க. Office approve பண்ணினதும் wallet-ல சேரும்.','Wallet → Recharge. Pay the office UPI and enter the UTR number. It is added once the office approves it.'],
+ ['Customer UPI-ல பணம் எப்படி தர்றாங்க?','How do customers pay by UPI?','Trip முடிஞ்சதும் UPI தேர்வு பண்ணா உங்க phone-ல உங்க UPI QR வரும். Customer scan பண்ணி நேரா உங்களுக்கு அனுப்புவாங்க. UPI ID இல்லைன்னா office-கிட்ட சேர்க்க சொல்லுங்க.','When the trip ends, choose UPI and your own UPI QR appears. The customer pays you directly. If your UPI ID is missing, ask the office to add it.'],
+ ['Customer வரலைன்னா?','What if the customer doesn’t come?','Pickup-ல "வந்தாச்சு" அழுத்தி காத்திருங்க, customer-ஐ call பண்ணுங்க. வரலைன்னா ரத்து செய்யும்போது "Customer வரல" தேர்வு பண்ணுங்க. அது உங்க கணக்குல ரத்து-ஆ சேராது.','Tap Arrived, wait and call the customer. If they don’t come, cancel with "Customer did not show up" — it won’t count against you.'],
+ ['Outstation request எப்படி வரும்?','How do I get outstation requests?','Office உங்களுக்கு Outstation அனுமதி கொடுக்கணும். நல்ல rating, அதிக trips இருந்தா முதல்ல உங்களுக்கே வரும் (☰ → என் Performance).','The office has to enable outstation for you. Good ratings and more trips put you first in line (☰ → My performance).'],
+ ['Phone lock ஆனா request வருமா?','Do requests come when my phone is locked?','இப்போ app screen-ல திறந்திருந்தா தான் சத்தம் வரும். ON DUTY-ல இருக்கும்போது app-ஐ திறந்தே வச்சிருங்க, charger-ல போட்டு வைங்க.','For now, requests ring only while the app is open. Keep it open on duty and keep the phone charging.']];
+function faqScreen(){
+  go(`<section class="screen">${subHead(L('உதவி & கேள்விகள்','Help & FAQs'))}<div class="body pad" style="padding-top:0">
+    ${FAQD.map(([qt,qe,at,ae],i)=>`<details class="faq"${i===0?' open':''}><summary>${S.lang==='ta'?qt:qe}</summary><p>${S.lang==='ta'?at:ae}</p></details>`).join('')}
+    ${CFGD.office?`<a class="btn" href="tel:+91${CFGD.office}">📞 ${L('இன்னும் சந்தேகமா? Office-ஐ அழைங்க','Still stuck? Call the office')}</a>`:''}
+  </div></section>`,backHome);
+}
 
 splash();
 
