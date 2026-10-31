@@ -37,7 +37,7 @@
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('./vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV='2026-10-31-22',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV='2026-10-31-23',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('/vellorecalltaxi/version.json',location.origin)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -123,6 +123,8 @@ h1,h2,h3{font-family:var(--display);margin:0;line-height:1.15;text-wrap:balance}
 .otp input{width:100%;min-width:0;height:62px;text-align:center;font-size:26px;font-family:var(--display);font-weight:700;border:2px solid var(--line);border-radius:16px;background:var(--surface);color:var(--fg)}
 .otp input:focus{border-color:var(--navy);outline:0}
 .tipbox{display:flex;flex-direction:column;gap:6px;padding:12px 14px;border-radius:16px;background:var(--yellow-soft);border:1.5px solid var(--yellow)}.tipbox[hidden]{display:none}
+.tiprow{display:flex;gap:6px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;margin:0 -2px;padding:2px}.tiprow::-webkit-scrollbar{display:none}
+.tiprow .chip{flex:0 0 calc((100% - 24px)/5);justify-content:center;scroll-snap-align:start;padding:0;height:40px;font-weight:700}
 .tipbox b{font-size:15px;color:var(--yellow-ink)}.tipbox small{color:var(--muted);font-size:12.5px}.tipbox .chip.sel{background:#1E8A5A;border-color:#1E8A5A;color:#fff}
 .dsp{display:flex;flex-direction:column;gap:8px;padding:14px 16px;border-radius:18px;border:1.5px solid var(--navy);background:var(--navy-soft)}
 .dsp .dt{display:flex;align-items:center;gap:10px}.dsp .dt b{flex:1;font-size:15px}.dsp .dt em{font-style:normal;font-family:var(--display);font-size:20px;color:var(--navy);font-variant-numeric:tabular-nums}
@@ -1901,7 +1903,7 @@ function searchingCloud(){
      <div class="bar"><i style="animation-duration:60s"></i></div>
      <div class="tipbox" id="tipbox" ${R.boost?'':'hidden'}><b>💡 ${L('Tip சேர்த்தா driver சீக்கிரம் கிடைப்பார்','Add a tip to get a driver faster')}</b>
        <small>${L('இன்னும் யாரும் எடுக்கல. Tip முழுசா driver-க்கே போகும்.','No one has accepted yet. The whole tip goes to the driver.')}</small>
-       <div class="tags">${[10,20,30].map(x=>`<button class="chip ${R.boost===x?'sel':''}" data-boost="${x}">+₹${x}</button>`).join('')}</div></div>
+       <div class="tiprow">${[10,20,30,40,50,60,70,80,90].map(x=>`<button class="chip ${R.boost===x?'sel':''}" data-boost="${x}">+₹${x}</button>`).join('')}</div></div>
      ${stopsHtml()}
      <button class="btn ghost" id="cxs">${L('Booking-ஐ ரத்து செய்','Cancel booking')}</button></div></section>`,()=>{
     const m=makeMap(document.getElementById('map'),{cars:true,pins:[{...pu,col:'#1E8A5A'}],hide:CUSTOM});m.setView(pu.lat,pu.lon,32000);
