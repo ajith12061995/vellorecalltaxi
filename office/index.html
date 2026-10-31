@@ -25,7 +25,7 @@
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('../vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV='2026-10-31-12',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV='2026-10-31-13',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('/vellorecalltaxi/version.json',location.origin)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -580,6 +580,14 @@ details.faq p{margin:0;padding:0 14px 14px;color:var(--muted);font-size:14px;lin
 .dnums b{font-family:var(--display);font-size:16px;font-variant-numeric:tabular-nums}
 .dnums b.neg{color:var(--danger)}
 .dnums small{color:var(--muted);font-size:11.5px}
+.svcrow{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.svc{border:1.5px solid var(--line);border-radius:999px;padding:6px 12px;font-size:12.5px;font-weight:700;background:var(--surface);color:var(--muted);cursor:pointer}
+.svc.on{background:var(--navy);border-color:var(--navy);color:#fff}
+:root[data-theme="dark"] .svc.on{color:#0A1712}
+.tierln{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:12.5px;color:var(--muted)}.tierln b{color:var(--fg);font-size:12.5px}
+.tierln select{border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--fg);font-size:12px;padding:3px 6px}
+.cd{display:block;font-style:normal;font-size:11.5px;font-weight:700;color:var(--navy);margin-top:3px}
+.ktag{display:inline-block;font-size:11px;font-weight:700;padding:1px 7px;border-radius:6px;background:var(--yellow-soft);color:#5C4500;margin-right:4px}
 .dact{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
 .scard>b{font-size:15px}
 .scard>small{color:var(--muted);font-size:12.5px}
@@ -1220,7 +1228,28 @@ function dash(){
   document.getElementById('zi').onclick=()=>m.zoomBy(2);document.getElementById('zo').onclick=()=>m.zoomBy(.5);
   refreshDashLists();
 }
-function liveRows(list){return list.length?list.map(b=>{const d=drvById(b.driver);return `<div class="lrow"><div><b>${b.id} · ${pn(b.from)} → ${pn(b.to)}</b><small>${vname(b.veh)} · ${d?d[S.lang]+' · '+d.plate:L('Driver இல்லை','No driver')} · ${b.status==='scheduled'?dt(b.when):ago(b.created)}</small></div>${stPill(b.status)}${(b.status==='searching'||b.status==='scheduled'&&!b.driver)?`<button class="btn sm" data-as="${b.id}">${L('Assign','Assign')}</button>`:''}</div>`}).join(''):`<p class="muted" style="margin:0">${L('இப்போ live booking இல்லை','No live bookings right now')}</p>`}
+/* ---------- Service permissions, outstation priority, office-first dispatch ---------- */
+const DISPD={win:60,gap:60,fall:true};
+const vYear=d=>+d.year||+((String(d.model||'').match(/\b(19|20)\d\d\b/)||[''])[0])||0;
+const isFut=b=>b.when&&b.when>Date.now()+45*60e3;
+const svcOf=d=>({local:!(d.svc&&d.svc.local===false),rental:!!(d.svc&&d.svc.rental),out:!!(d.svc&&d.svc.out)});
+const SVCN={local:['🚕 Local','🚕 Local'],rental:['⏱️ Rental','⏱️ Rental'],out:['🛣️ Outstation','🛣️ Outstation']};
+function drvTier(d){if(d.prio==='top')return 1;if(d.prio==='low')return 3;if((+d.rating||5)>=4.5&&(d.wk||0)>=35)return 1;if(d.year&&new Date().getFullYear()-d.year<=5)return 2;return 3}
+const TIERN={1:['🏆 Top driver','🏆 Top driver'],2:['🆕 புது வண்டி','🆕 New vehicle'],3:['⭐ சாதாரணம்','⭐ Standard']};
+const tierName=t=>TIERN[t][S.lang==='ta'?0:1];
+const mmss=ms=>{const x=Math.max(0,Math.ceil(ms/1000));return Math.floor(x/60)+':'+String(x%60).padStart(2,'0')};
+const kTag=b=>b.kind==='outstation'?`<span class="ktag">🛣️ Outstation</span>`:b.kind==='rental'?`<span class="ktag">⏱️ Rental</span>`:'';
+function dispStage(b){
+  if(!b.dispatch||b.status!=='searching')return '';const now=Date.now(),o=b.dispatch.openAt||0,g=(b.dispatch.gap||60)*1000;
+  if(now<o)return `🏢 ${L('Office நேரம்','Office window')} ${mmss(o-now)} · ${L('நீங்க assign பண்ணலாம்','assign now')}`;
+  const e=now-o;
+  if(b.kind==='outstation')return e<g?L('🏆 Top drivers-க்கு போயிருக்கு','🏆 Offered to top drivers'):e<2*g?L('🆕 + புது வண்டி drivers','🆕 + new-vehicle drivers'):e<3*g?L('⭐ + எல்லா outstation drivers','⭐ + all outstation drivers'):(b.dispatch.fall!==false?L('🚕 எல்லா drivers-க்கும்','🚕 All drivers'):L('⭐ Outstation drivers மட்டும்','⭐ Outstation drivers only'));
+  return e<g?L('⏱️ Rental drivers-க்கு போயிருக்கு','⏱️ Offered to rental drivers'):(b.dispatch.fall!==false?L('🚕 எல்லா drivers-க்கும்','🚕 All drivers'):L('⏱️ Rental drivers மட்டும்','⏱️ Rental drivers only'));
+}
+const cdHtml=b=>b.dispatch&&b.status==='searching'?`<em class="cd" data-cd="${b._id}">${dispStage(b)}</em>`:'';
+const stPillB=b=>b.status==='assigned'&&isFut(b)?`<em class="bst scheduled">⏰ ${L('Driver உறுதி','Driver confirmed')}</em>`:stPill(b.status);
+setInterval(()=>{document.querySelectorAll('[data-cd]').forEach(el=>{const b=DB&&DB.bk.find(x=>x._id===el.dataset.cd);if(b)el.textContent=dispStage(b)})},1000);
+function liveRows(list){return list.length?list.map(b=>{const d=drvById(b.driver);return `<div class="lrow"><div><b>${kTag(b)}${b.id} · ${pn(b.from)} → ${pn(b.to)}</b><small>${vname(b.veh)} · ${d?d[S.lang]+' · '+d.plate:L('Driver இல்லை','No driver')} · ${b.status==='scheduled'||isFut(b)?'⏰ '+dt(b.when):ago(b.created)}</small>${cdHtml(b)}</div>${stPillB(b)}${(b.status==='searching'||b.status==='scheduled'&&!b.driver)?`<button class="btn sm" data-as="${b.id}">${L('Assign','Assign')}</button>`:''}</div>`}).join(''):`<p class="muted" style="margin:0">${L('இப்போ live booking இல்லை','No live bookings right now')}</p>`}
 function refreshDashLists(){
   const ll=document.getElementById('livelist');if(!ll)return;
   const kk=document.getElementById('kpis');if(kk){kk.innerHTML=kpisInner();kk.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>{S.sec=b.dataset.go;save();show()})}
@@ -1241,10 +1270,10 @@ function book(){
    <div class="table">${list.length?`<div class="tr th"><span>ID</span><span>${L('Customer','Customer')}</span><span>${L('வழி','Route')}</span><span>${L('வண்டி / Driver','Vehicle / driver')}</span><span>${L('கட்டணம்','Fare')}</span><span>${L('நிலை','Status')}</span><span></span></div>`+
     list.map(b=>{const d=drvById(b.driver);return `<div class="tr"><span class="tid">${b.id}<small>${b.src==='phone'?'☎ Phone':'App'}${b.sample?' · sample':''}</small></span>
      <span><b>${esc(b.cust.name)}</b><small>+91 ${b.cust.phone}</small></span>
-     <span><b>${pn(b.from)} → ${pn(b.to)}</b><small>${b.km} ${L('கி.மீ','km')} · ${b.status==='scheduled'?'⏰ '+dt(b.when):dt(b.done||b.created)}</small></span>
+     <span><b>${kTag(b)}${pn(b.from)} → ${pn(b.to)}</b><small>${b.km} ${L('கி.மீ','km')} · ${b.status==='scheduled'||isFut(b)&&b.status!=='done'?'⏰ '+dt(b.when):dt(b.done||b.created)}</small>${cdHtml(b)}</span>
      <span><b>${vname(b.veh)}</b><small>${d?d[S.lang]+' · '+d.plate:'—'}</small></span>
      <span><b>${inr(b.fare)}</b><small>${b.pay.toUpperCase()}</small></span>
-     <span>${stPill(b.status)}</span>
+     <span>${stPillB(b)}</span>
      <span class="acts2">${b.status==='scheduled'?`<button class="linkbtn" data-dn="${b.id}">${L('இப்போ அனுப்பு','Dispatch now')}</button>`:''}${(b.status==='searching'||b.status==='scheduled')?`<button class="btn sm" data-as="${b.id}">${b.driver?L('மாற்று','Reassign'):L('Assign','Assign')}</button>`:''}${['searching','scheduled','assigned'].includes(b.status)?`<button class="linkbtn" data-cx="${b.id}" style="color:var(--danger)">${L('ரத்து','Cancel')}</button>`:''}</span></div>`}).join('')
     :`<div class="empty"><h3>${L('இங்கே booking இல்லை','No bookings here')}</h3></div>`}</div>`;
   main().scrollTop=scroll;
@@ -1259,9 +1288,11 @@ function book(){
 }
 function nearest(veh,from,exclude){const pt=typeof from==='object'?from:P[from];if(!pt||pt.lat==null)return DB.drv.filter(d=>d.veh===veh&&d.status==='avail'&&!d.blocked&&d.id!==exclude).map(d=>({d,km:0}));return DB.drv.filter(d=>d.veh===veh&&d.status==='avail'&&!d.blocked&&d.id!==exclude).map(d=>({d,km:hav(d,pt)*1.3})).sort((a,b)=>a.km-b.km)}
 function assignSheet(b){
-  const list=nearest(b.veh,b.fromC&&b.fromC.lat!=null?b.fromC:b.from,b.driver),off=DB.drv.filter(d=>d.veh===b.veh&&d.status!=='avail');
+  const longK=(b.kind==='outstation'||b.kind==='rental')&&(isFut(b)||b.status==='scheduled'),sk=b.kind==='outstation'?'out':'rental';
+  const list=longK?DB.drv.filter(d=>d.veh===b.veh&&!d.blocked&&d.id!==b.driver).map(d=>({d,km:-1,t:drvTier(d),ok:svcOf(d)[sk]})).sort((x,y)=>(y.ok-x.ok)||(x.t-y.t)||(y.d.rating-x.d.rating))
+    :nearest(b.veh,b.fromC&&b.fromC.lat!=null?b.fromC:b.from,b.driver),off=longK?[]:DB.drv.filter(d=>d.veh===b.veh&&d.status!=='avail');
   modal(`<h3>${b.id}: ${L('Driver assign','Assign a driver')}</h3><p class="muted" style="margin:0">${vname(b.veh)} · ${pn(b.from)} → ${pn(b.to)} · ${inr(b.fare)}${b.status==='scheduled'?' · ⏰ '+dt(b.when):''}</p>
-    ${list.length?list.map((x,i)=>`<button class="reason ${i===0?'sel':''}" data-d="${x.d.id}"><i class="radio"></i><span style="flex:1"><b>${x.d[S.lang]}</b> · ${x.d.plate}<br><small class="muted">${x.km.toFixed(1)} ${L('கி.மீ தூரம்','km away')} · ~${Math.max(2,Math.round(x.km/0.35))} ${L('நிமி','min')} · ★${x.d.rating}${x.d.wallet<DB.cfg.minbal?' · '+L('wallet குறைவு','low wallet'):''}</small></span>${i===0?`<em class="dst avail">${L('அருகில்','Nearest')}</em>`:''}</button>`).join('')
+    ${list.length?list.map((x,i)=>`<button class="reason ${i===0?'sel':''}" data-d="${x.d.id}"><i class="radio"></i><span style="flex:1"><b>${x.d[S.lang]}</b> · ${x.d.plate}<br><small class="muted">${x.km<0?`${tierName(x.t)}${x.ok?'':' · 🔒 '+SVCN[sk][S.lang==='ta'?0:1]+' '+L('அனுமதி இல்லை','not enabled')} · ${x.d.wk||0} ${L('trips/7 நாள்','trips/7d')}`:`${x.km.toFixed(1)} ${L('கி.மீ தூரம்','km away')} · ~${Math.max(2,Math.round(x.km/0.35))} ${L('நிமி','min')}`} · ★${x.d.rating}${x.d.wallet<DB.cfg.minbal?' · '+L('wallet குறைவு','low wallet'):''}</small></span>${i===0?`<em class="dst avail">${x.km<0?L('பரிந்துரை','Best pick'):L('அருகில்','Nearest')}</em>`:''}</button>`).join('')
       :`<div class="warn">${L(`இப்போ காலியா இருக்கிற ${vname(b.veh)} இல்லை.`,`No ${vname(b.veh)} is free right now.`)}${off.length?' '+off.map(d=>`${d[S.lang]} (${({pickup:L('pickup','to pickup'),trip:L('பயணத்தில்','on trip'),off:'offline'})[d.status]})`).join(', '):''}</div>`}
     <button class="btn" id="asg" ${list.length?'':'disabled'}>${L('Assign பண்ணு','Assign')}</button>`,(m,close)=>{
     let sel=list[0]&&list[0].d.id;
@@ -1319,9 +1350,16 @@ function drivers(){
     return `<div class="dcard ${d.blocked?'blk':''}"><div class="dtop"><span class="vi">${I[d.veh]}</span><div><b>${d[S.lang]}</b><small>+91 ${d.phone}</small></div>${d.blocked?`<em class="dst off">${L('தடை','Blocked')}</em>`:dPill(d.status)}</div>
      <div class="dmid"><span class="plate">${d.plate}</span><small>${vname(d.veh)} · ${d.model} · ★${d.rating}</small></div>
      <div class="dnums"><div><b class="${d.wallet<DB.cfg.minbal?'neg':''}">${inr(d.wallet)}</b><small>Wallet</small></div><div><b>${tdy.length}</b><small>${L('இன்று ride','Rides today')}</small></div><div><b>${inr(tdy.reduce((a,b)=>a+b.fare,0))}</b><small>${L('இன்று வசூல்','Fares today')}</small></div></div>
+     <div class="svcrow">${(()=>{const sv=svcOf(d);return ['local','rental','out'].map(k=>`<button class="svc ${sv[k]?'on':''}" data-svc="${d.id}|${k}" title="${L('Office அனுமதி','Office permission')}">${sv[k]?'':'🔒 '}${SVCN[k][S.lang==='ta'?0:1]}</button>`).join('')})()}</div>
+     <div class="tierln"><b>${tierName(drvTier(d))}</b><span>★${d.rating} · ${L('7 நாள்','7 days')}: ${d.wk||0} ${L('trips','trips')} · ${L('வண்டி','vehicle')} ${d.year||'—'}</span>
+       <select data-prio="${d.id}" aria-label="Priority"><option value="auto" ${d.prio==='auto'||!d.prio?'selected':''}>${L('தானாக','Auto')}</option><option value="top" ${d.prio==='top'?'selected':''}>${L('எப்போதும் Top','Always top')}</option><option value="low" ${d.prio==='low'?'selected':''}>${L('கடைசி','Last')}</option></select></div>
      ${exp.length?`<div class="alert amber">${exp.map(([k,v])=>`${k.toUpperCase()}: ${v} ${L('நாள்','days')}`).join(' · ')}</div>`:''}
      ${S.role==='owner'?`<div class="dact"><button class="linkbtn" data-blk="${d.id}">${d.blocked?L('தடையை நீக்கு','Unblock'):L('தடை செய்','Block')}</button><button class="linkbtn" data-dw="${d.id}">${L('Wallet சரிசெய்','Adjust wallet')}</button>${CL?`<button class="linkbtn" data-dd="${d.id}">${L('Document தேதி','Document dates')}</button>`:''}</div>`:''}</div>`}).join('')}</div>`;
   const ad=document.getElementById('ad');if(ad)ad.onclick=addDriver;
+  app.querySelectorAll('[data-svc]').forEach(b=>b.onclick=()=>{const [id,k]=b.dataset.svc.split('|'),d=drvById(id),cur=svcOf(d)[k];
+    if(CL){cw(F().updateDoc(F().doc(CL.db,'drivers',id),{['svc.'+k]:!cur,updatedAt:ts()}));toast(L(`${d.ta}: ${SVCN[k][0]} ${!cur?'ON':'OFF'}`,`${d.en}: ${SVCN[k][1]} ${!cur?'on':'off'}`));return}
+    d.svc={...svcOf(d),[k]:!cur};saveDB();drivers()});
+  app.querySelectorAll('[data-prio]').forEach(sl=>sl.onchange=()=>{const d=drvById(sl.dataset.prio);if(CL){cw(F().updateDoc(F().doc(CL.db,'drivers',d.id),{prio:sl.value,updatedAt:ts()}));return}d.prio=sl.value;saveDB();drivers()});
   app.querySelectorAll('[data-blk]').forEach(b=>b.onclick=()=>{const d=drvById(b.dataset.blk);if(CL){cw(F().updateDoc(F().doc(CL.db,'drivers',d.id),{blocked:!d.blocked,...(!d.blocked?{online:false}:{}),updatedAt:ts()}));toast(d.blocked?L('தடை நீக்கப்பட்டது','Unblocked'):L('தடை செய்யப்பட்டது','Blocked'));return}d.blocked=!d.blocked;if(d.blocked&&d.status==='avail')d.status='off';log(`${d.ta} ${d.blocked?'தடை':'தடை நீக்கம்'}`,`${d.en} ${d.blocked?'blocked':'unblocked'}`);saveDB();drivers()});
   app.querySelectorAll('[data-dd]').forEach(b=>b.onclick=()=>{const d=drvById(b.dataset.dd),raw=(RAWD.find(x=>x._id===d.id)||{}).docs||{};
     const K=[['dl',L('ஓட்டுநர் உரிமம்','Driving licence')],['ins','Insurance'],['permit','Permit'],['fc','FC']];
@@ -1463,6 +1501,12 @@ function settings(){
     <section class="panel"><div class="ph"><h3>${L('Business விவரம்','Business details')}</h3></div>
      <label class="lrow2 col"><span>${L('உங்க UPI ID (customer QR, driver recharge-க்கு)','Your UPI ID (customer QR and driver recharge)')}</span><span class="field"><input id="up" maxlength="50" placeholder="name@bank" value="${esc(c.upi)}"></span></label>
      <label class="lrow2 col"><span>${L('Office phone (customer app "எங்களை அழை")','Office phone (customer app "Call us")')}</span><span class="field"><span class="cc">+91</span><input id="of" inputmode="numeric" maxlength="10" value="${esc(c.office)}"></span></label></section></div>
+   <section class="panel" style="margin-top:14px"><div class="ph"><h3>${L('Outstation / Rental: Office முதல்','Outstation / rental: office first')}</h3></div>
+    <p class="muted" style="margin:0 0 8px;font-size:13px">${L('புது Outstation / Rental booking முதல்ல office-க்கு வரும். இந்த நேரத்துக்குள்ள யாரும் assign பண்ணலைன்னா தானா drivers-க்கு போகும்: Outstation-க்கு 🏆 Top driver → 🆕 புது வண்டி (5 வருஷத்துக்குள்) → ⭐ மற்ற outstation drivers → 🚕 எல்லாரும். Top driver = ★4.5+ & 7 நாள்ல 35+ trips.','New outstation and rental bookings come to the office first. If nobody assigns in time, they go to drivers automatically. Outstation order: 🏆 top drivers → 🆕 new vehicles (≤5 yrs) → ⭐ other outstation drivers → 🚕 everyone. Top driver = ★4.5+ and 35+ trips in 7 days.')}</p>
+    ${(()=>{const dp={...DISPD,...(c.dispatch||{})};const opt=(arr,v)=>arr.map(([x,l])=>`<option value="${x}" ${+v===x?'selected':''}>${l}</option>`).join('');
+      return `<label class="lrow2"><span>${L('Office நேரம் (அதுக்கு அப்புறம் தானா drivers-க்கு)','Office window (then auto to drivers)')}</span><select id="dw" class="selbox" style="max-width:160px">${opt([[10,'10 sec'],[20,'20 sec'],[30,'30 sec'],[60,'1 min'],[120,'2 min'],[300,'5 min']],dp.win)}</select></label>
+      <label class="lrow2"><span>${L('ஒவ்வொரு படிக்கும் இடைவெளி','Gap between each level')}</span><select id="dg" class="selbox" style="max-width:160px">${opt([[30,'30 sec'],[60,'1 min'],[120,'2 min'],[300,'5 min']],dp.gap)}</select></label>
+      <label class="lrow2"><span>${L('யாரும் எடுக்கலைன்னா எல்லா drivers-க்கும் அனுப்பு','If nobody takes it, send to all drivers')}</span><input type="checkbox" id="dfb" ${dp.fall?'checked':''} style="width:22px;height:22px"></label>`})()}</section>
    <section class="panel" style="margin-top:14px"><div class="ph"><h3>Staff</h3><button class="linkbtn" id="as">+ ${L('Staff சேர்','Add staff')}</button></div>
     ${c.staff.map((s,i)=>`<div class="lrow"><div><b>${esc(s.name)}</b><small>+91 ${s.phone} · ${L('Bookings, drivers, support மட்டும்','Bookings, drivers and support only')}</small></div><button class="linkbtn" data-rs="${i}" style="color:var(--danger)">${L('நீக்கு','Remove')}</button></div>`).join('')}</section>
    ${CL?'':`<section class="panel" style="margin-top:14px"><div class="ph"><h3>${L('Demo data','Demo data')}</h3></div><p class="muted" style="margin:0 0 10px">${L('Sample bookings, drivers எல்லாத்தையும் ஆரம்ப நிலைக்கு கொண்டு வரும்.','Resets all sample bookings and drivers.')}</p><button class="btn ghost" id="rst" style="max-width:260px">${L('Demo data reset','Reset demo data')}</button></section>`}`;
@@ -1471,7 +1515,8 @@ function settings(){
     if(!(cm>=0&&cm<=40)){toast(L('Commission 0 முதல் 40% வரை','Commission must be 0–40%'));return}
     if(up&&!/^[\w.\-]{2,}@[a-zA-Z]{2,}$/.test(up)){toast(L('UPI ID சரியா இல்லை (name@bank)','UPI ID looks wrong (name@bank)'));return}
     if(of&&!/^[6-9]\d{9}$/.test(of)){toast(L('Office நம்பர் 10 இலக்கம்','Office number must be 10 digits'));return}
-    if(CL){cw(F().setDoc(F().doc(CL.db,'config','app'),{fares:c.fares,comm:cm,minbal:mb||0,office:of,upi:up,updatedAt:ts()},{merge:true}).then(()=>toast(L('சேமிச்சாச்சு. எல்லா app-லயும் உடனே மாறும்','Saved. All apps update right away'))));return}
+    const dsp={win:+document.getElementById('dw').value,gap:+document.getElementById('dg').value,fall:document.getElementById('dfb').checked};c.dispatch=dsp;
+    if(CL){cw(F().setDoc(F().doc(CL.db,'config','app'),{fares:c.fares,comm:cm,minbal:mb||0,office:of,upi:up,dispatch:dsp,updatedAt:ts()},{merge:true}).then(()=>toast(L('சேமிச்சாச்சு. எல்லா app-லயும் உடனே மாறும்','Saved. All apps update right away'))));return}
     Object.assign(c,{comm:cm,minbal:mb||0,office:of,upi:up});log('Settings மாற்றம்','Settings changed');saveDB();toast(L('சேமிச்சாச்சு','Saved'))};
   document.getElementById('as').onclick=()=>modal(`<h3>${L('Staff சேர்','Add staff')}</h3><div class="field" style="height:50px"><input id="sn" maxlength="30" placeholder="${L('பெயர்','Name')}"></div><div class="field" style="height:50px"><span class="cc">+91</span><input id="sp" inputmode="numeric" maxlength="10"></div><div class="err" id="se"></div><button class="btn" id="ss">${L('சேமி','Save')}</button>`,(m,close)=>{
     m.querySelector('#ss').onclick=()=>{const n=m.querySelector('#sn').value.trim(),p=m.querySelector('#sp').value.replace(/\D/g,'');if(n.length<2||!/^[6-9]\d{9}$/.test(p)){m.querySelector('#se').textContent=L('பெயர், 10 இலக்க நம்பர் கொடுங்க','Enter a name and a 10-digit number');return}
@@ -1516,7 +1561,7 @@ function watchAll(){
   OUNS.push(F().onSnapshot(F().collection(CL.db,'driverApps'),s=>{const before=(DB.apps||[]).filter(a=>a.status==='pending').length;DB.apps=s.docs.map(d=>({id:d.id,...d.data()})).sort((x,y)=>CL.toMs(y.submittedAt)-CL.toMs(x.submittedAt));const n=DB.apps.filter(a=>a.status==='pending').length;if(SEEN!==null&&n>before){chime();toast(L('புது driver விண்ணப்பம் வந்திருக்கு','New driver application'))}remap()},oerr));
   OUNS.push(F().onSnapshot(F().collection(CL.db,'tickets'),s=>{RAWT=s.docs.map(d=>({_id:d.id,...d.data()}));remap()},oerr));
   OUNS.push(F().onSnapshot(F().doc(CL.db,'config','app'),s=>{if(s.exists()){const d=s.data();
-    Object.assign(DB.cfg,{comm:d.comm!=null?+d.comm:10,minbal:d.minbal!=null?+d.minbal:100,upi:d.upi||'',office:d.office||''});
+    Object.assign(DB.cfg,{comm:d.comm!=null?+d.comm:10,minbal:d.minbal!=null?+d.minbal:100,upi:d.upi||'',office:d.office||'',dispatch:{...DISPD,...(d.dispatch||{})}});
     if(d.fares)Object.keys(d.fares).forEach(k=>{DB.cfg.fares[k]={...(DB.cfg.fares[k]||{}),...d.fares[k]}})}remap()},oerr));
   OUNS.push(F().onSnapshot(F().collection(CL.db,'staff'),s=>{DB.cfg.staff=s.docs.filter(d=>(d.data().role||'staff')!=='owner').map(d=>({name:d.data().name||'',phone:d.id.replace('+91','')}));remap()},oerr));
 }
@@ -1525,14 +1570,16 @@ function remap(liveOnly){
   const now=Date.now();
   DB.bk=RAWB.map(b=>({id:shortB(b._id),_id:b._id,cust:{name:b.custName||'—',phone:(b.custPhone||'').replace('+91','')},
     from:b.from&&b.from.key&&P[b.from.key]?b.from.key:(b.from?b.from[S.lang]||b.from.ta:'—'),to:b.to&&b.to.key&&P[b.to.key]?b.to.key:(b.to?b.to[S.lang]||b.to.ta:'—'),
-    fromC:b.from,toC:b.to,veh:b.veh||'auto',km:+b.km||0,fare:+b.fare||0,pay:b.pay||'cash',src:b.src||'app',status:b.status||'searching',kind:b.kind||'ride',
+    fromC:b.from,toC:b.to,veh:b.veh||'auto',km:+b.km||0,fare:+b.fare||0,pay:b.pay||'cash',src:b.src||'app',status:b.status||'searching',kind:b.kind||'ride',dispatch:b.dispatch||null,
     driver:b.driverPhone||null,created:CL.toMs(b.createdAt)||b.when||now,when:b.when||CL.toMs(b.createdAt)||now,done:CL.toMs(b.doneAt)||null,reason:b.cancelReason||''}));
   const busy={};RAWB.forEach(b=>{if(b.driverPhone&&(b.status==='assigned'||b.status==='ontrip'))busy[b.driverPhone]=b.status});
+  const wk={};RAWB.forEach(b=>{if(b.status==='done'&&b.driverPhone&&(CL.toMs(b.doneAt)||b.when||0)>now-7*864e5)wk[b.driverPhone]=(wk[b.driverPhone]||0)+1});
   DB.drv=RAWD.map(d=>{const l=LIVE[d._id]||{};const fresh=l.updatedAt&&now-CL.toMs(l.updatedAt)<3*60e3;const online=!!(d.online&&fresh);
     const days=k=>d.docs&&d.docs[k]?Math.round((d.docs[k]-now)/864e5):999;
     return{id:d._id,ta:d.name||d._id,en:d.name||d._id,phone:d._id.replace('+91',''),veh:d.veh||'auto',plate:d.plate||'',model:d.model||'',
       status:busy[d._id]==='ontrip'?'trip':busy[d._id]?'pickup':online?'avail':'off',lat:l.lat!=null?l.lat:P.home.lat,lon:l.lon!=null?l.lon:P.home.lon,
-      wallet:+d.wallet||0,rating:d.rating||5,docs:{dl:days('dl'),rc:days('rc'),ins:days('ins'),permit:days('permit'),fc:days('fc')},blocked:!!d.blocked}});
+      wallet:+d.wallet||0,rating:d.rating||5,docs:{dl:days('dl'),rc:days('rc'),ins:days('ins'),permit:days('permit'),fc:days('fc')},blocked:!!d.blocked,
+      svc:d.svc||null,prio:d.prio||'auto',year:vYear(d),wk:wk[d._id]||0}});
   DB.rch=RAWR.filter(r=>DB.drv.some(d=>d.id===r.driverPhone)).map(r=>({id:r._id,driver:r.driverPhone,amt:+r.amt||0,utr:r.utr||'',date:r.date||CL.toMs(r.createdAt),status:r.status||'pending'})).sort((a,b)=>b.date-a.date);
   DB.sup=RAWT.map(t=>({id:'R'+t._id.slice(0,5).toUpperCase(),_id:t._id,type:t.type||'callback',cust:t.cust||'—',phone:t.phone||'',title:t.title||{ta:'',en:''},trip:t.trip||'',
     date:t.date||CL.toMs(t.createdAt),status:t.status||'open',note:t.note||'',lat:t.lat,lon:t.lon})).sort((a,b)=>b.date-a.date);

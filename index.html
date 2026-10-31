@@ -37,7 +37,7 @@
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('./vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV='2026-10-31-12',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV='2026-10-31-13',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('/vellorecalltaxi/version.json',location.origin)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -122,6 +122,11 @@ h1,h2,h3{font-family:var(--display);margin:0;line-height:1.15;text-wrap:balance}
 .otp{display:flex;gap:12px}
 .otp input{width:100%;min-width:0;height:62px;text-align:center;font-size:26px;font-family:var(--display);font-weight:700;border:2px solid var(--line);border-radius:16px;background:var(--surface);color:var(--fg)}
 .otp input:focus{border-color:var(--navy);outline:0}
+.dsp{display:flex;flex-direction:column;gap:8px;padding:14px 16px;border-radius:18px;border:1.5px solid var(--navy);background:var(--navy-soft)}
+.dsp .dt{display:flex;align-items:center;gap:10px}.dsp .dt b{flex:1;font-size:15px}.dsp .dt em{font-style:normal;font-family:var(--display);font-size:20px;color:var(--navy);font-variant-numeric:tabular-nums}
+.dsp small{color:var(--muted);font-size:12.5px}.dsp .steps{display:flex;gap:4px}.dsp .steps i{flex:1;height:5px;border-radius:3px;background:var(--line)}.dsp .steps i.on{background:var(--navy)}.dsp .steps i.cur{background:var(--yellow);animation:pulse 1.2s ease-in-out infinite alternate}
+.dsp.ok{border-color:#1E8A5A;background:rgba(30,138,90,.10)}.dsp.ok .dt b{color:#1E8A5A}
+@keyframes pulse{from{opacity:.45}to{opacity:1}}
 .note{background:var(--yellow-soft);color:var(--yellow-ink);border-radius:14px;padding:10px 14px;font-size:13.5px}
 .err{color:var(--danger);font-size:13.5px;min-height:18px}
 .linkbtn{color:var(--navy);font-weight:700;font-size:14px}
@@ -1321,8 +1326,8 @@ function pickWhen(minM,cb,note){
 }
 
 function saveUpcoming(rec){
-  const full={id:Date.now().toString(36).toUpperCase(),status:'upcoming',date:Date.now(),...rec};
-  TRIPS.unshift(full);saveTrips();bookedScreen(full);if(CL)cloudSchedule(rec).then(id=>{if(id){full.cid=id;saveTrips()}});
+  const full={id:Date.now().toString(36).toUpperCase(),status:'upcoming',date:Date.now(),pin:String(1000+Math.floor(Math.random()*9000)),...rec};
+  TRIPS.unshift(full);saveTrips();bookedScreen(full);if(CL)cloudSchedule(full).then(id=>{if(id){full.cid=id;saveTrips()}});
 }
 function confirmSchedule(){
   const r=route(S.from,S.dest),v=VEH.find(x=>x.id===S.veh);
@@ -1332,9 +1337,10 @@ function confirmSchedule(){
 }
 function bookedScreen(x){
   go(`<section class="screen"><div class="donehero pad"><span class="check">${I.tick}</span><h1 style="font-size:26px">${L('Booking உறுதி!','Booking confirmed!')}</h1><span>${fmtWhen(x.when)}</span></div>
-   <div class="body pad">${upcomingCard(x)}
-    <div class="note">${L('Driver விவரம் பயணத்துக்கு 30 நிமிடம் முன்னாடி இந்த app-ல வரும். எங்க team உங்களை call பண்ணி confirm பண்ணுவாங்க.','Driver details appear here 30 minutes before pickup. Our team will call you to confirm.')}</div>
+   <div class="body pad">${OFK.includes(x.kind)&&CL?`<div id="dsp">${dspHtml(x)}</div>`:''}${upcomingCard(x)}
+    ${OFK.includes(x.kind)&&CL?'':`<div class="note">${L('Driver விவரம் பயணத்துக்கு 30 நிமிடம் முன்னாடி இந்த app-ல வரும். எங்க team உங்களை call பண்ணி confirm பண்ணுவாங்க.','Driver details appear here 30 minutes before pickup. Our team will call you to confirm.')}</div>`}
     <div class="two"><button class="btn" id="tv">${L('என் பயணங்கள்','My trips')}</button><button class="btn yellow" id="hm">Home</button></div></div></section>`,()=>{
+    dspTick(x);
     document.getElementById('tv').onclick=()=>{tripFilter='up';S.tab='trips';tripsTab()};
     document.getElementById('hm').onclick=home;
   });
@@ -1350,9 +1356,10 @@ function upcomingCard(x){
 }
 function upcomingDetail(x){
   go(`<section class="screen"><div class="head pad"><button class="back" id="bk" aria-label="Back">${I.back}</button><h2>${L('வரவிருக்கும் பயணம்','Upcoming ride')}</h2></div>
-   <div class="body pad" style="padding-top:0">${upcomingCard(x)}
-    <div class="note">${L('Driver விவரம் பயணத்துக்கு 30 நிமிடம் முன்னாடி வரும்.','Driver details arrive 30 minutes before pickup.')}</div>
+   <div class="body pad" style="padding-top:0">${OFK.includes(x.kind)&&CL&&x.cid?`<div id="dsp">${dspHtml(x)}</div>`:''}${upcomingCard(x)}
+    ${OFK.includes(x.kind)&&CL&&x.cid?'':`<div class="note">${L('Driver விவரம் பயணத்துக்கு 30 நிமிடம் முன்னாடி வரும்.','Driver details arrive 30 minutes before pickup.')}</div>`}
     <button class="btn ghost" id="ucx">${L('Booking-ஐ ரத்து செய்','Cancel booking')}</button></div></section>`,()=>{
+    dspTick(x);
     document.getElementById('bk').onclick=()=>{S.tab==='home'?home():tripsTab()};
     document.getElementById('ucx').onclick=()=>modal(`<h3>${L('இந்த booking-ஐ ரத்து செய்யவா?','Cancel this booking?')}</h3><p class="muted" style="margin:0">${fmtWhen(x.when)} · ${x.to[S.lang]}</p>
       <div class="note">${L('பயணத்துக்கு 1 மணி நேரம் முன்னாடி வரை கட்டணம் இல்லை.','Free until 1 hour before pickup.')}</div>
@@ -1444,7 +1451,7 @@ function rentFare(){
 const CITIES=[{ta:'சென்னை',en:'Chennai',km:140},{ta:'பெங்களூரு',en:'Bengaluru',km:215},{ta:'திருப்பதி',en:'Tirupati',km:115},{ta:'திருவண்ணாமலை',en:'Tiruvannamalai',km:85},
   {ta:'காஞ்சிபுரம்',en:'Kanchipuram',km:70},{ta:'ஏலகிரி',en:'Yelagiri',km:90},{ta:'ஆம்பூர்',en:'Ambur',km:55},{ta:'கிருஷ்ணகிரி',en:'Krishnagiri',km:120},
   {ta:'புதுச்சேரி',en:'Puducherry',km:165},{ta:'சேலம்',en:'Salem',km:200},{ta:'ஆற்காடு',en:'Arcot',km:25},{ta:'குடியாத்தம்',en:'Gudiyatham',km:35}];
-const ORATE={mini:11,sedan:12,suv:16,psuv:20,trav:22,bus:34},OBATA={mini:300,sedan:300,suv:350,psuv:400,trav:500,bus:600};
+const ORATE={mini:11,sedan:12,suv:16,psuv:20,trav:22},OBATA={mini:300,sedan:300,suv:350,psuv:400,trav:500};
 const OS={city:null,type:'one',days:1,veh:'sedan',when:null};
 function outFare(id){const c=CITIES[OS.city];if(!c)return 0;
   if(OS.type==='one')return Math.round((c.km*ORATE[id]+OBATA[id])/10)*10;
@@ -1729,7 +1736,8 @@ function watchConfig(){
   if(CFGUNSUB)return;
   CFGUNSUB=F().onSnapshot(F().doc(CL.db,'config','app'),s=>{if(!s.exists())return;const d=s.data();
     if(d.fares)VEH.forEach(v=>{const f=d.fares[v.id];if(f){if(f.base!=null)v.base=+f.base;if(f.per!=null)v.per=+f.per}});
-    CFG.upi=d.upi||'';CFG.office=d.office||'';CFG.comm=d.comm!=null?+d.comm:10},()=>{});
+    CFG.upi=d.upi||'';CFG.office=d.office||'';CFG.comm=d.comm!=null?+d.comm:10;if(d.dispatch)Object.assign(DISPC,d.dispatch)},()=>{});
+  watchMyB();
 }
 function resumeActive(){
   let a=null;try{a=JSON.parse(localStorage.getItem('vct_ride')||'null')}catch(e){}
@@ -1848,13 +1856,43 @@ function cloudTicket(x){
   F().addDoc(F().collection(CL.db,'tickets'),{uid:CUID,type:x.type,title:x.title,phone:x.phone||S.phone,cust:S.name,trip:x.trip||'',note:x.note||'',
     lat:x.lat||null,lon:x.lon||null,status:'open',date:Date.now(),createdAt:F().serverTimestamp()}).catch(e=>toast(CL.errText(e,S.lang==='ta')));
 }
+/* ---------- Outstation / rental: office first, then best drivers — live status for the customer ---------- */
+const OFK=['outstation','rental'],DISPC={win:60,gap:60,fall:true};
+const isFutB=b=>b&&b.when&&b.when>Date.now()+45*60e3;
+let MYB={},MYBUNSUB=null;
+function watchMyB(){if(!CL||!CUID||MYBUNSUB)return;
+  MYBUNSUB=F().onSnapshot(F().query(F().collection(CL.db,'bookings'),F().where('customerUid','==',CUID)),s=>{
+    MYB={};s.docs.forEach(d=>MYB[d.id]=d.data());let ch=false;
+    TRIPS.forEach(x=>{const b=x.cid&&MYB[x.cid];if(!b||x.status!=='upcoming')return;
+      if(b.status==='cancelled'){x.status='cancelled';x.reason=b.cancelReason==='office'?L('Office ரத்து செய்தது','Cancelled by the office'):L('ரத்து','Cancelled');ch=true;return}
+      if(b.driverName&&x.drvName!==b.driverName){x.drvName=b.driverName;x.drvPlate=b.plate||'';x.drvModel=b.vehModel||'';ch=true}
+      if(['assigned','ontrip'].includes(b.status)&&(!isFutB(b)||b.arrivedAt||b.status==='ontrip')&&!R&&x.pin){
+        try{localStorage.setItem('vct_ride',JSON.stringify({id:x.cid,pin:x.pin}))}catch(e){}
+        TRIPS=TRIPS.filter(t=>t!==x);ch=true;resumeActive();toast(L('உங்க driver கிளம்பிட்டார்!','Your driver is on the way!'))}});
+    if(ch)saveTrips();
+  },()=>{});
+}
+function dspHtml(x){
+  const b=x.cid&&MYB[x.cid],now=Date.now();
+  if(!b)return `<div class="dsp"><div class="dt"><b>${L('Booking அனுப்புது…','Sending your booking…')}</b></div><div class="steps"><i class="cur"></i><i></i><i></i></div></div>`;
+  if(b.status==='cancelled')return `<div class="dsp"><div class="dt"><b>${L('இந்த booking ரத்து ஆயிடுச்சு','This booking was cancelled')}</b></div></div>`;
+  if(b.driverName)return `<div class="dsp ok"><div class="dt"><b>✅ ${L('Driver உறுதி ஆயிட்டார்','Your driver is confirmed')}</b></div><small><b style="color:var(--fg)">${esc(b.driverName)}</b> · ${esc(b.plate||'')} · ${esc(b.vehModel||'')}</small><small>${L('பயண நேரத்துக்கு முன்னாடி driver கிளம்பினதும் live-ஆ இங்கயே track பண்ணலாம்.','When your driver leaves for pickup, you can track them live here.')}</small><div class="steps"><i class="on"></i><i class="on"></i><i class="on"></i></div></div>`;
+  const dp=b.dispatch||{},o=dp.openAt||now,g=(dp.gap||60)*1000;
+  if(now<o){const sec=Math.ceil((o-now)/1000);return `<div class="dsp"><div class="dt"><b>🏢 ${L('Office உங்க booking-ஐ உறுதி செய்யுது','Our office is confirming your booking')}</b><em>${Math.floor(sec/60)}:${String(sec%60).padStart(2,'0')}</em></div><small>${L('சிறந்த driver-ஐ நாங்களே தேர்வு பண்றோம்.','We are hand-picking the best driver for you.')}</small><div class="steps"><i class="cur"></i><i></i><i></i></div></div>`}
+  const e=now-o,lvl=b.kind==='outstation'?(e<g?L('🏆 அதிக rating உள்ள drivers-க்கு அனுப்பியிருக்கோம்','🏆 Sent to our top-rated drivers'):e<2*g?L('🆕 புது வண்டி உள்ள drivers-க்கும் அனுப்பியிருக்கோம்','🆕 Also sent to drivers with newer vehicles'):L('🚕 அருகில் உள்ள drivers-க்கும் அனுப்பியிருக்கோம்','🚕 Also sent to more drivers')):L('⏱️ Rental drivers-க்கு அனுப்பியிருக்கோம்','⏱️ Sent to our rental drivers');
+  const el=Math.floor(e/1000);
+  return `<div class="dsp"><div class="dt"><b>${lvl}</b><em>${Math.floor(el/60)}:${String(el%60).padStart(2,'0')}</em></div><small>${L('Driver உறுதி ஆனதும் இங்கயே தெரியும். App-ஐ மூடினாலும் பரவாயில்லை.','You will see your driver here once confirmed. It is fine to close the app.')}</small><div class="steps"><i class="on"></i><i class="cur"></i><i></i></div></div>`;
+}
+function dspTick(x){if(!CL||!OFK.includes(x.kind))return;clearInterval(rideTimer);rideTimer=setInterval(()=>{const el=document.getElementById('dsp');if(!el){clearInterval(rideTimer);return}el.innerHTML=dspHtml(x)},1000)}
 async function cloudSchedule(rec){
   if(!CL||!CUID)return null;
   const v=VEH.find(x=>x.id===rec.veh.id)||VEH[1];
   const to=(rec.kind==='schedule'||rec.kind==='rental'&&rec.hasDrop)&&S.dest&&P[S.dest]?placeOf(S.dest):{key:null,ta:rec.to.ta,en:rec.to.en,lat:null,lon:null};
   try{const ref=await F().addDoc(F().collection(CL.db,'bookings'),{customerUid:CUID,custName:S.name,custPhone:'+91'+S.phone,src:'app',kind:rec.kind,
       from:placeOf(S.from),to,path:[],veh:v.id,vehTa:v.ta,vehEn:v.en,km:rec.km||0,hrs:rec.hrs||null,base:v.base,fare:rec.fare,pay:rec.pay||'cash',note:rec.note||null,
-      status:'scheduled',when:rec.when,createdAt:F().serverTimestamp(),updatedAt:F().serverTimestamp()});
+      ...(OFK.includes(rec.kind)?{status:'searching',dispatch:{openAt:Date.now()+DISPC.win*1000,gap:DISPC.gap,fall:DISPC.fall}}:{status:'scheduled'}),
+      when:rec.when,createdAt:F().serverTimestamp(),updatedAt:F().serverTimestamp()});
+    if(OFK.includes(rec.kind)&&rec.pin)F().setDoc(F().doc(CL.db,'bookings',ref.id,'private','pin'),{pin:rec.pin}).catch(()=>{});
     return ref.id}catch(e){toast(CL.errText(e,S.lang==='ta'));return null}
 }
 function loadQrLib(){return new Promise((res,rej)=>{if(window.QRCode)return res();const sc=document.createElement('script');sc.src='https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';sc.onload=res;sc.onerror=rej;document.head.appendChild(sc)})}
