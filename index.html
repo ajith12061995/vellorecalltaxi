@@ -37,7 +37,7 @@
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('./vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV='2026-10-30-11',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV='2026-10-31-12',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('/vellorecalltaxi/version.json',location.origin)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -416,6 +416,21 @@ b.pos{color:var(--ok)}
 .pickrow b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .dotg,.dotr{width:12px;height:12px;flex:none;border-radius:50%;background:var(--ok)}
 .dotr{border-radius:3px;background:var(--danger)}
+.rpk{display:flex;gap:10px;overflow-x:auto;margin:0 -16px;padding:2px 16px 6px;scrollbar-width:none}.rpk::-webkit-scrollbar{display:none}
+.rpk button{flex:none;width:108px;display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:12px 12px 10px;border-radius:16px;border:1.5px solid var(--line);background:var(--surface);text-align:left;color:var(--fg)}
+.rpk button b{font-family:var(--display);font-size:20px;line-height:1.1}.rpk button small{font-size:12.5px;color:var(--muted)}.rpk button em{font-style:normal;font-size:11.5px;font-weight:700;color:var(--navy);margin-top:4px}
+.rpk button.sel{border-color:var(--navy);background:var(--navy-soft);box-shadow:0 0 0 1px var(--navy) inset}
+.rchips{display:flex;gap:8px;overflow-x:auto;margin:0 -16px;padding:2px 16px 4px;scrollbar-width:none}.rchips::-webkit-scrollbar{display:none}
+.rchips button{flex:none;display:flex;flex-direction:column;align-items:flex-start;padding:8px 14px;border-radius:14px;border:1.5px solid var(--line);background:var(--surface);color:var(--fg)}
+.rchips button b{font-size:15px}.rchips button small{font-size:12px;color:var(--muted)}.rchips button.sel{border-color:var(--navy);background:var(--navy-soft)}.rchips button.sel b{color:var(--navy)}
+.rperks{display:flex;flex-wrap:wrap;gap:6px}.rperks span{font-size:12.5px;padding:6px 10px;border-radius:999px;background:var(--surface-2);border:1px solid var(--line)}
+.rinfo{padding:14px 16px;border-radius:16px;background:var(--surface-2);border:1px solid var(--line);font-size:13.5px;line-height:1.5;color:var(--muted)}.rinfo b{color:var(--fg)}
+.rhead{display:flex;align-items:center;gap:10px}.rhead h3{margin:0;font-size:18px;flex:1}.rhead .ib{width:32px;height:32px;border-radius:50%;border:1px solid var(--line);background:var(--surface);font-weight:700;color:var(--navy)}
+.vtag{display:inline-block;font-size:11px;font-weight:700;padding:3px 8px;border-radius:8px;margin-top:4px;background:var(--navy);color:#fff}.vtag.y{background:var(--yellow);color:#0B4A36}
+:root[data-theme="dark"] .vtag:not(.y){color:#0A1712}
+.rwarn{padding:10px 14px;border-radius:14px;background:#FFF6D6;color:#5C4500;font-size:13px;border:1px solid #F3D57A}.rwarn button{color:#0B4A36;font-weight:700;background:none;border:0;padding:0;text-decoration:underline}
+:root[data-theme="dark"] .rwarn{background:#3A3216;color:#F6E2A0;border-color:#5A4A1A}:root[data-theme="dark"] .rwarn button{color:#FFC21A}
+.nodrop{position:sticky;bottom:0;padding:12px 16px calc(12px + env(safe-area-inset-bottom));background:var(--surface);border-top:1px solid var(--line)}
 .pkgs{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
 .pkg{display:flex;flex-direction:column;align-items:center;padding:10px 4px;border-radius:14px;border:2px solid var(--line);background:var(--surface)}
 .pkg b{font-family:var(--display);font-size:16px;white-space:nowrap}
@@ -715,10 +730,10 @@ function fleetHtml(){return `<div class="sec"><h3>${L('எங்க வண்ட
 
 /* home: one swipeable row — ride types first, then every vehicle (own artwork) */
 const VBADGE={pin:'<path d="M12 21s-6-5.6-6-11a6 6 0 1112 0c0 5.4-6 11-6 11z" fill="#fff"/><circle cx="12" cy="10" r="2.3" fill="#0B4A36"/>',clock:'<circle cx="12" cy="12" r="7" fill="none" stroke="#fff" stroke-width="2.2"/><path d="M12 8v4l3 2" stroke="#fff" stroke-width="2.2" fill="none" stroke-linecap="round"/>',compass:'<circle cx="12" cy="12" r="7" fill="none" stroke="#fff" stroke-width="2.2"/><path d="M15 9l-2 5-4 1 2-5z" fill="#fff"/>',cal:'<rect x="5" y="6" width="14" height="13" rx="2" fill="none" stroke="#fff" stroke-width="2.2"/><path d="M5 10h14M9 4v4M15 4v4" stroke="#fff" stroke-width="2.2"/>'};
-function vrowHtml(){
+function vrowHtml(on='now'){
   const svc=[['now','sedan','pin',L('லோக்கல்','Local')],['rent','mini','clock',L('வாடகை','Rental')],['out','psuv','compass',L('வெளியூர்','Outstation')],['sched','suv','cal',L('முன்பதிவு','Schedule')]];
   const vt=(attr,veh,badge,label,on)=>`<button class="vt${on?' on':''}" ${attr}><span class="im">${I[veh].replace('width="58" height="36"','width="96" height="58"')}${badge?`<i class="vb"><svg viewBox="0 0 24 24" width="14" height="14">${VBADGE[badge]}</svg></i>`:''}</span><b>${label}</b></button>`;
-  return `<div class="vrow" role="list">${svc.map(([k,v,b,l],i)=>vt(`data-svc="${k}"`,v,b,l,i===0)).join('')}<span class="vsep"></span>${VEH.map(v=>vt(`data-veh="${v.id}"`,v.id,'',v[S.lang].replace(' கார்','').replace(' car',''),false)).join('')}</div>`;
+  return `<div class="vrow" role="list">${svc.map(([k,v,b,l],i)=>vt(`data-svc="${k}"`,v,b,l,k===on)).join('')}<span class="vsep"></span>${VEH.map(v=>vt(`data-veh="${v.id}"`,v.id,'',v[S.lang].replace(' கார்','').replace(' car',''),false)).join('')}</div>`;
 }
 let NEAR=[],NEARUNSUB=null;
 function watchNear(){if(!CL||NEARUNSUB)return;
@@ -726,8 +741,9 @@ function watchNear(){if(!CL||NEARUNSUB)return;
     NEAR=s.docs.map(d=>({id:d.id,...d.data()})).filter(d=>d.online&&!d.busy&&d.lat!=null&&now-CL.toMs(d.updatedAt)<5*60e3)
       .map(d=>({id:d.id,lat:d.lat,lon:d.lon,veh:d.veh||'car',rot:(parseInt(d.id.slice(-4),10)*37)%360}));
     const nb=document.getElementById('nbc');if(nb){nb.hidden=!NEAR.length;nb.lastChild.textContent=` ${NEAR.length} ${t('nearby')}`}},()=>{});}
-function home(){
-  S.tab='home';S.dest=null;S.from='home';S.when=null;
+function home(mode){
+  const RENTM=mode==='rent';S.mode=RENTM?'rent':'';
+  S.tab='home';S.dest=null;if(!RENTM)S.from='home';S.when=null;
   const h=new Date().getHours();const g=h<12?t('morning'):h<17?t('afternoon'):t('evening');
   const recents=[['cmc','Auto',' ₹110','2 நாள் முன்','2 days ago'],['katpadi','Bike',' ₹35','போன வாரம்','Last week']];
   go(shell(`<div class="mapwrap"><canvas class="map" id="map"></canvas>
@@ -735,11 +751,11 @@ function home(){
        <button class="chipbtn" id="lg" aria-label="Language">${S.lang==='ta'?'EN':'தமிழ்'}</button></div>
      ${CL?`<span class="nearby" id="nbc" ${NEAR.length?'':'hidden'}><i class="dot"></i> ${NEAR.length} ${t('nearby')}</span>`:`<span class="nearby"><i class="dot"></i>6 ${t('nearby')}</span>`}${zoomCtl(34)}</div>
    <div class="sheet pad"><div class="grab"></div>
-     <div class="wherewrap"><button class="where" id="wh"><span>${t('where')}</span><i>${I.search}</i></button><button class="micbig" id="vmic" aria-label="${L('பேசி book பண்ணு','Book by voice')}">${I.mic.replace('stroke="#0B4A36"','stroke="#FFC21A"')}</button></div>
+     ${RENTM?vrowHtml('rent')+rentHomeHtml():`<div class="wherewrap"><button class="where" id="wh"><span>${t('where')}</span><i>${I.search}</i></button><button class="micbig" id="vmic" aria-label="${L('பேசி book பண்ணு','Book by voice')}">${I.mic.replace('stroke="#0B4A36"','stroke="#FFC21A"')}</button></div>
      ${upNextHtml()}
      ${vrowHtml()}
      <div class="chips"><button class="chip" id="pinchip" style="background:var(--yellow);border-color:var(--yellow);color:#0B4A36">${I.pin}${t('pinChip')}</button>${[['cmc','hosp'],['katpadi','train'],['vit','pin'],['golden','pin']].map(([k,ic])=>`<button class="chip" data-p="${k}">${I[ic]}${pn(k)}</button>`).join('')}</div>
-     ${recentHtml()}
+     ${recentHtml()}`}
    </div>`),()=>{
      bindNav();
      if(CL)watchNear();
@@ -747,25 +763,28 @@ function home(){
      m.fit(Object.keys(P).filter(k=>k!=='golden'&&!CUSTOM.includes(k)).map(k=>P[k]),30,60);
      if(REALMAP){if(GOTPOS)m.setView(P.home.lat,P.home.lon,45000);locateMe()}
      bindZoom(m);
-     document.getElementById('wh').onclick=()=>search();
-     document.getElementById('pinchip').onclick=()=>picker('drop');
+     if(RENTM){app.querySelectorAll('[data-rp]').forEach(b=>b.onclick=()=>{RS.pkg=+b.dataset.rp;search()})}
+     else document.getElementById('wh').onclick=()=>search();
+     const pc=document.getElementById('pinchip');if(pc)pc.onclick=()=>picker('drop');
      document.getElementById('lg').onclick=()=>{S.lang=S.lang==='ta'?'en':'ta';save();home()};
      app.querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>{S.dest=b.dataset.p;fareScreen()});
      app.querySelectorAll('[data-trip]').forEach(b=>b.onclick=()=>tripDetail(TRIPS.filter(isDone)[+b.dataset.trip]));
      app.querySelectorAll('[data-veh]').forEach(b=>b.onclick=()=>{S.veh=b.dataset.veh;search();toast(L(`${VEH.find(v=>v.id===S.veh).ta} தேர்வு ஆயிடுச்சு — இடத்தை சொல்லுங்க`,`${VEH.find(v=>v.id===S.veh).en} selected. Now pick your drop`))});
-     app.querySelectorAll('[data-svc]').forEach(b=>b.onclick=()=>({now:search,sched:()=>pickWhen(30,ts=>{S.when=ts;search()}),rent:rentalScreen,out:()=>{OS.city=null;outScreen()}})[b.dataset.svc]());
-     document.getElementById('vmic').onclick=voiceSheet;
+     app.querySelectorAll('[data-svc]').forEach(b=>b.onclick=()=>({now:()=>RENTM?home():search(),sched:()=>pickWhen(30,ts=>{S.when=ts;search()}),rent:()=>RENTM?null:home('rent'),out:()=>{OS.city=null;outScreen()}})[b.dataset.svc]());
+     const vm=document.getElementById('vmic');if(vm)vm.onclick=voiceSheet;
      const upn=document.getElementById('upn');if(upn)upn.onclick=()=>upcomingDetail(TRIPS.find(x=>x.id===upn.dataset.id));
    });
 }
 
 function search(){
+  const RM=S.mode==='rent',pk=PKG[RS.pkg];
   const fromTxt=S.from==='home'?`${t('current')} · ${pn('home')}${P.home.acc?' (±'+P.home.acc+' '+t('m')+')':''}`:pn(S.from);
-  go(`<section class="screen"><div class="head pad"><button class="back" id="bk" aria-label="Back">${I.back}</button><h2>${t('where')}</h2></div>
+  go(`<section class="screen"><div class="head pad"><button class="back" id="bk" aria-label="Back">${I.back}</button><h2>${RM?L('Rental பயண திட்டம்','Plan your rental'):t('where')}</h2>${RM?`<button class="chip sel" id="rpk" style="margin-left:auto">${I.clock} ${pkLbl(pk)}</button>`:''}</div>
    <div class="pad"><div class="route-in"><div class="rail"><i class="a"></i><i class="l"></i><i class="b"></i></div>
-     <div class="ins"><input id="pu" readonly value="${fromTxt}" aria-label="${t('pickup')}"><input id="dr" placeholder="${t('drop')}" aria-label="${t('drop')}" autocomplete="off"></div>
-     <button class="mic" id="mic" aria-label="Voice">${I.mic}</button></div></div>
-   <div class="list pad" id="ls"></div></section>`,()=>{
+     <div class="ins"><input id="pu" readonly value="${fromTxt}" aria-label="${t('pickup')}"><input id="dr" placeholder="${RM?L('எங்கே போகணும்? (விருப்பம்)','Where to? (optional)'):t('drop')}" aria-label="${t('drop')}" autocomplete="off"></div>
+     <button class="mic" id="mic" aria-label="Voice">${I.mic}</button></div>${RM?`<p class="muted" style="margin:8px 2px 0;font-size:12.5px">${L('Rental-ல drop கட்டாயம் இல்லை. Driver உங்க கூடவே இருப்பார்; வழியில எங்க வேணாலும் நிறுத்தலாம்.','A drop is optional for rentals. The driver stays with you and you can stop anywhere on the way.')}</p>`:''}</div>
+   <div class="list pad" id="ls"></div>${RM?`<div class="nodrop"><button class="btn ghost" id="nod">${L('Drop இல்லாம தொடரு','Continue without drop')}</button></div>`:''}</section>`,()=>{
+    if(RM){document.getElementById('nod').onclick=()=>{S.dest=null;rentFare()};document.getElementById('rpk').onclick=()=>home('rent')}
     const ls=document.getElementById('ls'),dr=document.getElementById('dr');
     const item=k=>`<button class="row" data-p="${k}"><span class="ic">${I[P[k].ic]}</span><div><b>${pn(k)}</b><small>${P[k].sub||''} · ${(REALMAP?hav(P[S.from],P[k])*1.35:route(S.from,k).km).toFixed(1)} ${t('km')}</small></div></button>`;
     const pinRow=`<button class="row onmap" id="onmap"><span class="ic">${I.pin}</span><div><b>${t('onMap')}</b><small>${t('onMapSub')}</small></div></button>`;
@@ -776,7 +795,7 @@ function search(){
       document.getElementById('onmap').onclick=()=>picker('drop')};
     dr.oninput=()=>{render();if(REALMAP)liveSearch(dr.value)};render();setTimeout(()=>dr.focus(),300);
     document.getElementById('pu').onclick=()=>picker('pick');
-    document.getElementById('bk').onclick=home;document.getElementById('mic').onclick=voiceSheet;
+    document.getElementById('bk').onclick=()=>RM?home('rent'):home();document.getElementById('mic').onclick=voiceSheet;
   });
 }
 
@@ -804,13 +823,14 @@ function picker(mode){
     bindZoom(m);
     document.getElementById('bk').onclick=search;
     ok.onclick=()=>{if(!cur)return;
-      if(isPick){setCustom('pick',cur);geoName('pick',cur);S.from='pick';S.dest&&P[S.dest]?fareScreen():search();return}
+      if(isPick){setCustom('pick',cur);geoName('pick',cur);S.from='pick';S.dest&&P[S.dest]||S.mode==='rent'&&RS.atFare?fareScreen():search();return}
       if(hav(cur,P[S.from])<.08){toast(t('tooClose'));return}
       setCustom('drop',cur);geoName('drop',cur);S.dest='drop';fareScreen()};
   });
 }
 
 function fareScreen(){
+  if(S.mode==='rent')return rentFare();
   if(!VEH.some(v=>v.id===S.veh))S.veh='auto';
   const r=route(S.from,S.dest);const mins=Math.round(r.km/22*60)+3;
   go(`<section class="screen"><div class="mapwrap"><canvas class="map" id="map"></canvas>
@@ -1192,6 +1212,7 @@ function tripDetail(x){
   });
 }
 function rebook(x){
+  S.mode='';
   if(x.fromKey&&P[x.fromKey]&&!CUSTOM.includes(x.fromKey))S.from=x.fromKey;else if(x.fromC){setCustom('pick',x.fromC);S.from='pick'}else S.from='home';
   if(x.destKey&&P[x.destKey]&&!CUSTOM.includes(x.destKey))S.dest=x.destKey;else if(x.toC){setCustom('drop',x.toC);S.dest='drop'}else return search();
   if(x.veh&&x.veh.id&&VEH.some(v=>v.id===x.veh.id))S.veh=x.veh.id;
@@ -1346,38 +1367,75 @@ function upNextHtml(){
   return u?`<button class="upnext" id="upn" data-id="${u.id}"><span class="ic">${I.clock}</span><div><small>${L('வரவிருக்கும் பயணம்','Upcoming ride')} · ${kindName(u.kind)}</small><b>${fmtWhen(u.when)} · ${u.to[S.lang]}</b></div><i>→</i></button>`:'';
 }
 
-/* ---------- Rental ---------- */
-const PKG=[{h:1,km:10},{h:2,km:20},{h:4,km:40},{h:8,km:80},{h:12,km:120}];
-const RENT={auto:[199,379,null,null,null],mini:[299,549,999,1799,2599],sedan:[349,649,1149,2099,2999],suv:[499,899,1599,2799,3999],psuv:[699,1199,2099,3599,4999],trav:[null,null,2499,3999,5499],bus:[null,null,3999,6499,8999]};
-const XKM={auto:14,mini:12,sedan:13,suv:17,psuv:21,trav:24,bus:36},XHR={auto:120,mini:150,sedan:170,suv:230,psuv:290,trav:350,bus:550};
-const RS={pkg:2,veh:'sedan',when:null};
-function rentalScreen(){
-  if(RENT[RS.veh][RS.pkg]==null)RS.veh=Object.keys(RENT).find(k=>RENT[k][RS.pkg]!=null);
-  const pk=PKG[RS.pkg],price=RENT[RS.veh][RS.pkg],v=VEH.find(x=>x.id===RS.veh);
-  go(`<section class="screen"><div class="head pad"><button class="back" id="bk" aria-label="Back">${I.back}</button><h2>Rental</h2></div>
-   <div class="body pad" style="padding-top:0">
-    <p class="muted" style="margin:0">${L('ஒரு வண்டி, ஒரு driver, உங்க கூடவே. பல இடம் போகலாம், காத்திருக்கவும் செய்வாங்க.','One vehicle and driver stay with you. Make many stops; they wait for you.')}</p>
-    <div class="pickrow"><span class="dotg"></span><div><small>${t('pickup')}</small><b>${pn(S.from)}</b></div></div>
-    <span class="kind">${L('Package தேர்வு','Choose a package')}</span>
-    <div class="pkgs">${PKG.map((p,i)=>`<button class="pkg ${i===RS.pkg?'sel':''}" data-k="${i}"><b>${p.h} ${L('மணி','hr')}</b><small>${p.km} ${t('km')}</small></button>`).join('')}</div>
-    <div style="display:flex;flex-direction:column;gap:10px">${Object.keys(RENT).map(id=>{const vv=VEH.find(x=>x.id===id),pr=RENT[id][RS.pkg];
-      return `<button class="veh ${id===RS.veh?'sel':''}" data-v="${id}" ${pr==null?'disabled':''}><span class="vi">${I[id]}</span><div><b>${vv[S.lang]}${vv.tag?` <span class="pill" style="font-family:var(--body);vertical-align:2px">${vv.tag}</span>`:''}</b>
-        <small>${pr==null?L('இந்த package-க்கு கிடைக்காது','Not available for this package'):`+${inr(XKM[id])}/${t('km')} · +${inr(XHR[id])}/${L('மணி','hr')}`}</small></div><span class="price"><b>${pr==null?'—':inr(pr)}</b></span></button>`}).join('')}</div>
-    <div class="whenrow"><button class="chip ${RS.when?'sel':''}" id="whenb">${I.clock} ${RS.when?fmtWhen(RS.when):L('இப்போ','Now')}</button><span class="muted" style="font-size:12.5px">${L('கூடுதல் கி.மீ, மணி தனி கட்டணம்','Extra km and hours charged separately')}</span></div>
-    <div class="payrow"><button class="pay ${S.pay==='cash'?'sel':''}" data-pay="cash">${I.cash}${t('payCash')}</button><button class="pay ${S.pay!=='cash'?'sel':''}" data-pay="upi">${I.upi}${t('payUpi')}</button></div>
-    <button class="btn yellow" id="rb">${L(`${v[S.lang]} Rental book · ${inr(price)}`,`Book ${v.en} rental · ${inr(price)}`)}</button>
-   </div></section>`,()=>{
-    document.getElementById('bk').onclick=home;
-    app.querySelectorAll('[data-k]').forEach(b=>b.onclick=()=>{RS.pkg=+b.dataset.k;rentalScreen()});
-    app.querySelectorAll('.veh').forEach(b=>b.onclick=()=>{RS.veh=b.dataset.v;if(ADV.includes(RS.veh)&&RS.when&&RS.when<Date.now()+3*36e5)RS.when=null;rentalScreen()});
-    app.querySelectorAll('[data-pay]').forEach(b=>b.onclick=()=>{S.pay=b.dataset.pay;rentalScreen()});
-    document.getElementById('whenb').onclick=()=>pickWhen(ADV.includes(RS.veh)?180:30,ts=>{RS.when=ts;rentalScreen()});
-    document.getElementById('rb').onclick=()=>{
-      if(ADV.includes(RS.veh)&&(!RS.when||RS.when<Date.now()+3*36e5)){pickWhen(180,ts=>{RS.when=ts;rentalScreen()},L('Tempo Traveller / Maxi Cab-க்கு குறைந்தது 3 மணி நேரம் முன்னாடி book பண்ணணும்','Tempo Travellers and maxi cabs need at least 3 hours’ notice'));return}
-      saveUpcoming({kind:'rental',when:RS.when||Date.now()+10*60e3,from:{ta:P[S.from].ta,en:P[S.from].en},
-        to:{ta:`${pk.h} மணி / ${pk.km} கி.மீ package`,en:`${pk.h} hr / ${pk.km} km package`},veh:{ta:v.ta,en:v.en,id:v.id},fare:price,km:pk.km,pay:S.pay==='wallet'?'upi':S.pay,
-        note:{ta:`கூடுதல்: ₹${XKM[v.id]}/கி.மீ, ₹${XHR[v.id]}/மணி`,en:`Extra: ₹${XKM[v.id]}/km, ₹${XHR[v.id]}/hr`}});
-      RS.when=null;
+/* ---------- Rental: home packages → plan (drop optional) → map + vehicles ---------- */
+const PKG=[{h:1,km:10},{h:2,km:20},{h:3,km:30},{h:4,km:40},{h:5,km:50},{h:6,km:60},{h:8,km:80},{h:10,km:100},{h:12,km:120}];
+const RANCH=[1,2,4,8,12];
+const RENT={auto:[199,379,null,null,null],mini:[299,549,999,1799,2599],sedan:[349,649,1149,2099,2999],suv:[499,899,1599,2799,3999],psuv:[699,1199,2099,3599,4999],trav:[null,null,2499,3999,5499]};
+const XKM={auto:14,mini:12,sedan:13,suv:17,psuv:21,trav:24},XHR={auto:120,mini:150,sedan:170,suv:230,psuv:290,trav:350};
+const RS={pkg:3,veh:'sedan',when:null,atFare:false};
+const pkLbl=p=>`${p.h} ${L('மணி','hr'+(p.h>1?'s':''))} · ${p.km} ${t('km')}`;
+function rentPrice(id,h){const row=RENT[id];if(!row)return null;
+  const pts=RANCH.map((x,i)=>[x,row[i]]).filter(x=>x[1]!=null);if(!pts.length||h<pts[0][0]||h>pts[pts.length-1][0])return null;
+  for(let i=0;i<pts.length;i++){if(pts[i][0]===h)return pts[i][1];if(pts[i][0]>h){const[a,pa]=pts[i-1],[b,pb]=pts[i];return Math.round((pa+(pb-pa)*(h-a)/(b-a))/50)*50-1}}return null}
+const rentVeh=()=>VEH.filter(v=>RENT[v.id]);
+function rentFrom(i){const ps=rentVeh().map(v=>rentPrice(v.id,PKG[i].h)).filter(x=>x!=null);return ps.length?Math.min(...ps):null}
+function rentHomeHtml(){
+  return `<div class="sec"><h3>${L('Package தேர்வு செய்யுங்க','Choose a package')}</h3></div>
+   <div class="rpk">${PKG.map((p,i)=>`<button data-rp="${i}" class="${i===RS.pkg?'sel':''}"><b>${p.h} ${L('மணி','hr'+(p.h>1?'s':''))}</b><small>${p.km} ${t('km')}</small><em>${inr(rentFrom(i))} ${L('முதல்','onwards')}</em></button>`).join('')}</div>
+   <div class="rperks"><span>🛑 ${L('பல இடம் நிறுத்தலாம்','Multiple stops')}</span><span>⏳ ${L('Driver காத்திருப்பார்','Driver waits for you')}</span><span>🧾 ${L('மறைமுக கட்டணம் இல்லை','No hidden charges')}</span></div>
+   <div class="rinfo">${L('<b>மணி நேர வாடகை</b> · Shopping, hospital, function, ஊர் சுற்றல் — ஒரே வண்டி, ஒரே driver, நாள் முழுக்க உங்க கூடவே.','<b>Hourly rentals</b> · Shopping, hospital visits, functions or a day out — one vehicle and one driver stay with you.')}</div>`;
+}
+function rentEta(id){const v=VEH.find(x=>x.id===id),pu=P[S.from];
+  const ds=NEAR.filter(n=>n.veh===id||(n.veh==='car'&&id!=='auto'&&id!=='bike')).map(n=>hav(n,pu));
+  return ds.length?Math.max(2,Math.round(Math.min(...ds)*1.35/20*60)+2):v.eta}
+function rentalScreen(){home('rent')}
+function rentFare(){
+  RS.atFare=true;
+  const pk=PKG[RS.pkg],vs=rentVeh().filter(v=>rentPrice(v.id,pk.h)!=null);
+  if(!vs.some(v=>v.id===RS.veh))RS.veh=(vs.find(v=>v.id==='sedan')||vs[0]).id;
+  const hasDrop=!!(S.dest&&P[S.dest]),r=hasDrop?route(S.from,S.dest):null;
+  const etas={};vs.forEach(v=>etas[v.id]=rentEta(v.id));
+  const fastest=vs.reduce((a,v)=>etas[v.id]<etas[a.id]?v:a,vs[0]).id;
+  const cars=vs.filter(v=>v.id!=='auto'),cheap=cars.length?cars.reduce((a,v)=>rentPrice(v.id,pk.h)<rentPrice(a.id,pk.h)?v:a,cars[0]).id:null;
+  const far=hasDrop&&r.km>45,over=hasDrop&&!far&&r.km>pk.km;
+  go(`<section class="screen"><div class="mapwrap"><canvas class="map" id="map"></canvas>
+     <div class="topbar"><button class="chipbtn" id="bk" aria-label="Back">${I.back}</button><button class="greet tap" id="edit"><small>${pn(S.from)}</small><b>${hasDrop?'→ '+pn(S.dest):L('Rental · drop இல்லை','Rental · no drop')}</b></button></div></div>
+   <div class="sheet fare-sheet pad"><div class="grab"></div>
+     <div class="rhead"><span class="ic" style="color:var(--navy)">${I.clock}</span><h3>${pk.h} ${L('மணி','hrs')} ${pk.km} ${t('km')} Package</h3><button class="ib" id="rinf" aria-label="${L('கட்டண விவரம்','Fare details')}">i</button></div>
+     <div class="rchips">${PKG.map((p,i)=>`<button data-k="${i}" class="${i===RS.pkg?'sel':''}"><b>${p.h} ${L('மணி','hrs')}</b><small>${p.km} ${t('km')}</small></button>`).join('')}</div>
+     ${far?`<div class="rwarn">${L(`இந்த இடம் ${r.km.toFixed(0)} கி.மீ தூரம். வெளியூர் பயணத்துக்கு Outstation-ல கட்டணம் குறைவு.`,`This place is ${r.km.toFixed(0)} km away. Outstation is cheaper for long trips.`)} <button id="goout">${L('Outstation பாரு','See Outstation')}</button></div>`:''}
+     ${over?`<div class="rwarn">${L(`Drop-க்கு மட்டுமே ~${r.km.toFixed(0)} கி.மீ. பெரிய package தேர்வு பண்ணா கூடுதல் கட்டணம் மிச்சம்.`,`The drop alone is ~${r.km.toFixed(0)} km. A bigger package saves extra-km charges.`)}</div>`:''}
+     <div style="display:flex;flex-direction:column;gap:10px" id="vs">${vs.map(v=>{const pr=rentPrice(v.id,pk.h);return `<button class="veh ${RS.veh===v.id?'sel':''}" data-v="${v.id}"><span class="vi">${I[v.id]}</span>
+       <div><b>${v[S.lang]} <span class="muted" style="font-family:var(--body);font-size:13px;font-weight:600">· ${v.seats} ${t('seats')}</span></b><small>${etas[v.id]} ${t('away')}<br>${L('கூடுதல்','Extra')} ${inr(XKM[v.id])}/${t('km')} · ${inr(XHR[v.id])}/${L('மணி','hr')}</small>
+       ${v.id===fastest?`<span class="vtag">⚡ ${L('வேகமா வரும்','Fastest')}</span> `:''}${v.id===cheap&&v.id!==fastest?`<span class="vtag y">${L('சிக்கனம்','Best value')}</span>`:''}</div><span class="price"><b>${inr(pr)}</b></span></button>`}).join('')}</div>
+     <div class="whenrow"><button class="chip ${RS.when?'sel':''}" id="whenb">${I.clock} ${RS.when?fmtWhen(RS.when):L('இப்போ','Now')}</button><span class="muted" style="font-size:12.5px">${L('Toll, parking தனி','Toll & parking extra')}</span></div>
+     <div class="payrow"><button class="pay ${S.pay==='cash'?'sel':''}" data-pay="cash">${I.cash}${t('payCash')}</button><button class="pay ${S.pay!=='cash'?'sel':''}" data-pay="upi">${I.upi}${t('payUpi')}</button></div>
+     <button class="btn yellow" id="bookb"></button></div></section>`,()=>{
+    const pu=P[S.from];
+    const m=makeMap(document.getElementById('map'),hasDrop?{path:r.path,line:r.pts?()=>r.pts:undefined}:{near:CL?()=>NEAR:undefined,cars:!CL,pins:[{lat:pu.lat,lon:pu.lon,col:'#1E8A5A'}]});
+    if(hasDrop)m.fit(r.pts||r.path.map(k=>P[k]),46,64);else m.setView(pu.lat,pu.lon,40000);
+    const upd=()=>{const v=VEH.find(x=>x.id===RS.veh);document.getElementById('bookb').textContent=`${RS.when||ADV.includes(v.id)?L('Schedule பண்ணு','Schedule'):t('book')} ${v[S.lang]} · ${inr(rentPrice(v.id,pk.h))}`};upd();
+    const sc=document.querySelector('.rchips .sel');if(sc)sc.scrollIntoView({inline:'center',block:'nearest'});
+    app.querySelectorAll('[data-k]').forEach(b=>b.onclick=()=>{RS.pkg=+b.dataset.k;rentFare()});
+    app.querySelectorAll('.veh').forEach(b=>b.onclick=()=>{RS.veh=b.dataset.v;if(ADV.includes(RS.veh)&&RS.when&&RS.when<Date.now()+3*36e5)RS.when=null;app.querySelectorAll('.veh').forEach(x=>x.classList.toggle('sel',x===b));upd()});
+    app.querySelectorAll('[data-pay]').forEach(b=>b.onclick=()=>{S.pay=b.dataset.pay;app.querySelectorAll('[data-pay]').forEach(x=>x.classList.toggle('sel',x===b))});
+    document.getElementById('whenb').onclick=()=>pickWhen(ADV.includes(RS.veh)?180:30,ts=>{RS.when=ts;rentFare()});
+    document.getElementById('bk').onclick=document.getElementById('edit').onclick=()=>{RS.atFare=false;search()};
+    const go2=document.getElementById('goout');if(go2)go2.onclick=()=>{S.mode='';OS.city=null;outScreen()};
+    document.getElementById('rinf').onclick=()=>{const v=VEH.find(x=>x.id===RS.veh);modal(`<h3>${v[S.lang]} · ${pkLbl(pk)}</h3>
+      <div class="recent"><div class="row"><div><b>${L('Package கட்டணம்','Package fare')}</b><small>${pk.h} ${L('மணி','hrs')}, ${pk.km} ${t('km')} ${L('சேர்த்து','included')}</small></div><b>${inr(rentPrice(v.id,pk.h))}</b></div>
+      <div class="row"><div><b>${L('கூடுதல் கி.மீ','Extra km')}</b><small>${L('Package-க்கு மேல','Beyond the package')}</small></div><b>${inr(XKM[v.id])}/${t('km')}</b></div>
+      <div class="row"><div><b>${L('கூடுதல் நேரம்','Extra time')}</b><small>${L('ஒவ்வொரு மணிக்கும் (30 நிமி-க்கு பாதி)','Per hour (half for 30 min)')}</small></div><b>${inr(XHR[v.id])}/${L('மணி','hr')}</b></div></div>
+      <p class="muted" style="font-size:13px;margin:0">${L('Toll, parking, மாநில permit இருந்தா தனி. Driver-க்கு சாப்பாட்டு இடைவேளை கொடுங்க. கட்டணம் பயணம் முடிஞ்சதும் meter படி.','Tolls, parking and state permits are extra. Allow the driver a meal break. Final fare is settled at the end of the trip.')}</p>
+      <button class="btn" id="ok">${L('சரி','OK')}</button>`,(mm,close)=>mm.querySelector('#ok').onclick=close)};
+    document.getElementById('bookb').onclick=()=>{const v=VEH.find(x=>x.id===RS.veh),price=rentPrice(v.id,pk.h);
+      if(ADV.includes(v.id)&&(!RS.when||RS.when<Date.now()+3*36e5)){pickWhen(180,ts=>{RS.when=ts;rentFare()},L('Tempo Traveller / Maxi Cab-க்கு குறைந்தது 3 மணி நேரம் முன்னாடி book பண்ணணும்','Tempo Travellers and maxi cabs need at least 3 hours’ notice'));return}
+      const pkt={ta:`${pk.h} மணி / ${pk.km} கி.மீ package`,en:`${pk.h} hr / ${pk.km} km package`};
+      saveUpcoming({kind:'rental',when:RS.when||Date.now()+10*60e3,from:{ta:P[S.from].ta,en:P[S.from].en},fromC:{lat:P[S.from].lat,lon:P[S.from].lon},
+        to:hasDrop?{ta:`${P[S.dest].ta} · ${pkt.ta}`,en:`${P[S.dest].en} · ${pkt.en}`}:pkt,toC:hasDrop?{lat:P[S.dest].lat,lon:P[S.dest].lon}:null,hasDrop,
+        veh:{ta:v.ta,en:v.en,id:v.id},fare:price,km:pk.km,hrs:pk.h,pay:S.pay==='wallet'?'upi':S.pay,
+        note:{ta:`${pkt.ta} · கூடுதல்: ₹${XKM[v.id]}/கி.மீ, ₹${XHR[v.id]}/மணி`,en:`${pkt.en} · Extra: ₹${XKM[v.id]}/km, ₹${XHR[v.id]}/hr`}});
+      RS.when=null;RS.atFare=false;S.mode='';
     };
   });
 }
@@ -1494,7 +1552,7 @@ function applyVoice(p){
   if(p.veh)S.veh=p.veh;
   if(p.city!=null){OS.city=p.city;if(p.veh&&ORATE[p.veh])OS.veh=p.veh;if(p.when)OS.when=p.when;outScreen();return}
   if(p.when)S.when=p.when;
-  if(p.dest&&p.dest!==S.from){S.dest=p.dest;fareScreen();return}
+  if(p.dest&&p.dest!==S.from){S.mode='';S.dest=p.dest;fareScreen();return}
   search();
 }
 
@@ -1793,9 +1851,9 @@ function cloudTicket(x){
 async function cloudSchedule(rec){
   if(!CL||!CUID)return null;
   const v=VEH.find(x=>x.id===rec.veh.id)||VEH[1];
-  const to=rec.kind==='schedule'&&S.dest&&P[S.dest]?placeOf(S.dest):{key:null,ta:rec.to.ta,en:rec.to.en,lat:null,lon:null};
+  const to=(rec.kind==='schedule'||rec.kind==='rental'&&rec.hasDrop)&&S.dest&&P[S.dest]?placeOf(S.dest):{key:null,ta:rec.to.ta,en:rec.to.en,lat:null,lon:null};
   try{const ref=await F().addDoc(F().collection(CL.db,'bookings'),{customerUid:CUID,custName:S.name,custPhone:'+91'+S.phone,src:'app',kind:rec.kind,
-      from:placeOf(S.from),to,path:[],veh:v.id,vehTa:v.ta,vehEn:v.en,km:rec.km||0,base:v.base,fare:rec.fare,pay:rec.pay||'cash',note:rec.note||null,
+      from:placeOf(S.from),to,path:[],veh:v.id,vehTa:v.ta,vehEn:v.en,km:rec.km||0,hrs:rec.hrs||null,base:v.base,fare:rec.fare,pay:rec.pay||'cash',note:rec.note||null,
       status:'scheduled',when:rec.when,createdAt:F().serverTimestamp(),updatedAt:F().serverTimestamp()});
     return ref.id}catch(e){toast(CL.errText(e,S.lang==='ta'));return null}
 }
