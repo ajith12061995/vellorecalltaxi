@@ -37,7 +37,7 @@
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('./vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV='2026-10-31-15',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV='2026-10-31-16',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('/vellorecalltaxi/version.json',location.origin)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -1481,8 +1481,9 @@ function oDefaults(mins){
   const minL=r15(Date.now()+oNotice(OS.veh)*6e4);if(!OS.leave||OS.leave<minL)OS.leave=minL;
   const minR=OS.leave+2*mins*6e4;if(OS.type==='round'&&(!OS.ret||OS.ret<minR))OS.ret=r15(minR+2*36e5);
 }
-const oDays=()=>{if(OS.type!=='round')return 1;const a=new Date(OS.leave);a.setHours(0,0,0,0);const b=new Date(OS.ret);b.setHours(0,0,0,0);return Math.round((b-a)/864e5)+1};
-function oQuote(id,km){const days=oDays(),billed=OS.type==='one'?Math.max(km,OMIN1):Math.max(km*2,OMIND*days);
+const ODAYKM=400; // a driver covers about 400 km a day on long trips
+const oDays=km=>{if(OS.type!=='round')return Math.max(1,Math.ceil((km||0)/ODAYKM));const a=new Date(OS.leave);a.setHours(0,0,0,0);const b=new Date(OS.ret);b.setHours(0,0,0,0);return Math.max(Math.round((b-a)/864e5)+1,Math.ceil(2*(km||0)/ODAYKM))};
+function oQuote(id,km){const days=oDays(km),billed=OS.type==='one'?Math.max(km,OMIN1):Math.max(km*2,OMIND*days);
   return{days,billed,kmFare:billed*ORATE[id],bata:OBATA[id]*days,total:Math.round((billed*ORATE[id]+OBATA[id]*days)/10)*10}}
 const fmtD=ts=>new Date(ts).toLocaleString(S.lang==='ta'?'ta-IN':'en-IN',{day:'numeric',month:'short',hour:'numeric',minute:'2-digit'});
 const hm=m=>m>=60?`${Math.floor(m/60)} ${L('மணி','hr')} ${m%60?m%60+' '+t('min'):''}`:`${m} ${t('min')}`;
@@ -1496,7 +1497,7 @@ function outFare2(){
      <div class="topbar"><button class="chipbtn" id="bk" aria-label="Back">${I.back}</button><button class="greet tap" id="edit"><small>${pn(S.from)}</small><b>→ ${pn(S.dest)}</b></button></div></div>
    <div class="sheet fare-sheet pad"><div class="grab"></div>
      <div class="seg"><button class="${OS.type==='one'?'on':''}" data-t="one">↗ ${L('ஒரு வழி','One Way')}</button><button class="${OS.type==='round'?'on':''}" data-t="round">⇄ ${L('போய் வர','Round Trip')}</button></div>
-     <div class="trip" style="display:flex;gap:6px;flex-wrap:wrap"><span class="pill">${km} ${t('km')}</span><span class="pill">~${hm(mins)} ${L('பயணம்','drive')}</span>${OS.type==='round'?`<span class="pill">${q.days} ${L('நாள்','day'+(q.days>1?'s':''))}</span>`:''}</div>
+     <div class="trip" style="display:flex;gap:6px;flex-wrap:wrap"><span class="pill">${km} ${t('km')}</span><span class="pill">~${hm(mins)} ${L('பயணம்','drive')}</span>${OS.type==='round'||q.days>1?`<span class="pill">${q.days} ${L('நாள்','day'+(q.days>1?'s':''))}</span>`:''}</div>
      ${short?`<div class="rwarn">${L('இது பக்கத்து இடம். Local ride-ல கட்டணம் குறைவா இருக்கும்.','This is close by. A local ride will cost less.')} <button id="golocal">${L('Local-ல பாரு','See local fares')}</button></div>`:''}
      <button class="osched" id="whenb"><div><small>${OS.type==='round'?L('போய் வர பயணம்','Round trip'):L('புறப்படும் நேரம்','Leaving at')}</small><b>${fmtD(OS.leave)}${OS.type==='round'?' → '+fmtD(OS.ret):''}</b></div><i>›</i></button>
      <div style="display:flex;flex-direction:column;gap:10px" id="vs">${ids.map(id=>{const vv=VEH.find(x=>x.id===id),qq=oQuote(id,km);return `<button class="veh ${id===OS.veh?'sel':''}" data-v="${id}"><span class="vi">${I[id]}</span>
