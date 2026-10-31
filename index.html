@@ -37,7 +37,7 @@
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('./vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV='2026-10-31-24',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV='2026-10-31-25',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('/vellorecalltaxi/version.json',location.origin)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -1357,7 +1357,7 @@ function pickWhen(minM,cb,note){
   });
 }
 
-function saveUpcoming(rec){
+function saveUpcoming(rec){if(blockedStop())return;
   const full={id:Date.now().toString(36).toUpperCase(),status:'upcoming',date:Date.now(),pin:String(1000+Math.floor(Math.random()*9000)),...rec};
   TRIPS.unshift(full);saveTrips();bookedScreen(full);if(CL)cloudSchedule(full).then(id=>{if(id){full.cid=id;saveTrips()}});
 }
@@ -1828,14 +1828,14 @@ async function cloudBoot(){
   S.logged=true;save();resumeActive()||home();return true;
 }
 async function loadProfile(){
-  try{const s=await F().getDoc(F().doc(CL.db,'users',CUID));if(s.exists()){const d=s.data();if(d.name)S.name=d.name;if(!CL.user.phoneNumber&&d.phone)S.phone=String(d.phone).replace('+91','');if(Array.isArray(d.ec)){EC=d.ec;saveEc()}}}catch(e){}
+  try{const s=await F().getDoc(F().doc(CL.db,'users',CUID));if(!s.exists()||!s.data().joinedAt)F().setDoc(F().doc(CL.db,'users',CUID),{joinedAt:F().serverTimestamp()},{merge:true}).catch(()=>{});if(s.exists()){const d=s.data();if(d.name)S.name=d.name;if(!CL.user.phoneNumber&&d.phone)S.phone=String(d.phone).replace('+91','');if(Array.isArray(d.ec)){EC=d.ec;saveEc()}}}catch(e){}
 }
 function saveProfile(extra={}){if(!CL||!CUID)return;F().setDoc(F().doc(CL.db,'users',CUID),{name:S.name,phone:'+91'+S.phone,ec:EC,updatedAt:F().serverTimestamp(),...extra},{merge:true}).catch(()=>{})}
 function watchConfig(){
   if(CFGUNSUB)return;
   CFGUNSUB=F().onSnapshot(F().doc(CL.db,'config','app'),s=>{if(!s.exists())return;const d=s.data();
     if(d.fares)VEH.forEach(v=>{const f=d.fares[v.id];if(f){if(f.base!=null)v.base=+f.base;if(f.per!=null)v.per=+f.per}});
-    CFG.upi=d.upi||'';CFG.office=d.office||'';CFG.comm=d.comm!=null?+d.comm:10;if(d.dispatch)Object.assign(DISPC,d.dispatch);applyTariff(d)},()=>{});
+    CFG.upi=d.upi||'';CFG.office=d.office||'';CFG.comm=d.comm!=null?+d.comm:10;CFG.blocked=Array.isArray(d.blocked)?d.blocked:[];if(d.dispatch)Object.assign(DISPC,d.dispatch);applyTariff(d)},()=>{});
   watchMyB();
 }
 function resumeActive(){
@@ -1854,7 +1854,11 @@ const rememberRide=()=>{try{localStorage.setItem('vct_ride',JSON.stringify({id:R
 const forgetRide=()=>{try{localStorage.removeItem('vct_ride')}catch(e){}};
 function stopWatch(){chatStop();if(BKUNSUB){BKUNSUB();BKUNSUB=null}if(LIVEUNSUB){LIVEUNSUB();LIVEUNSUB=null}}
 
-async function cloudBook(){
+/* owner can block a number from the office; such a customer is asked to call the office */
+function blockedStop(){if(!CL||!(CFG.blocked||[]).includes('+91'+S.phone))return false;
+  modal(`<div style="text-align:center;font-size:38px">⛔</div><h3 style="text-align:center">${L('Booking செய்ய முடியல','Booking not available')}</h3><p style="margin:0;text-align:center">${L('உங்க account தற்காலிகமா நிறுத்தி வைக்கப்பட்டிருக்கு. விவரத்துக்கு எங்க office-ஐ அழைங்க.','Your account is on hold for now. Please call our office.')}</p>
+    ${CFG.office?`<a class="btn yellow" href="tel:+91${CFG.office}">${L('Office-ஐ அழை','Call our office')}</a>`:''}<button class="btn ghost" id="bok">${L('சரி','OK')}</button>`,(m,close)=>m.querySelector('#bok').onclick=close);return true}
+async function cloudBook(){if(blockedStop())return;
   const r=route(S.from,S.dest),v=VEH.find(x=>x.id===S.veh),f=fare(v,r.km);
   if(S.pay==='wallet')S.pay='upi';
   const btn=document.getElementById('bookb');if(btn){btn.disabled=true;btn.textContent=L('Book ஆகுது…','Booking…')}
@@ -1891,7 +1895,7 @@ function onBooking(b){
     return;
   }
   if(b.status==='done'){stopWatch();forgetRide();R.fare=b.fare;R.boost=+b.tip||0;R.pay=b.pay||R.pay;doneScreen();return}
-  if(b.status==='cancelled'){stopWatch();forgetRide();if(!R.selfCancel){if(b.cancelReason&&b.cancelReason!=='customer'&&b.cancelReason!=='driver')setTimeout(()=>sorrySheet(b.cancelReason),400);else toast(L('இந்த ride ரத்து ஆயிடுச்சு. மறுபடி book பண்ணுங்க','This ride was cancelled. Please book again'));recordTrip('cancelled',{reason:b.cancelReason||''})}R=null;home()}
+  if(b.status==='cancelled'){stopWatch();forgetRide();if(!R.selfCancel){if(b.cancelReason&&b.cancelReason!=='customer'&&!/^driver/.test(b.cancelReason))setTimeout(()=>sorrySheet(b.cancelReason),400);else toast(L('இந்த ride ரத்து ஆயிடுச்சு. மறுபடி book பண்ணுங்க','This ride was cancelled. Please book again'));recordTrip('cancelled',{reason:b.cancelReason||''})}R=null;home()}
 }
 function searchingCloud(){
   R.phase='search';const pu={lat:R.b.from.lat,lon:R.b.from.lon};
@@ -1972,7 +1976,7 @@ function watchMyB(){if(!CL||!CUID||MYBUNSUB)return;
     MYB={};s.docs.forEach(d=>MYB[d.id]=d.data());let ch=false;
     TRIPS.forEach(x=>{const b=x.cid&&MYB[x.cid];if(!b||x.status!=='upcoming')return;
       if(b.status==='cancelled'){x.status='cancelled';x.reason=b.cancelReason==='novehicle'?L('வண்டி இல்லை','No vehicle available'):b.cancelReason==='office'?L('Office ரத்து செய்தது','Cancelled by the office'):L('ரத்து','Cancelled');ch=true;
-        if(b.cancelReason&&b.cancelReason!=='customer')setTimeout(()=>sorrySheet(b.cancelReason),300);return}
+        if(b.cancelReason&&b.cancelReason!=='customer'&&!/^driver/.test(b.cancelReason))setTimeout(()=>sorrySheet(b.cancelReason),300);return}
       if(b.fare&&+b.fare!==+x.fare){x.fare=+b.fare;ch=true}
       if(b.driverName&&x.drvName!==b.driverName){x.drvName=b.driverName;x.drvPlate=b.plate||'';x.drvModel=b.vehModel||'';ch=true}
       if(['assigned','ontrip'].includes(b.status)&&(!isFutB(b)||b.arrivedAt||b.status==='ontrip')&&!R&&x.pin){
