@@ -37,7 +37,7 @@
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('./vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV='2026-10-31-18',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV='2026-10-31-19',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('/vellorecalltaxi/version.json',location.origin)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -433,6 +433,7 @@ b.pos{color:var(--ok)}
 .rperks{display:flex;flex-wrap:wrap;gap:6px}.rperks span{font-size:12.5px;padding:6px 10px;border-radius:999px;background:var(--surface-2);border:1px solid var(--line)}
 .rinfo{padding:14px 16px;border-radius:16px;background:var(--surface-2);border:1px solid var(--line);font-size:13.5px;line-height:1.5;color:var(--muted)}.rinfo b{color:var(--fg)}
 .rhead{display:flex;align-items:center;gap:10px}.rhead h3{margin:0;font-size:18px;flex:1}.rhead .ib{width:32px;height:32px;border-radius:50%;border:1px solid var(--line);background:var(--surface);font-weight:700;color:var(--navy)}
+.veh.off .vi,.veh.off b,.veh.off .price{opacity:.5}.veh .na{color:var(--danger);font-weight:600}
 .vtag{display:inline-block;font-size:11px;font-weight:700;padding:3px 8px;border-radius:8px;margin-top:4px;background:var(--navy);color:#fff}.vtag.y{background:var(--yellow);color:#0B4A36}
 :root[data-theme="dark"] .vtag:not(.y){color:#0A1712}
 .rwarn{padding:10px 14px;border-radius:14px;background:#FFF6D6;color:#5C4500;font-size:13px;border:1px solid #F3D57A}.rwarn button{color:#0B4A36;font-weight:700;background:none;border:0;padding:0;text-decoration:underline}
@@ -840,6 +841,23 @@ function picker(mode){
   });
 }
 
+/* local: real availability from online drivers near the pickup */
+const NEARKM=10;
+function vAvail(v){
+  if(!CL||S.when||ADV.includes(v.id))return{ok:true,eta:v.eta,live:false};
+  const pu=P[S.from];const ds=NEAR.filter(n=>n.veh===v.id).map(n=>hav(n,pu)).filter(d=>d<=NEARKM);
+  if(!ds.length)return{ok:false};
+  return{ok:true,eta:Math.max(1,Math.round(Math.min(...ds)*1.35/20*60)+1),live:true};
+}
+function vehRows(r,mins){
+  const av={};VEH.forEach(v=>av[v.id]=vAvail(v));
+  const live=VEH.filter(v=>av[v.id].ok&&av[v.id].live),fast=live.length?live.reduce((a,v)=>av[v.id].eta<av[a.id].eta?v:a,live[0]).id:null;
+  return VEH.map(v=>{const f=fare(v,r.km),a=av[v.id];
+    const sub=a.ok?`${a.eta} ${t('away')} · Drop ${timeLabel(Date.now()+(a.eta+mins)*6e4)}`:`<span class="na">${L(`இப்போ அருகில் ${v.ta} இல்லை`,`No ${v.en} nearby right now`)}</span>`;
+    return `<button class="veh ${S.veh===v.id?'sel':''} ${a.ok?'':'off'}" data-v="${v.id}"><span class="vi">${I[v.id]}</span>
+     <div><b>${v[S.lang]} <span class="muted" style="font-family:var(--body);font-size:13px;font-weight:600">· ${v.seats} ${t('seats')}</span></b><small>${sub}</small>${v.id===fast?`<span class="vtag">⚡ ${L('வேகமா வரும்','Fastest')}</span>`:''}</div>
+     <span class="price"><b>₹${f}</b>${a.ok?`<br><s>₹${Math.round(f*1.15/5)*5}</s>`:''}</span></button>`}).join('');
+}
 function fareScreen(){
   if(S.mode==='rent')return rentFare();
   if(S.mode==='out')return outFare2();
@@ -850,15 +868,17 @@ function fareScreen(){
    <div class="sheet fare-sheet pad"><div class="grab"></div>
      <div class="sec"><h3>${t('chooseRide')}</h3><div class="trip"><span class="pill">${r.km.toFixed(1)} ${t('km')}</span><span class="pill">~${mins} ${t('min')}</span></div></div>
      <div class="whenrow"><button class="chip ${S.when?'sel':''}" id="whenb">${I.clock} ${S.when?fmtWhen(S.when):L('இப்போ','Now')}</button>${S.when?`<button class="linkbtn" id="whenx">${L('இப்போவே போகணும்','Ride now instead')}</button>`:`<span class="muted" style="font-size:12.5px">${L('பின்னாடி போகணுமா? நேரம் தேர்வு பண்ணுங்க','Later? Pick a time')}</span>`}</div>
-     <div style="display:flex;flex-direction:column;gap:10px" id="vs">${VEH.map(v=>{const f=fare(v,r.km);return `<button class="veh ${S.veh===v.id?'sel':''}" data-v="${v.id}"><span class="vi">${I[v.id]}</span>
-       <div><b>${v[S.lang]}${v.tag?` <span class="pill" style="font-family:var(--body);vertical-align:2px">${v.tag}</span>`:''}</b><small>${v.models?v.models+' · ':''}${v.eta} ${t('away')} · ${v.seats} ${t('seats')}</small></div><span class="price"><b>₹${f}</b><br><s>₹${Math.round(f*1.15/5)*5}</s></span></button>`}).join('')}</div>
+     <div style="display:flex;flex-direction:column;gap:10px" id="vs">${vehRows(r,mins)}</div>
      <div class="payrow"><button class="pay ${S.pay==='cash'?'sel':''}" data-pay="cash">${I.cash}${t('payCash')}</button><button class="pay ${S.pay==='upi'?'sel':''}" data-pay="upi">${I.upi}${t('payUpi')}</button>${CL?'':`<button class="pay ${S.pay==='wallet'?'sel':''}" data-pay="wallet">${I.navWallet.replace('<svg ','<svg width="18" height="18" ')}${inr(WAL.bal)}</button>`}</div>
      <p class="fine muted" style="margin:0"><button class="linkbtn" id="cp">% ${t('coupon')}</button> · ${t('fareNote')}</p>
      <button class="btn yellow" id="bookb"></button></div></section>`,()=>{
-    const m=makeMap(document.getElementById('map'),{path:r.path,line:r.pts?()=>r.pts:undefined});
+    if(CL)watchNear();
+    const m=makeMap(document.getElementById('map'),{path:r.path,line:r.pts?()=>r.pts:undefined,near:CL?()=>NEAR:undefined});
     m.fit(r.pts||r.path.map(k=>P[k]),46,64);
-    const upd=()=>{const v=VEH.find(x=>x.id===S.veh);document.getElementById('bookb').textContent=`${S.when||ADV.includes(v.id)?L('Schedule பண்ணு','Schedule'):t('book')} ${v[S.lang]} · ₹${fare(v,r.km)}`};upd();
-    app.querySelectorAll('.veh').forEach(b=>b.onclick=()=>{S.veh=b.dataset.v;app.querySelectorAll('.veh').forEach(x=>x.classList.toggle('sel',x===b));upd()});
+    const upd=()=>{const v=VEH.find(x=>x.id===S.veh),a=vAvail(v),bb=document.getElementById('bookb');if(!bb)return;
+      bb.disabled=!a.ok;bb.textContent=a.ok?`${S.when||ADV.includes(v.id)?L('Schedule பண்ணு','Schedule'):t('book')} ${v[S.lang]} · ₹${fare(v,r.km)}`:L(`இப்போ ${v.ta} இல்லை · வேற வண்டி தேர்வு பண்ணுங்க`,`No ${v.en} right now · pick another`)};upd();
+    const bindV=()=>app.querySelectorAll('.veh').forEach(b=>b.onclick=()=>{S.veh=b.dataset.v;app.querySelectorAll('.veh').forEach(x=>x.classList.toggle('sel',x===b));upd()});bindV();
+    if(CL)rideTimer=setInterval(()=>{const vs=document.getElementById('vs');if(!vs||document.querySelector('.modal'))return;const h=vehRows(r,mins);if(vs.dataset.h!==h){vs.innerHTML=h;vs.dataset.h=h;bindV();upd()}},4000);
     app.querySelectorAll('[data-pay]').forEach(b=>b.onclick=()=>{if(b.dataset.pay==='wallet'&&WAL.bal<fare(VEH.find(x=>x.id===S.veh),r.km)){toast(L(`Wallet-ல ${inr(WAL.bal)} தான் இருக்கு. பணம் சேர்க்கணும்`,`Only ${inr(WAL.bal)} in wallet. Add money first`));return}S.pay=b.dataset.pay;app.querySelectorAll('[data-pay]').forEach(x=>x.classList.toggle('sel',x===b))});
     document.getElementById('cp').onclick=()=>toast('FIRST20 · AUTO15 · REFER');
     document.getElementById('edit').onclick=search;
