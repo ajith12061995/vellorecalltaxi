@@ -28,7 +28,7 @@
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('../vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV='2026-10-31-13',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV='2026-10-31-14',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('/vellorecalltaxi/version.json',location.origin)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -1115,7 +1115,7 @@ function home(){
         ${CL?'':`<button class="demo" id="dreq">${L('Demo: ride request கொண்டு வா','Demo: send a ride request')}</button>`}`
       :`${slider('ons',L('Online ஆக இழுங்க','Slide to go online'))}`}
      ${upcHtml()}
-     ${smgrHtml()}
+     ${SHOW_SMGR?smgrHtml():''}
      <div class="sec"><h3>${L('இன்று','Today')}</h3><span class="sample">${new Date().toLocaleDateString(S.lang==='ta'?'ta-IN':'en-IN',{day:'numeric',month:'short'})}</span></div>
      <div class="stats"><div><b>${inr(net)}</b><small>${L('வருமானம்','Earnings')}</small></div><div><b>${today.length}</b><small>${L('பயணங்கள்','Rides')}</small></div><div><b>${Math.floor(onMinutes()/60)}:${String(onMinutes()%60).padStart(2,'0')}</b><small>${L('Online நேரம்','Online hrs')}</small></div></div>
      <div class="vcard"><span class="vi">${I[d.veh]}</span><div><b>${d[S.lang]}</b><small>${VEH.find(v=>v.id===d.veh)[S.lang]} · ${d.model}</small></div><span class="plate">${d.plate}</span></div>
@@ -1465,7 +1465,7 @@ function applyMe(d){const pv=DME&&DME.veh;if(REQUNSUB&&pv&&d.veh&&pv!==d.veh){RE
 function watchMe(){UNS.push(F().onSnapshot(F().doc(CL.db,'drivers',CL.phone),s=>{if(!s.exists())return;const before=DS.wallet;applyMe(s.data());
   if(DME.blocked&&S.online){setOnline(false);toast(L('உங்க account நிறுத்தி வைக்கப்பட்டிருக்கு','Your account is on hold'))}
   if(S.online&&!J&&docState().expired.length){setOnline(false);toast(L('ஒரு document காலாவதி ஆயிடுச்சு. Offline ஆக்கப்பட்டீங்க','A document has expired. You have been taken offline'))}
-  if(!J&&!document.querySelector('.modal')){if(S.tab==='wallet'&&before!==DS.wallet)walletTab();else if(S.tab==='home'&&(document.getElementById('ons')||document.getElementById('smgr')))home()}},()=>{}))}
+  if(!J&&!document.querySelector('.modal')){if(S.tab==='wallet'&&before!==DS.wallet)walletTab();else if(S.tab==='home'&&(document.getElementById('ons')||(document.getElementById('ons')||document.getElementById('offs'))))home()}},()=>{}))}
 function watchCfgD(){UNS.push(F().onSnapshot(F().doc(CL.db,'config','app'),s=>{if(!s.exists())return;const d=s.data();
   if(d.comm!=null)COMM=+d.comm;if(d.minbal!=null)MINBAL=+d.minbal;CFGD.upi=d.upi||'';if(d.dispatch)Object.assign(DISP,d.dispatch);
   if(d.fares)VEH.forEach(v=>{const f=d.fares[v.id];if(f){if(f.base!=null)v.base=+f.base;if(f.per!=null)v.per=+f.per}})},()=>{}))}
@@ -1476,7 +1476,7 @@ function watchMine(){UNS.push(F().onSnapshot(F().query(F().collection(CL.db,'boo
   const upk=UPC.map(u=>u.id).join();UPC=all.filter(b=>b.status==='assigned'&&isFutB(b)&&!b.arrivedAt&&!GONOW.has(b.id)).sort((a,b)=>a.when-b.when);
   const act=all.find(b=>b.status==='ontrip'||(b.status==='assigned'&&!UPC.some(u=>u.id===b.id)));
   if(act&&!J)adoptJob(act);
-  else if(!J&&upk!==UPC.map(u=>u.id).join()&&!document.querySelector('.modal')&&S.tab==='home'&&document.getElementById('smgr'))home();
+  else if(!J&&upk!==UPC.map(u=>u.id).join()&&!document.querySelector('.modal')&&S.tab==='home'&&(document.getElementById('ons')||document.getElementById('offs')))home();
   if(!J&&!document.querySelector('.modal')&&S.tab==='earn')earnTab();
 },e=>console.warn(e)))}
 function watchRch(){UNS.push(F().onSnapshot(F().query(F().collection(CL.db,'recharges'),F().where('driverPhone','==',CL.phone)),snap=>{
@@ -1596,7 +1596,8 @@ const SVCS=[{k:'local',ic:'🚕',ta:'லோக்கல் · Economy',en:'Local
   {k:'out',ic:'🛣️',ta:'Outstation',en:'Outstation',sta:'வெளியூர் பயணம் · அதிக வருமானம்',sen:'Intercity trips · higher earnings'}];
 let SVCON={local:true,rental:true,out:true};try{Object.assign(SVCON,JSON.parse(localStorage.getItem('vct_svc')||'{}'))}catch(e){}
 const svcAllowed=k=>{if(!CL)return true;const s=DME&&DME.svc;if(k==='local')return !(s&&s.local===false);return !!(s&&s[k])};
-const svcActive=k=>svcAllowed(k)&&SVCON[k]!==false;
+const SHOW_SMGR=false; // Service Manager card hidden for now (owner's call); office permissions still apply
+const svcActive=k=>svcAllowed(k)&&(!SHOW_SMGR||SVCON[k]!==false);
 const TIERN={1:['🏆 Top driver','🏆 Top driver'],2:['🆕 புது வண்டி','🆕 New vehicle'],3:['⭐ சாதாரணம்','⭐ Standard']};
 function S_TIER(){const d=DME||{};if(d.prio==='top')return 1;if(d.prio==='low')return 3;
   const wk=DS.trips.filter(t=>t.date>Date.now()-7*864e5).length;
