@@ -25,7 +25,7 @@
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('../vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV='2026-10-31-26',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV='2026-10-31-27',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('/vellorecalltaxi/version.json',location.origin)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -593,6 +593,14 @@ details.faq p{margin:0;padding:0 14px 14px;color:var(--muted);font-size:14px;lin
 @keyframes rgpulse{from{box-shadow:0 10px 30px rgba(0,0,0,.25),0 0 0 0 rgba(255,194,26,.7)}to{box-shadow:0 10px 30px rgba(0,0,0,.25),0 0 0 10px rgba(255,194,26,0)}}
 @keyframes rgshake{0%,100%{transform:rotate(0)}25%{transform:rotate(-18deg)}75%{transform:rotate(18deg)}}
 .neg{color:var(--danger)}
+.fleetp{margin-bottom:16px}
+.fleet{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.fc{display:flex;flex-direction:column;align-items:flex-start;gap:4px;padding:10px 12px;border-radius:16px;border:1.5px solid var(--line);background:var(--surface);text-align:left;color:var(--fg);cursor:pointer}
+.fc:hover{border-color:var(--navy)}.fc .fi{width:52px;height:34px;display:flex;align-items:center}.fc .fi svg,.fc .fi img{max-width:52px;max-height:34px}
+.fc b{font-size:14px}.fc .fn{display:flex;gap:8px;font-size:13px;font-weight:700}.fc .fn i{font-style:normal}.fc small{color:var(--muted);font-size:12px}
+.fc.none{border-color:#C23B3B;background:rgba(194,59,59,.07)}.fc.none small{color:#C23B3B;font-weight:700}.fc.empty{opacity:.5}
+.fwarn{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.fwarn button{height:34px;padding:0 12px;border-radius:10px;font-size:13px;font-weight:700;background:var(--yellow-soft);color:var(--yellow-ink);border:1px solid var(--yellow)}
+.fchip{display:flex;align-items:center;gap:10px;margin:0 0 10px;font-weight:700}.fchip button{height:32px;padding:0 10px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--fg);font-size:12.5px}
 .srow{margin:0 0 10px}.sbox{width:100%;max-width:420px;height:44px;border-radius:12px;border:1.5px solid var(--line);background:var(--surface);color:var(--fg);font:inherit;padding:0 14px}
 .tr.tc{grid-template-columns:1.6fr .9fr .5fr .6fr .8fr .9fr 110px;min-width:820px}
 .tr.t7{grid-template-columns:1.6fr .6fr .9fr .9fr .9fr .6fr 110px;min-width:820px}
@@ -1240,7 +1248,22 @@ function kpisInner(){
     <button data-go="book" class="${badge('book')?'hot':''}"><small>${L('Driver தேவை','Need a driver')}</small><b>${badge('book')}</b></button>
     <button data-go="sup" class="${badge('sup')?'hot':''}"><small>${L('Open requests','Open requests')}</small><b>${badge('sup')}</b></button>`;
 }
-function dash(){
+/* fleet status by vehicle type: registered · free · on a trip · offline (+ who can't go online, who hasn't driven in 7 days) */
+function fleetStat(){const now=Date.now(),wk=now-7*DAY;
+  const drove=new Set(DB.bk.filter(b=>b.status==='done'&&(b.done||b.when)>=wk).map(b=>b.driver));
+  const lastOn=id=>{const l=(typeof LIVE!=='undefined'&&LIVE[id])||null;return l&&l.updatedAt?(CL?CL.toMs(l.updatedAt):0):0};
+  const cant=d=>d.blocked||d.wallet<DB.cfg.minbal||Object.values(d.docs||{}).some(v=>v<0);
+  const rows=VEH.map(v=>{const ds=DB.drv.filter(d=>d.veh===v.id);return{v,tot:ds.length,free:ds.filter(d=>d.status==='avail').length,trip:ds.filter(d=>d.status==='pickup'||d.status==='trip').length,off:ds.filter(d=>d.status==='off').length}});
+  const all=DB.drv,on=all.filter(d=>d.status!=='off').length;
+  return{rows,tot:all.length,on,off:all.length-on,cant:all.filter(cant).length,idle:all.filter(d=>d.status==='off'&&!drove.has(d.id)&&lastOn(d.id)<wk).length}}
+function fleetHtml(){const f=fleetStat();
+  return `<div class="ph"><h3>🚖 ${L('Fleet நிலை','Fleet status')}</h3><span class="muted" style="font-size:13px">${L('மொத்தம்','Total')} <b>${f.tot}</b> · 🟢 Online <b>${f.on}</b> (${pct(f.on,f.tot)}%) · ⚪ Offline <b>${f.off}</b></span></div>
+   <div class="fleet">${f.rows.map(r=>`<button class="fc ${r.tot&&!(r.free+r.trip)?'none':''} ${r.tot?'':'empty'}" data-fv="${r.v.id}"><span class="fi">${I[r.v.id]}</span><b>${r.v[S.lang]}</b>
+     <span class="fn"><i class="g">🟢 ${r.free}</i><i class="y">🚕 ${r.trip}</i><i class="o">⚪ ${r.off}</i></span><small>${r.tot?L(`${r.tot}-ல ${r.free+r.trip} online`,`${r.free+r.trip} of ${r.tot} online`):L('வண்டி இல்லை','No vehicles')}</small></button>`).join('')}</div>
+   <div class="fwarn">${f.cant?`<button data-fx="cant">⛔ ${L(`${f.cant} பேர் online வர முடியாது (தடை / document / wallet)`,`${f.cant} can't go online (block / document / wallet)`)}</button>`:''}${f.idle?`<button data-fx="idle">😴 ${L(`${f.idle} பேர் 7 நாளா ஓட்டல`,`${f.idle} haven't driven in 7 days`)}</button>`:''}</div>`}
+function bindFleet(){app.querySelectorAll('[data-fv]').forEach(b=>b.onclick=()=>{DV=b.dataset.fv;DF='all';S.sec='drv';save();show()});
+  app.querySelectorAll('[data-fx]').forEach(b=>b.onclick=()=>{DV='';DF=b.dataset.fx;S.sec='drv';save();show()})}
+function dash(){setTimeout(bindFleet,0);
   const today=DB.bk.filter(b=>b.status==='done'&&isToday(b.done||b.when));
   const rev=today.reduce((a,b)=>a+b.fare,0),comm=Math.round(rev*DB.cfg.comm/100);
   const on=DB.drv.filter(d=>d.status!=='off').length;
@@ -1249,6 +1272,7 @@ function dash(){
     ...DB.sup.filter(s=>s.type==='sos'&&s.status!=='closed').map(s=>({c:'red',t:'SOS: '+s.cust}))];
   main().innerHTML=`${head(L('இன்று','Today'),new Date().toLocaleDateString(S.lang==='ta'?'ta-IN':'en-IN',{weekday:'long',day:'numeric',month:'long'}),`<span class="livetag"><i></i>LIVE</span>`)}
    <div class="kpis" id="kpis">${kpisInner()}</div>
+   <section class="panel fleetp" id="fleet">${fleetHtml()}</section>
    <div class="dgrid">
     <section class="panel mappanel"><div class="ph"><h3>${L('எல்லா வண்டியும்','Fleet map')}</h3><div class="legend"><span><i style="background:#1E8A5A"></i>${L('காலி','Free')}</span><span><i style="background:#F2A900"></i>${L('Pickup-க்கு','To pickup')}</span><span><i style="background:#12664A"></i>${L('பயணத்தில்','On trip')}</span></div></div>
       <div class="omap"><canvas class="map" id="map"></canvas><div class="zoomctl" style="bottom:12px"><button class="chipbtn" id="zi">+</button><button class="chipbtn" id="zo">−</button></div></div></section>
@@ -1325,6 +1349,7 @@ function ringCheck(){
 function liveRows(list){return list.length?list.map(b=>{const d=drvById(b.driver);return `<div class="lrow"><div><b>${kTag(b)}${b.id} · ${pn(b.from)} → ${pn(b.to)}</b><small>${vname(b.veh)} · ${d?d[S.lang]+' · '+d.plate:L('Driver இல்லை','No driver')} · ${b.status==='scheduled'||isFut(b)?'⏰ '+dt(b.when):ago(b.created)}</small>${cdHtml(b)}</div>${stPillB(b)}${b.dispatch&&b.dispatch.review&&b.status==='searching'?`<button class="btn sm yellow" data-rv="${b.id}">${L('சரிபார்','Review')}</button>`:''}${(b.status==='searching'||b.status==='scheduled'&&!b.driver)?`<button class="btn sm" data-as="${b.id}">${L('Assign','Assign')}</button>`:''}</div>`}).join(''):`<p class="muted" style="margin:0">${L('இப்போ live booking இல்லை','No live bookings right now')}</p>`}
 function refreshDashLists(){
   const ll=document.getElementById('livelist');if(!ll)return;
+  const fl=document.getElementById('fleet');if(fl){fl.innerHTML=fleetHtml();bindFleet()}
   const kk=document.getElementById('kpis');if(kk){kk.innerHTML=kpisInner();kk.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>{S.sec=b.dataset.go;save();show()})}
   ll.innerHTML=liveRows(DB.bk.filter(b=>['searching','assigned','ontrip'].includes(b.status)||(b.status==='scheduled'&&!b.driver)));
   document.getElementById('actlist').innerHTML=DB.act.length?DB.act.slice(0,6).map(a=>`<div class="act"><i></i><span>${a[S.lang]}</span><small>${ago(a.date)}</small></div>`).join(''):`<p class="muted" style="margin:0">${L('Booking நிலை மாறும்போது இங்கே காட்டும்','Status changes appear here')}</p>`;
@@ -1480,11 +1505,14 @@ function drivers(){
   if(!histOk&&!drivers.loading){drivers.loading=true;loadHist(30).then(()=>{drivers.loading=false;if(S.sec==='drv'&&!document.querySelector('.modal'))drivers()}).catch(()=>{drivers.loading=false})}
   const H=histOk?HIST.rows:[],SX={};DB.drv.forEach(d=>SX[d.id]=drvStats(d,H));
   const q=DQ.trim().toLowerCase(),nWarn=DB.drv.filter(d=>SX[d.id].flags.length).length;
-  const DFF={all:()=>true,on:d=>d.status!=='off',warn:d=>SX[d.id].flags.length,blk:d=>d.blocked};
-  const dl=DB.drv.filter(DFF[DF]).filter(d=>!q||(d.en+' '+d.phone+' '+d.plate+' '+d.model).toLowerCase().includes(q)).sort((a,b)=>(SX[b.id].flags.length-SX[a.id].flags.length)||((b.status!=='off')-(a.status!=='off')));
+  const wk=Date.now()-7*DAY,drove=new Set(DB.bk.filter(b=>b.status==='done'&&(b.done||b.when)>=wk).map(b=>b.driver));
+  const DFF={all:()=>true,on:d=>d.status!=='off',off:d=>d.status==='off',warn:d=>SX[d.id].flags.length,blk:d=>d.blocked,
+    cant:d=>d.blocked||d.wallet<DB.cfg.minbal||Object.values(d.docs||{}).some(v=>v<0),idle:d=>d.status==='off'&&!drove.has(d.id)};
+  const dl=DB.drv.filter(d=>!DV||d.veh===DV).filter(DFF[DF]||DFF.all).filter(d=>!q||(d.en+' '+d.phone+' '+d.plate+' '+d.model).toLowerCase().includes(q)).sort((a,b)=>(SX[b.id].flags.length-SX[a.id].flags.length)||((b.status!=='off')-(a.status!=='off')));
   main().innerHTML=`${head('Drivers',L(`${DB.drv.length} drivers · ${DB.drv.filter(d=>d.status!=='off').length} online`,`${DB.drv.length} drivers · ${DB.drv.filter(d=>d.status!=='off').length} online`),S.role==='owner'?`<button class="btn yellow hd" id="ad">+ ${L('Driver சேர்','Add driver')}</button>`:'')}
    <div class="srow"><input id="dq" class="sbox" placeholder="🔍 ${L('பெயர், நம்பர், வண்டி எண் தேடு','Search name, number or plate')}" value="${esc(DQ)}"></div>
-   <div class="tabs">${[['all',L('எல்லாம்','All'),DB.drv.length],['on','🟢 Online',DB.drv.filter(d=>d.status!=='off').length],['warn','⚠️ '+L('கவனிக்க','Watch'),nWarn],['blk','⛔ '+L('தடை','Blocked'),DB.drv.filter(d=>d.blocked).length]].map(([id,l,n])=>`<button class="${DF===id?'on':''}" data-df="${id}">${l} <em>${n}</em></button>`).join('')}</div>
+   ${DV||DF==='cant'||DF==='idle'?`<div class="fchip">${DV?vname(DV):''}${DF==='cant'?'⛔ '+L('Online வர முடியாதவங்க','Can’t go online'):DF==='idle'?'😴 '+L('7 நாளா ஓட்டாதவங்க','Not driven in 7 days'):''} <button id="dvx">✕ ${L('எல்லா வண்டியும்','All vehicles')}</button></div>`:''}
+   <div class="tabs">${[['all',L('எல்லாம்','All'),DB.drv.length],['on','🟢 Online',DB.drv.filter(d=>d.status!=='off').length],['off','⚪ Offline',DB.drv.filter(d=>d.status==='off').length],['warn','⚠️ '+L('கவனிக்க','Watch'),nWarn],['blk','⛔ '+L('தடை','Blocked'),DB.drv.filter(d=>d.blocked).length]].map(([id,l,n])=>`<button class="${DF===id?'on':''}" data-df="${id}">${l} <em>${n}</em></button>`).join('')}</div>
    ${histOk?'':`<p class="muted" style="margin:0 0 10px;font-size:12.5px">${L('30 நாள் கணக்கு ஏற்றுது…','Loading 30-day stats…')}</p>`}
    <div class="cards">${dl.map(d=>{const st=SX[d.id];const tdy=DB.bk.filter(b=>b.driver===d.id&&b.status==='done'&&isToday(b.done||b.when));const exp=Object.entries(d.docs).filter(([k,v])=>v<30);
     return `<div class="dcard ${d.blocked?'blk':''}"><div class="dtop"><span class="vi">${I[d.veh]}</span><div><b>${d[S.lang]}</b><small>+91 ${d.phone}</small></div>${d.blocked?`<em class="dst off">${L('தடை','Blocked')}</em>`:dPill(d.status)}</div>
@@ -1501,6 +1529,7 @@ function drivers(){
   const ad=document.getElementById('ad');if(ad)ad.onclick=addDriver;
   const dq=document.getElementById('dq');dq.oninput=()=>{DQ=dq.value;clearTimeout(dq.t);dq.t=setTimeout(()=>{drivers();const n=document.getElementById('dq');if(n){n.focus();n.setSelectionRange(n.value.length,n.value.length)}},250)};
   app.querySelectorAll('[data-df]').forEach(b=>b.onclick=()=>{DF=b.dataset.df;drivers()});
+  const dvx=document.getElementById('dvx');if(dvx)dvx.onclick=()=>{DV='';if(DF==='cant'||DF==='idle')DF='all';drivers()};
   app.querySelectorAll('[data-dv]').forEach(b=>b.onclick=()=>driverDetail(drvById(b.dataset.dv)));
   app.querySelectorAll('[data-svc]').forEach(b=>b.onclick=()=>{const [id,k]=b.dataset.svc.split('|'),d=drvById(id),cur=svcOf(d)[k];
     if(CL){cw(F().updateDoc(F().doc(CL.db,'drivers',id),{['svc.'+k]:!cur,updatedAt:ts()}));toast(L(`${d.ta}: ${SVCN[k][0]} ${!cur?'ON':'OFF'}`,`${d.en}: ${SVCN[k][1]} ${!cur?'on':'off'}`));return}
@@ -1610,7 +1639,7 @@ function approvals(){
 
 /* ---------- reports ---------- */
 /* ================= Customers · driver monitoring · reports (history loaded on demand) ================= */
-let HIST={at:0,days:0,rows:[]},USERS={at:0,rows:[]},CQ='',CF='all',DQ='',DF='all',RD=7;
+let HIST={at:0,days:0,rows:[]},USERS={at:0,rows:[]},CQ='',CF='all',DQ='',DF='all',DV='',RD=7;
 const DAY=864e5,dayStart=t=>{const d=new Date(t);d.setHours(0,0,0,0);return d.getTime()};
 const fmtD=t=>t?new Date(t).toLocaleDateString(S.lang==='ta'?'ta-IN':'en-IN',{day:'numeric',month:'short',year:'2-digit'}):'—';
 const pct=(a,b)=>b?Math.round(a*100/b):0;
