@@ -28,7 +28,7 @@
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('../vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV='2026-10-31-32',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV='2026-11-01-33',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('/vellorecalltaxi/version.json',location.origin)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -1562,13 +1562,14 @@ function goLive(on){
   if(on){startGeo();listenReq()}else{stopGeo();if(REQUNSUB){REQUNSUB();REQUNSUB=null}REQS=[]}
 }
 function pushLive(force){
-  if(!CL||!CL.phone)return;const now=Date.now();if(!force&&now-LASTLIVE<8000)return;LASTLIVE=now;
+  if(!CL||!CL.phone)return;if(S.online&&!GOTFIX)return;const now=Date.now();if(!force&&now-LASTLIVE<8000)return;LASTLIVE=now;
   F().setDoc(F().doc(CL.db,'live',CL.phone),{lat:POS.lat,lon:POS.lon,online:!!S.online,busy:!!(J&&J.id),veh:me().veh,name:me().en,plate:me().plate,updatedAt:ts()}).catch(()=>{});
 }
 setInterval(()=>{if(CL&&S.online)pushLive(true)},20000);
+let GOTFIX=false; // real GPS received? (never publish the default Vellore point)
 function startGeo(){
   if(GEO!=null||!navigator.geolocation)return;
-  GEO=navigator.geolocation.watchPosition(p=>{POS={lat:p.coords.latitude,lon:p.coords.longitude};pushLive(false)},
+  GEO=navigator.geolocation.watchPosition(p=>{POS={lat:p.coords.latitude,lon:p.coords.longitude};const first=!GOTFIX;GOTFIX=true;pushLive(first)},
     ()=>toast(L('Location அனுமதி கொடுங்க. இல்லைனா customer-க்கு உங்க வண்டி தெரியாது','Allow location so customers can see your vehicle')),{enableHighAccuracy:true,maximumAge:0,timeout:20000});
 }
 function stopGeo(){if(GEO!=null){navigator.geolocation.clearWatch(GEO);GEO=null}}
