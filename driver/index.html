@@ -28,7 +28,7 @@
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('../vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV='2026-11-01-34',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV='2026-11-01-35',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('/vellorecalltaxi/version.json',location.origin)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -558,6 +558,7 @@ a.btn{text-decoration:none}
 .smgr .tier{position:relative;z-index:1;display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:14px;background:rgba(0,0,0,.18);font-size:12.5px}
 .smgr .tier b{font-size:14px;color:#FFD54A;display:block}
 .kband{display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:14px;background:var(--yellow-soft);color:var(--yellow-ink);font-weight:700;font-size:14px}
+.kband.rpt{background:#E8F0FF;color:#1D4ED8}
 .upc{display:flex;align-items:center;gap:12px;padding:12px;border-radius:16px;border:1.5px solid var(--yellow);background:var(--yellow-soft)}
 .upc div{flex:1;min-width:0}.upc b{display:block}.upc small{color:var(--muted);font-size:12.5px}
 .upc .btn{width:auto;height:40px;padding:0 12px;font-size:13px;flex:none}
@@ -1209,6 +1210,7 @@ function renderReq(j){
      <div class="reqtop"><div class="ring"><svg viewBox="0 0 44 44" width="64" height="64"><circle cx="22" cy="22" r="19" fill="none" stroke="var(--line)" stroke-width="4"/><circle id="rg" cx="22" cy="22" r="19" fill="none" stroke="var(--yellow)" stroke-width="4" stroke-linecap="round" stroke-dasharray="119.4" transform="rotate(-90 22 22)"/></svg><b id="sec">${SEC}</b></div>
        <div class="reqfare" id="rqf">${reqFareHtml()}</div></div>
      ${J.b&&J.b.kind&&J.b.kind!=='ride'?`<div class="kband">${J.b.kind==='outstation'?'🛣️ Outstation':'⏱️ Rental'} · ${whenTxt(J.b.when||Date.now())}${J.b.kind==='outstation'&&S_TIER()?` · ${TIERN[S_TIER()][S.lang==='ta'?0:1]}`:''}</div>`:''}
+     ${J.id&&MISS.get(J.id)?`<div class="kband rpt">🔁 ${L(`மறுபடி வந்திருக்கு (${MISS.get(J.id).n+1}/${MAXMISS})`,`Offered again (${MISS.get(J.id).n+1}/${MAXMISS})`)}${(J.tip||0)>(MISS.get(J.id).tip||0)?' · 💰 '+L('Tip கூடியிருக்கு','Tip increased'):''}</div>`:''}
      <div class="reqdist"><div><b>${away.toFixed(1)} <em>${L('கி.மீ','km')}</em></b><small>📍 ${L('Pickup வரை','to pickup')}</small></div><i>→</i><div><b>${J.km.toFixed(1)} <em>${L('கி.மீ','km')}</em></b><small>🏁 ${L('பயணம்','trip')}</small></div></div>
      <div class="tripcard"><div class="rail"><i class="a"></i><i class="l"></i><i class="b"></i></div>
        <div class="stops"><div><small>${t2('pickup')} · ${away.toFixed(1)} ${L('கி.மீ தூரம்','km away')}</small><b>${pn(from)}</b></div><div><small>Drop · ${J.km.toFixed(1)} ${L('கி.மீ பயணம்','km trip')}</small><b>${pn(to)}</b></div></div></div>
@@ -1220,10 +1222,10 @@ function renderReq(j){
     m.fit([POS,...J.trip],50,40);
     const t0=Date.now(),rg=document.getElementById('rg'),sc=document.getElementById('sec');
     TK=setInterval(()=>{const left=Math.max(0,SEC-(Date.now()-t0)/1000);sc.textContent=Math.ceil(left);rg.setAttribute('stroke-dashoffset',(119.4*(1-left/SEC)).toFixed(1));const r2=document.getElementById('rg2');if(r2)r2.setAttribute('stroke-dashoffset',(119.4*(1-left/SEC)).toFixed(1));
-      if(left<=0){if(J&&J.id){DECL.add(J.id);SHOWING=null}J=null;home();toast(L('Request நேரம் முடிஞ்சது','Request timed out'))}},200);
+      if(left<=0){if(J&&J.id){missReq({...J.b,id:J.id});SHOWING=null}J=null;home();toast(L('Request நேரம் முடிஞ்சது','Request timed out'))}},200);
     ringReq();
     bindTap('acc',()=>{stopReq();J&&J.id?acceptCloud():toPickup()});
-    document.getElementById('dec').onclick=()=>{stopReq();if(J&&J.id){DECL.add(J.id);SHOWING=null}J=null;home();toast(L('Request-ஐ விட்டாச்சு','Request declined'))};
+    document.getElementById('dec').onclick=()=>{stopReq();if(J&&J.id){missReq({...J.b,id:J.id});SHOWING=null}J=null;home();toast(L('Request-ஐ விட்டாச்சு','Request declined'))};
   });
 }
 const t2=k=>({pickup:'Pickup'})[k];
@@ -1472,7 +1474,11 @@ function profileTab(){
 
 /* ================= CLOUD: Firebase (live on GitHub Pages; demo everywhere else) ================= */
 let RATE=0,CL=null,DME=null,UNS=[],REQUNSUB=null,JOBUNSUB=null,GEO=null,LASTLIVE=0,SHOWING=null,REQS=[],RCH=[];
-const DECL=new Set();const CFGD={upi:'',office:''};
+const MISS=new Map(),ROUNDMS=60e3,MAXMISS=3; // per booking: how often this driver let it pass; re-offered each new round (1 min) or when the tip goes up, max 3 times
+function roundOf(b){const o=offerAt(b);if(!isFinite(o))return 0;const base=Math.max(o,(!b.kind||b.kind==='ride')?(+b.when||0):0);return Math.floor((Date.now()-base)/ROUNDMS)+1}
+function missReq(b){if(!b||!b.id&&!b._id)return;const id=b.id||b._id,m=MISS.get(id)||{n:0};m.n++;m.r=roundOf(b);m.tip=+b.tip||0;MISS.set(id,m)}
+function canOffer(b){const m=MISS.get(b.id);if(!m)return true;if(m.n>=MAXMISS)return false;return roundOf(b)>m.r||(+b.tip||0)>m.tip}
+const CFGD={upi:'',office:''};
 const ON_PAGES=/github\.io$/.test(location.hostname);
 const cloudP=(window.CLOUD_READY||Promise.resolve(null)).then(c=>{CL=c||null;return CL}).catch(()=>null);
 const F=()=>CL.fs;
@@ -1599,7 +1605,7 @@ function listenReq(){
 }
 function maybeShowReq(){
   if(!CL||!S.online||J||SHOWING||document.querySelector('.modal'))return;
-  const now=Date.now(),b=REQS.find(x=>!DECL.has(x.id)&&offerAt(x)<=now);if(!b)return;
+  const now=Date.now(),b=REQS.find(x=>offerAt(x)<=now&&canOffer(x));if(!b)return;
   SHOWING=b.id;incoming(buildJ(b,b.id));
 }
 function buildJ(b,id){
@@ -1622,7 +1628,7 @@ async function acceptCloud(){
     SHOWING=null;
     if(J.b&&isFutB(J.b)){const w=J.b.when;J=null;clearInterval(TK);home();toast(L(`Trip உறுதி: ${whenTxt(w)}. நேரம் வந்ததும் "Pickup-க்கு கிளம்பு" அழுத்துங்க`,`Trip confirmed for ${whenTxt(w)}. Tap "Leave for pickup" when it is time`));return}
     watchJob(id);pushLive(true);toPickup();
-  }catch(e){SHOWING=null;DECL.add(id);J=null;home();toast(e&&e.message==='taken'?L('இந்த ride-ஐ வேற driver எடுத்துட்டாங்க','Another driver took this ride'):CL.errText(e,S.lang==='ta'))}
+  }catch(e){SHOWING=null;MISS.set(id,{n:99});J=null;home();toast(e&&e.message==='taken'?L('இந்த ride-ஐ வேற driver எடுத்துட்டாங்க','Another driver took this ride'):CL.errText(e,S.lang==='ta'))}
 }
 function adoptJob(b){
   J=buildJ(b,b.id);watchJob(b.id);beep();
@@ -1685,7 +1691,8 @@ function S_TIER(){const d=DME||{};if(d.prio==='top')return 1;if(d.prio==='low')r
 function offerAt(b){
   if(CL&&Array.isArray(b.exclude)&&b.exclude.includes(CL.phone))return Infinity; // this driver already cancelled it
   const k=b.kind==='outstation'?'out':b.kind==='rental'?'rental':'local';
-  if(k==='local'){if(!svcActive('local'))return Infinity;if(b.when&&Date.now()-b.when>15*60e3)return Infinity; // stale test/abandoned bookings never ringif(!b.from||b.from.lat==null)return 0;
+  if(k==='local'){if(!svcActive('local'))return Infinity;if(b.when&&Date.now()-b.when>15*60e3)return Infinity; // stale test/abandoned bookings never ring
+    if(!b.from||b.from.lat==null)return 0;
     const d=hav(POS,b.from);if(d<=LOCAL_R1)return 0;if(d<=LOCAL_R2)return (+b.tip>0)?0:(+b.when||0)+LOCAL_WAVE*1000;return Infinity}
   const dp=b.dispatch||{};if(dp.review&&!dp.reviewUntil)return Infinity;const open=dp.review?dp.reviewUntil:(dp.openAt||0),gap=(dp.gap||DISP.gap)*1000,fall=dp.fall!==undefined?dp.fall:DISP.fall;
   if(svcActive(k))return k==='out'?open+(S_TIER()-1)*gap:open;

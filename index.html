@@ -37,7 +37,7 @@
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('./vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV='2026-11-01-34',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV='2026-11-01-35',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('/vellorecalltaxi/version.json',location.origin)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -140,6 +140,9 @@ h1,h2,h3{font-family:var(--display);margin:0;line-height:1.15;text-wrap:balance}
 .tipbox{display:flex;flex-direction:column;gap:6px;padding:12px 14px;border-radius:16px;background:var(--yellow-soft);border:1.5px solid var(--yellow)}.tipbox[hidden]{display:none}
 .tiprow{display:flex;gap:6px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;margin:0 -2px;padding:2px}.tiprow::-webkit-scrollbar{display:none}
 .tiprow .chip{flex:0 0 calc((100% - 24px)/5);justify-content:center;scroll-snap-align:start;padding:0;height:40px;font-weight:700}
+.tippre{display:flex;flex-direction:column;gap:8px;padding:12px 14px;border-radius:16px;background:var(--yellow-soft)}.tippre b{font-size:14.5px;color:var(--yellow-ink);display:block}.tippre small{color:var(--muted);font-size:12px}.tippre .chip.sel{background:#1E8A5A;border-color:#1E8A5A;color:#fff}
+.rounds{display:flex;align-items:center;gap:6px;margin:-4px 0 2px}.rounds i{flex:0 0 34px;height:6px;border-radius:4px;background:var(--line)}.rounds i.on{background:linear-gradient(90deg,#1E8A5A,#F5B800);animation:rpulse 1.2s infinite}.rounds i.done{background:#C9A23A}.rounds span{margin-left:auto;font-size:12.5px;font-weight:700;color:var(--muted);font-variant-numeric:tabular-nums}
+@keyframes rpulse{50%{opacity:.45}}.tipbox.flash{animation:tflash .9s 2}@keyframes tflash{50%{box-shadow:0 0 0 6px rgba(245,184,0,.35)}}.tiprow .chip.pop{transform:scale(1.12);background:#1E8A5A;color:#fff;border-color:#1E8A5A}
 .tipbox b{font-size:15px;color:var(--yellow-ink)}.tipbox small{color:var(--muted);font-size:12.5px}.tipbox .chip.sel{background:#1E8A5A;border-color:#1E8A5A;color:#fff}
 .dsp{display:flex;flex-direction:column;gap:8px;padding:14px 16px;border-radius:18px;border:1.5px solid var(--navy);background:var(--navy-soft)}
 .dsp .dt{display:flex;align-items:center;gap:10px}.dsp .dt b{flex:1;font-size:15px}.dsp .dt em{font-style:normal;font-family:var(--display);font-size:20px;color:var(--navy);font-variant-numeric:tabular-nums}
@@ -892,6 +895,8 @@ function fareScreen(){
      <div class="sec"><h3>${t('chooseRide')}</h3><div class="trip"><span class="pill">${r.km.toFixed(1)} ${t('km')}</span><span class="pill">~${mins} ${t('min')}</span></div></div>
      <div class="whenrow"><button class="chip ${S.when?'sel':''}" id="whenb">${I.clock} ${S.when?fmtWhen(S.when):L('இப்போ','Now')}</button>${S.when?`<button class="linkbtn" id="whenx">${L('இப்போவே போகணும்','Ride now instead')}</button>`:`<span class="muted" style="font-size:12.5px">${L('பின்னாடி போகணுமா? நேரம் தேர்வு பண்ணுங்க','Later? Pick a time')}</span>`}</div>
      <div style="display:flex;flex-direction:column;gap:10px" id="vs">${vehRows(r,mins)}</div>
+     ${CL&&!S.when?`<div class="tippre"><div><b>💡 ${L('Tip சேர்க்கவா? (விருப்பம்)','Add a tip? (optional)')}</b><small>${L('Tip சேர்த்தா driver சீக்கிரம் கிடைப்பார். முழுசா driver-க்கே.','Tips help you get a driver faster. All of it goes to the driver.')}</small></div>
+       <div class="tiprow">${[0,10,20,30,40,50,60,70,80,90].map(x=>`<button class="chip ${(S.tip0||0)===x?'sel':''}" data-tip0="${x}">${x?'+₹'+x:L('இல்லை','None')}</button>`).join('')}</div></div>`:''}
      ${riderRow()}
      <div class="payrow"><button class="pay ${S.pay==='cash'?'sel':''}" data-pay="cash">${I.cash}${t('payCash')}</button><button class="pay ${S.pay==='upi'?'sel':''}" data-pay="upi">${I.upi}${t('payUpi')}</button>${CL?'':`<button class="pay ${S.pay==='wallet'?'sel':''}" data-pay="wallet">${I.navWallet.replace('<svg ','<svg width="18" height="18" ')}${inr(WAL.bal)}</button>`}</div>
      ${CL?`<p class="fine muted" style="margin:0">${L('கட்டணம் தூரத்தை வைத்து. Toll, parking தனி.','Fare is by distance. Tolls and parking are extra.')}</p>`:`<p class="fine muted" style="margin:0"><button class="linkbtn" id="cp">% ${t('coupon')}</button> · ${t('fareNote')}</p>`}
@@ -900,11 +905,12 @@ function fareScreen(){
     const m=makeMap(document.getElementById('map'),{path:r.path,line:r.pts?()=>r.pts:undefined,near:CL?()=>NEAR:undefined});
     m.fit(r.pts||r.path.map(k=>P[k]),46,64);
     const upd=()=>{const v=VEH.find(x=>x.id===S.veh),a=vAvail(v),bb=document.getElementById('bookb');if(!bb)return;
-      bb.disabled=!a.ok;bb.textContent=a.ok?`${S.when||ADV.includes(v.id)?L('Schedule பண்ணு','Schedule'):t('book')} ${v[S.lang]} · ₹${fare(v,r.km)}`:L(`இப்போ ${v.ta} இல்லை · வேற வண்டி தேர்வு பண்ணுங்க`,`No ${v.en} right now · pick another`)};upd();
+      bb.disabled=!a.ok;bb.textContent=a.ok?`${S.when||ADV.includes(v.id)?L('Schedule பண்ணு','Schedule'):t('book')} ${v[S.lang]} · ₹${fare(v,r.km)}${CL&&!S.when&&S.tip0?' + ₹'+S.tip0+' tip':''}`:L(`இப்போ ${v.ta} இல்லை · வேற வண்டி தேர்வு பண்ணுங்க`,`No ${v.en} right now · pick another`)};upd();
     const bindV=()=>app.querySelectorAll('.veh').forEach(b=>b.onclick=()=>{S.veh=b.dataset.v;app.querySelectorAll('.veh').forEach(x=>x.classList.toggle('sel',x===b));upd()});bindV();
     if(CL)rideTimer=setInterval(()=>{const vs=document.getElementById('vs');if(!vs||document.querySelector('.modal'))return;const h=vehRows(r,mins);if(vs.dataset.h!==h){vs.innerHTML=h;vs.dataset.h=h;bindV();upd()}},4000);
     app.querySelectorAll('[data-pay]').forEach(b=>b.onclick=()=>{if(b.dataset.pay==='wallet'&&WAL.bal<fare(VEH.find(x=>x.id===S.veh),r.km)){toast(L(`Wallet-ல ${inr(WAL.bal)} தான் இருக்கு. பணம் சேர்க்கணும்`,`Only ${inr(WAL.bal)} in wallet. Add money first`));return}S.pay=b.dataset.pay;app.querySelectorAll('[data-pay]').forEach(x=>x.classList.toggle('sel',x===b))});
     bindRider(fareScreen);
+    app.querySelectorAll('[data-tip0]').forEach(b=>b.onclick=()=>{S.tip0=+b.dataset.tip0;app.querySelectorAll('[data-tip0]').forEach(x=>x.classList.toggle('sel',x===b));upd()});
     const cpb=document.getElementById('cp');if(cpb)cpb.onclick=()=>toast('FIRST20 · AUTO15 · REFER');
     document.getElementById('edit').onclick=search;
     document.getElementById('bk').onclick=search;document.getElementById('bookb').onclick=()=>{const v=VEH.find(x=>x.id===S.veh);
@@ -1878,7 +1884,7 @@ function resumeActive(){
   F().getDoc(F().doc(CL.db,'bookings',a.id)).then(s=>{if(!s.exists())return;const b=s.data();if(!['searching','assigned','ontrip'].includes(b.status)){forgetRide();return}
     const v=VEH.find(x=>x.id===b.veh)||BIKE.id===b.veh&&BIKE||VEH.find(x=>x.id==='auto');
     R={id:a.id,v,km:b.km,path:[],fare:b.fare,pay:b.pay,from:'pick',dest:'drop',fromName:{ta:b.from.ta,en:b.from.en},destName:{ta:b.to.ta,en:b.to.en},
-       pin:a.pin,trackId:a.id.slice(0,8),trip:b.path||[b.from,b.to],phase:'search',chat:[],drv:null,dpos:null,b};
+       pin:a.pin,trackId:a.id.slice(0,8),trip:b.path||[b.from,b.to],phase:'search',chat:[],drv:null,dpos:null,b,t0:+b.when||CL.toMs(b.createdAt)||Date.now()};
     P.pick={...b.from,ic:'pin'};P.drop={...b.to,ic:'pin'};
     watchBooking();
   }).catch(()=>{});
@@ -1920,13 +1926,13 @@ async function cloudBook(){if(blockedStop())return;
   const pin=String(1000+Math.floor(Math.random()*9000));
   const trip=(r.pts||r.path.map(k=>P[k])).map(p=>({lat:p.lat,lon:p.lon}));
   const data={customerUid:CUID,custName:S.name,custPhone:'+91'+S.phone,src:'app',kind:'ride',from:placeOf(S.from),to:placeOf(S.dest),path:trip,
-    veh:v.id,vehTa:v.ta,vehEn:v.en,km:+r.km.toFixed(1),base:v.base,fare:f,pay:S.pay,status:'searching',when:Date.now(),rider:S.rider||null,
+    veh:v.id,vehTa:v.ta,vehEn:v.en,km:+r.km.toFixed(1),base:v.base,fare:f,pay:S.pay,status:'searching',when:Date.now(),rider:S.rider||null,tip:S.tip0||0,
     createdAt:F().serverTimestamp(),updatedAt:F().serverTimestamp()};
   try{
     const ref=await F().addDoc(F().collection(CL.db,'bookings'),data);
     await F().setDoc(F().doc(CL.db,'bookings',ref.id,'private','pin'),{pin});
     R={id:ref.id,v,km:r.km,path:r.path,fare:f,pay:S.pay,from:S.from,dest:S.dest,fromName:{ta:P[S.from].ta,en:P[S.from].en},destName:{ta:P[S.dest].ta,en:P[S.dest].en},
-       pin,trackId:ref.id.slice(0,8),trip,phase:'search',chat:[],drv:null,dpos:null,b:data,t0:Date.now()};
+       pin,trackId:ref.id.slice(0,8),trip,phase:'search',chat:[],drv:null,dpos:null,b:data,t0:Date.now(),boost:S.tip0||0};S.tip0=0;
     rememberRide();watchBooking();
   }catch(e){toast(CL.errText(e,S.lang==='ta'));if(btn){btn.disabled=false;fareScreen()}}
 }
@@ -1953,6 +1959,8 @@ function onBooking(b){
   if(b.status==='cancelled'&&!R.selfCancel&&/^driver/.test(b.cancelReason||'')&&!b.startedAt&&!OFK.includes(b.kind)&&(R.rebookN||0)<3){autoRebook(b);return}
   if(b.status==='cancelled'){stopWatch();forgetRide();if(!R.selfCancel){if(b.cancelReason&&b.cancelReason!=='customer'&&!/^(driver|noshow|custask)/.test(b.cancelReason))setTimeout(()=>sorrySheet(b.cancelReason),400);else toast(L('இந்த ride ரத்து ஆயிடுச்சு. மறுபடி book பண்ணுங்க','This ride was cancelled. Please book again'));recordTrip('cancelled',{reason:b.cancelReason||''})}R=null;home()}
 }
+const LROUND=60,LROUNDS=3,TIPMAX=200;let NODRV=null; // local search: 3 rounds of 1 min, then auto-cancel
+const tipNowTxt=()=>R&&R.boost?L(`இப்போ tip: <b>₹${R.boost}</b> · இன்னும் கூட்டலாம்`,`Tip now: <b>₹${R.boost}</b> · you can add more`):L('இன்னும் யாரும் எடுக்கல. Tip முழுசா driver-க்கே போகும்.','No one has accepted yet. The whole tip goes to the driver.');
 function searchingCloud(){
   R.phase='search';const pu={lat:R.b.from.lat,lon:R.b.from.lon};
   go(`<section class="screen"><div class="mapwrap"><canvas class="map" id="map"></canvas><div class="radar"><i></i><i></i><i></i></div>
@@ -1961,19 +1969,28 @@ function searchingCloud(){
      <div class="searchrow"><span class="vi">${I[R.v.id]}</span><div><h3>${L('Driver-ஐ தேடுறோம்…','Finding your driver…')}</h3>
        <small class="muted" id="sst">${R.rebooked?L('🔁 முந்தைய driver ரத்து செஞ்சார். மன்னிக்கவும் — வேற driver-ஐ தேடுறோம்…','🔁 Your previous driver cancelled. Sorry — finding another driver…'):L(`அருகில் இருக்கிற ${R.v.ta} drivers-க்கும் எங்க office-க்கும் request போயிடுச்சு`,`Request sent to nearby ${R.v.en} drivers and our office`)}</small></div></div>
      <div class="bar"><i style="animation-duration:60s"></i></div>
-     <div class="tipbox" id="tipbox" ${R.boost?'':'hidden'}><b>💡 ${L('Tip சேர்த்தா driver சீக்கிரம் கிடைப்பார்','Add a tip to get a driver faster')}</b>
-       <small>${L('இன்னும் யாரும் எடுக்கல. Tip முழுசா driver-க்கே போகும்.','No one has accepted yet. The whole tip goes to the driver.')}</small>
-       <div class="tiprow">${[10,20,30,40,50,60,70,80,90].map(x=>`<button class="chip ${R.boost===x?'sel':''}" data-boost="${x}">+₹${x}</button>`).join('')}</div></div>
+     <div class="rounds" id="rounds">${[1,2,3].map(i=>`<i data-r="${i}"></i>`).join('')}<span id="rlbl"></span></div>
+     <div class="tipbox" id="tipbox" ${R.boost?'':'hidden'}><b id="tiph">💡 ${L('Tip சேர்த்தா driver சீக்கிரம் கிடைப்பார்','Add a tip to get a driver faster')}</b>
+       <small id="tipnow">${tipNowTxt()}</small>
+       <div class="tiprow">${[10,20,30,40,50,60,70,80,90].map(x=>`<button class="chip" data-boost="${x}">+₹${x}</button>`).join('')}</div></div>
      ${stopsHtml()}
      <button class="btn ghost" id="cxs">${L('Booking-ஐ ரத்து செய்','Cancel booking')}</button></div></section>`,()=>{
     const m=makeMap(document.getElementById('map'),{cars:true,pins:[{...pu,col:'#1E8A5A'}],hide:CUSTOM});m.setView(pu.lat,pu.lon,32000);
     document.getElementById('cxs').onclick=cancelSheet;
-    app.querySelectorAll('[data-boost]').forEach(b=>b.onclick=()=>{const v=+b.dataset.boost;if(v<=(R.boost||0)){toast(L('Tip-ஐ கூட்ட மட்டும் தான் முடியும்','You can only raise the tip'));return}
+    app.querySelectorAll('[data-boost]').forEach(b=>b.onclick=()=>{const add=+b.dataset.boost,v=Math.min(TIPMAX,(R.boost||0)+add);if(v<=(R.boost||0)){toast(L(`அதிகபட்ச tip ₹${TIPMAX}`,`Maximum tip is ₹${TIPMAX}`));return}
       R.boost=v;F().updateDoc(F().doc(CL.db,'bookings',R.id),{tip:v,updatedAt:F().serverTimestamp()}).catch(e=>toast(CL.errText(e,S.lang==='ta')));
-      app.querySelectorAll('[data-boost]').forEach(x=>x.classList.toggle('sel',x===b));toast(L(`₹${v} tip சேர்த்தாச்சு. இன்னும் கொஞ்சம் தூரத்துல இருக்கிற drivers-க்கும் போகும்`,`₹${v} tip added. Drivers a little farther away will see it too`))});
-    rideTimer=setInterval(()=>{const el=document.getElementById('sst');if(!el||!R)return;const s=Math.round((Date.now()-(R.t0||Date.now()))/1000);
+      const tn=document.getElementById('tipnow');if(tn)tn.innerHTML=tipNowTxt();b.classList.add('pop');setTimeout(()=>b.classList.remove('pop'),400);
+      toast(L(`Tip இப்போ ₹${v}. எல்லா drivers-க்கும் மறுபடி போகுது`,`Tip is now ₹${v}. Sent to drivers again`))});
+    let lastR=0;const tick=()=>{const el=document.getElementById('sst');if(!el||!R||R.phase!=='search')return;const s=(Date.now()-(R.t0||Date.now()))/1000,rd=Math.min(LROUNDS,Math.floor(s/LROUND)+1);
       const tb=document.getElementById('tipbox');if(tb&&s>=20)tb.hidden=false;
-      if(s>120)el.textContent=L('கொஞ்சம் நேரம் ஆகுது. எங்க office staff driver-ஐ assign பண்ணுவாங்க.','Taking a little longer. Our office staff will assign a driver.')},5000);
+      app.querySelectorAll('#rounds i').forEach(x=>{const i=+x.dataset.r;x.className=i<rd?'done':i===rd?'on':''});
+      const left=Math.max(0,Math.ceil(LROUNDS*LROUND-s)),rl=document.getElementById('rlbl');if(rl)rl.textContent=L(`சுற்று ${rd}/${LROUNDS} · ${Math.floor(left/60)}:${String(left%60).padStart(2,'0')}`,`Round ${rd}/${LROUNDS} · ${Math.floor(left/60)}:${String(left%60).padStart(2,'0')}`);
+      if(rd!==lastR){if(lastR){const th=document.getElementById('tiph');if(th)th.textContent=rd===LROUNDS?L('⏳ கடைசி சுற்று! Tip சேர்த்தா driver கிடைக்க வாய்ப்பு அதிகம்','⏳ Last round! A tip improves your chances'):L('🔁 இன்னும் driver கிடைக்கல — மறுபடி தேடுறோம். Tip சேர்க்கவா?','🔁 No driver yet — searching again. Add a tip?');
+          if(tb){tb.hidden=false;tb.classList.remove('flash');void tb.offsetWidth;tb.classList.add('flash')}try{navigator.vibrate&&navigator.vibrate([200,100,200])}catch(e){}
+          el.textContent=L(`சுற்று ${rd}: அருகிலுள்ள ${R.v.ta} drivers எல்லாருக்கும் மறுபடி அனுப்பியிருக்கோம்`,`Round ${rd}: sent again to all nearby ${R.v.en} drivers`)}lastR=rd}
+      if(s>=LROUNDS*LROUND&&!R.noDrv&&(!R.b||!R.b.dispatch)&&(!R.b||!R.b.kind||R.b.kind==='ride')){R.noDrv=true;NODRV={from:R.from,dest:R.dest,veh:R.v.id,tip:R.boost||0};
+        F().updateDoc(F().doc(CL.db,'bookings',R.id),{status:'cancelled',cancelReason:'nodriver',updatedAt:F().serverTimestamp()}).catch(e=>{R.noDrv=false;toast(CL.errText(e,S.lang==='ta'))})}};
+    tick();rideTimer=setInterval(tick,1000);
   });
 }
 function rideCloud(){
@@ -2073,6 +2090,13 @@ function applyTariff(d){
 const SORRY={ta:'மன்னிக்கவும்! இந்த நேரத்தில் எங்களிடம் வண்டி இல்லாததால் உங்க booking-ஐ ரத்து செய்ய வேண்டியதாயிற்று. Vellore Taxi-ஐ தேர்ந்தெடுத்ததற்கு நன்றி — அடுத்த முறை கண்டிப்பா உங்களுக்கு சேவை செய்வோம் 🙏',
   en:'We are sorry! No vehicle is available right now, so we had to cancel your booking. Thank you for choosing Vellore Taxi — we look forward to serving you next time 🙏'};
 function sorrySheet(reason){if(document.getElementById('sorry'))return;
+  if(reason==='nodriver'){const nb=NODRV;
+    modal(`<div id="sorry" style="text-align:center;font-size:40px">🙏</div><h3 style="text-align:center">${L('இப்போ driver கிடைக்கல','No driver available right now')}</h3>
+      <p style="margin:0;line-height:1.55">${L('மன்னிக்கவும்! 3 முறை தேடியும் அருகில் driver யாரும் எடுக்கல. உங்க booking தானா ரத்து ஆயிடுச்சு, கட்டணம் எதுவும் இல்லை. எங்க office-க்கும் தகவல் போயிருக்கு, அவங்க உங்களை அழைப்பாங்க.','Sorry! We searched 3 times but no nearby driver accepted. Your booking was cancelled automatically, at no charge. Our office has been told and will call you.')}</p>
+      ${nb?`<button class="btn yellow" id="srb">🔁 ${L('மறுபடி தேடு','Search again')}${nb.tip?` · ₹${nb.tip} tip`:''}</button>`:''}
+      ${CFG.office?`<a class="btn ghost" href="tel:+91${CFG.office}">📞 ${L('Office-ஐ அழை','Call our office')}</a>`:''}<button class="btn ghost" id="sok">${L('சரி','OK')}</button>`,(m,close)=>{
+      m.querySelector('#sok').onclick=()=>{close();if(S.tab==='home'&&!R)home()};
+      const rb=m.querySelector('#srb');if(rb)rb.onclick=()=>{close();if(R)return;if(nb.from&&P[nb.from])S.from=nb.from;if(nb.dest&&P[nb.dest])S.dest=nb.dest;S.veh=nb.veh;S.tip0=Math.min(TIPMAX,nb.tip||0);S.mode='';S.when=null;fareScreen()}});return}
   const nv=reason==='novehicle';
   modal(`<div id="sorry" style="text-align:center;font-size:40px">🙏</div><h3 style="text-align:center">${nv?'மன்னிக்கவும் · We are sorry':'Booking ரத்து · Booking cancelled'}</h3>
     ${nv?`<p style="margin:0;line-height:1.55">${SORRY.ta}</p><p class="muted" style="margin:0;line-height:1.5">${SORRY.en}</p>`
