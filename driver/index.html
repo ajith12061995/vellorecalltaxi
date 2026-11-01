@@ -28,7 +28,7 @@
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('../vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV='2026-11-01-33',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV='2026-11-01-34',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('/vellorecalltaxi/version.json',location.origin)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -1163,7 +1163,7 @@ function home(){
    <div class="sheet pad"><div class="grab"></div>
      ${(()=>{const ds=docState();return ds.expired.length?`<div class="warn">⛔ ${L('காலாவதி ஆன document: ','Expired: ')}${ds.expired.join(', ')}. ${L('புதுப்பிக்கும் வரை Online போக முடியாது. புது copy-ஐ office-க்கு அனுப்புங்க.','You can’t go online until it is renewed. Send the new copy to the office.')}</div>`:ds.soon.length?`<div class="warn">⚠️ ${L('சீக்கிரம் காலாவதி: ','Expiring soon: ')}${ds.soon.join(', ')}</div>`:''})()}
      ${low?`<div class="warn">${L(`Wallet-ல ${inr(DS.wallet)} தான் இருக்கு. Online போக குறைந்தது ${inr(MINBAL)} வேணும்.`,`Only ${inr(DS.wallet)} in wallet. You need at least ${inr(MINBAL)} to go online.`)} <button class="linkbtn" id="rc">${L('Recharge பண்ணு','Recharge')}</button></div>`:''}
-     ${S.online?`<div class="liveCard"><span class="pulse"></span><div><b>${L('Online-ல இருக்கீங்க','You are online')}</b><small>${L('புது ride request-க்கு காத்திருக்கு…','Waiting for ride requests…')}</small></div></div>
+     ${S.online?`${CL&&!GOTFIX?`<div class="warn gpsw" id="gpsw"><b>📍 ${L('உங்க location இன்னும் கிடைக்கல','Your location is not available yet')}</b><br>${GPSERR===1?L('Location அனுமதி மறுக்கப்பட்டிருக்கு. Browser settings → Site settings → Location → Allow கொடுங்க.','Location permission is blocked. Allow it in browser site settings.'):L('Phone-ல Location / GPS on பண்ணுங்க. கிடைக்கும் வரை customer-க்கு உங்க வண்டி தெரியாது, request-உம் வராது.','Turn on Location/GPS. Until then customers cannot see you and no requests will come.')} <button class="linkbtn" id="gpsr">${L('மறுபடி முயற்சி','Retry')}</button></div>`:`<div class="liveCard"><span class="pulse"></span><div><b>${L('Online-ல இருக்கீங்க','You are online')}</b><small>${L('புது ride request-க்கு காத்திருக்கு…','Waiting for ride requests…')}</small></div></div>`}
         ${dutyBtn(true)}
         ${CL?'':`<button class="demo" id="dreq">${L('Demo: ride request கொண்டு வா','Demo: send a ride request')}</button>`}`
       :`${dutyBtn(false)}`}
@@ -1180,6 +1180,7 @@ function home(){
     document.getElementById('menu').onclick=drawer;document.getElementById('tpill').onclick=()=>{S.tab='earn';earnTab()};
     bindSmgr();
     const rc=document.getElementById('rc');if(rc)rc.onclick=()=>{S.tab='wallet';walletTab();recharge()};
+    const gr=document.getElementById('gpsr');if(gr)gr.onclick=()=>{stopGeo();GPSERR=0;startGeo();try{navigator.geolocation.getCurrentPosition(p=>{POS={lat:p.coords.latitude,lon:p.coords.longitude};GOTFIX=true;pushLive(true);if(S.tab==='home'&&!J)home()},e=>{GPSERR=e.code;toast(L('Location இன்னும் கிடைக்கல','Still no location'))},{enableHighAccuracy:true,timeout:15000,maximumAge:0})}catch(e){}};
     if(S.online){bindTap('offs',()=>confirmOff(()=>{setOnline(false);home();toast(L('Offline ஆயிட்டீங்க','You are offline'))}));
       if(CL)maybeShowReq();else{document.getElementById('dreq').onclick=()=>incoming()}}
     else bindTap('ons',()=>{if(DME&&DME.blocked){toast(L('உங்க account நிறுத்தி வைக்கப்பட்டிருக்கு. Owner-ஐ தொடர்பு கொள்ளுங்க','Your account is on hold. Contact the owner'));home();return}{const ds=docState();if(ds.expired.length){toast(L('காலாவதி ஆன document: ','Expired: ')+ds.expired.join(', ')+L('. புதுப்பிச்சு office-க்கு அனுப்புங்க','. Renew it and tell the office'));home();return}}if(DS.wallet<MINBAL){toast(L('Wallet recharge பண்ணிட்டு Online போங்க','Recharge your wallet to go online'));home();return}setOnline(true);home();toast(L('Online! Ride request வந்தா சத்தம் வரும்','You are online. Requests will ring'))});
@@ -1566,11 +1567,11 @@ function pushLive(force){
   F().setDoc(F().doc(CL.db,'live',CL.phone),{lat:POS.lat,lon:POS.lon,online:!!S.online,busy:!!(J&&J.id),veh:me().veh,name:me().en,plate:me().plate,updatedAt:ts()}).catch(()=>{});
 }
 setInterval(()=>{if(CL&&S.online)pushLive(true)},20000);
-let GOTFIX=false; // real GPS received? (never publish the default Vellore point)
+let GOTFIX=false,GPSERR=0; // real GPS received? (never publish the default Vellore point)
 function startGeo(){
   if(GEO!=null||!navigator.geolocation)return;
-  GEO=navigator.geolocation.watchPosition(p=>{POS={lat:p.coords.latitude,lon:p.coords.longitude};const first=!GOTFIX;GOTFIX=true;pushLive(first)},
-    ()=>toast(L('Location அனுமதி கொடுங்க. இல்லைனா customer-க்கு உங்க வண்டி தெரியாது','Allow location so customers can see your vehicle')),{enableHighAccuracy:true,maximumAge:0,timeout:20000});
+  GEO=navigator.geolocation.watchPosition(p=>{POS={lat:p.coords.latitude,lon:p.coords.longitude};const first=!GOTFIX;GOTFIX=true;GPSERR=0;pushLive(first);if(first&&S.tab==='home'&&!J&&document.getElementById('gpsw'))home()},
+    e=>{GPSERR=e&&e.code||0;if(S.tab==='home'&&!J&&!GOTFIX&&S.online&&document.getElementById('gpsw')&&e.code===1)home();toast(L('Location அனுமதி கொடுங்க. இல்லைனா customer-க்கு உங்க வண்டி தெரியாது','Allow location so customers can see your vehicle'))},{enableHighAccuracy:true,maximumAge:0,timeout:20000});
 }
 function stopGeo(){if(GEO!=null){navigator.geolocation.clearWatch(GEO);GEO=null}}
 /* ride request ringtone: plays until Accept / decline / timeout */
