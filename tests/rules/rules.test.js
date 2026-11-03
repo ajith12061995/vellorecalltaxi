@@ -133,6 +133,18 @@ test('customer phone: hidden from drivers until they accept; only the accepting 
   await assertSucceeds(getDoc(doc(as.staff(), 'bookings', 'b1', 'private', 'contact')));
   await assertFails(getDoc(doc(as.other(), 'bookings', 'b1', 'private', 'contact')));
 });
+test('server PIN mode: the driver cannot start an app ride; customer can; phone bookings still can', async () => {
+  await assertSucceeds(updateDoc(doc(as.drv(), 'bookings', 'b2'), { status: 'ontrip', pinOk: true }));   // switch off: as before
+  await seed(async db => { await setDoc(doc(db, 'config', 'app'), { comm: 10, serverPin: true });
+    await setDoc(doc(db, 'bookings', 'b2'), booking({ status: 'assigned', driverPhone: DRV }));
+    await setDoc(doc(db, 'bookings', 'b5'), booking({ status: 'assigned', driverPhone: DRV }));
+    await setDoc(doc(db, 'bookings', 'p9'), booking({ customerUid: null, src: 'phone', status: 'assigned', driverPhone: DRV })); });
+  await assertFails(updateDoc(doc(as.drv(), 'bookings', 'b2'), { status: 'ontrip', pinOk: true }));
+  await assertSucceeds(updateDoc(doc(as.drv(), 'bookings', 'b2'), { status: 'arrived', arrivedAt: serverTimestamp() }));
+  await assertSucceeds(updateDoc(doc(as.drv(), 'bookings', 'p9'), { status: 'ontrip' }));
+  await assertSucceeds(updateDoc(doc(as.cust(), 'bookings', 'b5'), { status: 'ontrip' }));
+  await assertSucceeds(updateDoc(doc(as.drv(), 'bookings', 'b3'), { status: 'done', fareFinal: 200, comm: 20 }));  // a running trip still ends
+});
 test('staff can assign and edit bookings but not change a wallet', async () => {
   await assertSucceeds(updateDoc(doc(as.staff(), 'bookings', 'b1'), { status: 'assigned', driverPhone: DRV }));
   await assertFails(updateDoc(doc(as.staff(), 'drivers', DRV), { wallet: 9999 }));

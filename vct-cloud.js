@@ -44,6 +44,12 @@ const api = {
       return await m.getToken(m.getMessaging(app), { vapidKey, serviceWorkerRegistration: reg });
     } catch (e) { console.warn('push', e); return null; }
   },
+  // Cloud Functions callable (loaded only when used), e.g. call('verifyPin', {bookingId, pin}) → the function's result
+  async call(name, data, region = 'asia-south1') {
+    const m = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-functions.js');
+    const r = await m.httpsCallable(m.getFunctions(app, region), name, { timeout: 15000 })(data);
+    return r.data;
+  },
   auth, db,
   fs: { doc, getDoc, getDocs, setDoc, updateDoc, addDoc, deleteDoc, collection, query, where, orderBy, limit, onSnapshot, serverTimestamp, increment, runTransaction, writeBatch },
   toMs,

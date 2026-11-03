@@ -1205,7 +1205,7 @@ function watchMe(){UNS.push(F().onSnapshot(F().doc(CL.db,'drivers',CL.phone),s=>
   if(S.online&&!J&&docState().expired.length){setOnline(false);toast(L('ஒரு document காலாவதி ஆயிடுச்சு. Offline ஆக்கப்பட்டீங்க','A document has expired. You have been taken offline'))}
   if(!J&&!document.querySelector('.modal')){if(S.tab==='wallet'&&before!==DS.wallet)walletTab();else if(S.tab==='home'&&(document.getElementById('ons')||(document.getElementById('ons')||document.getElementById('offs'))))home()}},()=>{}))}
 function watchCfgD(){UNS.push(F().onSnapshot(F().doc(CL.db,'config','app'),s=>{if(!s.exists())return;const d=s.data();
-  if(d.comm!=null)COMM=+d.comm;if(d.minbal!=null)MINBAL=+d.minbal;CFGD.upi=d.upi||'';CFGD.office=d.office||'';CFGD.serverComm=!!d.serverComm;CFGD.wait=d.wait||null;CFGD.push=d.push||null;
+  if(d.comm!=null)COMM=+d.comm;if(d.minbal!=null)MINBAL=+d.minbal;CFGD.upi=d.upi||'';CFGD.office=d.office||'';CFGD.serverComm=!!d.serverComm;CFGD.serverPin=!!d.serverPin;CFGD.wait=d.wait||null;CFGD.push=d.push||null;
   {const na=Array.isArray(d.announce)?d.announce:[],top=na[0];const fresh=top&&(!ANN[0]||ANN[0].id!==top.id)&&top.t>seenAt();ANN=na;
    if(fresh&&ANN.length&&!J&&!document.querySelector('.modal')){beep();toast('📢 '+(top.title||L('Office அறிவிப்பு','Office notice')));if(S.tab==='home'&&document.getElementById('menu'))home()}}if(d.dispatch)Object.assign(DISP,d.dispatch);
   if(d.fares)VEH.forEach(v=>{const f=d.fares[v.id];if(f){if(f.base!=null)v.base=+f.base;if(f.per!=null)v.per=+f.per}})},()=>{}))}
@@ -1343,6 +1343,17 @@ function cloudStart(ins){
   if(!J.app){startTrip(false);return}
   const pin=ins.map(x=>x.value).join('');
   if(pin.length!==4){pe.textContent=L('4 இலக்க PIN போடுங்க','Enter the 4-digit PIN');reset();return}
+  if(CFGD.serverPin&&CL&&CL.call){ // checked by the server (5 wrong tries lock it); the PIN never reaches this phone
+    pe.style.color='var(--muted)';pe.textContent=L('PIN சரிபார்க்குது…','Checking the PIN…');const id=J.id;
+    CL.call('verifyPin',{bookingId:id,pin}).then(r=>{if(!J||J.id!==id)return;
+      if(r&&r.ok){clearTimeout(J.waitPin);J.startAt=J.startAt||Date.now();if(J.b)J.b.status='ontrip';
+        if(document.getElementById('pinb')){onTrip();toast(L('PIN சரி! Trip ஆரம்பம்','PIN verified. Trip started'))}return}
+      pe.style.color='';pe.textContent=L('PIN தப்பு. Customer-கிட்ட மறுபடி கேளுங்க','Wrong PIN. Ask the customer again');ins.forEach(x=>x.value='');ins[0].focus();reset()})
+    .catch(e=>{const c=String(e&&e.code||'');pe.style.color='';
+      pe.textContent=c.includes('resource-exhausted')?L('5 தடவை தப்பான PIN. Office-ஐ அழைங்க','5 wrong PINs. Please call the office')
+        :c.includes('permission-denied')?L('இந்த ride உங்களுக்கு இல்ல','This ride is not yours')
+        :L('Server-ஐ அடைய முடியல. Signal பார்த்து மறுபடி முயற்சி பண்ணுங்க, இல்லைன்னா Office-ஐ அழைங்க','Could not reach the server. Check the signal and try again, or call the office');reset()});
+    return}
   if(J.b&&J.b.pinHash){ // checked on this phone: works even when the customer's phone is offline
     pe.style.color='var(--muted)';pe.textContent=L('PIN சரிபார்க்குது…','Checking the PIN…');
     VCTPIN.check(J.b,pin).then(ok=>{if(!J)return;if(ok){startTrip(true);return}

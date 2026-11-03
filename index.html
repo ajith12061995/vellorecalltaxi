@@ -1846,7 +1846,7 @@ function watchConfig(){
   if(CFGUNSUB)return;
   CFGUNSUB=F().onSnapshot(F().doc(CL.db,'config','app'),s=>{if(!s.exists())return;const d=s.data();
     if(d.fares)VEH.forEach(v=>{const f=d.fares[v.id];if(f){if(f.base!=null)v.base=+f.base;if(f.per!=null)v.per=+f.per}});
-    CFG.upi=d.upi||'';CFG.office=d.office||'';CFG.privPhone=!!d.privPhone;CFG.comm=d.comm!=null?+d.comm:10;CFG.wait=d.wait||null;CFG.blocked=Array.isArray(d.blocked)?d.blocked:[];{const had=VEH.includes(BIKE);setBike(!!d.showBike);if(had!==VEH.includes(BIKE)&&S.tab==='home'&&document.querySelector('.vrow')&&!document.querySelector('.modal'))home(S.mode||undefined)}if(d.dispatch)Object.assign(DISPC,d.dispatch);applyTariff(d)},()=>{});
+    CFG.upi=d.upi||'';CFG.office=d.office||'';CFG.privPhone=!!d.privPhone;CFG.serverPin=!!d.serverPin;CFG.comm=d.comm!=null?+d.comm:10;CFG.wait=d.wait||null;CFG.blocked=Array.isArray(d.blocked)?d.blocked:[];{const had=VEH.includes(BIKE);setBike(!!d.showBike);if(had!==VEH.includes(BIKE)&&S.tab==='home'&&document.querySelector('.vrow')&&!document.querySelector('.modal'))home(S.mode||undefined)}if(d.dispatch)Object.assign(DISPC,d.dispatch);applyTariff(d)},()=>{});
   F().getDoc(F().doc(CL.db,'blocked','+91'+S.phone)).then(x=>{MEBLK=x.exists()}).catch(()=>{}); // only my own entry is readable
   if(CUID)VCTCLK.sync(F(),F().doc(CL.db,'users',CUID)); // learn the server time once
   watchMyB();
@@ -1889,7 +1889,7 @@ async function autoRebook(b){
   let ct=null;try{const cs=await F().getDoc(F().doc(CL.db,'bookings',old,'private','contact'));if(cs.exists())ct=cs.data()}catch(e){}
   const ct2=takeContact(data);if(!ct)ct=ct2;
   const pin=String(1000+Math.floor(Math.random()*9000));
-  try{try{Object.assign(data,await VCTPIN.fields(pin))}catch(e){} // lets the driver check the PIN even if this phone goes offline
+  try{if(!CFG.serverPin)try{Object.assign(data,await VCTPIN.fields(pin))}catch(e){} // lets the driver check the PIN even if this phone goes offline
     const ref=await F().addDoc(F().collection(CL.db,'bookings'),data);await F().setDoc(F().doc(CL.db,'bookings',ref.id,'private','pin'),{pin});
     await saveContact(ref.id,ct);
     Object.assign(R,{id:ref.id,pin,trackId:ref.id.slice(0,8),phase:'search',drv:null,dpos:null,b:data,riderPh:ct.riderPhone,t0:Date.now(),rebookN:(R.rebookN||0)+1,rebooked:true,lastTry:null});
@@ -1914,7 +1914,7 @@ async function cloudBook(){if(blockedStop())return;
     veh:v.id,vehTa:v.ta,vehEn:v.en,km:+r.km.toFixed(1),base:v.base,fare:f,pay:S.pay,status:'searching',when:VCTCLK.now(),rider:S.rider||null,tip:S.tip0||0,tariff:localTar(),
     createdAt:F().serverTimestamp(),updatedAt:F().serverTimestamp()};
   try{
-    try{Object.assign(data,await VCTPIN.fields(pin))}catch(e){} // lets the driver check the PIN even if this phone goes offline
+    if(!CFG.serverPin)try{Object.assign(data,await VCTPIN.fields(pin))}catch(e){} // lets the driver check the PIN even if this phone goes offline
     const ct=takeContact(data);
     const ref=await F().addDoc(F().collection(CL.db,'bookings'),data);
     await F().setDoc(F().doc(CL.db,'bookings',ref.id,'private','pin'),{pin});
@@ -1938,7 +1938,8 @@ function onBooking(b){
   if(b.status==='searching'){if(R.phase!=='search'||!document.getElementById('cxs'))searchingCloud();return}
   if(b.status==='assigned'||b.status==='ontrip'){
     chatStart(R.id);
-    if(b.status==='assigned'&&b.pinTry&&b.pinTry!==R.lastTry){R.lastTry=b.pinTry;
+    if(!CFG.serverPin&&b.status==='assigned'&&b.pinTry&&b.pinTry!==R.lastTry){ // with the server PIN check, a PIN typed into the booking is never confirmed here
+R.lastTry=b.pinTry;
       if(b.pinTry===R.pin){F().updateDoc(F().doc(CL.db,'bookings',R.id),{status:'ontrip',startedAt:F().serverTimestamp(),updatedAt:F().serverTimestamp()}).catch(()=>{});toast(L('PIN சரி! பயணம் ஆரம்பம்','PIN verified. Your trip has started'))}
       else toast(L('Driver போட்ட PIN தப்பு. உங்க PIN-ஐ மறுபடி சொல்லுங்க','The driver entered a wrong PIN. Tell them your PIN again'))}
     if(R.phase!=='ride'||!document.getElementById('stB'))rideCloud();else rideCloudUpdate(true);
@@ -2096,7 +2097,7 @@ async function cloudSchedule(rec){
   if(!CL||!CUID)return null;
   const v=VEH.find(x=>x.id===rec.veh.id)||VEH.find(x=>x.id==='auto');
   const to=(rec.kind==='schedule'||OFK.includes(rec.kind)&&rec.hasDrop)&&S.dest&&P[S.dest]?placeOf(S.dest):{key:null,ta:rec.to.ta,en:rec.to.en,lat:null,lon:null};
-  let ph={};if(rec.pin)try{ph=await VCTPIN.fields(rec.pin)}catch(e){}
+  let ph={};if(rec.pin&&!CFG.serverPin)try{ph=await VCTPIN.fields(rec.pin)}catch(e){}
   try{const ref=await F().addDoc(F().collection(CL.db,'bookings'),{...ph,customerUid:CUID,custName:S.name,...(CFG.privPhone?{}:{custPhone:'+91'+S.phone}),src:'app',kind:rec.kind,
       from:placeOf(S.from),to,path:[],veh:v.id,vehTa:v.ta,vehEn:v.en,km:rec.km||0,hrs:rec.hrs||null,otype:rec.otype||null,retAt:rec.ret||null,rider:S.rider?(CFG.privPhone?{name:String(S.rider.name||'')}:S.rider):null,base:v.base,fare:rec.fare,pay:rec.pay||'cash',note:rec.note||null,tariff:rec.tar||null,
       ...(OFK.includes(rec.kind)?{status:'searching',dispatch:rec.kind==='outstation'&&rec.otype==='one'?{review:true,openAt:null,reviewUntil:Date.now()+(DISPC.review||10)*60e3,gap:DISPC.gap,fall:DISPC.fall}:{openAt:Date.now()+DISPC.win*1000,gap:DISPC.gap,fall:DISPC.fall}}:{status:'scheduled'}),

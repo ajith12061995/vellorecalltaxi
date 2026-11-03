@@ -104,6 +104,9 @@ service cloud.firestore {
             && ((resource.data.status in ['assigned', 'arrived'] && newData().status in ['assigned', 'arrived', 'ontrip', 'cancelled'])
                 || (resource.data.status == 'ontrip' && newData().status in ['ontrip', 'done'])
                 || (resource.data.status == 'done' && newData().status == 'done' && changes().hasOnly(['custRating', 'updatedAt'])))
+            // with the server PIN check on, only the server (verifyPin), the customer or the office starts an app ride
+            && (newData().status != 'ontrip' || resource.data.status == 'ontrip' || resource.data.get('customerUid', null) == null
+                || get(/databases/$(database)/documents/config/app).data.get('serverPin', false) != true)
             && (!('fareFinal' in changes()) || num(newData().fareFinal, 0, resource.data.fare * 4 + 10000))
             && (!('comm' in changes()) || (newData().comm is number && newData().comm >= 0 && newData().comm <= newData().get('fareFinal', resource.data.fare)))
             && (!('custRating' in changes()) || num(newData().custRating, 0, 5)));

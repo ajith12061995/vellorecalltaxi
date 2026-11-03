@@ -55,6 +55,16 @@
       async verifyOtp(code){if(code!=='123456')throw{code:'auth/invalid-verification-code'};user={uid:'u'+pending,phoneNumber:'+91'+pending};cbs.forEach(c=>c(user));return user},
       waitUser(){return Promise.resolve(user)},onUser(cb){cbs.push(cb);return()=>{}},
       async googleLogin(){user={uid:'g123',phoneNumber:null,email:'priya@gmail.com',displayName:'Priya G'};cbs.forEach(c=>c(user));return user},
-      async logout(){user=null},errText:(e)=>'ERR '+(e&&e.code||e)};
+      async logout(){user=null},errText:(e)=>'ERR '+(e&&e.code||e),
+      // same decisions as functions/index.js verifyPin
+      async call(name,data){if(window.MOCK&&MOCK.down)throw{code:'functions/unavailable'};if(window.MOCK&&MOCK.fnDown)throw{code:'functions/internal'};
+        if(name!=='verifyPin')throw{code:'functions/not-found'};
+        const ph=user&&user.phoneNumber,{bookingId,pin}=data||{};if(!ph||!bookingId||!/^\d{4}$/.test(String(pin)))throw{code:'functions/invalid-argument'};
+        const b=store.get('bookings/'+bookingId);if(!b||b.driverPhone!==ph)throw{code:'functions/permission-denied'};
+        if(b.status!=='assigned')return{ok:b.status==='ontrip'};
+        if((b.pinFails||0)>=5)throw{code:'functions/resource-exhausted'};
+        const pp=store.get('bookings/'+bookingId+'/private/pin');
+        if(!pp||String(pp.pin)!==String(pin)){write('bookings/'+bookingId,{pinFails:(b.pinFails||0)+1},true);notify();return{ok:false}}
+        write('bookings/'+bookingId,{status:'ontrip',startedAt:Date.now(),pinOk:true,updatedAt:Date.now()},true);notify();return{ok:true}}};
   };
 })();
