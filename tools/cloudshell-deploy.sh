@@ -5,6 +5,7 @@
 # Safe to run again. It never deletes data. Nothing changes in the apps until the owner turns on the switches
 # in Office → Settings → Server & monitoring.
 set -euo pipefail
+trap 'echo; echo "STOPPED at line $LINENO. Nothing after this point ran. Send Claude a screenshot."' ERR
 PROJECT="${1:-vellore-taxi23}"
 say(){ printf '\n\033[1;33m== %s\033[0m\n' "$*"; }
 say "Project: $PROJECT"
@@ -38,9 +39,12 @@ printf 'FN_REGION=%s\nBACKUP_BUCKET=%s\n' "$REGION" "$BUCKET" > "functions/.env.
 cat "functions/.env.$PROJECT"
 
 say "4/6 Install + tests (deploy stops if any test fails)"
-(cd functions && npm install --no-audit --no-fund --silent && npm test 2>&1 | grep -E '^# (pass|fail)')
-(cd functions && npm test >/dev/null 2>&1) || { echo "TESTS FAILED — nothing deployed"; exit 1; }
-for f in tests/unit/*.test.js; do node "$f" | tail -1; done
+echo "node $(node --version)"
+(cd functions && npm install --no-audit --no-fund --loglevel=error) || { echo "npm install FAILED — nothing deployed"; exit 1; }
+if (cd functions && node --test --test-reporter=tap test/*.test.js > /tmp/vct-fn-test.log 2>&1); then
+  echo "functions logic tests: $(grep -E '^# pass' /tmp/vct-fn-test.log) $(grep -E '^# fail' /tmp/vct-fn-test.log)"
+else tail -30 /tmp/vct-fn-test.log; echo "TESTS FAILED — nothing deployed"; exit 1; fi
+for f in tests/unit/*.test.js; do out=$(node "$f" 2>&1) || { echo "$out" | tail -15; echo "TESTS FAILED — nothing deployed"; exit 1; }; echo "$out" | tail -1; done
 
 say "5/6 Sign in to Firebase (open the link, choose the owner account, paste the code back)"
 npx --yes firebase-tools@13 login --no-localhost
