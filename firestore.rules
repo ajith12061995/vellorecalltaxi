@@ -1,6 +1,7 @@
 rules_version = '2';
 
-// Vellore Call Taxi — Firestore security rules
+// Vellore Taxi — Firestore security rules, v2 (3 Nov 2026)
+// The previous version is kept in firestore.rules.v1-backup. Tests: tests/rules/ (run with the Firestore emulator).
 // Who is who (decided by the phone number used to log in):
 //   staff/{+91XXXXXXXXXX}   role: "owner" or "staff"   → office panel
 //   drivers/{+91XXXXXXXXXX}                            → driver app
@@ -9,15 +10,24 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     function signedIn() { return request.auth != null; }
-    function phone()    { return request.auth.token.phone_number; }
-    function isStaff()  { return signedIn() && exists(/databases/$(database)/documents/staff/$(phone())); }
+    function phone()    { return request.auth.token.get('phone_number', ''); }
+    function isStaff()  { return signedIn() && phone() != '' && exists(/databases/$(database)/documents/staff/$(phone())); }
     function isOwner()  { return isStaff() && get(/databases/$(database)/documents/staff/$(phone())).data.role == 'owner'; }
-    function isDriver() { return signedIn() && exists(/databases/$(database)/documents/drivers/$(phone())); }
+    function isDriver() { return signedIn() && phone() != '' && exists(/databases/$(database)/documents/drivers/$(phone())); }
     function changes()  { return request.resource.data.diff(resource.data).affectedKeys(); }
+    function newData()  { return request.resource.data; }
+    function num(v, lo, hi) { return v is number && v >= lo && v <= hi; }
+    function isBlocked() { return phone() != '' && exists(/databases/$(database)/documents/blocked/$(phone())); }
 
-    // Fares, commission, UPI ID, office phone — everyone logged in reads, only owner edits
+    // Fares, commission, UPI ID, office phone, dispatch timings — everyone logged in reads, only the owner edits
     match /config/{doc} {
       allow read: if signedIn();
+      allow write: if isOwner();
+    }
+
+    // Blocked customer numbers (private): the office sees all, a customer only their own entry
+    match /blocked/{ph} {
+      allow read: if isStaff() || (signedIn() && phone() == ph);
       allow write: if isOwner();
     }
 
@@ -33,21 +43,26 @@ service cloud.firestore {
       allow read: if isStaff();
     }
 
-    // Driver record (wallet, documents, vehicle). Only owner adds drivers.
+    // Driver record (wallet, documents, vehicle). Only the owner adds drivers or changes a wallet.
     match /drivers/{ph} {
       allow read: if isStaff() || (signedIn() && phone() == ph);
       allow create, delete: if isOwner();
-      allow update: if isStaff()
+      allow update: if (isStaff() && (!('wallet' in changes()) || isOwner()))
         || (signedIn() && phone() == ph
-            && changes().hasOnly(['online', 'lat', 'lon', 'updatedAt', 'wallet'])
+            && changes().hasOnly(['online', 'lat', 'lon', 'updatedAt', 'wallet', 'fcm', 'fcmAt'])
             // a driver can only lower their own wallet (commission), never raise it
-            && (!('wallet' in changes()) || request.resource.data.wallet < resource.data.wallet));
+            && (!('wallet' in changes()) || (newData().wallet is number && newData().wallet < resource.data.wallet))
+            // a blocked driver cannot go online
+            && (!('online' in changes()) || newData().online == false || resource.data.get('blocked', false) != true));
     }
 
-    // Live driver position shown to customers on the map
+    // Live driver position (customers see nearby cars on the map)
     match /live/{ph} {
       allow read: if signedIn();
-      allow write: if isDriver() && phone() == ph;
+      allow write: if isDriver() && phone() == ph
+        && newData().keys().hasOnly(['lat', 'lon', 'gh', 'online', 'busy', 'veh', 'updatedAt', 'clock', 'name', 'plate'])
+        && (!('lat' in newData()) || num(newData().lat, -90, 90))
+        && (!('lon' in newData()) || num(newData().lon, -180, 180));
     }
 
     // Rides
@@ -58,24 +73,38 @@ service cloud.firestore {
         || (isDriver() && resource.data.status == 'searching');
 
       allow create: if isStaff()
-        || (signedIn() && request.resource.data.customerUid == request.auth.uid
-            && request.resource.data.status in ['searching', 'scheduled']);
+        || (signedIn() && newData().customerUid == request.auth.uid
+            && newData().status in ['searching', 'scheduled']
+            && !isBlocked()
+            && num(newData().fare, 1, 200000)
+            && (!('tip' in newData()) || num(newData().tip, 0, 300))
+            && !newData().keys().hasAny(['driverPhone', 'driverName', 'assignedAt', 'startedAt', 'doneAt', 'fareFinal', 'fx', 'comm', 'commLocal', 'pinOk', 'ledgerAt']));
 
       allow update: if isStaff()
-        // customer: cancel, rate, tip, switch payment, confirm the PIN the driver typed
+        // customer: cancel (before the trip starts), rate, tip, switch payment, confirm the PIN the driver typed
         || (signedIn() && resource.data.customerUid == request.auth.uid
             && changes().hasOnly(['status', 'cancelReason', 'pay', 'rating', 'tip', 'startedAt', 'updatedAt'])
-            && (request.resource.data.status == resource.data.status
-                || request.resource.data.status == 'cancelled'
-                || (resource.data.status == 'assigned' && request.resource.data.status == 'ontrip')))
-        // driver: accept a waiting ride
+            && (!('tip' in changes()) || num(newData().tip, 0, 300))
+            && (!('rating' in changes()) || num(newData().rating, 0, 5))
+            && (newData().status == resource.data.status
+                || (newData().status == 'cancelled' && resource.data.status in ['searching', 'scheduled', 'assigned'])
+                || (resource.data.status == 'assigned' && newData().status == 'ontrip')))
+        // driver: accept a waiting ride (not if blocked, not one they already cancelled)
         || (isDriver() && resource.data.status == 'searching'
-            && request.resource.data.status == 'assigned' && request.resource.data.driverPhone == phone()
+            && newData().status == 'assigned' && newData().driverPhone == phone()
+            && get(/databases/$(database)/documents/drivers/$(phone())).data.get('blocked', false) != true
+            && !(phone() in resource.data.get('exclude', []))
             && changes().hasOnly(['status', 'driverPhone', 'driverName', 'plate', 'vehModel', 'assignedAt', 'updatedAt']))
-        // driver: progress their own ride
+        // driver: progress their own ride, one step at a time
         || (isDriver() && resource.data.driverPhone == phone()
-            && changes().hasOnly(['status', 'pay', 'pinTry', 'arrivedAt', 'doneAt', 'paidAt', 'custRating', 'cancelReason', 'updatedAt'])
-            && request.resource.data.status in ['assigned', 'arrived', 'ontrip', 'done', 'cancelled']);
+            && changes().hasOnly(['status', 'pay', 'pinTry', 'arrivedAt', 'startedAt', 'pinOk', 'doneAt', 'paidAt', 'custRating', 'cancelReason',
+                                  'fareFinal', 'fx', 'comm', 'commLocal', 'updatedAt'])
+            && ((resource.data.status in ['assigned', 'arrived'] && newData().status in ['assigned', 'arrived', 'ontrip', 'cancelled'])
+                || (resource.data.status == 'ontrip' && newData().status in ['ontrip', 'done'])
+                || (resource.data.status == 'done' && newData().status == 'done' && changes().hasOnly(['custRating', 'updatedAt'])))
+            && (!('fareFinal' in changes()) || num(newData().fareFinal, 0, resource.data.fare * 4 + 10000))
+            && (!('comm' in changes()) || (newData().comm is number && newData().comm >= 0 && newData().comm <= newData().get('fareFinal', resource.data.fare)))
+            && (!('custRating' in changes()) || num(newData().custRating, 0, 5)));
 
       allow delete: if isOwner();
 
@@ -86,11 +115,11 @@ service cloud.firestore {
           || (signedIn() && bk().customerUid == request.auth.uid)
           || (isDriver() && bk().driverPhone == phone());
         allow create: if bk().status in ['assigned', 'arrived', 'ontrip']
-          && request.resource.data.text is string
-          && request.resource.data.text.size() > 0 && request.resource.data.text.size() <= 300
-          && ((request.resource.data.from == 'c' && signedIn() && bk().customerUid == request.auth.uid)
-              || (request.resource.data.from == 'd' && isDriver() && bk().driverPhone == phone())
-              || (request.resource.data.from == 'o' && isStaff()));
+          && newData().text is string
+          && newData().text.size() > 0 && newData().text.size() <= 300
+          && ((newData().from == 'c' && signedIn() && bk().customerUid == request.auth.uid)
+              || (newData().from == 'd' && isDriver() && bk().driverPhone == phone())
+              || (newData().from == 'o' && isStaff()));
         allow delete: if isOwner();
       }
 
@@ -101,35 +130,50 @@ service cloud.firestore {
       }
     }
 
+    // Commission ledger: one entry per finished trip, written only by the server (Cloud Functions)
+    match /ledger/{id} {
+      allow read: if isStaff() || (isDriver() && resource.data.driverPhone == phone());
+      allow write: if false;
+    }
+
     // Driver applications from the "join" page — the applicant fills it, the owner approves
     match /driverApps/{ph} {
       allow read: if isStaff() || (signedIn() && phone() == ph);
-      allow create: if signedIn() && phone() == ph && request.resource.data.status == 'pending';
+      allow create: if signedIn() && phone() == ph && newData().status == 'pending';
       allow update: if isStaff()
         || (signedIn() && phone() == ph && resource.data.status in ['pending', 'rejected']
-            && request.resource.data.status == 'pending');
+            && newData().status == 'pending');
       allow delete: if isOwner();
       match /files/{kind} {
         allow read: if isStaff() || (signedIn() && phone() == ph);
         allow create, update: if signedIn() && phone() == ph
-          && request.resource.data.data is string && request.resource.data.data.size() < 1000000;
+          && newData().data is string && newData().data.size() < 1000000;
         allow delete: if isOwner();
       }
     }
 
-    // Driver wallet recharge requests (UPI + UTR) — owner approves
+    // Driver wallet recharge requests (UPI + UTR) — the owner approves each one once
     match /recharges/{id} {
       allow read: if isStaff() || (signedIn() && resource.data.driverPhone == phone());
-      allow create: if isDriver() && request.resource.data.driverPhone == phone()
-        && request.resource.data.status == 'pending';
-      allow update: if isOwner();
+      allow create: if isDriver() && newData().driverPhone == phone()
+        && newData().status == 'pending' && num(newData().amt, 1, 100000);
+      allow update: if isOwner() && resource.data.status == 'pending' && newData().status in ['approved', 'rejected'];
     }
 
     // Call me back, complaints, lost items, SOS
     match /tickets/{id} {
       allow read: if isStaff() || (signedIn() && resource.data.uid == request.auth.uid);
-      allow create: if signedIn() && request.resource.data.uid == request.auth.uid;
+      allow create: if signedIn() && newData().uid == request.auth.uid
+        && (!('note' in newData()) || (newData().note is string && newData().note.size() <= 1000));
       allow update: if isStaff();
+    }
+
+    // App error reports (monitoring): anyone can send a small report, only the office reads them
+    match /errors/{id} {
+      allow create: if newData().keys().hasOnly(['app', 'v', 'msg', 'src', 'line', 'ua', 'at', 'who'])
+        && newData().msg is string && newData().msg.size() <= 1000;
+      allow read: if isStaff();
+      allow delete: if isOwner();
     }
   }
 }
