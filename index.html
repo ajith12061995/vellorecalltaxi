@@ -37,7 +37,7 @@
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('./vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV=window.VCT_V='2026-11-03-42',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV=window.VCT_V='2026-11-03-43',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('./version.json',location.href)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -534,13 +534,13 @@ details.faq p{margin:0;padding:0 14px 14px;color:var(--muted);font-size:14px;lin
 <div class="app" id="app"></div>
 <div class="toast" id="toast"></div>
 
-<script src="./core/report.js?v=2026-11-03-42"></script>
-<script src="./core/geo.js?v=2026-11-03-42"></script>
-<script src="./core/fare.js?v=2026-11-03-42"></script>
-<script src="./core/pin.js?v=2026-11-03-42"></script>
-<script src="./core/clock.js?v=2026-11-03-42"></script>
-<script src="./core/map.js?v=2026-11-03-42"></script>
-<script src="./core/chat.js?v=2026-11-03-42"></script>
+<script src="./core/report.js?v=2026-11-03-43"></script>
+<script src="./core/geo.js?v=2026-11-03-43"></script>
+<script src="./core/fare.js?v=2026-11-03-43"></script>
+<script src="./core/pin.js?v=2026-11-03-43"></script>
+<script src="./core/clock.js?v=2026-11-03-43"></script>
+<script src="./core/map.js?v=2026-11-03-43"></script>
+<script src="./core/chat.js?v=2026-11-03-43"></script>
 <script>
 /* ---------- icons ---------- */
 const I = {
@@ -1507,12 +1507,14 @@ const CITIES=[{ta:'சென்னை',en:'Chennai',km:140,lat:13.0827,lon:80.27
   {ta:'புதுச்சேரி',en:'Puducherry',km:165,lat:11.9416,lon:79.8083},{ta:'கிருஷ்ணகிரி',en:'Krishnagiri',km:120,lat:12.5266,lon:78.2150},
   {ta:'சேலம்',en:'Salem',km:200,lat:11.6643,lon:78.1460},{ta:'திருச்சி',en:'Trichy',km:290,lat:10.7905,lon:78.7047},
   {ta:'ஆம்பூர்',en:'Ambur',km:55,lat:12.7904,lon:78.7166},{ta:'ஆற்காடு',en:'Arcot',km:25,lat:12.9063,lon:79.3193},{ta:'குடியாத்தம்',en:'Gudiyatham',km:35,lat:12.9447,lon:78.8730}];
+const ORATE1={mini:11,sedan:12,suv:16,psuv:20,trav:22},OBATA1={mini:300,sedan:300,suv:350,psuv:400,trav:500}; // one way
+const oRate=id=>(OS.type==='one'?ORATE1:ORATE)[id],oBata=id=>(OS.type==='one'?OBATA1:OBATA)[id]; // price for the trip type chosen
 const ORATE={mini:11,sedan:12,suv:16,psuv:20,trav:22},OBATA={mini:300,sedan:300,suv:350,psuv:400,trav:500};
 let OMIN1=80,OMIND=250,OLONGKM=400,OLONGPCT=0; // one way: minimum billed km · round trip: minimum km per day
 const OS={type:'one',veh:'sedan',leave:null,ret:null};
 const r15=ts=>Math.ceil(ts/9e5)*9e5;
 const oNotice=id=>ADV.includes(id)?180:60;
-const cityRow=(c,i)=>`<button class="row" data-city="${i}"><span class="ic">${I.pin}</span><div><b>${c[S.lang]}</b><small>~${c.km} ${t('km')} · ${inr(Math.round((Math.max(c.km,OMIN1)*ORATE.mini+OBATA.mini)/10)*10)} ${L('முதல்','onwards')}</small></div></button>`;
+const cityRow=(c,i)=>`<button class="row" data-city="${i}"><span class="ic">${I.pin}</span><div><b>${c[S.lang]}</b><small>~${c.km} ${t('km')} · ${inr(Math.round((Math.max(c.km,OMIN1)*ORATE1.mini+OBATA1.mini)/10)*10)} ${L('முதல்','onwards')}</small></div></button>`;
 function outHomeHtml(){
   return `<div class="wherewrap"><button class="where" id="wh"><span>${L('எந்த ஊருக்கு போகணும்?','Which town are you going to?')}</span><i>${I.search}</i></button></div>
    <div class="rperks"><span>↗ ${L('ஒரு வழி','One way')}</span><span>⇄ ${L('போய் வர','Round trip')}</span><span>🧾 ${L('முன்கூட்டியே முழு விலை','Full price upfront')}</span></div>
@@ -1529,8 +1531,8 @@ function oDefaults(mins){
 let ODAYKM=400; // a driver covers about 400 km a day on long trips
 const oDays=km=>{if(OS.type!=='round')return Math.max(1,Math.ceil((km||0)/ODAYKM));const a=new Date(OS.leave);a.setHours(0,0,0,0);const b=new Date(OS.ret);b.setHours(0,0,0,0);return Math.max(Math.round((b-a)/864e5)+1,Math.ceil(2*(km||0)/ODAYKM))};
 function oQuote(id,km){const days=oDays(km),billed=OS.type==='one'?Math.max(km,OMIN1):Math.max(km*2,OMIND*days);
-  const extra=OS.type==='one'&&OLONGPCT>0&&km>OLONGKM?Math.round((km-OLONGKM)*ORATE[id]*OLONGPCT/100):0;
-  return{days,billed,extra,kmFare:billed*ORATE[id],bata:OBATA[id]*days,total:Math.round((billed*ORATE[id]+OBATA[id]*days+extra)/10)*10}}
+  const extra=OS.type==='one'&&OLONGPCT>0&&km>OLONGKM?Math.round((km-OLONGKM)*oRate(id)*OLONGPCT/100):0;
+  return{days,billed,extra,kmFare:billed*oRate(id),bata:oBata(id)*days,total:Math.round((billed*oRate(id)+oBata(id)*days+extra)/10)*10}}
 const fmtD=ts=>new Date(ts).toLocaleString(S.lang==='ta'?'ta-IN':'en-IN',{day:'numeric',month:'short',hour:'numeric',minute:'2-digit'});
 const hm=m=>m>=60?`${Math.floor(m/60)} ${L('மணி','hr')} ${m%60?m%60+' '+t('min'):''}`:`${m} ${t('min')}`;
 function outFare2(){
@@ -1585,11 +1587,11 @@ function outReview(km,mins){
     <div class="tripcard"><div class="rail"><i class="a"></i><i class="l"></i><i class="b"></i></div><div class="stops"><div><small>${t('pickup')} · ${fmtD(OS.leave)}</small><b>${pn(S.from)}</b></div><div><small>${OS.type==='round'?L('போய் திரும்ப','Round trip')+' · '+L('திரும்ப','back by')+' '+fmtD(OS.ret):L('ஒரு வழி','One way')}</small><b>${pn(S.dest)}</b></div></div></div>
     <div class="recent">
       <div class="row"><div><b>${v[S.lang]}</b><small>${v.models||''} · ${v.seats} ${t('seats')}</small></div><b>${payName(S.pay==='cash'?'cash':'upi')}</b></div>
-      <div class="row"><div><b>${L('தூரக் கட்டணம்','Distance fare')}</b><small>${q.billed} ${t('km')} × ₹${ORATE[v.id]}${OS.type==='round'?` · ${L(`போய் வர ${km*2} கி.மீ, குறைந்தது நாளுக்கு ${OMIND} கி.மீ`,`${km*2} km both ways, min ${OMIND} km/day`)}`:km<OMIN1?` · ${L(`குறைந்தது ${OMIN1} கி.மீ`,`min ${OMIN1} km`)}`:''}</small></div><b>${inr(q.kmFare)}</b></div>
+      <div class="row"><div><b>${L('தூரக் கட்டணம்','Distance fare')}</b><small>${q.billed} ${t('km')} × ₹${oRate(v.id)}${OS.type==='round'?` · ${L(`போய் வர ${km*2} கி.மீ, குறைந்தது நாளுக்கு ${OMIND} கி.மீ`,`${km*2} km both ways, min ${OMIND} km/day`)}`:km<OMIN1?` · ${L(`குறைந்தது ${OMIN1} கி.மீ`,`min ${OMIN1} km`)}`:''}</small></div><b>${inr(q.kmFare)}</b></div>
       ${q.extra?`<div class="row"><div><b>${L('காலி வண்டி திரும்ப','Empty return')}</b><small>${L(`${OLONGKM} கி.மீ-க்கு மேல் ${OLONGPCT}%`,`${OLONGPCT}% beyond ${OLONGKM} km`)}</small></div><b>${inr(q.extra)}</b></div>`:''}
-      <div class="row"><div><b>${L('Driver bata','Driver allowance')}</b><small>₹${OBATA[v.id]} × ${q.days} ${L('நாள்','day'+(q.days>1?'s':''))}</small></div><b>${inr(q.bata)}</b></div>
+      <div class="row"><div><b>${L('Driver bata','Driver allowance')}</b><small>₹${oBata(v.id)} × ${q.days} ${L('நாள்','day'+(q.days>1?'s':''))}</small></div><b>${inr(q.bata)}</b></div>
       <div class="row"><div><b style="font-size:17px">${L('மொத்தம்','Total')}</b><small>${L('முன்கூட்டியே சொன்ன விலை','Upfront price')}</small></div><b style="font-size:20px;font-family:var(--display)">${inr(q.total)}</b></div></div>
-    <p class="muted" style="font-size:12.5px;margin:0">${L(`Toll, parking${other?', மாநில permit':''} தனி. கூடுதல் கி.மீ ₹${ORATE[v.id]}/கி.மீ. பயணத்துக்கு 1 மணி நேரம் முன் வரை இலவசமா ரத்து செய்யலாம்.`,`Tolls, parking${other?', state permit':''} extra. Extra km at ₹${ORATE[v.id]}/km. Free cancellation until 1 hour before pickup.`)}</p>
+    <p class="muted" style="font-size:12.5px;margin:0">${L(`Toll, parking${other?', மாநில permit':''} தனி. கூடுதல் கி.மீ ₹${oRate(v.id)}/கி.மீ. பயணத்துக்கு 1 மணி நேரம் முன் வரை இலவசமா ரத்து செய்யலாம்.`,`Tolls, parking${other?', state permit':''} extra. Extra km at ₹${oRate(v.id)}/km. Free cancellation until 1 hour before pickup.`)}</p>
     ${OS.type==='one'?`<div class="note">🔎 ${L('ஒரு வழி பயணத்தை எங்க office சரிபார்த்து உறுதி செய்யும். அதுக்கப்புறம் சிறந்த driver-க்கு அனுப்புவோம்.','Our office reviews one-way trips first, then sends them to our best driver.')}</div>`:''}
     <button class="btn yellow" id="ocf">${L('Book பண்ணு','Confirm booking')} · ${inr(q.total)}</button>`,(m,close)=>{
     m.querySelector('#ocf').onclick=()=>{
@@ -1598,7 +1600,7 @@ function outReview(km,mins){
       saveUpcoming({kind:'outstation',otype:OS.type,when:OS.leave,ret:OS.type==='round'?OS.ret:null,from:{ta:P[S.from].ta,en:P[S.from].en},fromC:{lat:P[S.from].lat,lon:P[S.from].lon},
         to:OS.type==='one'?{ta:P[S.dest].ta,en:P[S.dest].en}:{ta:`${P[S.dest].ta} (போய் வர, ${q.days} நாள்)`,en:`${P[S.dest].en} (round trip, ${q.days} day${q.days>1?'s':''})`},
         toC:{lat:P[S.dest].lat,lon:P[S.dest].lon},hasDrop:true,veh:{ta:v.ta,en:v.en,id:v.id},fare:q.total,km:q.billed,pay:S.pay==='wallet'?'upi':S.pay,
-        tar:{t:'out',otype:OS.type,km,days:q.days,rate:ORATE[v.id],bata:OBATA[v.id],min1:OMIN1,mind:OMIND,daykm:ODAYKM,longKm:OLONGKM,longPct:OLONGPCT},
+        tar:{t:'out',otype:OS.type,km,days:q.days,rate:oRate(v.id),bata:oBata(v.id),min1:OMIN1,mind:OMIND,daykm:ODAYKM,longKm:OLONGKM,longPct:OLONGPCT},
         note:{ta:`${OS.type==='round'?'திரும்ப: '+fmtD(OS.ret)+' · ':''}${q.billed} கி.மீ · Toll, parking, permit தனி`,en:`${OS.type==='round'?'Return by '+fmtD(OS.ret)+' · ':''}${q.billed} km · Toll, parking, permit extra`}});
       OS.leave=OS.ret=null;S.mode='';
     };
@@ -2058,7 +2060,7 @@ function dspTick(x){if(!CL||!OFK.includes(x.kind))return;clearInterval(rideTimer
   const b=x.cid&&MYB[x.cid],am=document.querySelector('.tripcard .amt b');if(b&&b.fare&&am)am.textContent=inr(+b.fare)},1000)}
 /* outstation + rental tariffs set by the owner in office Settings */
 function applyTariff(d){
-  const o=d.out;if(o){Object.keys(ORATE).forEach(id=>{if(o.rate&&o.rate[id]>0)ORATE[id]=+o.rate[id];if(o.bata&&o.bata[id]!=null)OBATA[id]=+o.bata[id]});
+  const o=d.out;if(o){Object.keys(ORATE).forEach(id=>{ORATE1[id]=+((o.rate1&&o.rate1[id]>0)?o.rate1[id]:(o.rate&&o.rate[id]>0?o.rate[id]:ORATE1[id]));OBATA1[id]=+((o.bata1&&o.bata1[id]!=null)?o.bata1[id]:(o.bata&&o.bata[id]!=null?o.bata[id]:OBATA1[id]));if(o.rate&&o.rate[id]>0)ORATE[id]=+o.rate[id];if(o.bata&&o.bata[id]!=null)OBATA[id]=+o.bata[id]});
     if(o.min1!=null)OMIN1=+o.min1;if(o.mind!=null)OMIND=+o.mind;if(o.daykm>=100)ODAYKM=+o.daykm;if(o.longKm!=null)OLONGKM=+o.longKm;if(o.longPct!=null)OLONGPCT=+o.longPct}
   const r=d.rent;if(r){Object.keys(RENT).forEach(id=>{if(r.price&&Array.isArray(r.price[id]))RENT[id]=r.price[id].map(x=>+x>0?+x:null);if(r.xkm&&r.xkm[id]!=null)XKM[id]=+r.xkm[id];if(r.xhr&&r.xhr[id]!=null)XHR[id]=+r.xhr[id]})}
 }

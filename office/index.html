@@ -25,7 +25,7 @@
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('../vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV=window.VCT_V='2026-11-03-42',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV=window.VCT_V='2026-11-03-43',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('../version.json',location.href)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -586,6 +586,8 @@ details.faq p{margin:0;padding:0 14px 14px;color:var(--muted);font-size:14px;lin
 .tr.t5{grid-template-columns:1.6fr 1fr 1fr 1.3fr;min-width:560px}
 .tr.t8{grid-template-columns:1.6fr repeat(7,1fr);min-width:820px;gap:8px}
 .tr.t8 .cell,.tr.t5 .cell{width:78px}
+.tr.t7{grid-template-columns:1.3fr repeat(4,1fr) 1fr;min-width:760px;gap:8px;align-items:center}.tr.t7 .cell{width:100%;max-width:92px}
+.otab .o1{background:rgba(30,138,90,.07);border-radius:8px;padding:4px}.otab .o2{background:rgba(242,169,0,.10);border-radius:8px;padding:4px}.otab .pv small{font-weight:700}
 .ogrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:4px 18px;margin-top:10px}
 .tr.t5{grid-template-columns:1.4fr 1fr .6fr 1fr 1fr;min-width:560px}
 .cell{width:96px;height:40px;border:1.5px solid var(--line);border-radius:10px;padding:0 10px;font:inherit;background:var(--surface);color:var(--fg);font-variant-numeric:tabular-nums}
@@ -695,10 +697,10 @@ details.faq p{margin:0;padding:0 14px 14px;color:var(--muted);font-size:14px;lin
 <div class="app" id="app"></div>
 <div class="toast" id="toast"></div>
 
-<script src="../core/report.js?v=2026-11-03-42"></script>
-<script src="../core/geo.js?v=2026-11-03-42"></script>
-<script src="../core/fare.js?v=2026-11-03-42"></script>
-<script src="../core/map.js?v=2026-11-03-42"></script>
+<script src="../core/report.js?v=2026-11-03-43"></script>
+<script src="../core/geo.js?v=2026-11-03-43"></script>
+<script src="../core/fare.js?v=2026-11-03-43"></script>
+<script src="../core/map.js?v=2026-11-03-43"></script>
 <script>
 /* shared with the customer app: icons, places, fares, map engine */
 const I = {
@@ -761,11 +763,17 @@ const VEH=[
 const fare=(v,km)=>Math.round((v.base+v.per*Math.max(0,km-1.5))/5)*5;
 /* outstation + rental tariffs — same defaults as the customer app; owner edits them in Settings */
 const OUTV=['mini','sedan','suv','psuv','trav'],RENTV=['auto','mini','sedan','suv','psuv','trav'],RHRS=[1,2,4,8,12];
-const OUTD={rate:{mini:11,sedan:12,suv:16,psuv:20,trav:22},bata:{mini:300,sedan:300,suv:350,psuv:400,trav:500},min1:80,mind:250,daykm:400,longKm:400,longPct:0};
+const OUTD={rate:{mini:11,sedan:12,suv:16,psuv:20,trav:22},bata:{mini:300,sedan:300,suv:350,psuv:400,trav:500},rate1:{mini:11,sedan:12,suv:16,psuv:20,trav:22},bata1:{mini:300,sedan:300,suv:350,psuv:400,trav:500},min1:80,mind:250,daykm:400,longKm:400,longPct:0};
 const RENTD={price:{auto:[199,379,0,0,0],mini:[299,549,999,1799,2599],sedan:[349,649,1149,2099,2999],suv:[499,899,1599,2799,3999],psuv:[699,1199,2099,3599,4999],trav:[0,0,2499,3999,5499]},
   xkm:{auto:14,mini:12,sedan:13,suv:17,psuv:21,trav:24},xhr:{auto:120,mini:150,sedan:170,suv:230,psuv:290,trav:350}};
 const clone=o=>JSON.parse(JSON.stringify(o));
-function mergeOut(o){const r=clone(OUTD);if(o){['rate','bata'].forEach(k=>Object.assign(r[k],o[k]||{}));['min1','mind','daykm','longKm','longPct'].forEach(k=>{if(o[k]!=null)r[k]=+o[k]})}return r}
+// Chennai example (140 km, same day): one way and round trip, using the same rules as the customer app
+function outPv(o,id){const r10=x=>Math.round(x/10)*10,km=140,dk=o.daykm||400;
+  const one=r10(Math.max(km,o.min1)*o.rate1[id]+o.bata1[id]*Math.max(1,Math.ceil(km/dk))),dr=Math.max(1,Math.ceil(2*km/dk)),rnd=r10(Math.max(2*km,o.mind*dr)*o.rate[id]+o.bata[id]*dr);
+  return `<small>↗ ${inr(one)}</small><br><small>⇄ ${inr(rnd)}</small>`}
+function mergeOut(o){const r=clone(OUTD);if(o){['rate','bata'].forEach(k=>Object.assign(r[k],o[k]||{}));
+  // one way has its own prices; until saved once they start from the round-trip prices
+  r.rate1={...r.rate,...(o.rate1||{})};r.bata1={...r.bata,...(o.bata1||{})};['min1','mind','daykm','longKm','longPct'].forEach(k=>{if(o[k]!=null)r[k]=+o[k]})}return r}
 function mergeRent(o){const r=clone(RENTD);if(o){['price','xkm','xhr'].forEach(k=>Object.assign(r[k],o[k]||{}))}return r}
 
 
@@ -1618,8 +1626,9 @@ function settings(){
    ${(()=>{c.out=mergeOut(c.out);c.rent=mergeRent(c.rent);const o=c.out,r=c.rent;
     const num=(id,v,lbl,suf)=>`<label class="lrow2"><span>${lbl}</span><span class="field sm">${suf==='₹'?'<span class="cc">₹</span>':''}<input id="${id}" class="ocfg" inputmode="numeric" value="${v}">${suf&&suf!=='₹'?`<span class="cc r">${suf}</span>`:''}</span></label>`;
     return `<section class="panel" style="margin-top:14px"><div class="ph"><h3>${L('Outstation கட்டணம்','Outstation fares')}</h3></div>
-     <div class="table"><div class="tr th t5"><span>${L('வண்டி','Vehicle')}</span><span>${L('ஒரு கி.மீ','Per km')}</span><span>${L('Driver bata / நாள்','Driver allowance / day')}</span><span>${L('சென்னை ஒரு வழி (140 கி.மீ)','Chennai one way (140 km)')}</span></div>
-     ${OUTV.map(id=>{const v=VEH.find(x=>x.id===id);return `<div class="tr t5"><span><b>${v[S.lang]}</b></span><span><input class="cell" data-o="rate.${id}" inputmode="numeric" value="${o.rate[id]}"></span><span><input class="cell" data-o="bata.${id}" inputmode="numeric" value="${o.bata[id]}"></span><span class="pv" data-ov="${id}">${inr(Math.round((Math.max(140,o.min1)*o.rate[id]+o.bata[id])/10)*10)}</span></div>`}).join('')}</div>
+     <p class="muted" style="margin:0 0 8px;font-size:12.5px">${L('ஒரு வழி (drop) பயணத்துக்கும் போய் வர பயணத்துக்கும் தனி விலை. மாத்தின உடனே வலது பக்கம் சென்னை உதாரண விலை மாறும். மேல "Save" அழுத்தின உடனே customer app-ல வரும்.','One way (drop) and round trip have separate prices. The Chennai example on the right updates as you type. Press Save at the top and the customer app uses them at once.')}</p>
+     <div class="table otab"><div class="tr th t7"><span>${L('வண்டி','Vehicle')}</span><span class="o1">↗ ${L('ஒரு வழி ₹/கி.மீ','One way ₹/km')}</span><span class="o1">↗ ${L('ஒரு வழி bata/நாள்','One way allowance/day')}</span><span class="o2">⇄ ${L('போய் வர ₹/கி.மீ','Round trip ₹/km')}</span><span class="o2">⇄ ${L('போய் வர bata/நாள்','Round trip allowance/day')}</span><span>${L('சென்னை (140 கி.மீ)','Chennai (140 km)')}</span></div>
+     ${OUTV.map(id=>{const v=VEH.find(x=>x.id===id);return `<div class="tr t7"><span><b>${v[S.lang]}</b></span><span class="o1"><input class="cell" data-o="rate1.${id}" inputmode="numeric" value="${o.rate1[id]}"></span><span class="o1"><input class="cell" data-o="bata1.${id}" inputmode="numeric" value="${o.bata1[id]}"></span><span class="o2"><input class="cell" data-o="rate.${id}" inputmode="numeric" value="${o.rate[id]}"></span><span class="o2"><input class="cell" data-o="bata.${id}" inputmode="numeric" value="${o.bata[id]}"></span><span class="pv" data-ov="${id}">${outPv(o,id)}</span></div>`}).join('')}</div>
      <div class="ogrid">${num('o_min1',o.min1,L('ஒரு வழி: குறைந்தபட்ச கி.மீ','One way: minimum km'),L('கி.மீ','km'))}${num('o_mind',o.mind,L('போய் வர: நாளுக்கு குறைந்தபட்ச கி.மீ','Round trip: minimum km per day'),L('கி.மீ','km'))}
        ${num('o_daykm',o.daykm,L('Driver ஒரு நாள்ல ஓட்டுற கி.மீ (bata நாள் கணக்கு)','Km a driver covers per day (for allowance days)'),L('கி.மீ','km'))}
        ${num('o_longKm',o.longKm,L('ரொம்ப தூர ஒரு வழி: இதுக்கு மேல','Long one way: beyond'),L('கி.மீ','km'))}${num('o_longPct',o.longPct,L('…காலி வண்டி திரும்ப கூடுதல் கட்டணம்','…extra for the empty return'),'%')}</div>
@@ -1665,7 +1674,7 @@ function settings(){
     ${c.staff.map((s,i)=>`<div class="lrow"><div><b>${esc(s.name)}</b><small>+91 ${s.phone} · ${L('Bookings, drivers, support மட்டும்','Bookings, drivers and support only')}</small></div><button class="linkbtn" data-rs="${i}" style="color:var(--danger)">${L('நீக்கு','Remove')}</button></div>`).join('')}</section>
    ${CL?'':`<section class="panel" style="margin-top:14px"><div class="ph"><h3>${L('Demo data','Demo data')}</h3></div><p class="muted" style="margin:0 0 10px">${L('Sample bookings, drivers எல்லாத்தையும் ஆரம்ப நிலைக்கு கொண்டு வரும்.','Resets all sample bookings and drivers.')}</p><button class="btn ghost" id="rst" style="max-width:260px">${L('Demo data reset','Reset demo data')}</button></section>`}`;
   app.querySelectorAll('[data-o],[data-r],.ocfg').forEach(i=>i.oninput=()=>{i.value=i.value.replace(/\D/g,'').slice(0,5);
-    if(i.dataset.o){const [k,id]=i.dataset.o.split('.');c.out[k][id]=+i.value||0;const o=c.out,el=app.querySelector(`[data-ov="${id}"]`);if(el)el.textContent=inr(Math.round((Math.max(140,o.min1)*o.rate[id]+o.bata[id])/10)*10)}
+    if(i.dataset.o){const [k,id]=i.dataset.o.split('.');c.out[k][id]=+i.value||0;const el=app.querySelector(`[data-ov="${id}"]`);if(el)el.innerHTML=outPv(c.out,id)}
     if(i.dataset.r){const [k,id,ix]=i.dataset.r.split('.');if(k==='price')c.rent.price[id][+ix]=+i.value||0;else c.rent[k][id]=+i.value||0}
     if(i.classList.contains('ocfg'))c.out[i.id.slice(2)]=+i.value||0});
   app.querySelectorAll('.cell[data-f]').forEach(i=>i.oninput=()=>{i.value=i.value.replace(/\D/g,'').slice(0,5);const [v,k]=i.dataset.f.split('.');c.fares[v][k]=+i.value||0;app.querySelector(`[data-pv="${v}"]`).textContent=inr(fareO(v,5))});
@@ -1673,7 +1682,7 @@ function settings(){
     if(!(cm>=0&&cm<=40)){toast(L('Commission 0 முதல் 40% வரை','Commission must be 0–40%'));return}
     if(up&&!/^[\w.\-]{2,}@[a-zA-Z]{2,}$/.test(up)){toast(L('UPI ID சரியா இல்லை (name@bank)','UPI ID looks wrong (name@bank)'));return}
     if(of&&!/^[6-9]\d{9}$/.test(of)){toast(L('Office நம்பர் 10 இலக்கம்','Office number must be 10 digits'));return}
-    if(OUTV.some(id=>!(c.out.rate[id]>0))){toast(L('Outstation கி.மீ விலை 0 ஆக இருக்கக்கூடாது','Outstation per-km fares can’t be 0'));return}
+    if(OUTV.some(id=>!(c.out.rate[id]>0)||!(c.out.rate1[id]>0))){toast(L('Outstation கி.மீ விலை 0 ஆக இருக்கக்கூடாது','Outstation per-km fares can’t be 0'));return}
     if(!(c.out.daykm>=100)){toast(L('ஒரு நாள் கி.மீ குறைந்தது 100','Km per day must be at least 100'));return}
     const wt={rate:Math.max(0,Math.min(20,parseInt(document.getElementById('wtr').value)||0)),free:Math.max(0,Math.min(30,parseInt(document.getElementById('wtf').value)||0))};c.wait=wt;
     const dsp={review:+document.getElementById('drv').value,win:+document.getElementById('dw').value,gap:+document.getElementById('dg').value,fall:document.getElementById('dfb').checked};c.dispatch=dsp;
