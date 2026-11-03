@@ -2,6 +2,12 @@
   "name": "vct-rules-tests",
   "private": true,
   "type": "module",
-  "scripts": { "test": "firebase emulators:exec --only firestore --project demo-vct \"node --test rules.test.js\"" },
-  "devDependencies": { "@firebase/rules-unit-testing": "^3.0.4", "firebase": "^10.12.2", "firebase-tools": "^13.29.1" }
+  "scripts": {
+    "test": "cd ../.. && tests/rules/node_modules/.bin/firebase emulators:exec --only firestore --project demo-vct \"node --test tests/rules/rules.test.js\""
+  },
+  "devDependencies": {
+    "@firebase/rules-unit-testing": "^3.0.4",
+    "firebase": "^10.12.2",
+    "firebase-tools": "^13.29.1"
+  }
 }
