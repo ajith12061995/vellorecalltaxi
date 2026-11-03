@@ -204,7 +204,8 @@ function form(){
       <small style="display:block;color:var(--mut);margin-top:4px">${L('தேதி, நேரம் தானா பதிவாகும்.','The date and time are recorded automatically.')}</small>
       <label style="margin-top:14px">${L('கையெழுத்திட்ட காகித copy (இருந்தா, விருப்பம்)','Signed paper copy (optional)')}</label><div class="docs">${tile('agreeDoc')}</div>
       <div class="err" id="e"></div><div class="prog" id="pg" hidden><i></i></div>
-      <button class="btn y" id="sb">${L('Office-க்கு அனுப்பு','Send to office')}</button></div>`;
+      <button class="btn y" id="sb">${L('Office-க்கு அனுப்பு','Send to office')}</button>
+      <button class="btn ghost" id="lo2" style="border:0;font-size:14px;margin-top:6px">${L('நீங்க ஏற்கனவே driver-ஆ? வேற நம்பர்ல login','Already a driver? Log in with another number')}</button></div>`;
   const val=id=>(document.getElementById(id)||{}).value||'';
   const snap=()=>{const br=val('br'),mo=val('mo');
     S.data={...S.data,name:val('nm').trim(),ecName:val('ecn').trim(),ecPhone:val('ecp').replace(/\D/g,'').slice(0,10),upi:(document.getElementById('upi')?val('upi').trim():''),sig:val('sig').trim(),agreed:document.getElementById('agree').checked,dlNo:val('dln').trim().toUpperCase(),years:val('exp').replace(/\D/g,''),area:val('area').trim(),plate:val('pl').trim().toUpperCase(),
@@ -216,6 +217,7 @@ function form(){
   app.querySelectorAll('[data-f]').forEach(inp=>inp.onchange=async()=>{const k=inp.dataset.f,box=document.getElementById('d_'+k);box.querySelector('small').textContent=L('தயார் பண்ணுது…','Preparing…');
     try{S.files[k]=await shrink(inp.files[0]);snap();form();const el=document.getElementById('d_'+k);if(el)el.scrollIntoView({block:'center'})}catch(e){box.querySelector('small').textContent=e.message==='type'?L('Photo மட்டும் (PDF வேண்டாம்)','Photos only (no PDF)'):L('இந்த photo வேலை செய்யல. மறுபடி எடுங்க','That photo didn’t work. Take it again')}});
   document.getElementById('sb').onclick=()=>{snap();submit()};
+  document.getElementById('lo2').onclick=()=>{snap();CL.logout().then(()=>location.replace('../'))}; // back to the driver app login
 }
 async function submit(){
   const e=document.getElementById('e'),D=S.data,had=((S.app&&S.app.files)||[]).map(k=>OLDKEYS[k]||k);
