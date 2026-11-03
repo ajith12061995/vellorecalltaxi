@@ -22,12 +22,12 @@
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .vimg{mix-blend-mode:normal;background:#fff;border-radius:8px}}
 :root[data-theme="dark"] .vimg{mix-blend-mode:normal;background:#fff;border-radius:8px}
 .chkbadge{flex:none;padding:9px 12px;border-radius:12px;font-weight:700;font-size:13.5px;margin:6px 0}.chkbadge.ok{background:rgba(30,138,90,.12);color:#1E8A5A}.chkbadge.warn{background:rgba(242,169,0,.14);color:#8a5a00}.chkbadge.bad{background:rgba(194,59,59,.12);color:#C23B3B}
-.chklist{flex:none;display:flex;flex-direction:column;gap:3px;max-height:220px;overflow:auto;font-size:13px;margin:4px 0 8px}.chklist div{display:flex;gap:8px;align-items:flex-start}.chklist i{font-style:normal;flex:none}.chklist .ok{color:var(--muted)}.chklist .bad{color:#C23B3B;font-weight:600}
+.chklist{flex:none;display:flex;flex-direction:column;gap:3px;max-height:220px;overflow:auto;font-size:13px;margin:4px 0 8px}.chklist div{display:flex;gap:8px;align-items:flex-start}.chklist i{font-style:normal;flex:none}.chklist .ok,.chklist .info{color:var(--muted)}.chklist .bad{color:#C23B3B;font-weight:600}
 </style>
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('../vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV=window.VCT_V='2026-11-03-44',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV=window.VCT_V='2026-11-03-45',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('../version.json',location.href)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -699,11 +699,11 @@ details.faq p{margin:0;padding:0 14px 14px;color:var(--muted);font-size:14px;lin
 <div class="app" id="app"></div>
 <div class="toast" id="toast"></div>
 
-<script src="../core/report.js?v=2026-11-03-44"></script>
-<script src="../core/geo.js?v=2026-11-03-44"></script>
-<script src="../core/fare.js?v=2026-11-03-44"></script>
-<script src="../core/driverchecks.js?v=2026-11-03-44"></script>
-<script src="../core/map.js?v=2026-11-03-44"></script>
+<script src="../core/report.js?v=2026-11-03-45"></script>
+<script src="../core/geo.js?v=2026-11-03-45"></script>
+<script src="../core/fare.js?v=2026-11-03-45"></script>
+<script src="../core/driverchecks.js?v=2026-11-03-45"></script>
+<script src="../core/map.js?v=2026-11-03-45"></script>
 <script>
 /* shared with the customer app: icons, places, fares, map engine */
 const I = {
@@ -1390,7 +1390,7 @@ function bindApps(){
   app.querySelectorAll('[data-av]').forEach(b=>b.onclick=()=>reviewApp((DB.apps||[]).find(a=>a.id===b.dataset.av)));
 }
 const appCheck=a=>VCTCHK.check(a,(RAWD||[]).map(d=>({id:d._id,name:d.name,plate:d.plate,dlNo:d.dlNo})),Date.now());
-const chkList=c=>`<div class="chklist">${c.items.filter(x=>x.level!=='ok').concat(c.items.filter(x=>x.level==='ok')).map(x=>`<div class="${x.level}"><i>${x.level==='ok'?'✅':x.level==='warn'?'⚠️':'⛔'}</i><span>${esc(S.lang==='ta'?x.ta:x.en)}</span></div>`).join('')}</div>`;
+const chkList=c=>`<div class="chklist">${c.items.filter(x=>x.level==='bad'||x.level==='warn').concat(c.items.filter(x=>x.level==='info'),c.items.filter(x=>x.level==='ok')).map(x=>`<div class="${x.level}"><i>${x.level==='ok'?'✅':x.level==='info'?'ℹ️':x.level==='warn'?'⚠️':'⛔'}</i><span>${esc(S.lang==='ta'?x.ta:x.en)}</span></div>`).join('')}</div>`;
 /* the signed agreement as a printable page (Print → Save as PDF keeps a copy) */
 function printAgreement(a){const c=a.consent||{},w=window.open('');if(!w){toast(L('Pop-up அனுமதி கொடுங்க','Allow pop-ups'));return}
   const T=VCTCHK.AGREEMENT,when=c.at?new Date(c.at).toLocaleString('en-IN'):'—';

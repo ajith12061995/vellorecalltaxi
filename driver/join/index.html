@@ -57,7 +57,7 @@ a{color:inherit}
 .agr{margin:0;padding-left:20px;max-height:260px;overflow:auto;border:1.5px solid var(--line,#e5e5e5);border-radius:12px;padding:10px 10px 10px 30px;font-size:13.5px;line-height:1.55}.agr li{margin:0 0 6px}
 </style>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV=window.VCT_V='2026-11-03-44',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV=window.VCT_V='2026-11-03-45',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('../../version.json',location.href)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -71,8 +71,8 @@ setTimeout(chk,3000);setInterval(chk,5*60*1000);document.addEventListener('visib
 </div></header>
 <main class="wrap" id="app"></main>
 <footer><a href="../../privacy/#drivers" target="_blank" rel="noopener" id="plink"></a> · Vellore Taxi</footer>
-<script src="../../core/report.js?v=2026-11-03-44"></script>
-<script src="../../core/driverchecks.js?v=2026-11-03-44"></script>
+<script src="../../core/report.js?v=2026-11-03-45"></script>
+<script src="../../core/driverchecks.js?v=2026-11-03-45"></script>
 <script>
 const S={lang:'ta',phone:'',veh:'auto',files:{},data:{}};
 try{const s=JSON.parse(localStorage.getItem('vctj')||'{}');if(s.lang)S.lang=s.lang}catch(e){}
@@ -147,7 +147,7 @@ const GROUPS=[['உங்க photo','Your photo',['photo'],'முகம் த�
   ['RC (வண்டி பதிவு)','RC (registration)',['rcF','rcB'],'',''],
   ['Insurance · Permit · FC','Insurance · Permit · FC',['ins','permit','fc'],'Permit, FC — வணிக வண்டிக்கு (taxi / auto) கட்டாயம்','Permit and FC are needed for commercial vehicles'],
   ['வண்டி photo','Vehicle photos',['vehF','vehIn'],'Number plate தெளிவா தெரியணும்','The number plate must be readable'],
-  ['காவல்துறை சரிபார்ப்பு சான்று (Police verification)','Police verification certificate',['pcc'],'இருந்தா இப்போவே கொடுங்க. இல்லைன்னா approve-க்கு அப்புறம் கேட்போம்','Add it now if you have it; otherwise we will ask for it later']];
+  ['காவல்துறை சரிபார்ப்பு சான்று (விருப்பம்)','Police verification certificate (optional)',['pcc'],'இப்போதைக்கு கட்டாயம் இல்லை. இருந்தா கொடுங்க.','Not required for now. Add it if you have one.']];
 const EXP=[['dl','DL','Licence',1],['ins','Insurance','Insurance',1],['permit','Permit','Permit',0],['fc','FC','FC',0]];
 const OLDKEYS={dl:'dlF',rc:'rcF'};
 // brands and models per vehicle type

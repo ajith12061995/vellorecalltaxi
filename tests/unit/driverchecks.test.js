@@ -8,7 +8,7 @@ ok('plate formats',()=>{['TN 23 AB 1234','TN23Q7788','KA01AB1234','22BH1234AA'].
 ok('licence formats',()=>{['TN23 20190001234','TN2320190001234','TN-23-2019-0001234'].forEach(d=>assert.ok(C.dlOk(d),d));['12345','TN23'].forEach(d=>assert.ok(!C.dlOk(d),d))});
 ok('expired insurance blocks',()=>{const r=C.check({...good,exp:{...good.exp,ins:now-864e5}},[],now);assert.ok(r.items.some(i=>i.k==='x_ins'&&i.level==='bad'))});
 ok('insurance ending in 20 days only warns',()=>{const r=C.check({...good,exp:{...good.exp,ins:now+20*864e5}},[],now);assert.equal(r.bad,0);assert.ok(r.items.some(i=>i.k==='x_ins'&&i.level==='warn'))});
-ok('no permit/FC/police only warns',()=>{const r=C.check({...good,files:good.files.filter(f=>!['permit','fc','pcc'].includes(f)),exp:{dl:good.exp.dl,ins:good.exp.ins}},[],now);assert.equal(r.bad,0);assert.ok(r.warn>=3)});
+ok('no permit/FC/police only warns',()=>{const r=C.check({...good,files:good.files.filter(f=>!['permit','fc','pcc'].includes(f)),exp:{dl:good.exp.dl,ins:good.exp.ins}},[],now);assert.equal(r.bad,0);assert.equal(r.warn,3);assert.equal(r.items.find(x=>x.k==='pcc').level,'info')});
 ok('missing agreement blocks',()=>{const r=C.check({...good,consent:null},[],now);assert.ok(r.items.some(i=>i.k==='consent'&&i.level==='bad'))});
 ok('emergency contact = own number blocks',()=>{assert.ok(C.check({...good,ecPhone:good.phone},[],now).items.some(i=>i.k==='ec'&&i.level==='bad'))});
 ok('duplicate plate / licence with an existing driver blocks',()=>{const r=C.check(good,[{id:'+919000000001',name:'Ravi',plate:'TN23CK4455',dlNo:'TN2320190001234'}],now);assert.ok(r.items.some(i=>i.k==='dupPlate'));assert.ok(r.items.some(i=>i.k==='dupDl'))});

@@ -2,6 +2,7 @@
    Used by the join form (blocks only what a taxi business really needs) and by the office (full checklist).
    level: 'bad'  = must be fixed before sending (join form) / approving needs an owner override (office)
           'warn' = the office should look at it; does not block
+          'info' = just for information (optional item missing), not counted
           'ok'   = fine */
 const VCTCHK = (() => {
   const DAY = 864e5;
@@ -40,7 +41,7 @@ const VCTCHK = (() => {
       else add('x_' + k, 'ok', `${ta} செல்லுபடி`, `${en} valid`);
     });
     if (!files.includes('permit') || !files.includes('fc')) add('pf', 'warn', 'Permit / FC photo இல்லை (வணிக வண்டிக்கு வேணும்)', 'Permit / FC photo missing (needed for commercial vehicles)');
-    files.includes('pcc') ? add('pcc', 'ok', 'Police verification இருக்கு', 'Police verification provided') : add('pcc', 'warn', 'Police verification இன்னும் இல்லை — வாங்குங்க', 'No police verification yet — collect it');
+    files.includes('pcc') ? add('pcc', 'ok', 'Police verification இருக்கு', 'Police verification provided') : add('pcc', 'info', 'Police verification இல்லை (இப்போதைக்கு விருப்பம்)', 'No police verification (optional for now)');
     upiOk(a.upi) ? add('upi', 'ok', 'UPI ID', 'UPI ID') : add('upi', 'warn', 'UPI ID இல்லை / தப்பு — customer QR வராது', 'UPI ID missing or wrong — no customer QR');
     // agreement
     const c = a.consent;
