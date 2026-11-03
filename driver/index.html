@@ -28,7 +28,7 @@
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('../vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV=window.VCT_V='2026-11-03-48',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV=window.VCT_V='2026-11-03-49',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('../version.json',location.href)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -623,13 +623,13 @@ a.btn{text-decoration:none}
 <div class="app" id="app"></div>
 <div class="toast" id="toast"></div>
 
-<script src="../core/report.js?v=2026-11-03-48"></script>
-<script src="../core/geo.js?v=2026-11-03-48"></script>
-<script src="../core/fare.js?v=2026-11-03-48"></script>
-<script src="../core/pin.js?v=2026-11-03-48"></script>
-<script src="../core/clock.js?v=2026-11-03-48"></script>
-<script src="../core/map.js?v=2026-11-03-48"></script>
-<script src="../core/chat.js?v=2026-11-03-48"></script>
+<script src="../core/report.js?v=2026-11-03-49"></script>
+<script src="../core/geo.js?v=2026-11-03-49"></script>
+<script src="../core/fare.js?v=2026-11-03-49"></script>
+<script src="../core/pin.js?v=2026-11-03-49"></script>
+<script src="../core/clock.js?v=2026-11-03-49"></script>
+<script src="../core/map.js?v=2026-11-03-49"></script>
+<script src="../core/chat.js?v=2026-11-03-49"></script>
 <script>
 /* shared with the customer app: icons, places, fares, map engine */
 const I = {
@@ -967,7 +967,7 @@ function atPickup(){
   go(jobShell([L('Pickup-ல காத்திருக்கீங்க','Waiting at pickup'),'0:00'],`${custCard()}
      ${J.id&&!J.app?'':`<span class="kind">${L('Customer சொல்லும் PIN-ஐ போடுங்க','Enter the PIN the customer tells you')}</span>
      <div class="otp" id="pinb">${[0,1,2,3].map(i=>`<input id="p${i}" inputmode="numeric" maxlength="1" aria-label="PIN ${i+1}">`).join('')}</div>`}
-     <div class="err" id="pe"></div>${J.id?`<div class="note">${J.app?L('PIN போட்டதும் customer app தானா சரிபார்க்கும்','The customer app checks the PIN automatically'):L('Phone booking. PIN தேவையில்லை','Phone booking. No PIN needed')}</div>`:`<div class="note">Demo PIN: ${J.pin}</div>`}
+     <div class="err" id="pe"></div>${J.id?`<div class="note">${J.app?(CFGD.serverPin?L('PIN-ஐ server சரிபார்க்கும். 5 தடவை தப்பா போட்டா lock ஆயிடும்','The server checks the PIN. 5 wrong tries lock it'):L('PIN போட்டதும் customer app தானா சரிபார்க்கும்','The customer app checks the PIN automatically')):L('Phone booking. PIN தேவையில்லை','Phone booking. No PIN needed')}</div>`:`<div class="note">Demo PIN: ${J.pin}</div>`}
      ${slider('st',L('Trip ஆரம்பிக்க இழுங்க','Slide to start trip'),'green')}
      <button class="linkbtn" id="jcx" style="align-self:center;color:var(--danger)">${L('Customer வரல / ரத்து','No-show / cancel')}</button>`),()=>{
     const pk=P[J.from];
