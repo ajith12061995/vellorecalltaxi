@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "cd ../.. && tests/fnint/node_modules/.bin/firebase emulators:exec --only firestore,functions,auth --project demo-vct \"node --test tests/fnint/run.test.mjs\""
+    "test": "cd ../.. && tests/fnint/node_modules/.bin/firebase emulators:exec --only firestore,functions,auth --project demo-vct \"node --test --test-timeout=120000 tests/fnint/run.test.mjs\""
   },
   "devDependencies": {
     "firebase-admin": "^12.7.0",

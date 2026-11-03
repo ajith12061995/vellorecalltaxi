@@ -118,6 +118,21 @@ test('driver cannot read the PIN', async () => {
 });
 
 // ---- office
+test('customer phone: hidden from drivers until they accept; only the accepting driver reads it', async () => {
+  await seed(async db => {
+    await setDoc(doc(db, 'bookings', 'b1', 'private', 'contact'), { custPhone: CPH, riderPhone: null });
+    await setDoc(doc(db, 'bookings', 'b2', 'private', 'contact'), { custPhone: CPH, riderPhone: '9876543210' });
+  });
+  await assertFails(getDoc(doc(as.drv(), 'bookings', 'b1', 'private', 'contact')));   // waiting ride: nobody sees it
+  await assertSucceeds(getDoc(doc(as.drv(), 'bookings', 'b2', 'private', 'contact'))); // my accepted ride
+  await assertFails(getDoc(doc(as.drv2(), 'bookings', 'b2', 'private', 'contact')));  // another driver
+  await assertFails(getDoc(doc(as.drv(), 'bookings', 'b2', 'private', 'pin')));       // the PIN stays hidden
+  await assertFails(setDoc(doc(as.drv(), 'bookings', 'b2', 'private', 'contact'), { custPhone: '+910' }));
+  await assertSucceeds(getDoc(doc(as.cust(), 'bookings', 'b2', 'private', 'contact')));
+  await assertSucceeds(setDoc(doc(as.cust(), 'bookings', 'b1', 'private', 'contact'), { custPhone: CPH }));
+  await assertSucceeds(getDoc(doc(as.staff(), 'bookings', 'b1', 'private', 'contact')));
+  await assertFails(getDoc(doc(as.other(), 'bookings', 'b1', 'private', 'contact')));
+});
 test('staff can assign and edit bookings but not change a wallet', async () => {
   await assertSucceeds(updateDoc(doc(as.staff(), 'bookings', 'b1'), { status: 'assigned', driverPhone: DRV }));
   await assertFails(updateDoc(doc(as.staff(), 'drivers', DRV), { wallet: 9999 }));

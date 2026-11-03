@@ -1886,14 +1886,22 @@ async function autoRebook(b){
   stopWatch();const old=R.id,ex=[...(b.exclude||[]),b.driverPhone].filter(Boolean);
   const data={};['customerUid','custName','custPhone','src','kind','from','to','path','veh','vehTa','vehEn','km','base','fare','pay','tip','rider','tariff'].forEach(k=>{if(b[k]!==undefined)data[k]=b[k]});
   Object.assign(data,{status:'searching',when:VCTCLK.now(),exclude:ex,rebookOf:old,createdAt:F().serverTimestamp(),updatedAt:F().serverTimestamp()});
+  let ct=null;try{const cs=await F().getDoc(F().doc(CL.db,'bookings',old,'private','contact'));if(cs.exists())ct=cs.data()}catch(e){}
+  const ct2=takeContact(data);if(!ct)ct=ct2;
   const pin=String(1000+Math.floor(Math.random()*9000));
   try{try{Object.assign(data,await VCTPIN.fields(pin))}catch(e){} // lets the driver check the PIN even if this phone goes offline
     const ref=await F().addDoc(F().collection(CL.db,'bookings'),data);await F().setDoc(F().doc(CL.db,'bookings',ref.id,'private','pin'),{pin});
-    Object.assign(R,{id:ref.id,pin,trackId:ref.id.slice(0,8),phase:'search',drv:null,dpos:null,b:data,t0:Date.now(),rebookN:(R.rebookN||0)+1,rebooked:true,lastTry:null});
+    await saveContact(ref.id,ct);
+    Object.assign(R,{id:ref.id,pin,trackId:ref.id.slice(0,8),phase:'search',drv:null,dpos:null,b:data,riderPh:ct.riderPhone,t0:Date.now(),rebookN:(R.rebookN||0)+1,rebooked:true,lastTry:null});
     rememberRide();watchBooking();
     toast(L('உங்க driver ரத்து செஞ்சார். மன்னிக்கவும் — வேற driver-ஐ தேடுறோம்','Your driver cancelled. Sorry — finding you another driver'));
   }catch(e){toast(CL.errText(e,S.lang==='ta'));forgetRide();recordTrip('cancelled',{reason:b.cancelReason||''});R=null;home()}
 }
+/* phone numbers are kept out of the booking (nearby drivers can read a waiting booking) and saved in
+   bookings/{id}/private/contact, which only the office, this customer and the driver who accepted can read */
+function takeContact(d){const c={custPhone:d.custPhone||null,riderPhone:d.rider&&d.rider.phone?String(d.rider.phone):null};
+  delete d.custPhone;if(d.rider)d.rider={name:String(d.rider.name||'')};return c}
+const saveContact=(id,c)=>F().setDoc(F().doc(CL.db,'bookings',id,'private','contact'),c);
 function localTar(){const w=CFG.wait||{};return{t:'local',wait:+w.rate||0,free:w.free!=null?+w.free:3}} // prices saved in the booking for the final bill
 async function cloudBook(){if(blockedStop())return;
   const r=route(S.from,S.dest),v=VEH.find(x=>x.id===S.veh),f=fare(v,r.km);
@@ -1906,10 +1914,12 @@ async function cloudBook(){if(blockedStop())return;
     createdAt:F().serverTimestamp(),updatedAt:F().serverTimestamp()};
   try{
     try{Object.assign(data,await VCTPIN.fields(pin))}catch(e){} // lets the driver check the PIN even if this phone goes offline
+    const ct=takeContact(data);
     const ref=await F().addDoc(F().collection(CL.db,'bookings'),data);
     await F().setDoc(F().doc(CL.db,'bookings',ref.id,'private','pin'),{pin});
+    await saveContact(ref.id,ct);
     R={id:ref.id,v,km:r.km,path:r.path,fare:f,pay:S.pay,from:S.from,dest:S.dest,fromName:{ta:P[S.from].ta,en:P[S.from].en},destName:{ta:P[S.dest].ta,en:P[S.dest].en},
-       pin,trackId:ref.id.slice(0,8),trip,phase:'search',chat:[],drv:null,dpos:null,b:data,t0:Date.now(),boost:S.tip0||0};S.tip0=0;
+       pin,trackId:ref.id.slice(0,8),trip,phase:'search',chat:[],drv:null,dpos:null,b:data,riderPh:ct.riderPhone,t0:Date.now(),boost:S.tip0||0};S.tip0=0;
     rememberRide();watchBooking();
   }catch(e){if(e&&e.code==='permission-denied'&&!MEBLK){F().getDoc(F().doc(CL.db,'blocked','+91'+S.phone)).then(x=>{if(x.exists()){MEBLK=true;blockedStop()}}).catch(()=>{})}
     toast(CL.errText(e,S.lang==='ta'));if(btn){btn.disabled=false;fareScreen()}}
@@ -1978,7 +1988,7 @@ function rideCloud(){
      <div class="topbar"><div class="greet status"><small id="stS"></small><b id="stB"></b></div><button class="chipbtn sos" id="sos">SOS</button></div></div>
    <div class="sheet ride-sheet pad"><div class="grab"></div>
      <div class="pinbox" id="pinbox"><span>${R.b&&R.b.rider?L(`இந்த PIN-ஐ ${esc(R.b.rider.name)}-க்கு அனுப்புங்க`,`Send this PIN to ${esc(R.b.rider.name)}`):L('இந்த PIN-ஐ driver-கிட்ட சொல்லுங்க','Tell this PIN to your driver')}</span><b>${R.pin.split('').map(d=>`<i>${d}</i>`).join('')}</b></div>
-     ${R.b&&R.b.rider?`<a class="btn ghost" id="rshare" target="_blank" rel="noopener" href="https://wa.me/91${R.b.rider.phone}?text=${encodeURIComponent(`🚖 Vellore Taxi
+     ${R.b&&R.b.rider?`<a class="btn ghost" id="rshare" target="_blank" rel="noopener" href="https://wa.me/${(R.riderPh||R.b.rider.phone)?'91'+(R.riderPh||R.b.rider.phone):''}?text=${encodeURIComponent(`🚖 Vellore Taxi
 ${L('உங்களுக்காக taxi book பண்ணியிருக்கோம்','A taxi is booked for you')}.
 Driver: ${R.drv.en} · ${R.drv.plate} · ${R.v.en}
 PIN: ${R.pin}
@@ -2086,11 +2096,12 @@ async function cloudSchedule(rec){
   const v=VEH.find(x=>x.id===rec.veh.id)||VEH.find(x=>x.id==='auto');
   const to=(rec.kind==='schedule'||OFK.includes(rec.kind)&&rec.hasDrop)&&S.dest&&P[S.dest]?placeOf(S.dest):{key:null,ta:rec.to.ta,en:rec.to.en,lat:null,lon:null};
   let ph={};if(rec.pin)try{ph=await VCTPIN.fields(rec.pin)}catch(e){}
-  try{const ref=await F().addDoc(F().collection(CL.db,'bookings'),{...ph,customerUid:CUID,custName:S.name,custPhone:'+91'+S.phone,src:'app',kind:rec.kind,
-      from:placeOf(S.from),to,path:[],veh:v.id,vehTa:v.ta,vehEn:v.en,km:rec.km||0,hrs:rec.hrs||null,otype:rec.otype||null,retAt:rec.ret||null,rider:S.rider||null,base:v.base,fare:rec.fare,pay:rec.pay||'cash',note:rec.note||null,tariff:rec.tar||null,
+  try{const ref=await F().addDoc(F().collection(CL.db,'bookings'),{...ph,customerUid:CUID,custName:S.name,src:'app',kind:rec.kind,
+      from:placeOf(S.from),to,path:[],veh:v.id,vehTa:v.ta,vehEn:v.en,km:rec.km||0,hrs:rec.hrs||null,otype:rec.otype||null,retAt:rec.ret||null,rider:S.rider?{name:String(S.rider.name||'')}:null,base:v.base,fare:rec.fare,pay:rec.pay||'cash',note:rec.note||null,tariff:rec.tar||null,
       ...(OFK.includes(rec.kind)?{status:'searching',dispatch:rec.kind==='outstation'&&rec.otype==='one'?{review:true,openAt:null,reviewUntil:Date.now()+(DISPC.review||10)*60e3,gap:DISPC.gap,fall:DISPC.fall}:{openAt:Date.now()+DISPC.win*1000,gap:DISPC.gap,fall:DISPC.fall}}:{status:'scheduled'}),
       when:rec.when,createdAt:F().serverTimestamp(),updatedAt:F().serverTimestamp()});
     if(rec.pin)F().setDoc(F().doc(CL.db,'bookings',ref.id,'private','pin'),{pin:rec.pin}).catch(()=>{});
+    await saveContact(ref.id,{custPhone:'+91'+S.phone,riderPhone:S.rider&&S.rider.phone?String(S.rider.phone):null});
     return ref.id}catch(e){toast(CL.errText(e,S.lang==='ta'));return null}
 }
 function loadQrLib(){return new Promise((res,rej)=>{if(window.QRCode)return res();const sc=document.createElement('script');sc.src='https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';sc.onload=res;sc.onerror=rej;document.head.appendChild(sc)})}

@@ -1277,10 +1277,10 @@ function newBooking(){
       let w=Date.now();if(when==='later'){w=new Date($('#nwh').value).getTime();if(!w||w<Date.now()+15*6e4){e.textContent=L('குறைந்தது 15 நிமிடம் பின்னாடி நேரம் கொடுங்க','Pick a time at least 15 minutes ahead');return}}
       if(['trav','bus'].includes(veh)&&w<Date.now()+3*36e5){e.textContent=L('Tempo Traveller / Maxi Cab-க்கு குறைந்தது 3 மணி நேரம் முன்னாடி','Tempo Travellers and maxi cabs need 3 hours’ notice');return}
       const r=route(fr,to),id='B'+String(1000+DB.bk.length+1),nn=when==='now'?nearest(veh,fr)[0]:null;
-      if(CL){const vv=VEH.find(v=>v.id===veh);const data={customerUid:null,custName:$('#nnm').value.trim()||'Customer',custPhone:'+91'+ph.value,src:'phone',kind:when==='later'?'schedule':'ride',from:placeK(fr),to:placeK(to),path:(r.pts||r.path.map(k=>P[k])).map(p=>({lat:p.lat,lon:p.lon})),veh,vehTa:vv.ta,vehEn:vv.en,km:+r.km.toFixed(1),base:+((DB.cfg.fares[veh]||{}).base||vv.base),fare:fareO(veh,r.km),pay,status:when==='later'?'scheduled':nn?'assigned':'searching',when:w,createdAt:ts(),updatedAt:ts()};
+      if(CL){const vv=VEH.find(v=>v.id===veh);const cph='+91'+ph.value;const data={customerUid:null,custName:$('#nnm').value.trim()||'Customer',src:'phone',kind:when==='later'?'schedule':'ride',from:placeK(fr),to:placeK(to),path:(r.pts||r.path.map(k=>P[k])).map(p=>({lat:p.lat,lon:p.lon})),veh,vehTa:vv.ta,vehEn:vv.en,km:+r.km.toFixed(1),base:+((DB.cfg.fares[veh]||{}).base||vv.base),fare:fareO(veh,r.km),pay,status:when==='later'?'scheduled':nn?'assigned':'searching',when:w,createdAt:ts(),updatedAt:ts()};
         if(nn)Object.assign(data,{driverPhone:nn.d.id,driverName:nn.d.en,plate:nn.d.plate,vehModel:nn.d.model,assignedAt:ts()});
         close();BT=data.status==='scheduled'?'sched':'live';S.sec='book';save();show();
-        cw(F().addDoc(F().collection(CL.db,'bookings'),data).then(()=>toast(nn?L(`${nn.d.ta}-க்கு assign ஆச்சு`,`Assigned to ${nn.d.en}`):L('Booking சேமிச்சாச்சு','Booking saved'))));return}
+        cw(F().addDoc(F().collection(CL.db,'bookings'),data).then(ref=>{CONT[ref.id]={custPhone:cph,riderPhone:null};return F().setDoc(F().doc(CL.db,'bookings',ref.id,'private','contact'),CONT[ref.id])}).then(()=>toast(nn?L(`${nn.d.ta}-க்கு assign ஆச்சு`,`Assigned to ${nn.d.en}`):L('Booking சேமிச்சாச்சு','Booking saved'))));return}
       const b={id,cust:{name:$('#nnm').value.trim()||L('Customer','Customer'),phone:ph.value},from:fr,to,veh,km:+r.km.toFixed(1),fare:fareO(veh,r.km),pay,src:'phone',created:Date.now(),when:w,prog:0,
         status:when==='later'?'scheduled':nn?'assigned':'searching',driver:nn?nn.d.id:null};
       if(nn)nn.d.status='pickup';DB.bk.push(b);log(`${id} phone booking${nn?' → '+nn.d.ta:''}`,`${id} phone booking${nn?' → '+nn.d.en:''}`);saveDB();close();BT=b.status==='scheduled'?'sched':'live';S.sec='book';save();show();
@@ -1453,7 +1453,14 @@ const DAY=864e5,dayStart=t=>{const d=new Date(t);d.setHours(0,0,0,0);return d.ge
 const fmtD=t=>t?new Date(t).toLocaleDateString(S.lang==='ta'?'ta-IN':'en-IN',{day:'numeric',month:'short',year:'2-digit'}):'—';
 const pct=(a,b)=>b?Math.round(a*100/b):0;
 const isDrvCx=b=>b.status==='cancelled'&&/^driver/.test(b.reason||'');
-function mapBk(b,now){now=now||Date.now();return{id:shortB(b._id),_id:b._id,cust:{name:b.custName||'—',phone:digits(b.custPhone)},rider:b.rider?{name:String(b.rider.name||''),phone:digits(b.rider.phone)}:null,custUid:b.customerUid||null,
+/* customer / rider numbers of newer bookings live in bookings/{id}/private/contact (hidden from drivers who
+   have not accepted); the office reads them once and keeps them here */
+const CONT={};let CONTQ=null;
+function needContacts(list,done){if(!CL)return Promise.resolve();const miss=list.filter(b=>b&&b._id&&!b.custPhone&&!(b._id in CONT));if(!miss.length)return Promise.resolve();
+  miss.forEach(b=>CONT[b._id]=null);
+  return Promise.all(miss.map(b=>F().getDoc(F().doc(CL.db,'bookings',b._id,'private','contact')).then(s=>{CONT[b._id]=s.exists()?s.data():{}}).catch(()=>{delete CONT[b._id]})))
+    .then(()=>{if(done){clearTimeout(CONTQ);CONTQ=setTimeout(done,50)}})}
+function mapBk(b,now){now=now||Date.now();const ct=CONT[b._id]||{};return{id:shortB(b._id),_id:b._id,cust:{name:b.custName||'—',phone:digits(b.custPhone||ct.custPhone)},rider:b.rider?{name:String(b.rider.name||''),phone:digits(b.rider.phone||ct.riderPhone)}:null,custUid:b.customerUid||null,
   from:b.from&&b.from.key&&P[b.from.key]?b.from.key:(b.from?b.from[S.lang]||b.from.ta:'—'),to:b.to&&b.to.key&&P[b.to.key]?b.to.key:(b.to?b.to[S.lang]||b.to.ta:'—'),
   fromC:b.from,toC:b.to,veh:b.veh||'auto',km:+b.km||0,fare:FARE.billOf(b),fareQ:+b.fare||0,trip:FARE.tripOf(b),commA:b.comm!=null?+b.comm:null,fx:b.fx||null,tariff:b.tariff||null,tip:+b.tip||0,pay:b.pay||'cash',src:b.src||'app',status:b.status||'searching',kind:b.kind||'ride',dispatch:b.dispatch||null,otype:b.otype||null,ret:b.retAt||null,
   driver:b.driverPhone||null,driverName:b.driverName||'',created:CL.toMs(b.createdAt)||b.when||now,when:b.when||CL.toMs(b.createdAt)||now,done:CL.toMs(b.doneAt)||null,reason:b.cancelReason||'',
@@ -1464,7 +1471,8 @@ async function loadHist(days){
   if(HIST.days>=days&&Date.now()-HIST.at<60e3)return HIST.rows;
   const since=new Date(Date.now()-days*DAY);
   const s=await F().getDocs(F().query(F().collection(CL.db,'bookings'),F().where('createdAt','>=',since)));
-  const now=Date.now();HIST={at:now,days,rows:s.docs.map(d=>mapBk({_id:d.id,...d.data()},now)).filter(b=>b.created>=since.getTime())};return HIST.rows;
+  const raw=s.docs.map(d=>({_id:d.id,...d.data()}));await needContacts(raw);
+  const now=Date.now();HIST={at:now,days,rows:raw.map(b=>mapBk(b,now)).filter(b=>b.created>=since.getTime())};return HIST.rows;
 }
 async function loadUsers(){
   if(!CL)return [];
@@ -1785,7 +1793,7 @@ let BLKMIG=false;function migrateBlocked(){const old=DB.cfg.blocked||[];if(BLKMI
 function chime(){try{const a=new (window.AudioContext||window.webkitAudioContext)();[0,.3].forEach(t=>{const o=a.createOscillator(),g=a.createGain();o.frequency.value=t?1046:784;o.connect(g);g.connect(a.destination);g.gain.setValueAtTime(.2,a.currentTime+t);g.gain.exponentialRampToValueAtTime(.001,a.currentTime+t+.28);o.start(a.currentTime+t);o.stop(a.currentTime+t+.3)})}catch(e){}}
 function remap(liveOnly){
   const now=Date.now();
-  DB.bk=RAWB.map(b=>mapBk(b,now));
+  DB.bk=RAWB.map(b=>mapBk(b,now));needContacts(RAWB,()=>remap());
   const busy={};RAWB.forEach(b=>{if(b.driverPhone&&(b.status==='assigned'||b.status==='ontrip'))busy[b.driverPhone]=b.status});
   const wk={};RAWB.forEach(b=>{if(b.status==='done'&&b.driverPhone&&(CL.toMs(b.doneAt)||b.when||0)>now-7*864e5)wk[b.driverPhone]=(wk[b.driverPhone]||0)+1});
   const rsum={};RAWB.forEach(b=>{if(b.status==='done'&&+b.rating>0&&b.driverPhone){const x=rsum[b.driverPhone]||(rsum[b.driverPhone]={s:0,n:0});x.s+=+b.rating;x.n++}});

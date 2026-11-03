@@ -912,9 +912,16 @@ const custCard=()=>`<div class="drv"><span class="avatar">${J.cust.en[0]}</span>
 const CHAT_ME='d',CHAT_BTN='#chat';
 /* ---------- live chat (customer ↔ driver), stored in bookings/{id}/chat ---------- */
 function chatPing(t){beep();toast(L('Customer: ','Customer: ')+t)}
+/* the customer's number is in bookings/{id}/private/contact, readable only after this driver accepted;
+   older bookings still carry it in the booking itself */
+function custPh(){if(!J)return null;const c=J.contact||{},b=J.b||{};const rp=c.riderPhone||(b.rider&&b.rider.phone);
+  return rp?'+91'+String(rp).replace(/^\+?91/,''):(c.custPhone||b.custPhone||null)}
+function loadContact(id,n){if(!CL||!J||J.id!==id||J.contact)return;
+  F().getDoc(F().doc(CL.db,'bookings',id,'private','contact')).then(s=>{if(J&&J.id===id){if(s.exists())J.contact=s.data();else if((n||0)<4)setTimeout(()=>loadContact(id,(n||0)+1),3000)}})
+    .catch(()=>{if((n||0)<4)setTimeout(()=>loadContact(id,(n||0)+1),3000)})}
 function bindCust(){
-  if(CL&&J&&J.id){const cp=J.b&&(J.b.rider&&J.b.rider.phone?'+91'+J.b.rider.phone:J.b.custPhone);chatStart(J.id);chatDot();
-    document.getElementById('call').onclick=()=>{if(cp)location.href='tel:'+cp;else toast(L('Customer நம்பர் இல்லை','No customer number'))};
+  if(CL&&J&&J.id){loadContact(J.id);chatStart(J.id);chatDot();
+    document.getElementById('call').onclick=()=>{const cp=custPh();if(cp)location.href='tel:'+cp;else{loadContact(J.id);toast(L('Customer நம்பர் இன்னும் வரல. சில நொடி கழிச்சு மீண்டும் அழுத்துங்க','Customer number not loaded yet. Try again in a few seconds'))}};
     document.getElementById('chat').onclick=()=>{if(!J.app){toast(L('இது phone booking. Customer-ஐ call பண்ணுங்க','This is a phone booking. Please call the customer'));return}chatOpen(J.cust[S.lang],S.lang==='ta'?['வந்துகிட்டு இருக்கேன்','Pickup-ல நிக்கிறேன்','Traffic, 5 நிமி ஆகும்','எங்கே இருக்கீங்க?']:['On my way','I’m at the pickup','Traffic, 5 more minutes','Where are you?'])};
   }else{
   document.getElementById('call').onclick=()=>toast(L('Masked call: customer நம்பர் உங்களுக்கு தெரியாது (calling service connect ஆனதும்)','Masked call: the customer number stays hidden (once calling is connected)'));

@@ -20,7 +20,9 @@ const L = require('./lib/logic');
 admin.initializeApp();
 const db = admin.firestore();
 const FV = admin.firestore.FieldValue;
-setGlobalOptions({ region: 'asia-south1', maxInstances: 10 });
+// Firestore triggers must run in the database's region; tools/cloudshell-deploy.sh writes FN_REGION into functions/.env.<project>
+const REGION = process.env.FN_REGION || 'asia-south1';
+setGlobalOptions({ region: REGION, maxInstances: 10 });
 const BACKUP_BUCKET = defineString('BACKUP_BUCKET', { default: '' });
 
 const cfg = async () => (await db.doc('config/app').get()).data() || {};

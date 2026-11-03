@@ -1,6 +1,6 @@
 // Cloud Functions integration tests: the REAL functions/index.js running in the Firebase emulators
 // (Firestore + Functions + Auth). Run: cd tests/fnint && npm i && npm test   (needs Java). Runs in GitHub Actions.
-import { test, before } from 'node:test';
+import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 const require = createRequire(import.meta.url);
@@ -34,6 +34,8 @@ before(async () => {
   await db.doc('config/app').set({ comm: 10, fares: { sedan: { base: 60, per: 15 } } });
   await db.doc(`drivers/${DRV}`).set({ name: 'Test', veh: 'sedan', wallet: 500 });
 });
+
+after(async () => { await admin.app().delete(); });  // close connections so the run ends
 
 test('app mode: ledger entry written, wallet not touched by the server', async () => {
   const ref = db.doc('bookings/a1');

@@ -125,10 +125,14 @@ service cloud.firestore {
         allow delete: if isOwner();
       }
 
-      // Ride PIN: only the customer and the office can see it
+      // private/pin: only the customer and the office. private/contact (phone numbers): also the driver who
+      // accepted the ride, and only while it is running — drivers looking at a waiting ride never see the number
       match /private/{doc} {
         allow read, write: if isStaff()
           || (signedIn() && get(/databases/$(database)/documents/bookings/$(id)).data.customerUid == request.auth.uid);
+        allow read: if doc == 'contact' && isDriver()
+          && get(/databases/$(database)/documents/bookings/$(id)).data.driverPhone == phone()
+          && get(/databases/$(database)/documents/bookings/$(id)).data.status in ['assigned', 'arrived', 'ontrip', 'done'];
       }
     }
 

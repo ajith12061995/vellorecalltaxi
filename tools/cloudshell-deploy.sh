@@ -1,0 +1,47 @@
+#!/usr/bin/env bash
+# Vellore Taxi — deploy security rules and Cloud Functions from Google Cloud Shell (no computer needed).
+# Open https://shell.cloud.google.com signed in as the Firebase project owner, then:
+#   git clone https://github.com/ajith12061995/vellorecalltaxi.git && cd vellorecalltaxi && bash tools/cloudshell-deploy.sh
+# Safe to run again. It never deletes data. Nothing changes in the apps until the owner turns on the switches
+# in Office → Settings → Server & monitoring.
+set -euo pipefail
+PROJECT="${1:-vellore-taxi23}"
+say(){ printf '\n\033[1;33m== %s\033[0m\n' "$*"; }
+say "Project: $PROJECT"
+gcloud config set project "$PROJECT" >/dev/null
+
+say "1/6 Firestore database location"
+LOC=$(gcloud firestore databases describe --database='(default)' --format='value(locationId)')
+case "$LOC" in nam5) REGION=us-central1 ;; eur3) REGION=europe-west1 ;; *) REGION="$LOC" ;; esac
+echo "database: $LOC  → functions region: $REGION"
+
+say "2/6 Backup bucket (kept 30 days)"
+NUM=$(gcloud projects describe "$PROJECT" --format='value(projectNumber)')
+BUCKET="${PROJECT}-backups"
+if ! gcloud storage buckets describe "gs://$BUCKET" >/dev/null 2>&1; then
+  gcloud storage buckets create "gs://$BUCKET" --location="$REGION" --uniform-bucket-level-access
+  printf '{"rule":[{"action":{"type":"Delete"},"condition":{"age":30}}]}' > /tmp/vct-life.json
+  gcloud storage buckets update "gs://$BUCKET" --lifecycle-file=/tmp/vct-life.json
+fi
+gcloud beta services identity create --service=firestore.googleapis.com --project="$PROJECT" >/dev/null 2>&1 || true
+gcloud storage buckets add-iam-policy-binding "gs://$BUCKET" --member="serviceAccount:service-${NUM}@gcp-sa-firestore.iam.gserviceaccount.com" --role=roles/storage.admin >/dev/null
+gcloud projects add-iam-policy-binding "$PROJECT" --member="serviceAccount:${NUM}-compute@developer.gserviceaccount.com" --role=roles/datastore.importExportAdmin --condition=None >/dev/null
+echo "bucket gs://$BUCKET ready"
+
+say "3/6 Settings for the functions"
+printf 'FN_REGION=%s\nBACKUP_BUCKET=%s\n' "$REGION" "$BUCKET" > "functions/.env.$PROJECT"
+cat "functions/.env.$PROJECT"
+
+say "4/6 Install + tests (deploy stops if any test fails)"
+(cd functions && npm install --no-audit --no-fund --silent && npm test 2>&1 | grep -E '^# (pass|fail)')
+(cd functions && npm test >/dev/null 2>&1) || { echo "TESTS FAILED — nothing deployed"; exit 1; }
+for f in tests/unit/*.test.js; do node "$f" | tail -1; done
+
+say "5/6 Sign in to Firebase (open the link, choose the owner account, paste the code back)"
+npx --yes firebase-tools@13 login --no-localhost
+npx --yes firebase-tools@13 use "$PROJECT"
+
+say "6/6 Deploy security rules + functions"
+echo "If it asks to DELETE anything → answer N.  If it asks about a cleanup policy for images → press Enter (default)."
+npx --yes firebase-tools@13 deploy --only firestore:rules,functions --project "$PROJECT"
+say "DONE. Send Claude a screenshot of the last 15 lines. Do NOT turn on the switches yet."
