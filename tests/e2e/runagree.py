@@ -1,0 +1,47 @@
+# Existing drivers sign the agreement in the driver app; with reqConsent on they cannot go online before;
+# the office driver card shows signed / not signed.
+import asyncio
+from playwright.async_api import async_playwright
+B='http://localhost:8765/tests/e2e/out/'
+res=[]
+def check(n,c,i=''):res.append(bool(c));print(('PASS ' if c else 'FAIL ')+n,i)
+async def main():
+    async with async_playwright() as p:
+        b=await p.chromium.launch();ctx=await b.new_context(viewport={'width':1900,'height':880},geolocation={'latitude':12.955,'longitude':79.139},permissions=['geolocation'])
+        pg=await ctx.new_page();errs=[];pg.on('pageerror',lambda e:errs.append(str(e)))
+        await pg.goto(B+'harness_x.html');await pg.wait_for_timeout(2500)
+        await pg.evaluate("MOCK.store.set('config/app',{comm:10,reqConsent:true});const d=MOCK.store.get('drivers/+919999900002');delete d.consent")
+        D=pg.frame_locator('#d');O=pg.frame_locator('#o');df=pg.frame(url=B+'d2.html');of=pg.frame(url=B+'o2.html')
+        await O.locator('#ph').fill('8220201462');await O.locator('#lgn').click();await pg.wait_for_timeout(300)
+        await O.locator('#otp').fill('123456');await pg.wait_for_timeout(1500)
+        await of.evaluate("S.sec='drv';show()");await pg.wait_for_timeout(800)
+        line=await of.evaluate("[...document.querySelectorAll('.agrline')].map(x=>x.innerText).join(' | ')")
+        check('office card: not signed shown',('கையெழுத்து இல்லை' in line) or ('not signed' in line),line[:120])
+        await D.locator('#ph').fill('9999900002');await D.locator('#go').click();await pg.wait_for_timeout(300)
+        for i,d in enumerate('123456'):await D.locator(f'#o{i}').fill(d)
+        await D.locator('#go').click();await pg.wait_for_timeout(1500)
+        check('driver home shows the sign card',await df.evaluate("!!document.getElementById('sgn')"))
+        await D.locator('#ons').click();await pg.wait_for_timeout(800)
+        check('ON DUTY blocked until signed: agreement opens',await df.evaluate("!!document.getElementById('agsv')") and not await df.evaluate("S.online"))
+        await pg.screenshot(path='shots/agree_driver.png',clip={'x':400,'y':0,'width':400,'height':860})
+        await D.locator('#agsv').click();await pg.wait_for_timeout(300)
+        e1=await df.evaluate("document.getElementById('age').textContent")
+        await D.locator('#agok').check();await D.locator('#agnm').fill('Somebody Else');await D.locator('#agsv').click();await pg.wait_for_timeout(300)
+        e2=await df.evaluate("document.getElementById('age').textContent")
+        check('needs tick, then the registered name',bool(e1) and bool(e2) and e1!=e2,(e1[:30],e2[:50]))
+        nm=await df.evaluate("DME.en")
+        await D.locator('#agnm').fill(nm.lower());await D.locator('#agsv').click();await pg.wait_for_timeout(1200)
+        c=(await pg.evaluate("MOCK.dump()['drivers/+919999900002']")).get('consent')
+        check('signature saved on the driver record',c and c.get('v')=='2026-11-03' and c.get('name')==nm.lower() and c.get('at'),str(c)[:120])
+        check('sign card gone',not await df.evaluate("!!document.getElementById('sgn')"))
+        await D.locator('#ons').click();await pg.wait_for_timeout(1200)
+        check('now goes online',await df.evaluate("S.online"))
+        await of.evaluate("S.sec='drv';show()");await pg.wait_for_timeout(800)
+        line=await of.evaluate("[...document.querySelectorAll('.agrline')].map(x=>x.innerText).join(' | ')")
+        check('office card: signed with name',('✅' in line) and (nm.lower() in line),line[:160])
+        box=await pg.evaluate("(()=>{const r=document.getElementById('o').getBoundingClientRect();return [r.x,r.y,r.width,r.height]})()")
+        await pg.screenshot(path='shots/agree_office.png',clip={'x':box[0],'y':box[1],'width':box[2],'height':box[3]})
+        check('no page errors',not errs,errs[:3])
+        await b.close()
+    print('RESULT','PASS' if all(res) else 'FAIL',f'{sum(res)}/{len(res)}')
+asyncio.run(main())
