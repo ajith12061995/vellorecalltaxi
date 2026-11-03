@@ -39,7 +39,7 @@
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('./vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV=window.VCT_V='2026-11-04-57',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV=window.VCT_V='2026-11-04-58',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('./version.json',location.href)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -536,13 +536,13 @@ details.faq p{margin:0;padding:0 14px 14px;color:var(--muted);font-size:14px;lin
 <div class="app" id="app"></div>
 <div class="toast" id="toast"></div>
 
-<script src="./core/report.js?v=2026-11-04-57"></script>
-<script src="./core/geo.js?v=2026-11-04-57"></script>
-<script src="./core/fare.js?v=2026-11-04-57"></script>
-<script src="./core/pin.js?v=2026-11-04-57"></script>
-<script src="./core/clock.js?v=2026-11-04-57"></script>
-<script src="./core/map.js?v=2026-11-04-57"></script>
-<script src="./core/chat.js?v=2026-11-04-57"></script>
+<script src="./core/report.js?v=2026-11-04-58"></script>
+<script src="./core/geo.js?v=2026-11-04-58"></script>
+<script src="./core/fare.js?v=2026-11-04-58"></script>
+<script src="./core/pin.js?v=2026-11-04-58"></script>
+<script src="./core/clock.js?v=2026-11-04-58"></script>
+<script src="./core/map.js?v=2026-11-04-58"></script>
+<script src="./core/chat.js?v=2026-11-04-58"></script>
 <script>
 /* ---------- icons ---------- */
 const I = {
@@ -2104,6 +2104,9 @@ function sorrySheet(reason){if(document.getElementById('sorry'))return;
       ${CFG.office?`<a class="btn ghost" href="tel:+91${CFG.office}">📞 ${L('Office-ஐ அழை','Call our office')}</a>`:''}<button class="btn ghost" id="sok">${L('சரி','OK')}</button>`,(m,close)=>{
       m.querySelector('#sok').onclick=()=>{close();if(S.tab==='home'&&!R)home()};
       const rb=m.querySelector('#srb');if(rb)rb.onclick=()=>{close();if(R)return;if(nb.from&&P[nb.from])S.from=nb.from;if(nb.dest&&P[nb.dest])S.dest=nb.dest;S.veh=nb.veh;S.tip0=Math.min(TIPMAX,nb.tip||0);S.mode='';S.when=null;fareScreen()}});return}
+  if(reason==='limit'){modal(`<div id="sorry" style="text-align:center;font-size:40px">⏳</div><h3 style="text-align:center">${L('ஒரே நேரத்துல நிறைய booking','Too many bookings at once')}</h3>
+      <p style="margin:0;line-height:1.55">${L('உங்க முந்தைய booking-கள் இன்னும் நடந்துட்டு இருக்கு. அதுல ஒன்னு முடிஞ்சதும் மறுபடி book பண்ணுங்க. அவசரம்னா எங்களை அழைங்க.','Your earlier bookings are still running. Book again once one of them is finished. In a hurry? Call us.')}</p>
+      ${CFG.office?`<a class="btn ghost" href="tel:+91${CFG.office}">📞 ${L('Office-ஐ அழை','Call our office')}</a>`:''}<button class="btn yellow" id="sok">${L('சரி','OK')}</button>`,(m,close)=>{m.querySelector('#sok').onclick=()=>{close();if(S.tab==='home'&&!R)home()}});return}
   const nv=reason==='novehicle';
   modal(`<div id="sorry" style="text-align:center;font-size:40px">🙏</div><h3 style="text-align:center">${nv?'மன்னிக்கவும் · We are sorry':'Booking ரத்து · Booking cancelled'}</h3>
     ${nv?`<p style="margin:0;line-height:1.55">${SORRY.ta}</p><p class="muted" style="margin:0;line-height:1.5">${SORRY.en}</p>`
