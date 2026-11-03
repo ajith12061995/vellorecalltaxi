@@ -311,6 +311,16 @@ async function gRoute(a,b){
   const j=await r.json();const rt=j.routes&&j.routes[0];if(!rt||!rt.distanceMeters)throw new Error('no-route');
   return{km:Math.max(1,rt.distanceMeters/1000),mins:rt.duration?Math.round(parseInt(rt.duration)/60):null,pts:decodePoly(rt.polyline.encodedPolyline)};
 }
+/* route for in-app navigation: the full road line + duration. Google Routes (traffic-aware for the first route of a
+   leg, plain for re-routes: cheaper), else OSRM, else null. src tells the screen which routing credit to show. */
+async function navRoute(a,b,traffic){
+  if(GMAP()){try{const r=await fetch('https://routes.googleapis.com/directions/v2:computeRoutes',{method:'POST',headers:{'Content-Type':'application/json','X-Goog-Api-Key':window.GMAPS_KEY,'X-Goog-FieldMask':'routes.distanceMeters,routes.duration,routes.polyline.encodedPolyline'},
+      body:JSON.stringify({origin:{location:{latLng:{latitude:a.lat,longitude:a.lon}}},destination:{location:{latLng:{latitude:b.lat,longitude:b.lon}}},travelMode:'DRIVE',routingPreference:traffic?'TRAFFIC_AWARE':'TRAFFIC_UNAWARE'})});
+    const j=await r.json(),rt=j.routes&&j.routes[0];if(rt&&rt.polyline)return{pts:decodePoly(rt.polyline.encodedPolyline),secs:rt.duration?parseInt(rt.duration):0,src:'google'}}catch(e){}}
+  try{const r=await fetch(`${MAPCFG.route}${a.lon},${a.lat};${b.lon},${b.lat}?overview=full&geometries=geojson`),j=await r.json(),rt=j.routes&&j.routes[0];
+    if(rt)return{pts:rt.geometry.coordinates.map(c=>({lat:c[1],lon:c[0]})),secs:rt.duration||0,src:'osrm'}}catch(e){}
+  return null;
+}
 const PLUSCODE=/^[23456789CFGHJMPQRVWX]{4,8}\+[23456789CFGHJMPQRVWX]{2,3}/;
 async function gRevGeo(lat,lon){
   const r=await new google.maps.Geocoder().geocode({location:{lat,lng:lon},language:S.lang==='ta'?'ta':'en'});

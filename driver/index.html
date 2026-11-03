@@ -25,6 +25,23 @@
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .vimg{mix-blend-mode:normal;background:#fff;border-radius:8px}}
 :root[data-theme="dark"] .vimg{mix-blend-mode:normal;background:#fff;border-radius:8px}
 .signcard{display:block;width:100%;text-align:left;border:1.5px solid #E7B400;background:#FFF6D6;border-radius:16px;padding:12px 14px;margin:0 0 10px;color:#5b4300}.signcard b{display:block;font-size:15px}.signcard small{color:#7a5d00}.agr{max-height:42vh;overflow:auto;padding-left:20px;font-size:13.5px;line-height:1.5}.agck{display:flex;gap:8px;align-items:flex-start;font-weight:700;margin:8px 0}.agin{width:100%;height:46px;border:1.5px solid var(--line);border-radius:12px;padding:0 12px;font-size:16px;margin:4px 0}
+.navbtn{border:0;cursor:pointer;font:inherit}
+.navfs{position:fixed;inset:0;z-index:60;background:#dfe7e2;display:flex;flex-direction:column}
+.navfs .map{position:absolute;inset:0;width:100%;height:100%}
+.nbanner{position:absolute;left:10px;right:10px;top:calc(10px + env(safe-area-inset-top));display:flex;gap:12px;align-items:center;background:#0B4A36;color:#fff;border-radius:18px;padding:12px 14px;box-shadow:0 6px 20px rgba(0,0,0,.25);z-index:2}
+.nbanner .nico{flex:none;width:56px;height:56px;border-radius:14px;background:rgba(255,255,255,.12);display:grid;place-items:center;color:#FFC21A}
+.nbanner b{display:block;font-size:30px;line-height:1.05}.nbanner span{font-size:16px;font-weight:700}
+.ngps{position:absolute;left:10px;right:10px;top:calc(104px + env(safe-area-inset-top));z-index:2;background:#C23B3B;color:#fff;border-radius:14px;padding:10px 12px;display:flex;gap:8px;align-items:center;font-weight:700}
+.ngps[hidden]{display:none}
+.ngps button{margin-left:auto;border:0;border-radius:10px;padding:6px 10px;font-weight:800}
+.nbar{position:absolute;left:10px;right:10px;bottom:calc(10px + env(safe-area-inset-bottom));z-index:2;display:flex;gap:8px;align-items:center;background:var(--surface,#fff);border-radius:18px;padding:10px 12px;box-shadow:0 6px 20px rgba(0,0,0,.2)}
+.nbar>div{flex:1;min-width:0}.nbar b{display:block;font-size:20px}.nbar small{color:var(--muted);font-size:13px;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nbar button{flex:none;width:46px;height:46px;border-radius:14px;border:1.5px solid var(--line,#ddd);background:var(--surface,#fff);font-size:20px}
+.nbar .nx{background:#C23B3B;color:#fff;border-color:#C23B3B;font-weight:800}
+.nmenu{position:absolute;right:10px;bottom:calc(76px + env(safe-area-inset-bottom));z-index:3;background:var(--surface,#fff);border-radius:14px;box-shadow:0 6px 20px rgba(0,0,0,.25);display:flex;flex-direction:column;padding:6px;min-width:240px}
+.nmenu[hidden]{display:none}
+.nmenu a,.nmenu button{padding:12px;border:0;background:none;text-align:left;font:inherit;font-weight:700;color:inherit;text-decoration:none}
+.nmenu small{padding:0 12px 8px;color:var(--muted);font-size:11px}
 </style>
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('../vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
@@ -632,6 +649,7 @@ a.btn{text-decoration:none}
 <script src="../core/map.js?v=2026-11-03-54"></script>
 <script src="../core/chat.js?v=2026-11-03-54"></script>
 <script src="../core/driverchecks.js?v=2026-11-03-54"></script>
+<script src="../core/nav.js?v=2026-11-03-54"></script>
 <script>
 /* shared with the customer app: icons, places, fares, map engine */
 const I = {
@@ -789,7 +807,83 @@ function bindSlide(id,done){const el=document.getElementById(id),k=el.querySelec
   k.onpointerup=k.onpointercancel=()=>{if(!drag)return;drag=false;k.style.transition='';if(dx>max()*.78)fire();else{k.style.transform='';el.style.setProperty('--p',0)}};
   k.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();fire()}};
 }
-const navLink=(p,txt)=>`<a class="navbtn" href="https://www.google.com/maps/dir/?api=1&destination=${p.lat},${p.lon}&travelmode=driving" target="_blank" rel="noopener">${I.nav}${txt}</a>`;
+const gmapsUrl=p=>`https://www.google.com/maps/dir/?api=1&destination=${p.lat},${p.lon}&travelmode=driving`;
+const navLink=(p,txt)=>CFGD.extNav?`<a class="navbtn" href="${gmapsUrl(p)}" target="_blank" rel="noopener">${I.nav}${txt}</a>`
+  :`<button class="navbtn" type="button" data-nav="${(+p.lat).toFixed(6)},${(+p.lon).toFixed(6)}" data-navl="${esc(txt)}">${I.nav}${txt}</button>`;
+document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-nav]');if(!b)return;e.preventDefault();const ll=b.dataset.nav.split(',').map(Number);navOpen({lat:ll[0],lon:ll[1]},b.dataset.navl||'')});
+
+/* ---------- in-app turn-by-turn navigation (core/nav.js does the maths; our own turn sentences + voice) ---------- */
+let NAV=null;
+const NAVIC={left:'M14 19V10H6m0 0 4-4M6 10l4 4',right:'M10 19V10h8m0 0-4-4m4 4-4 4','slight-left':'M15 19v-6l-7-7m0 0v5m0-5h5','slight-right':'M9 19v-6l7-7m0 0v5m0-5h-5',
+  uturn:'M8 19V9a4 4 0 0 1 8 0v4m0 0-3-3m3 3 3-3',straight:'M12 19V5m0 0-5 5m5-5 5 5',arrive:'M12 21s-7-6.5-7-11a7 7 0 0 1 14 0c0 4.5-7 11-7 11zm0-9a2 2 0 1 0 0-4 2 2 0 0 0 0 4'};
+const navIcon=t=>`<svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="${NAVIC[t]||NAVIC.straight}"/></svg>`;
+const NT=()=>VNAV.TXT[S.lang==='ta'?'ta':'en'];
+function navVoices(){try{return ('speechSynthesis' in window)?speechSynthesis.getVoices()||[]:[]}catch(e){return[]}}
+function navSay(txt){if(!NAV||NAV.mute||!('speechSynthesis' in window)||!txt)return;NAV.lastSaid=txt;try{const u=new SpeechSynthesisUtterance(txt),vs=navVoices(),want=/[஀-௿]/.test(txt)?'ta':'en';
+  const v=vs.find(x=>(x.lang||'').toLowerCase().replace('_','-').startsWith(want+'-in'))||vs.find(x=>(x.lang||'').toLowerCase().startsWith(want));
+  u.lang=v?v.lang:(want==='ta'?'ta-IN':'en-IN');if(v)try{u.voice=v}catch(e){};u.rate=.95;speechSynthesis.cancel();speechSynthesis.speak(u)}catch(e){}}
+// Tamil voice when the phone has one; otherwise speak the English sentence (the screen stays Tamil)
+const navTaVoice=()=>{const vs=navVoices();return !vs.length||vs.some(x=>(x.lang||'').toLowerCase().startsWith('ta'))};
+function navSayKey(type,m){navSay(VNAV.phrase(type,m,S.lang==='ta'&&navTaVoice()?'ta':'en'))}
+function navSayTxt(k){navSay(VNAV.TXT[S.lang==='ta'&&navTaVoice()?'ta':'en'][k])}
+async function navRouteTo(traffic){if(!NAV)return;const from={lat:POS.lat,lon:POS.lon},want=NAV;
+  let r=null;try{r=typeof navRoute==='function'?await navRoute(from,NAV.dest,traffic):null}catch(e){}
+  if(!NAV||NAV!==want)return;
+  const pts=r&&r.pts&&r.pts.length>1?r.pts:[from,NAV.dest];NAV.route=VNAV.build(pts,r?r.secs:0);NAV.man=VNAV.maneuvers(NAV.route);NAV.src=r?r.src:'line';
+  NAV.hint=0;NAV.said=new Set();NAV.off={};NAV.prog=VNAV.progress(NAV.route,from,0);navDraw()}
+function navOpen(dest,label){if(NAV)navClose();
+  let mute=false;try{mute=localStorage.getItem('vct_navmute')==='1'}catch(e){}
+  NAV={dest,label,mute,reroutes:0,lastRe:0,prev:null,cur:null,follow:0,gpsWarn:false,arrived:false,said:new Set(),off:{},withJob:!!J};
+  const el=document.createElement('div');el.className='navfs';el.id='navfs';
+  el.innerHTML=`<canvas class="map" id="nmap"></canvas>
+    <div class="nbanner" id="nban"><span class="nico" id="nico">${navIcon('straight')}</span><div><b id="ndist">…</b><span id="ntxt">${L('வழி தேடுது…','Finding the route…')}</span></div></div>
+    <div class="ngps" id="ngps" hidden>📡 <span>${L('GPS signal கிடைக்கல. திறந்த இடத்துக்கு வாங்க','GPS signal lost. Move to an open spot')}</span><button id="ngr">${L('மறுபடி','Retry')}</button></div>
+    <div class="nbar"><div><b id="nrem">—</b><small id="neta">${esc(label||'')}</small></div>
+      <button id="nmute" aria-label="Voice">${mute?'🔇':'🔊'}</button><button id="nmore" aria-label="More">⋮</button><button id="nclose" class="nx" aria-label="Close">✕</button></div>
+    <div class="nmenu" id="nmenu" hidden><button id="nre">🔄 ${L('வழியை மறுபடி தேடு','Find the route again')}</button><a href="${gmapsUrl(dest)}" target="_blank" rel="noopener">🗺️ ${L('Google Maps-ல திற (backup)','Open in Google Maps (backup)')}</a><small id="nsrc"></small></div>`;
+  document.body.appendChild(el);
+  NAV.map=makeMap(el.querySelector('#nmap'),{
+    driver:()=>{const n=NAV;if(!n)return POS;const p=n.prev;return p&&(p.lat!==POS.lat||p.lon!==POS.lon)?{lat:POS.lat,lon:POS.lon,nlat:POS.lat+(POS.lat-p.lat),nlon:POS.lon+(POS.lon-p.lon)}:{lat:POS.lat,lon:POS.lon}},
+    line:()=>{const n=NAV;if(!n||!n.route)return[POS,dest];const r=n.route,pr=n.prog||{along:0,seg:1};return[VNAV.at(r,pr.along),...r.pts.slice(Math.max(1,pr.seg))]},
+    pins:[{lat:dest.lat,lon:dest.lon,col:'#C23B3B'}],sat:false});
+  // stop following for 8 s only when the DRIVER touches the map (the map's own onStart also fires on our follow moves)
+  const hold=e=>{if(NAV&&!e.target.closest('.nbanner,.nbar,.nmenu,.ngps'))NAV.follow=Date.now()+8000};
+  ['pointerdown','wheel','touchstart'].forEach(t=>el.addEventListener(t,hold,{capture:true,passive:true}));
+  NAV.map.setView(POS.lat,POS.lon,sFromZ(17));
+  el.querySelector('#nclose').onclick=navClose;
+  el.querySelector('#nmute').onclick=()=>{NAV.mute=!NAV.mute;try{localStorage.setItem('vct_navmute',NAV.mute?'1':'0')}catch(e){}el.querySelector('#nmute').textContent=NAV.mute?'🔇':'🔊';if(NAV.mute)try{speechSynthesis.cancel()}catch(e){}};
+  el.querySelector('#nmore').onclick=()=>{const m=el.querySelector('#nmenu');m.hidden=!m.hidden};
+  el.querySelector('#nre').onclick=()=>{el.querySelector('#nmenu').hidden=true;navRouteTo(false)};
+  el.querySelector('#ngr').onclick=()=>{stopGeo();GPSERR=0;startGeo();toast(L('GPS மறுபடி தேடுது…','Looking for GPS again…'))};
+  if(CL&&GEO==null)startGeo();keepAwake(true);navVoices();
+  navSayTxt('start');
+  navRouteTo(true);NAV.tick=setInterval(navTick,1000);
+}
+function navClose(){if(!NAV)return;clearInterval(NAV.tick);try{speechSynthesis.cancel()}catch(e){}const el=document.getElementById('navfs');if(el)el.remove();NAV=null;if(!S.online)keepAwake(false)}
+function navDraw(){if(!NAV||!NAV.route)return;const el=document.getElementById('navfs');if(!el)return;const T=NT();
+  const pr=NAV.prog||{along:0},nx=VNAV.next(NAV.man,pr.along),d=Math.max(0,nx.at-pr.along),rem=Math.max(0,NAV.route.len-pr.along),far=d>1500&&nx.type!=='arrive';
+  el.querySelector('#nico').innerHTML=navIcon(NAV.arrived?'arrive':far?'straight':nx.type);
+  el.querySelector('#ndist').textContent=NAV.arrived?L('வந்தாச்சு','Arrived'):VNAV.distTxt(d,S.lang);
+  el.querySelector('#ntxt').textContent=NAV.arrived?T.arrived:far?T.straight:T[nx.type];
+  const secs=NAV.route.secs&&NAV.route.len?NAV.route.secs*rem/NAV.route.len:rem/1000/22*3600,eta=new Date(Date.now()+secs*1000);
+  el.querySelector('#nrem').textContent=`${VNAV.distTxt(rem,S.lang)} · ${Math.max(1,Math.round(secs/60))} ${L('நிமி','min')}`;
+  el.querySelector('#neta').textContent=`${L('சேரும் நேரம்','Arrive')} ${eta.toLocaleTimeString(S.lang==='ta'?'ta-IN':'en-IN',{hour:'numeric',minute:'2-digit'})}${NAV.label?' · '+NAV.label:''}`;
+  el.querySelector('#nsrc').textContent=NAV.src==='osrm'?'Routing: OSRM · © OpenStreetMap':NAV.src==='line'?L('சாலை வழி கிடைக்கல — நேர்கோடு மட்டும்','No road route — straight line only'):''}
+function navTick(){const n=NAV;if(!n)return;const el=document.getElementById('navfs');if(!el||(n.withJob&&!J)){navClose();return}
+  const stale=!!CL&&(!GOTFIX||Date.now()-LASTFIX>15000);el.querySelector('#ngps').hidden=!stale;
+  if(stale){if(!n.gpsWarn){n.gpsWarn=true;navSayTxt('gpslost')}return}n.gpsWarn=false;
+  if(!n.route)return;
+  const pos={lat:POS.lat,lon:POS.lon};if(!n.cur||VNAV.dist(n.cur,pos)>=3){n.prev=n.cur||pos;n.cur=pos}
+  const pr=VNAV.progress(n.route,pos,n.hint);n.prog=pr;n.hint=pr.seg;
+  if(Date.now()>n.follow)n.map.flyTo(pos.lat,pos.lon,sFromZ(17));
+  if(!n.arrived&&(VNAV.dist(pos,n.dest)<40||(pr.off<40&&n.route.len-pr.along<25))){n.arrived=true;navSayKey('arrive',0);navDraw();setTimeout(()=>{if(NAV===n)navClose()},6000);return}
+  // off the route → a new route (not more often than every 20 s, at most 8 per leg)
+  if(n.src!=='line'&&VNAV.offRoute(n.off,pr.off,POSACC)&&Date.now()-n.lastRe>20000&&n.reroutes<8){n.lastRe=Date.now();n.reroutes++;n.off={};
+    navSayTxt('reroute');el.querySelector('#ntxt').textContent=NT().reroute;navRouteTo(false);return}
+  const nx=VNAV.next(n.man,pr.along),d=nx.at-pr.along,th=VNAV.due(nx,d,n.said);if(th!=null)navSayKey(nx.type,d);
+  navDraw();
+}
+
 
 /* ---------- login ---------- */
 function splash(){
@@ -1231,7 +1325,7 @@ function watchMe(){UNS.push(F().onSnapshot(F().doc(CL.db,'drivers',CL.phone),s=>
   if(S.online&&!J&&docState().expired.length){setOnline(false);toast(L('ஒரு document காலாவதி ஆயிடுச்சு. Offline ஆக்கப்பட்டீங்க','A document has expired. You have been taken offline'))}
   if(!J&&!document.querySelector('.modal')){if(S.tab==='wallet'&&before!==DS.wallet)walletTab();else if(S.tab==='home'&&(document.getElementById('ons')||(document.getElementById('ons')||document.getElementById('offs'))))home()}},()=>{}))}
 function watchCfgD(){UNS.push(F().onSnapshot(F().doc(CL.db,'config','app'),s=>{if(!s.exists())return;const d=s.data();
-  if(d.comm!=null)COMM=+d.comm;if(d.minbal!=null)MINBAL=+d.minbal;CFGD.upi=d.upi||'';CFGD.office=d.office||'';CFGD.serverComm=!!d.serverComm;CFGD.serverPin=!!d.serverPin;CFGD.reqConsent=!!d.reqConsent;CFGD.wait=d.wait||null;CFGD.push=d.push||null;
+  if(d.comm!=null)COMM=+d.comm;if(d.minbal!=null)MINBAL=+d.minbal;CFGD.upi=d.upi||'';CFGD.office=d.office||'';CFGD.serverComm=!!d.serverComm;CFGD.serverPin=!!d.serverPin;CFGD.reqConsent=!!d.reqConsent;CFGD.extNav=!!d.extNav;CFGD.wait=d.wait||null;CFGD.push=d.push||null;
   {const na=Array.isArray(d.announce)?d.announce:[],top=na[0];const fresh=top&&(!ANN[0]||ANN[0].id!==top.id)&&top.t>seenAt();ANN=na;
    if(fresh&&ANN.length&&!J&&!document.querySelector('.modal')){beep();toast('📢 '+(top.title||L('Office அறிவிப்பு','Office notice')));if(S.tab==='home'&&document.getElementById('menu'))home()}}if(d.dispatch)Object.assign(DISP,d.dispatch);
   if(d.fares)VEH.forEach(v=>{const f=d.fares[v.id];if(f){if(f.base!=null)v.base=+f.base;if(f.per!=null)v.per=+f.per}})},()=>{}))}
@@ -1282,13 +1376,13 @@ function pushLive(force){
   F().setDoc(F().doc(CL.db,'live',CL.phone),{lat:POS.lat,lon:POS.lon,gh:VGEO.gh(POS.lat,POS.lon),online:!!S.online,busy:!!(J&&J.id),veh:me().veh,updatedAt:ts()}).catch(()=>{});
 }
 setInterval(()=>{if(CL&&S.online)pushLive(true)},20000);
-let GOTFIX=false,GPSERR=0; // real GPS received? (never publish the default Vellore point)
+let GOTFIX=false,GPSERR=0,LASTFIX=0,POSACC=0; // real GPS received? (never publish the default Vellore point)
 function trackKm(){if(!J||!J.id||!J.b||J.b.status!=='ontrip')return;const last=J.gpsLast;J.gpsLast={lat:POS.lat,lon:POS.lon};if(!last)return;
   const d=hav(last,POS);if(d<0.02){J.gpsLast=last;return}if(d>3)return; // ignore GPS jumps
   J.gpsKm=(J.gpsKm||0)+d;try{localStorage.setItem('vct_km_'+J.id,String(J.gpsKm))}catch(e){}}
 function startGeo(){
   if(GEO!=null||!navigator.geolocation)return;
-  GEO=navigator.geolocation.watchPosition(p=>{POS={lat:p.coords.latitude,lon:p.coords.longitude};trackKm();const first=!GOTFIX;GOTFIX=true;GPSERR=0;pushLive(first);if(first&&S.tab==='home'&&!J&&document.getElementById('gpsw'))home()},
+  GEO=navigator.geolocation.watchPosition(p=>{POS={lat:p.coords.latitude,lon:p.coords.longitude};LASTFIX=Date.now();POSACC=p.coords.accuracy||0;trackKm();const first=!GOTFIX;GOTFIX=true;GPSERR=0;pushLive(first);if(first&&S.tab==='home'&&!J&&document.getElementById('gpsw'))home()},
     e=>{GPSERR=e&&e.code||0;if(S.tab==='home'&&!J&&!GOTFIX&&S.online&&document.getElementById('gpsw')&&e.code===1)home();toast(L('Location அனுமதி கொடுங்க. இல்லைனா customer-க்கு உங்க வண்டி தெரியாது','Allow location so customers can see your vehicle'))},{enableHighAccuracy:true,maximumAge:0,timeout:20000});
 }
 function stopGeo(){if(GEO!=null){navigator.geolocation.clearWatch(GEO);GEO=null}}
