@@ -6,9 +6,10 @@ test('commission falls back to fareFinal then fare', () => {
   assert.equal(L.commissionFor({ fare: 190, fareFinal: 250 }, 10).comm, 25);
   assert.equal(L.commissionFor({ fare: 190 }, 10).comm, 19);
 });
-test('settle: server mode corrects a too-small driver deduction', () => {
+test('settle: server mode takes the full commission and ignores what the app claims', () => {
   const s = L.settle({ fare: 190, fx: { trip: 204 }, comm: 10, commLocal: true }, 10, true);
-  assert.equal(s.comm, 20); assert.equal(s.walletDelta, -10);
+  assert.equal(s.comm, 20); assert.equal(s.walletDelta, -20); assert.equal(s.taken, 0);
+  assert.equal(L.settle({ fare: 300, comm: 30, commLocal: true }, 10, true).walletDelta, -30);
 });
 test('settle: server mode takes all when the app took nothing', () => { assert.equal(L.settle({ fare: 300 }, 10, true).walletDelta, -30); });
 test('settle: app mode only records and flags a mismatch', () => {

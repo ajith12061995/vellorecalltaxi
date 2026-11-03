@@ -100,6 +100,11 @@ test('driver wallet: may lower, never raise', async () => {
   await assertSucceeds(updateDoc(doc(as.drv(), 'drivers', DRV), { wallet: increment(-20) }));
   await assertFails(updateDoc(doc(as.drv(), 'drivers', DRV), { wallet: increment(50) }));
 });
+test('server commission mode: driver can no longer lower own wallet', async () => {
+  await seed(db => setDoc(doc(db, 'config', 'app'), { comm: 10, serverComm: true }));
+  await assertFails(updateDoc(doc(as.drv(), 'drivers', DRV), { wallet: 480 }));
+  await assertSucceeds(updateDoc(doc(as.drv(), 'drivers', DRV), { online: true }));
+});
 test('blocked driver cannot go online', async () => { await assertFails(updateDoc(doc(as.drv2(), 'drivers', DRV2), { online: true })); });
 test('driver live position: own doc, known fields only', async () => {
   await assertSucceeds(setDoc(doc(as.drv(), 'live', DRV), { lat: 12.9, lon: 79.1, gh: 'tf3k', online: true, busy: false, veh: 'sedan', updatedAt: serverTimestamp() }));

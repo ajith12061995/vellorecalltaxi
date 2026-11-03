@@ -9,11 +9,14 @@ function commissionFor(b, pct) {
 }
 
 // Ledger entry + how much the wallet still has to move (if the driver app already took some commission)
+// Server mode: the server takes the whole commission. What the booking says the app took is NOT trusted
+// (a modified app could claim it took commission without doing so); in server mode the security rules stop
+// drivers from changing their own wallet, so nothing was taken on the phone.
 function settle(b, pct, serverComm) {
   const { trip, comm } = commissionFor(b, pct);
-  const taken = b.commLocal ? n(b.comm) : 0;          // already taken by the driver app
-  const walletDelta = serverComm ? -(comm - taken) : 0; // server mode: correct to the exact commission
-  return { trip, comm, taken, walletDelta, mismatch: !serverComm && b.commLocal && n(b.comm) !== comm };
+  const claimed = b.commLocal ? n(b.comm) : 0;          // what the driver app says it took (app mode only)
+  const walletDelta = serverComm ? -comm : 0;
+  return { trip, comm, taken: serverComm ? 0 : claimed, walletDelta, mismatch: !serverComm && !!b.commLocal && n(b.comm) !== comm };
 }
 
 // Housekeeping decisions for one booking at time `now`

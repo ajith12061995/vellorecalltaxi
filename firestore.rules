@@ -51,7 +51,9 @@ service cloud.firestore {
         || (signedIn() && phone() == ph
             && changes().hasOnly(['online', 'lat', 'lon', 'updatedAt', 'wallet', 'fcm', 'fcmAt'])
             // a driver can only lower their own wallet (commission), never raise it
-            && (!('wallet' in changes()) || (newData().wallet is number && newData().wallet < resource.data.wallet))
+            // ... and only while the server is not taking commission itself (config/app.serverComm)
+            && (!('wallet' in changes()) || (newData().wallet is number && newData().wallet < resource.data.wallet
+                && get(/databases/$(database)/documents/config/app).data.get('serverComm', false) != true))
             // a blocked driver cannot go online
             && (!('online' in changes()) || newData().online == false || resource.data.get('blocked', false) != true));
     }

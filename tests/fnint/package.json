@@ -1,0 +1,12 @@
+{
+  "name": "vct-functions-integration",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "cd ../.. && tests/fnint/node_modules/.bin/firebase emulators:exec --only firestore,functions,auth --project demo-vct \"node --test tests/fnint/run.test.mjs\""
+  },
+  "devDependencies": {
+    "firebase-admin": "^12.7.0",
+    "firebase-tools": "^13.29.1"
+  }
+}

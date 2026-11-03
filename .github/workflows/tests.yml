@@ -22,3 +22,7 @@ jobs:
         if: hashFiles('functions/package.json') != ''
         working-directory: functions
         run: npm install --no-audit --no-fund && npm test
+      - name: Cloud Functions integration (real functions in the emulators)
+        run: |
+          (cd functions && npm install --no-audit --no-fund)
+          cd tests/fnint && npm install --no-audit --no-fund && npm test
