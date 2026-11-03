@@ -1020,6 +1020,8 @@ function onTrip(){
 /* ---- final bill (core/fare.js): km from GPS (or the driver's odometer), time, toll, parking ---- */
 function tripActual(o){const b=J.b||{},now=Date.now(),st=CL&&CL.toMs(b.startedAt)||J.startAt||now,ar=CL&&CL.toMs(b.arrivedAt)||0;
   return Object.assign({km:J.gpsKm>0.5?+J.gpsKm.toFixed(1):+(J.km||0).toFixed(1),mins:Math.max(0,Math.round((now-st)/6e4)),waitMin:ar&&st>ar?Math.round((st-ar)/6e4):0},J.adj||{},o||{})}
+// bill more than 1.5 × the booked fare and at least ₹50 above it (same rule as the office alert)
+function billBig(){const f=J.fin||finNow(),q=+(J.b&&J.b.fare)||0;return q>0&&f.total>q*1.5&&f.total-q>=50}
 function finNow(){J.fin=FARE.final(J.b,tripActual());J.comm=FARE.comm(J.fin.trip,COMM);return J.fin}
 function tripEndSheet(after){
   const k=J.b&&J.b.kind,need=k==='rental'||k==='outstation',a=tripActual(),gps=J.gpsKm>0.5?Math.round(J.gpsKm):0;
@@ -1069,7 +1071,13 @@ function collect(){
     setPm(pm);
     {const aj=document.getElementById('adj');if(aj)aj.onclick=()=>{if(!paid)tripEndSheet(collect)}}
     app.querySelectorAll('[data-pm]').forEach(b=>b.onclick=()=>{if(b.dataset.pm!==pm)toast(L(`${payName(b.dataset.pm)}-க்கு மாத்தியாச்சு`,`Switched to ${payName(b.dataset.pm)}`));setPm(b.dataset.pm)});
-    got.onclick=()=>{if(paid)return;paid=true;
+    got.onclick=()=>{if(paid)return;
+      // a final bill far above the booked fare is double-checked here and flagged to the office
+      if(J.id&&!J.bigOk&&billBig()){const f=J.fin||finNow(),q=+J.b.fare||0;
+        modal(`<h3>⚠️ ${L('Bill அதிகமா இருக்கு','The bill is much higher')}</h3><p style="margin:0">${L(`Book பண்ணின கட்டணம் ${inr(q)}, இப்போ bill ${inr(f.total)}. Toll / parking / km சரியா போட்டீங்களா? இந்த bill customer-க்கும் office-க்கும் தெரியும்.`,`Booked fare ${inr(q)}, bill now ${inr(f.total)}. Are toll / parking / km right? The customer and the office both see this bill.`)}</p>
+          <div class="two"><button class="btn ghost" id="bfix">${L('திருத்து','Edit')}</button><button class="btn" id="bok">${L('சரி தான்','It is correct')}</button></div>`,(m,close)=>{
+          m.querySelector('#bfix').onclick=()=>{close();tripEndSheet(collect)};m.querySelector('#bok').onclick=()=>{close();J.bigOk=true;got.onclick()}});return}
+      paid=true;
       if(J.id){cloudDone(pm);const aj=document.getElementById('adj');if(aj)aj.hidden=true;document.getElementById('pay').hidden=true;const sm=document.getElementById('sum');sm.hidden=false;sm.style.display='flex';return}
       DS.trips.unshift({id:Date.now().toString(36),date:Date.now(),fare:J.fare,comm:J.comm,net:J.fare-J.comm+(J.tip||0),pay:pm,km:+J.km.toFixed(1),from:{ta:P[J.from].ta,en:P[J.from].en},to:{ta:P[J.to].ta,en:P[J.to].en},cust:J.cust});
       DS.wallet-=J.comm;DS.tx.unshift({amt:-J.comm,ta:`Commission: ${P[J.to].ta}`,en:`Commission: ${P[J.to].en}`,date:Date.now()});saveDS();
