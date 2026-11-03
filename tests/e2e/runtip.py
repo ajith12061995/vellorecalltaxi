@@ -27,7 +27,7 @@ async def main():
         await pg.screenshot(path='shots/tp1.png',clip={'x':0,'y':0,'width':400,'height':860})
         print('offer at 21s?',await df.evaluate("!!document.getElementById('acc')"))
         await D.locator('#dec').click();await pg.wait_for_timeout(300)
-        await df.evaluate("DECL.clear()")
+        await df.evaluate("MISS.clear()")
         await C.locator('[data-boost="20"]').click();await pg.wait_for_timeout(4000)
         print('J.tip',await df.evaluate("J&&J.tip"),await df.evaluate("JSON.stringify(REQS.map(b=>b.tip))"))
         print('offer after tip?',await df.evaluate("!!document.getElementById('acc')"))

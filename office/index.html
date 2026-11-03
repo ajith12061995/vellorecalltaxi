@@ -25,7 +25,7 @@
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('../vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV='2026-11-03-39',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV='2026-11-03-40',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('/vellorecalltaxi/version.json',location.origin)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -695,9 +695,9 @@ details.faq p{margin:0;padding:0 14px 14px;color:var(--muted);font-size:14px;lin
 <div class="app" id="app"></div>
 <div class="toast" id="toast"></div>
 
-<script src="../core/geo.js?v=2026-11-03-39"></script>
-<script src="../core/fare.js?v=2026-11-03-39"></script>
-<script src="../core/map.js?v=2026-11-03-39"></script>
+<script src="../core/geo.js?v=2026-11-03-40"></script>
+<script src="../core/fare.js?v=2026-11-03-40"></script>
+<script src="../core/map.js?v=2026-11-03-40"></script>
 <script>
 /* shared with the customer app: icons, places, fares, map engine */
 const I = {
@@ -1050,6 +1050,17 @@ function dispStage(b){
 const cdHtml=b=>b.dispatch&&b.status==='searching'?`<em class="cd" data-cd="${b._id}">${dispStage(b)}</em>`:'';
 const stPillB=b=>b.status==='assigned'&&isFut(b)?`<em class="bst scheduled">⏰ ${L('Driver உறுதி','Driver confirmed')}</em>`:stPill(b.status);
 setInterval(()=>{document.querySelectorAll('[data-cd]').forEach(el=>{const b=DB&&DB.bk.find(x=>x._id===el.dataset.cd);if(b)el.textContent=dispStage(b)});ringCheck()},1000);
+/* housekeeping while an office screen is open (the Cloud Function does the same on the server once deployed):
+   1. a scheduled LOCAL ride with no driver goes out to drivers 30 min before pickup
+   2. a local ride nobody took for 15 min (customer closed the app) is closed as "no driver" so the office calls the customer */
+const OPSDONE=new Set();
+function autoOps(){if(!CL||!DB||!DB.bk||DB.cfg.serverOps)return;const now=Date.now();
+  DB.bk.forEach(b=>{if(OPSDONE.has(b._id))return;
+    if(b.status==='scheduled'&&!b.driver&&(b.kind==='schedule'||b.kind==='ride')&&(b.when||0)-now<=30*60e3){OPSDONE.add(b._id);
+      F().updateDoc(bkRef(b),{status:'searching',dispatchedAt:ts(),dispatchedBy:'office-auto',updatedAt:ts()}).catch(e=>{OPSDONE.delete(b._id);console.warn(e)})}
+    else if(b.status==='searching'&&!b.dispatch&&((b.kind==='ride'&&now-(b.created||now)>15*60e3)||(b.kind==='schedule'&&now-(b.when||now)>15*60e3))){OPSDONE.add(b._id);
+      F().updateDoc(bkRef(b),{status:'cancelled',cancelReason:'nodriver',cancelledBy:'office-auto',updatedAt:ts()}).catch(e=>{OPSDONE.delete(b._id);console.warn(e)})}})}
+setInterval(autoOps,30e3);
 /* ---------- office ringtone: rings until every waiting outstation/rental booking is handled ---------- */
 let RAC=null,RLAST=0,RSNOOZE=0,RTITLE=null;
 let RACK=new Set();try{RACK=new Set(JSON.parse(localStorage.getItem('vcto_ack')||'[]'))}catch(e){}
@@ -1059,7 +1070,8 @@ function drvCxDesk(b){if(!b||b.status!=='cancelled'||!/^driver/.test(b.reason||'
   return b.kind==='ride'&&now-b.created<30*60e3&&now-(b.upd||b.created)>45e3&&!DB.bk.some(x=>x.rebookOf===b._id)}
 function noDrvDesk(b){if(!b||b.status!=='cancelled'||b.reason!=='nodriver'||RACK.has(b._id))return false;const now=Date.now();
   return now-(b.upd||b.created)<30*60e3&&!DB.bk.some(x=>x._id!==b._id&&x.custUid&&x.custUid===b.custUid&&x.created>b.created)}
-function needsDesk(b){if(drvCxDesk(b)||noDrvDesk(b))return true;if(!b||b.status!=='searching')return false;if(!b.dispatch)return b.kind==='ride'&&Date.now()-(b.created||Date.now())>60e3;const d=b.dispatch,now=Date.now();
+const schedDesk=b=>!!b&&b.status==='scheduled'&&!b.driver&&(b.when||0)-Date.now()<60*60e3; // pickup within the hour and still no driver
+function needsDesk(b){if(drvCxDesk(b)||noDrvDesk(b)||schedDesk(b))return true;if(!b||b.status!=='searching')return false;if(!b.dispatch)return (b.kind==='ride'&&Date.now()-(b.created||Date.now())>60e3)||(b.kind==='schedule'&&Date.now()>(b.when||0)-15*60e3);const d=b.dispatch,now=Date.now();
   if(d.review)return !d.reviewUntil||now<d.reviewUntil;return now<(d.openAt||0)}
 function ringUnlock(){try{if(!RAC)RAC=new (window.AudioContext||window.webkitAudioContext)();if(RAC.state==='suspended')RAC.resume()}catch(e){}}
 ['click','keydown','touchstart'].forEach(ev=>document.addEventListener(ev,ringUnlock,{passive:true}));
@@ -1081,7 +1093,7 @@ function ringCheck(){
   if(!bar){bar=document.createElement('div');bar.id='ringbar';document.body.appendChild(bar)}
   const muted=now<RSNOOZE,ok=RAC&&RAC.state==='running';
   bar.className=muted?'mute':'';
-  bar.innerHTML=`<span class="bell">🔔</span><b>${L(`${list.length} booking உங்க பதிலுக்கு காத்திருக்கு`,`${list.length} booking${list.length>1?'s':''} waiting for you`)}</b><small>${esc(list.map(b=>`${b.reason==='nodriver'?'📞 '+L('Driver கிடைக்கல — customer-ஐ அழைங்க','No driver — call the customer'):b.status==='cancelled'?'🔁 '+L('Driver ரத்து','Driver cancelled'):b.kind==='outstation'?'🛣️':b.kind==='rental'?'⏱️':'🚕 '+L('யாரும் எடுக்கல','no taker')} ${b.id} · ${pn(b.to)}`).join(' · '))}</small>
+  bar.innerHTML=`<span class="bell">🔔</span><b>${L(`${list.length} booking உங்க பதிலுக்கு காத்திருக்கு`,`${list.length} booking${list.length>1?'s':''} waiting for you`)}</b><small>${esc(list.map(b=>`${b.reason==='nodriver'?'📞 '+L('Driver கிடைக்கல — customer-ஐ அழைங்க','No driver — call the customer'):schedDesk(b)?'⏰ '+L(`${Math.max(0,Math.round((b.when-Date.now())/6e4))} நிமி-ல pickup, driver இல்லை`,`pickup in ${Math.max(0,Math.round((b.when-Date.now())/6e4))} min, no driver`):b.status==='cancelled'?'🔁 '+L('Driver ரத்து','Driver cancelled'):b.kind==='outstation'?'🛣️':b.kind==='rental'?'⏱️':'🚕 '+L('யாரும் எடுக்கல','no taker')} ${b.id} · ${pn(b.to)}`).join(' · '))}</small>
     ${ok?'':`<em>${L('ஒலி வர இங்கே ஒரு தடவை click பண்ணுங்க','Click once here to turn on sound')}</em>`}<button id="rgo">${L('பார்','Open')}</button><button id="rmu">${muted?L('ஒலி ON','Sound on'):L('1 நிமி அமைதி','Mute 1 min')}</button>`;
   bar.querySelector('#rgo').onclick=()=>{const b=list[0];S.sec='book';BT='live';save();show();setTimeout(()=>{b.reason==='nodriver'?noDrvSheet(b):b.status==='cancelled'?reopenSheet(b):b.dispatch&&b.dispatch.review?reviewSheet(b):assignSheet(b)},200)};
   bar.querySelector('#rmu').onclick=e=>{e.stopPropagation();RSNOOZE=muted?0:Date.now()+60e3;ringCheck()};
@@ -1398,7 +1410,10 @@ function approvals(){
    ${done.length?`<div class="sec" style="margin-top:18px"><h3>${L('முன்னாடி','Earlier')}</h3></div><div class="table">${done.slice(0,20).map(r=>{const d=drvById(r.driver);return `<div class="tr t4"><span>${d?d[S.lang]:''}</span><span>${inr(r.amt)}</span><span>UTR ${esc(r.utr)}</span><span><em class="sst ${r.status==='approved'?'closed':'open'}">${r.status==='approved'?L('Approve ஆச்சு','Approved'):L('நிராகரிப்பு','Rejected')}</em></span></div>`}).join('')}</div>`:''}`;
   bindApps();
   app.querySelectorAll('[data-cp]').forEach(b=>b.onclick=()=>navigator.clipboard.writeText(b.dataset.cp).then(()=>toast('UTR copied')).catch(()=>toast(b.dataset.cp)));
-  app.querySelectorAll('[data-ok]').forEach(b=>b.onclick=()=>{const r=DB.rch.find(x=>x.id===b.dataset.ok),d=drvById(r.driver);if(CL){const bt=F().writeBatch(CL.db);bt.update(F().doc(CL.db,'recharges',r.id),{status:'approved',approvedAt:ts(),approvedBy:CL.phone});bt.update(F().doc(CL.db,'drivers',d.id),{wallet:F().increment(r.amt),updatedAt:ts()});cw(bt.commit().then(()=>toast(L(`${d.ta} wallet-ல ${inr(r.amt)} சேர்ந்தது`,`${inr(r.amt)} added to ${d.en}'s wallet`))));return}r.status='approved';d.wallet+=r.amt;log(`${d.ta} wallet +${inr(r.amt)} approve`,`${d.en} wallet +${inr(r.amt)} approved`);saveDB();show();toast(L(`${d.ta} wallet-ல ${inr(r.amt)} சேர்ந்தது`,`${inr(r.amt)} added to ${d.en}'s wallet`))});
+  app.querySelectorAll('[data-ok]').forEach(b=>b.onclick=()=>{const r=DB.rch.find(x=>x.id===b.dataset.ok),d=drvById(r.driver);if(CL){if(b.disabled)return;b.disabled=true;const rr=F().doc(CL.db,'recharges',r.id);
+      // one transaction: the wallet is credited only if this recharge is still pending (no double credit on a double tap or from two office screens)
+      cw(F().runTransaction(CL.db,async tx=>{const s=await tx.get(rr);if(!s.exists()||s.data().status!=='pending')throw{code:'already-done'};
+        tx.update(rr,{status:'approved',approvedAt:ts(),approvedBy:CL.phone});tx.update(F().doc(CL.db,'drivers',d.id),{wallet:F().increment(+s.data().amt||0),updatedAt:ts()})}).then(()=>toast(L(`${d.ta} wallet-ல ${inr(r.amt)} சேர்ந்தது`,`${inr(r.amt)} added to ${d.en}'s wallet`))));return}r.status='approved';d.wallet+=r.amt;log(`${d.ta} wallet +${inr(r.amt)} approve`,`${d.en} wallet +${inr(r.amt)} approved`);saveDB();show();toast(L(`${d.ta} wallet-ல ${inr(r.amt)} சேர்ந்தது`,`${inr(r.amt)} added to ${d.en}'s wallet`))});
   app.querySelectorAll('[data-no]').forEach(b=>b.onclick=()=>{const r=DB.rch.find(x=>x.id===b.dataset.no);if(CL){cw(F().updateDoc(F().doc(CL.db,'recharges',r.id),{status:'rejected',approvedAt:ts(),approvedBy:CL.phone}));toast(L('நிராகரிச்சாச்சு','Rejected'));return}r.status='rejected';saveDB();show();toast(L('நிராகரிச்சாச்சு. Driver-க்கு தகவல் போகும்','Rejected. The driver is informed'))});
 }
 
@@ -1428,7 +1443,8 @@ async function loadUsers(){
   const s=await F().getDocs(F().collection(CL.db,'users'));
   USERS={at:Date.now(),rows:s.docs.map(d=>{const u=d.data();return{uid:d.id,name:u.name||'',phone:digits(u.phone),joined:CL.toMs(u.joinedAt)||0,last:CL.toMs(u.lastLogin)||CL.toMs(u.updatedAt)||0}})};return USERS.rows;
 }
-const blockedList=()=>DB.cfg.blocked||[];
+let BLK=new Set(),BLKOK=false; // blocked numbers live in blocked/{+91…} (private); config.blocked is the old public list
+const blockedList=()=>[...new Set([...(DB.cfg.blocked||[]),...BLK])];
 const isBlockedPh=ph=>blockedList().includes('+91'+ph);
 function dlCSV(name,head,rows){
   const q=v=>{v=v==null?'':String(v);if(/^[=+\-@\t\r]/.test(v)&&!/^-?\d/.test(v))v="'"+v; // stop spreadsheet formula injection
@@ -1485,7 +1501,12 @@ function custDetail(c){if(!c)return;
     <div class="two">${c.phone?`<a class="btn ghost" href="tel:+91${c.phone}">📞 ${L('அழை','Call')}</a>`:''}${S.role==='owner'&&c.phone?`<button class="btn ${c.blocked?'':'ghost'}" id="cbk" style="${c.blocked?'':'color:var(--danger)'}">${c.blocked?L('தடையை நீக்கு','Unblock'):'⛔ '+L('தடை செய்','Block')}</button>`:''}</div>
     ${S.role==='owner'&&c.phone&&!c.blocked?`<p class="muted" style="margin:0;font-size:12.5px">${L('தடை செய்தா இந்த நம்பர்ல இருந்து புது booking பண்ண முடியாது. App "Office-ஐ அழைங்க" என்று சொல்லும்.','A blocked number cannot make new bookings; the app asks them to call the office.')}</p>`:''}`,(m,close)=>{
     const b=m.querySelector('#cbk');if(b)b.onclick=()=>{const ph='+91'+c.phone,arr=blockedList().filter(x=>x!==ph);if(!c.blocked)arr.push(ph);
-      if(CL){cw(F().setDoc(F().doc(CL.db,'config','app'),{blocked:arr,updatedAt:ts()},{merge:true}).then(()=>{DB.cfg.blocked=arr;close();toast(c.blocked?L('தடை நீக்கப்பட்டது','Unblocked'):L('தடை செய்யப்பட்டது','Blocked'));customers()}));return}
+      if(CL){const done=()=>{close();toast(c.blocked?L('தடை நீக்கப்பட்டது','Unblocked'):L('தடை செய்யப்பட்டது','Blocked'));customers()};
+        const ref=F().doc(CL.db,'blocked',ph),old=(DB.cfg.blocked||[]).filter(x=>x!==ph);
+        const nw=c.blocked?F().deleteDoc(ref):F().setDoc(ref,{by:CL.phone,at:Date.now(),updatedAt:ts()});
+        // new private list; if the security rules are still the old ones, fall back to the old public list
+        cw(nw.then(()=>{c.blocked?BLK.delete(ph):BLK.add(ph);return old.length!==(DB.cfg.blocked||[]).length?F().setDoc(F().doc(CL.db,'config','app'),{blocked:old},{merge:true}).then(()=>{DB.cfg.blocked=old}):null})
+          .catch(e=>{if(!(e&&e.code==='permission-denied'))throw e;return F().setDoc(F().doc(CL.db,'config','app'),{blocked:arr,updatedAt:ts()},{merge:true}).then(()=>{DB.cfg.blocked=arr})}).then(done));return}
       DB.cfg.blocked=arr;saveDB();close();customers()}});
 }
 
@@ -1672,7 +1693,7 @@ function settings(){
 /* ---------- boot ---------- */
 
 /* ================= CLOUD: Firebase (live on GitHub Pages; demo everywhere else) ================= */
-let CL=null,OUNS=[],LIVE={},RAWB=[],RAWD=[],RAWR=[],RAWT=[],RTIMER=null,SEEN=null;
+let CL=null,OUNS=[],LIVE={},RAWB=[],RAWBL=[],RAWBA=[],RAWD=[],RAWR=[],RAWRP=[],RAWT=[],RTIMER=null,SEEN=null;
 const ON_PAGES=/github\.io$/.test(location.hostname);
 const cloudP=(window.CLOUD_READY||Promise.resolve(null)).then(c=>{CL=c||null;return CL}).catch(()=>null);
 const F=()=>CL.fs;const ts=()=>F().serverTimestamp();
@@ -1694,20 +1715,29 @@ async function enterCloud(){
   VEH.forEach(v=>DB.cfg.fares[v.id]={base:v.base,per:v.per});
   watchAll();show();
 }
+function mergeB(){const ids=new Set(RAWBL.map(b=>b._id));RAWB=[...RAWBL,...RAWBA.filter(b=>!ids.has(b._id))]}
 function oerr(e){console.warn(e);if(e&&e.code==='permission-denied')toast(L('அனுமதி இல்லை (rules)','Permission denied (rules)'))}
 function watchAll(){
   OUNS.forEach(u=>u());OUNS=[];SEEN=null;
-  OUNS.push(F().onSnapshot(F().query(F().collection(CL.db,'bookings'),F().orderBy('createdAt','desc'),F().limit(400)),s=>{RAWB=s.docs.map(d=>({_id:d.id,...d.data()}));remap()},oerr));
+  OUNS.push(F().onSnapshot(F().query(F().collection(CL.db,'bookings'),F().orderBy('createdAt','desc'),F().limit(400)),s=>{RAWBL=s.docs.map(d=>({_id:d.id,...d.data()}));mergeB();remap()},oerr));
+  // every open booking, even if older than the newest 400 (e.g. an outstation trip booked days ahead)
+  OUNS.push(F().onSnapshot(F().query(F().collection(CL.db,'bookings'),F().where('status','in',['searching','scheduled','assigned','ontrip'])),s=>{RAWBA=s.docs.map(d=>({_id:d.id,...d.data()}));mergeB();remap()},oerr));
   OUNS.push(F().onSnapshot(F().collection(CL.db,'drivers'),s=>{RAWD=s.docs.map(d=>({_id:d.id,...d.data()}));remap()},oerr));
   OUNS.push(F().onSnapshot(F().collection(CL.db,'live'),s=>{LIVE={};s.docs.forEach(d=>LIVE[d.id]=d.data());remap(true)},oerr));
-  OUNS.push(F().onSnapshot(F().collection(CL.db,'recharges'),s=>{RAWR=s.docs.map(d=>({_id:d.id,...d.data()}));remap()},oerr));
+  OUNS.push(F().onSnapshot(F().query(F().collection(CL.db,'recharges'),F().where('status','==','pending')),s=>{RAWRP=s.docs.map(d=>({_id:d.id,...d.data()}));remap()},oerr)); // pending ones always, however old
+  OUNS.push(F().onSnapshot(F().query(F().collection(CL.db,'recharges'),F().orderBy('createdAt','desc'),F().limit(300)),s=>{RAWR=s.docs.map(d=>({_id:d.id,...d.data()}));remap()},oerr));
   OUNS.push(F().onSnapshot(F().collection(CL.db,'driverApps'),s=>{const before=(DB.apps||[]).filter(a=>a.status==='pending').length;DB.apps=s.docs.map(d=>({id:d.id,...d.data()})).sort((x,y)=>CL.toMs(y.submittedAt)-CL.toMs(x.submittedAt));const n=DB.apps.filter(a=>a.status==='pending').length;if(SEEN!==null&&n>before){chime();toast(L('புது driver விண்ணப்பம் வந்திருக்கு','New driver application'))}remap()},oerr));
-  OUNS.push(F().onSnapshot(F().collection(CL.db,'tickets'),s=>{RAWT=s.docs.map(d=>({_id:d.id,...d.data()}));remap()},oerr));
+  OUNS.push(F().onSnapshot(F().query(F().collection(CL.db,'tickets'),F().orderBy('createdAt','desc'),F().limit(300)),s=>{RAWT=s.docs.map(d=>({_id:d.id,...d.data()}));remap()},oerr));
   OUNS.push(F().onSnapshot(F().doc(CL.db,'config','app'),s=>{if(s.exists()){const d=s.data();
-    Object.assign(DB.cfg,{comm:d.comm!=null?+d.comm:10,minbal:d.minbal!=null?+d.minbal:100,upi:d.upi||'',office:d.office||'',dispatch:{...DISPD,...(d.dispatch||{})},wait:d.wait||null,serverComm:!!d.serverComm,out:mergeOut(d.out),rent:mergeRent(d.rent),blocked:Array.isArray(d.blocked)?d.blocked:[],showBike:!!d.showBike,announce:Array.isArray(d.announce)?d.announce:[]});
+    Object.assign(DB.cfg,{comm:d.comm!=null?+d.comm:10,minbal:d.minbal!=null?+d.minbal:100,upi:d.upi||'',office:d.office||'',dispatch:{...DISPD,...(d.dispatch||{})},wait:d.wait||null,serverComm:!!d.serverComm,serverOps:!!d.serverOps,out:mergeOut(d.out),rent:mergeRent(d.rent),blocked:Array.isArray(d.blocked)?d.blocked:[],showBike:!!d.showBike,announce:Array.isArray(d.announce)?d.announce:[]});
     if(d.fares)Object.keys(d.fares).forEach(k=>{DB.cfg.fares[k]={...(DB.cfg.fares[k]||{}),...d.fares[k]}})}remap()},oerr));
+  OUNS.push(F().onSnapshot(F().collection(CL.db,'blocked'),s=>{BLK=new Set(s.docs.map(d=>d.id));BLKOK=true;migrateBlocked()},()=>{BLKOK=false}));
   OUNS.push(F().onSnapshot(F().collection(CL.db,'staff'),s=>{DB.cfg.staff=s.docs.filter(d=>(d.data().role||'staff')!=='owner').map(d=>({name:d.data().name||'',phone:d.id.replace('+91','')}));remap()},oerr));
 }
+/* one-time move of the old public blocked list into the private blocked collection (owner, after rules v2) */
+let BLKMIG=false;function migrateBlocked(){const old=DB.cfg.blocked||[];if(BLKMIG||!BLKOK||S.role!=='owner'||!old.length||!CL)return;BLKMIG=true;
+  const bt=F().writeBatch(CL.db);old.forEach(ph=>bt.set(F().doc(CL.db,'blocked',ph),{by:CL.phone,at:Date.now(),moved:true}));bt.update(F().doc(CL.db,'config','app'),{blocked:[],updatedAt:ts()});
+  bt.commit().then(()=>{DB.cfg.blocked=[];console.info('blocked list moved')}).catch(e=>{BLKMIG=false;console.warn(e)})}
 function chime(){try{const a=new (window.AudioContext||window.webkitAudioContext)();[0,.3].forEach(t=>{const o=a.createOscillator(),g=a.createGain();o.frequency.value=t?1046:784;o.connect(g);g.connect(a.destination);g.gain.setValueAtTime(.2,a.currentTime+t);g.gain.exponentialRampToValueAtTime(.001,a.currentTime+t+.28);o.start(a.currentTime+t);o.stop(a.currentTime+t+.3)})}catch(e){}}
 function remap(liveOnly){
   const now=Date.now();
@@ -1721,7 +1751,7 @@ function remap(liveOnly){
       status:busy[d._id]==='ontrip'?'trip':busy[d._id]?'pickup':online?'avail':'off',lat:l.lat!=null?l.lat:P.home.lat,lon:l.lon!=null?l.lon:P.home.lon,
       wallet:+d.wallet||0,rating:rsum[d._id]?+(rsum[d._id].s/rsum[d._id].n).toFixed(1):(d.rating||5),docs:{dl:days('dl'),rc:days('rc'),ins:days('ins'),permit:days('permit'),fc:days('fc')},blocked:!!d.blocked,
       svc:d.svc||null,prio:d.prio||'auto',year:vYear(d),wk:wk[d._id]||0}});
-  DB.rch=RAWR.filter(r=>DB.drv.some(d=>d.id===r.driverPhone)).map(r=>({id:r._id,driver:r.driverPhone,amt:+r.amt||0,utr:r.utr||'',date:r.date||CL.toMs(r.createdAt),status:r.status||'pending'})).sort((a,b)=>b.date-a.date);
+  DB.rch=[...RAWR,...RAWRP.filter(x=>!RAWR.some(y=>y._id===x._id))].filter(r=>DB.drv.some(d=>d.id===r.driverPhone)).map(r=>({id:r._id,driver:r.driverPhone,amt:+r.amt||0,utr:r.utr||'',date:r.date||CL.toMs(r.createdAt),status:r.status||'pending'})).sort((a,b)=>b.date-a.date);
   DB.sup=RAWT.map(t=>({id:'R'+t._id.slice(0,5).toUpperCase(),_id:t._id,type:t.type||'callback',cust:t.cust||'—',phone:digits(t.phone),title:t.title||{ta:'',en:''},trip:esc(t.trip||''),
     date:t.date||CL.toMs(t.createdAt),status:t.status||'open',note:t.note||'',lat:num(t.lat),lon:num(t.lon)})).sort((a,b)=>b.date-a.date);
   const STT={searching:['Driver தேடல்','needs a driver'],assigned:['driver assign ஆச்சு','driver assigned'],ontrip:['பயணம் ஆரம்பம்','trip started'],done:['முடிஞ்சது','completed'],cancelled:['ரத்து','cancelled'],scheduled:['முன்பதிவு','scheduled']};
@@ -1742,7 +1772,7 @@ function rerender(liveOnly){
   const sc=main()?main().scrollTop:0;show();if(main())main().scrollTop=sc;
 }
 function updBadges(){app.querySelectorAll('[data-sec]').forEach(b=>{const n=badge(b.dataset.sec);let em=b.querySelector('em');if(n){if(!em){em=document.createElement('em');b.appendChild(em)}em.textContent=n}else if(em)em.remove()})}
-const cw=(p)=>p.catch(e=>{oerr(e);toast(CL.errText(e,S.lang==='ta'))});
+const cw=(p)=>p.catch(e=>{if(e&&e.code==='already-done'){toast(L('இது ஏற்கனவே முடிஞ்சது','This was already handled'));return}oerr(e);toast(CL.errText(e,S.lang==='ta'))});
 function bkRef(b){return F().doc(CL.db,'bookings',b._id)}
 function cloudLogin(){
   app.innerHTML=`<section class="ologin"><div class="lcard"><div class="brand"><img src="https://ajith12061995.github.io/vellorecalltaxi/office/icon-192.png?v=8" alt="" style="width:40px;height:40px;border-radius:10px;flex:none" onerror="this.style.visibility='hidden'"><div><b>Vellore Taxi</b><small>Owner / Staff panel</small></div></div>

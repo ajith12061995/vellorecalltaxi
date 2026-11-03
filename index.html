@@ -37,7 +37,7 @@
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('./vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV='2026-11-03-39',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV='2026-11-03-40',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('/vellorecalltaxi/version.json',location.origin)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -534,11 +534,12 @@ details.faq p{margin:0;padding:0 14px 14px;color:var(--muted);font-size:14px;lin
 <div class="app" id="app"></div>
 <div class="toast" id="toast"></div>
 
-<script src="./core/geo.js?v=2026-11-03-39"></script>
-<script src="./core/fare.js?v=2026-11-03-39"></script>
-<script src="./core/pin.js?v=2026-11-03-39"></script>
-<script src="./core/map.js?v=2026-11-03-39"></script>
-<script src="./core/chat.js?v=2026-11-03-39"></script>
+<script src="./core/geo.js?v=2026-11-03-40"></script>
+<script src="./core/fare.js?v=2026-11-03-40"></script>
+<script src="./core/pin.js?v=2026-11-03-40"></script>
+<script src="./core/clock.js?v=2026-11-03-40"></script>
+<script src="./core/map.js?v=2026-11-03-40"></script>
+<script src="./core/chat.js?v=2026-11-03-40"></script>
 <script>
 /* ---------- icons ---------- */
 const I = {
@@ -764,12 +765,18 @@ function vrowHtml(on='now'){
   const vt=(attr,veh,badge,label,on)=>`<button class="vt${on?' on':''}" ${attr}><span class="im">${I[veh].replace('width="58" height="36"','width="96" height="58"')}${badge?`<i class="vb"><svg viewBox="0 0 24 24" width="14" height="14">${VBADGE[badge]}</svg></i>`:''}</span><b>${label}</b></button>`;
   return `<div class="vrow" role="list">${svc.map(([k,v,b,l],i)=>vt(`data-svc="${k}"`,v,b,l,k===on)).join('')}<span class="vsep"></span>${VEH.map(v=>vt(`data-veh="${v.id}"`,v.id,'',v[S.lang].replace(' கார்','').replace(' car',''),false)).join('')}</div>`;
 }
-let NEAR=[],NEARUNSUB=null;
-function watchNear(){if(!CL||NEARUNSUB)return;
-  NEARUNSUB=F().onSnapshot(F().collection(CL.db,'live'),s=>{const now=Date.now();
-    NEAR=s.docs.map(d=>({id:d.id,...d.data()})).filter(d=>d.online&&!d.busy&&d.lat!=null&&now-CL.toMs(d.updatedAt)<5*60e3)
+let NEAR=[],NEARUNSUB=null,NEARKEY='';
+/* only drivers in the 3x3 block of ~5 km map cells around the pickup are read (not every driver everywhere) */
+function watchNear(){if(!CL)return;const c=P[S.from]||P.home;if(!c||c.lat==null)return;
+  const cells=VGEO.cells(c.lat,c.lon),key=cells.join(',');if(key===NEARKEY&&NEARUNSUB)return;
+  if(NEARUNSUB)NEARUNSUB();NEARKEY=key;const per={};
+  const draw=()=>{const now=Date.now();
+    NEAR=Object.values(per).flat().filter(d=>d.online&&!d.busy&&d.lat!=null&&now-CL.toMs(d.updatedAt)<5*60e3)
       .map(d=>({id:d.id,lat:d.lat,lon:d.lon,veh:d.veh||'car',rot:(parseInt(d.id.slice(-4),10)*37)%360}));
-    const nb=document.getElementById('nbc');if(nb){nb.hidden=!NEAR.length;nb.lastChild.textContent=` ${NEAR.length} ${t('nearby')}`}},()=>{});}
+    const nb=document.getElementById('nbc');if(nb){nb.hidden=!NEAR.length;nb.lastChild.textContent=` ${NEAR.length} ${t('nearby')}`}};
+  const uns=cells.map(cell=>F().onSnapshot(F().query(F().collection(CL.db,'live'),F().where('gh','>=',cell),F().where('gh','<',cell+'~')),
+    s=>{per[cell]=s.docs.map(d=>({id:d.id,...d.data()}));draw()},()=>{}));
+  NEARUNSUB=()=>{uns.forEach(u=>{try{u()}catch(e){}});NEARUNSUB=null;NEARKEY=''};}
 function home(mode){
   const RENTM=mode==='rent',OUTM=mode==='out';S.mode=RENTM?'rent':OUTM?'out':'';
   S.tab='home';S.dest=null;if(!RENTM&&!OUTM)S.from='home';S.when=null;S.rider=null;
@@ -1837,6 +1844,8 @@ function watchConfig(){
   CFGUNSUB=F().onSnapshot(F().doc(CL.db,'config','app'),s=>{if(!s.exists())return;const d=s.data();
     if(d.fares)VEH.forEach(v=>{const f=d.fares[v.id];if(f){if(f.base!=null)v.base=+f.base;if(f.per!=null)v.per=+f.per}});
     CFG.upi=d.upi||'';CFG.office=d.office||'';CFG.comm=d.comm!=null?+d.comm:10;CFG.wait=d.wait||null;CFG.blocked=Array.isArray(d.blocked)?d.blocked:[];{const had=VEH.includes(BIKE);setBike(!!d.showBike);if(had!==VEH.includes(BIKE)&&S.tab==='home'&&document.querySelector('.vrow')&&!document.querySelector('.modal'))home(S.mode||undefined)}if(d.dispatch)Object.assign(DISPC,d.dispatch);applyTariff(d)},()=>{});
+  F().getDoc(F().doc(CL.db,'blocked','+91'+S.phone)).then(x=>{MEBLK=x.exists()}).catch(()=>{}); // only my own entry is readable
+  if(CUID)VCTCLK.sync(F(),F().doc(CL.db,'users',CUID)); // learn the server time once
   watchMyB();
 }
 function resumeActive(){
@@ -1865,14 +1874,15 @@ function bindRider(again){const b=document.getElementById('rider');if(!b)return;
   m.querySelector('#rok').onclick=()=>{const n=m.querySelector('#rn').value.trim(),ph=m.querySelector('#rp').value.replace(/\D/g,'');if(n.length<2||!/^[6-9]\d{9}$/.test(ph)){m.querySelector('#re').textContent=L('பெயர், 10 இலக்க நம்பர் போடுங்க','Enter a name and a 10-digit number');return}S.rider={name:n,phone:ph};close();again()};
   const me=m.querySelector('#rme');if(me)me.onclick=()=>{S.rider=null;close();again()}})}
 /* owner can block a number from the office; such a customer is asked to call the office */
-function blockedStop(){if(!CL||!(CFG.blocked||[]).includes('+91'+S.phone))return false;
+let MEBLK=false; // this number is in the office's private blocked list
+function blockedStop(){if(!CL||!(MEBLK||(CFG.blocked||[]).includes('+91'+S.phone)))return false;
   modal(`<div style="text-align:center;font-size:38px">⛔</div><h3 style="text-align:center">${L('Booking செய்ய முடியல','Booking not available')}</h3><p style="margin:0;text-align:center">${L('உங்க account தற்காலிகமா நிறுத்தி வைக்கப்பட்டிருக்கு. விவரத்துக்கு எங்க office-ஐ அழைங்க.','Your account is on hold for now. Please call our office.')}</p>
     ${CFG.office?`<a class="btn yellow" href="tel:+91${CFG.office}">${L('Office-ஐ அழை','Call our office')}</a>`:''}<button class="btn ghost" id="bok">${L('சரி','OK')}</button>`,(m,close)=>m.querySelector('#bok').onclick=close);return true}
 /* driver cancelled a local ride → book again at once with the same details; that driver won't get it again */
 async function autoRebook(b){
   stopWatch();const old=R.id,ex=[...(b.exclude||[]),b.driverPhone].filter(Boolean);
   const data={};['customerUid','custName','custPhone','src','kind','from','to','path','veh','vehTa','vehEn','km','base','fare','pay','tip','rider','tariff'].forEach(k=>{if(b[k]!==undefined)data[k]=b[k]});
-  Object.assign(data,{status:'searching',when:Date.now(),exclude:ex,rebookOf:old,createdAt:F().serverTimestamp(),updatedAt:F().serverTimestamp()});
+  Object.assign(data,{status:'searching',when:VCTCLK.now(),exclude:ex,rebookOf:old,createdAt:F().serverTimestamp(),updatedAt:F().serverTimestamp()});
   const pin=String(1000+Math.floor(Math.random()*9000));
   try{try{Object.assign(data,await VCTPIN.fields(pin))}catch(e){} // lets the driver check the PIN even if this phone goes offline
     const ref=await F().addDoc(F().collection(CL.db,'bookings'),data);await F().setDoc(F().doc(CL.db,'bookings',ref.id,'private','pin'),{pin});
@@ -1889,7 +1899,7 @@ async function cloudBook(){if(blockedStop())return;
   const pin=String(1000+Math.floor(Math.random()*9000));
   const trip=(r.pts||r.path.map(k=>P[k])).map(p=>({lat:p.lat,lon:p.lon}));
   const data={customerUid:CUID,custName:S.name,custPhone:'+91'+S.phone,src:'app',kind:'ride',from:placeOf(S.from),to:placeOf(S.dest),path:trip,
-    veh:v.id,vehTa:v.ta,vehEn:v.en,km:+r.km.toFixed(1),base:v.base,fare:f,pay:S.pay,status:'searching',when:Date.now(),rider:S.rider||null,tip:S.tip0||0,tariff:localTar(),
+    veh:v.id,vehTa:v.ta,vehEn:v.en,km:+r.km.toFixed(1),base:v.base,fare:f,pay:S.pay,status:'searching',when:VCTCLK.now(),rider:S.rider||null,tip:S.tip0||0,tariff:localTar(),
     createdAt:F().serverTimestamp(),updatedAt:F().serverTimestamp()};
   try{
     try{Object.assign(data,await VCTPIN.fields(pin))}catch(e){} // lets the driver check the PIN even if this phone goes offline
@@ -1898,7 +1908,8 @@ async function cloudBook(){if(blockedStop())return;
     R={id:ref.id,v,km:r.km,path:r.path,fare:f,pay:S.pay,from:S.from,dest:S.dest,fromName:{ta:P[S.from].ta,en:P[S.from].en},destName:{ta:P[S.dest].ta,en:P[S.dest].en},
        pin,trackId:ref.id.slice(0,8),trip,phase:'search',chat:[],drv:null,dpos:null,b:data,t0:Date.now(),boost:S.tip0||0};S.tip0=0;
     rememberRide();watchBooking();
-  }catch(e){toast(CL.errText(e,S.lang==='ta'));if(btn){btn.disabled=false;fareScreen()}}
+  }catch(e){if(e&&e.code==='permission-denied'&&!MEBLK){F().getDoc(F().doc(CL.db,'blocked','+91'+S.phone)).then(x=>{if(x.exists()){MEBLK=true;blockedStop()}}).catch(()=>{})}
+    toast(CL.errText(e,S.lang==='ta'));if(btn){btn.disabled=false;fareScreen()}}
 }
 function watchBooking(){
   stopWatch();

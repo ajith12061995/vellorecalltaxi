@@ -28,7 +28,7 @@
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('../vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV='2026-11-03-39',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV='2026-11-03-40',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('/vellorecalltaxi/version.json',location.origin)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -623,11 +623,12 @@ a.btn{text-decoration:none}
 <div class="app" id="app"></div>
 <div class="toast" id="toast"></div>
 
-<script src="../core/geo.js?v=2026-11-03-39"></script>
-<script src="../core/fare.js?v=2026-11-03-39"></script>
-<script src="../core/pin.js?v=2026-11-03-39"></script>
-<script src="../core/map.js?v=2026-11-03-39"></script>
-<script src="../core/chat.js?v=2026-11-03-39"></script>
+<script src="../core/geo.js?v=2026-11-03-40"></script>
+<script src="../core/fare.js?v=2026-11-03-40"></script>
+<script src="../core/pin.js?v=2026-11-03-40"></script>
+<script src="../core/clock.js?v=2026-11-03-40"></script>
+<script src="../core/map.js?v=2026-11-03-40"></script>
+<script src="../core/chat.js?v=2026-11-03-40"></script>
 <script>
 /* shared with the customer app: icons, places, fares, map engine */
 const I = {
@@ -1135,7 +1136,7 @@ function profileTab(){
 /* ================= CLOUD: Firebase (live on GitHub Pages; demo everywhere else) ================= */
 let RATE=0,CL=null,DME=null,UNS=[],REQUNSUB=null,JOBUNSUB=null,GEO=null,LASTLIVE=0,SHOWING=null,REQS=[],RCH=[];
 const MISS=new Map(),ROUNDMS=60e3,MAXMISS=3; // per booking: how often this driver let it pass; re-offered each new round (1 min) or when the tip goes up, max 3 times
-function roundOf(b){const o=offerAt(b);if(!isFinite(o))return 0;const base=Math.max(o,(!b.kind||b.kind==='ride')?(+b.when||0):0);return Math.floor((Date.now()-base)/ROUNDMS)+1}
+function roundOf(b){const o=offerAt(b);if(!isFinite(o))return 0;const base=Math.max(o,(!b.kind||b.kind==='ride')?(+b.when||0):0);return Math.floor((VCTCLK.now()-base)/ROUNDMS)+1}
 function missReq(b){if(!b||!b.id&&!b._id)return;const id=b.id||b._id,m=MISS.get(id)||{n:0};m.n++;m.r=roundOf(b);m.tip=+b.tip||0;MISS.set(id,m)}
 function canOffer(b){const m=MISS.get(b.id);if(!m)return true;if(m.n>=MAXMISS)return false;return roundOf(b)>m.r||(+b.tip||0)>m.tip}
 const CFGD={upi:'',office:''};
@@ -1180,6 +1181,7 @@ async function loadMe(){
   applyMe(s.data());S.phone=(CL.phone||'').replace('+91','');S.logged=true;S.pid='cloud';save();
   DS={wallet:DS.wallet,tx:[],trips:[],pending:[],onMs:0,onDay:new Date().toDateString()};
   watchMe();watchCfgD();watchMine();watchRch();
+  VCTCLK.sync(F(),F().doc(CL.db,'live',CL.phone)); // learn the server time once
   return true;
 }
 
@@ -1197,7 +1199,10 @@ function watchCfgD(){UNS.push(F().onSnapshot(F().doc(CL.db,'config','app'),s=>{i
   {const na=Array.isArray(d.announce)?d.announce:[],top=na[0];const fresh=top&&(!ANN[0]||ANN[0].id!==top.id)&&top.t>seenAt();ANN=na;
    if(fresh&&ANN.length&&!J&&!document.querySelector('.modal')){beep();toast('📢 '+(top.title||L('Office அறிவிப்பு','Office notice')));if(S.tab==='home'&&document.getElementById('menu'))home()}}if(d.dispatch)Object.assign(DISP,d.dispatch);
   if(d.fares)VEH.forEach(v=>{const f=d.fares[v.id];if(f){if(f.base!=null)v.base=+f.base;if(f.per!=null)v.per=+f.per}})},()=>{}))}
-function watchMine(){UNS.push(F().onSnapshot(F().query(F().collection(CL.db,'bookings'),F().where('driverPhone','==',CL.phone)),snap=>{
+/* this driver's trips: newest 300 only (needs the index in firestore.indexes.json; without it, falls back to all trips) */
+function watchMine(full){const q=full?F().query(F().collection(CL.db,'bookings'),F().where('driverPhone','==',CL.phone))
+    :F().query(F().collection(CL.db,'bookings'),F().where('driverPhone','==',CL.phone),F().orderBy('createdAt','desc'),F().limit(300));
+  UNS.push(F().onSnapshot(q,snap=>{
   const all=snap.docs.map(d=>({id:d.id,...d.data()}));
   {const rs=all.filter(b=>b.status==='done'&&+b.rating>0);RATE=rs.length?+(rs.reduce((a,b)=>a+(+b.rating),0)/rs.length).toFixed(1):0;if(DME&&RATE)DME.rating=RATE}
   DS.trips=all.filter(b=>b.status==='done').map(b=>{const f=FARE.billOf(b),c=b.comm!=null?+b.comm:FARE.comm(FARE.tripOf(b),COMM);return{id:b.id,date:CL.toMs(b.doneAt)||b.when||Date.now(),fare:f,comm:c,net:f-c+(+b.tip||0),pay:b.pay||'cash',km:+b.km||0,from:{ta:b.from.ta,en:b.from.en},to:{ta:b.to.ta,en:b.to.en},cust:{ta:b.custName||'',en:b.custName||''}}}).sort((a,b)=>b.date-a.date);
@@ -1208,7 +1213,7 @@ function watchMine(){UNS.push(F().onSnapshot(F().query(F().collection(CL.db,'boo
   if(act&&!J)adoptJob(act);
   else if(!J&&upk!==UPC.map(u=>u.id).join()&&!document.querySelector('.modal')&&S.tab==='home'&&(document.getElementById('ons')||document.getElementById('offs')))home();
   if(!J&&!document.querySelector('.modal')&&S.tab==='earn')earnTab();
-},e=>console.warn(e)))}
+},e=>{console.warn(e);if(!full&&e&&e.code==='failed-precondition')watchMine(true)}))}
 function watchRch(){UNS.push(F().onSnapshot(F().query(F().collection(CL.db,'recharges'),F().where('driverPhone','==',CL.phone)),snap=>{
   RCH=snap.docs.map(d=>({id:d.id,...d.data()}));
   DS.pending=RCH.filter(r=>r.status==='pending').sort((a,b)=>(b.date||0)-(a.date||0)).map(r=>({amt:r.amt,utr:r.utr,date:r.date}));
@@ -1230,7 +1235,7 @@ function goLive(on){
 }
 function pushLive(force){
   if(!CL||!CL.phone)return;if(S.online&&!GOTFIX)return;const now=Date.now();if(!force&&now-LASTLIVE<8000)return;LASTLIVE=now;
-  F().setDoc(F().doc(CL.db,'live',CL.phone),{lat:POS.lat,lon:POS.lon,online:!!S.online,busy:!!(J&&J.id),veh:me().veh,name:me().en,plate:me().plate,updatedAt:ts()}).catch(()=>{});
+  F().setDoc(F().doc(CL.db,'live',CL.phone),{lat:POS.lat,lon:POS.lon,gh:VGEO.gh(POS.lat,POS.lon),online:!!S.online,busy:!!(J&&J.id),veh:me().veh,updatedAt:ts()}).catch(()=>{});
 }
 setInterval(()=>{if(CL&&S.online)pushLive(true)},20000);
 let GOTFIX=false,GPSERR=0; // real GPS received? (never publish the default Vellore point)
@@ -1268,7 +1273,7 @@ function listenReq(){
 }
 function maybeShowReq(){
   if(!CL||!S.online||J||SHOWING||document.querySelector('.modal'))return;
-  const now=Date.now(),b=REQS.find(x=>offerAt(x)<=now&&canOffer(x));if(!b)return;
+  const now=VCTCLK.now(),b=REQS.find(x=>offerAt(x)<=now&&canOffer(x));if(!b)return;
   SHOWING=b.id;incoming(buildJ(b,b.id));
 }
 function buildJ(b,id){
@@ -1371,7 +1376,7 @@ function S_TIER(){const d=DME||{};if(d.prio==='top')return 1;if(d.prio==='low')r
 function offerAt(b){
   if(CL&&Array.isArray(b.exclude)&&b.exclude.includes(CL.phone))return Infinity; // this driver already cancelled it
   const k=b.kind==='outstation'?'out':b.kind==='rental'?'rental':'local';
-  if(k==='local'){if(!svcActive('local'))return Infinity;if(b.when&&Date.now()-b.when>15*60e3)return Infinity; // stale test/abandoned bookings never ring
+  if(k==='local'){if(!svcActive('local'))return Infinity;if(b.when&&VCTCLK.now()-b.when>15*60e3)return Infinity; // stale test/abandoned bookings never ring
     if(!b.from||b.from.lat==null)return 0;
     const d=hav(POS,b.from);if(d<=LOCAL_R1)return 0;if(d<=LOCAL_R2)return (+b.tip>0)?0:(+b.when||0)+LOCAL_WAVE*1000;return Infinity}
   const dp=b.dispatch||{};if(dp.review&&!dp.reviewUntil)return Infinity;const open=dp.review?dp.reviewUntil:(dp.openAt||0),gap=(dp.gap||DISP.gap)*1000,fall=dp.fall!==undefined?dp.fall:DISP.fall;

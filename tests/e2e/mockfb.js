@@ -14,7 +14,7 @@
   const inColl=(path,coll)=>path.startsWith(coll+'/')&&path.split('/').length===coll.split('/').length+1;
   const runQuery=(q)=>{
     let rows=[...store.keys()].filter(p=>inColl(p,q.path)).map(p=>({p,d:store.get(p)}));
-    (q.cons||[]).forEach(c=>{if(c.w){const[f,op,v]=c.w;rows=rows.filter(r=>op==='=='?r.d[f]===v:true)}});
+    (q.cons||[]).forEach(c=>{if(c.w){const[f,op,v]=c.w;const g=r=>r.d[f];rows=rows.filter(r=>op==='=='?g(r)===v:op==='>='?g(r)!=null&&g(r)>=v:op==='<'?g(r)!=null&&g(r)<v:op==='<='?g(r)!=null&&g(r)<=v:op==='>'?g(r)!=null&&g(r)>v:op==='!='?g(r)!==v:op==='in'?v.includes(g(r)):true)}});
     const o=(q.cons||[]).find(c=>c.o);if(o){const[f,dir]=o.o;rows=rows.filter(r=>r.d[f]!=null).sort((a,b)=>{const av=a.d[f]&&a.d[f].toMillis?a.d[f].toMillis():a.d[f],bv=b.d[f]&&b.d[f].toMillis?b.d[f].toMillis():b.d[f];return dir==='desc'?bv-av:av-bv})}
     const l=(q.cons||[]).find(c=>c.l);if(l)rows=rows.slice(0,l.l);
     return{docs:rows.map(r=>({id:r.p.split('/').pop(),data:()=>clone(r.d)}))};

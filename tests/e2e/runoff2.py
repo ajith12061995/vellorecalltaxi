@@ -28,7 +28,7 @@ async def main():
         await pg.screenshot(path='shots/of1.png',clip=OL)
         await O.locator('[data-cd2="u9999900004"]').click();await pg.wait_for_timeout(600);await pg.screenshot(path='shots/of2.png',clip=OL)
         await O.locator('#cbk').click();await pg.wait_for_timeout(1200)
-        print('blocked cfg',await pg.evaluate("JSON.stringify(MOCK.dump()['config/app'].blocked)"))
+        print('blocked (private list)',await pg.evaluate("JSON.stringify(Object.keys(MOCK.dump()).filter(k=>k.startsWith('blocked/')))"),'public config list:',await pg.evaluate("JSON.stringify((MOCK.dump()['config/app']||{}).blocked||[])"))
         await of.evaluate("S.sec='drv';save();show()");await pg.wait_for_timeout(2000);await pg.screenshot(path='shots/of3.png',clip=OL)
         await O.locator('[data-dv]').first.click();await pg.wait_for_timeout(1200);await pg.screenshot(path='shots/of4.png',clip=OL)
         await O.locator('#dnote').fill('Test note: லேட்டா வந்தார்');await O.locator('#dns').click();await pg.wait_for_timeout(1200)
@@ -39,7 +39,7 @@ async def main():
         await O.locator('#bq').fill('Karthik');await pg.wait_for_timeout(800);await pg.screenshot(path='shots/of6.png',clip=OL)
         print('book rows',await of.evaluate("document.querySelectorAll('.table .tr:not(.th)').length"))
         # customer blocked
-        bl=await pg.evaluate("MOCK.dump()['config/app'].blocked[0]")
+        bl=await pg.evaluate("Object.keys(MOCK.dump()).find(k=>k.startsWith('blocked/')).split('/')[1]")
         ph=bl.replace('+91','')
         await C.locator('#go').click();await pg.wait_for_timeout(300)
         await C.locator('#ph').fill(ph);await C.locator('#go').click();await pg.wait_for_timeout(500)

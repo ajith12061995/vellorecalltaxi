@@ -17,3 +17,26 @@ function along(pts,f){
   const a=pts[i],b=pts[i+1]||pts[i],k=seg[i]?want/seg[i]:1;
   return{lat:a.lat+(b.lat-a.lat)*k,lon:a.lon+(b.lon-a.lon)*k,nlat:b.lat,nlon:b.lon,idx:i};
 }
+/* geohash: lets the customer app listen only to drivers near the pickup (not every driver in the city / state).
+   Precision-5 cells are about 4.9 km x 4.9 km; a 3x3 block of cells around a point covers at least 4.9 km in every direction. */
+const VGEO = (() => {
+  const B32 = '0123456789bcdefghjkmnpqrstuvwxyz';
+  function gh(lat, lon, prec) {
+    prec = prec || 7; let latR = [-90, 90], lonR = [-180, 180], h = '', bit = 0, ch = 0, even = true;
+    while (h.length < prec) {
+      const r = even ? lonR : latR, v = even ? lon : lat, mid = (r[0] + r[1]) / 2;
+      if (v >= mid) { ch = ch * 2 + 1; r[0] = mid; } else { ch = ch * 2; r[1] = mid; }
+      even = !even; if (++bit === 5) { h += B32[ch]; bit = 0; ch = 0; }
+    }
+    return h;
+  }
+  // the 9 precision-5 cells around a point (centre + 8 neighbours)
+  function cells(lat, lon) {
+    const dLat = 180 / 4096, dLon = 360 / 8192;  // precision 5 = 12 lat bits + 13 lon bits: 0.0439° x 0.0439°
+    const out = new Set();
+    for (const a of [-1, 0, 1]) for (const b of [-1, 0, 1]) out.add(gh(lat + a * dLat, lon + b * dLon, 5));
+    return [...out];
+  }
+  return { gh, cells };
+})();
+if (typeof module !== 'undefined') module.exports = VGEO;
