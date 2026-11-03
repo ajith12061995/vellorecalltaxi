@@ -23,11 +23,12 @@
 :root[data-theme="dark"] .vimg{mix-blend-mode:normal;background:#fff;border-radius:8px}
 .chkbadge{flex:none;padding:9px 12px;border-radius:12px;font-weight:700;font-size:13.5px;margin:6px 0}.chkbadge.ok{background:rgba(30,138,90,.12);color:#1E8A5A}.chkbadge.warn{background:rgba(242,169,0,.14);color:#8a5a00}.chkbadge.bad{background:rgba(194,59,59,.12);color:#C23B3B}
 .chklist{flex:none;display:flex;flex-direction:column;gap:3px;max-height:220px;overflow:auto;font-size:13px;margin:4px 0 8px}.chklist div{display:flex;gap:8px;align-items:flex-start}.chklist i{font-style:normal;flex:none}.chklist .ok,.chklist .info{color:var(--muted)}.chklist .bad{color:#C23B3B;font-weight:600}
+.rowbk{cursor:pointer}.rowbk:hover{background:rgba(0,0,0,.03)}
 </style>
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('../vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV=window.VCT_V='2026-11-03-50',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV=window.VCT_V='2026-11-03-51',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('../version.json',location.href)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -699,11 +700,11 @@ details.faq p{margin:0;padding:0 14px 14px;color:var(--muted);font-size:14px;lin
 <div class="app" id="app"></div>
 <div class="toast" id="toast"></div>
 
-<script src="../core/report.js?v=2026-11-03-50"></script>
-<script src="../core/geo.js?v=2026-11-03-50"></script>
-<script src="../core/fare.js?v=2026-11-03-50"></script>
-<script src="../core/driverchecks.js?v=2026-11-03-50"></script>
-<script src="../core/map.js?v=2026-11-03-50"></script>
+<script src="../core/report.js?v=2026-11-03-51"></script>
+<script src="../core/geo.js?v=2026-11-03-51"></script>
+<script src="../core/fare.js?v=2026-11-03-51"></script>
+<script src="../core/driverchecks.js?v=2026-11-03-51"></script>
+<script src="../core/map.js?v=2026-11-03-51"></script>
 <script>
 /* shared with the customer app: icons, places, fares, map engine */
 const I = {
@@ -1137,7 +1138,7 @@ function book(){
    <div class="srow"><input id="bq" class="sbox" placeholder="🔍 ${L('Booking எண், பெயர், நம்பர், இடம், வண்டி எண்','Booking no., name, phone, place or plate')}" value="${esc(book.q||'')}"></div>
    <div class="tabs">${tabs.map(([k,l])=>`<button class="${BT===k?'on':''}" data-bt="${k}">${l} <em>${DB.bk.filter({live:f2=>['searching','assigned','ontrip'].includes(f2.status),sched:f2=>f2.status==='scheduled',done:f2=>f2.status==='done',cx:f2=>f2.status==='cancelled'}[k]).length}</em></button>`).join('')}</div>
    <div class="table">${list.length?`<div class="tr th"><span>ID</span><span>${L('Customer','Customer')}</span><span>${L('வழி','Route')}</span><span>${L('வண்டி / Driver','Vehicle / driver')}</span><span>${L('கட்டணம்','Fare')}</span><span>${L('நிலை','Status')}</span><span></span></div>`+
-    list.map(b=>{const d=drvById(b.driver);return `<div class="tr"><span class="tid">${b.id}<small>${b.src==='phone'?'☎ Phone':'App'}${b.sample?' · sample':''}</small></span>
+    list.map(b=>{const d=drvById(b.driver);return `<div class="tr rowbk" data-ob="${b._id}" title="${L('விவரம் பார்க்க தொடுங்க','Tap for details')}"><span class="tid">${b.id}<small>${b.src==='phone'?'☎ Phone':'App'}${b.sample?' · sample':''}</small></span>
      <span><b>${esc(b.cust.name)}</b><small>+91 ${b.cust.phone}</small></span>
      <span><b>${kTag(b)}${pn(b.from)} → ${pn(b.to)}</b><small>${b.km} ${L('கி.மீ','km')} · ${b.status==='scheduled'||isFut(b)&&b.status!=='done'?'⏰ '+dt(b.when):dt(b.done||b.created)}</small>${cdHtml(b)}</span>
      <span><b>${vname(b.veh)}</b><small>${d?d[S.lang]+' · '+d.plate:'—'}</small></span>
@@ -1148,6 +1149,8 @@ function book(){
   main().scrollTop=scroll;
   document.getElementById('nb3').onclick=()=>newBooking();
   app.querySelectorAll('[data-bt]').forEach(b=>b.onclick=()=>{BT=b.dataset.bt;book()});
+  // tap a booking row (not its buttons) → full details: steps, bill, how the PIN was checked
+  app.querySelectorAll('[data-ob]').forEach(r=>r.onclick=e=>{if(e.target.closest('button,a'))return;bookSheet(DB.bk.find(x=>x._id===r.dataset.ob))});
   const bqi=document.getElementById('bq');bqi.oninput=()=>{book.q=bqi.value;clearTimeout(bqi.t);bqi.t=setTimeout(()=>{book();const n=document.getElementById('bq');if(n){n.focus();n.setSelectionRange(n.value.length,n.value.length)}},250)};
   app.querySelectorAll('[data-as]').forEach(b=>b.onclick=()=>assignSheet(DB.bk.find(x=>x.id===b.dataset.as)));
   app.querySelectorAll('[data-rv]').forEach(b=>b.onclick=()=>reviewSheet(DB.bk.find(x=>x.id===b.dataset.rv)));
