@@ -80,11 +80,13 @@ service cloud.firestore {
 
       allow create: if isStaff()
         || (signedIn() && newData().customerUid == request.auth.uid
+            && newData().get('src', '') == 'app'                 // so the server fare check and booking limits always apply
             && newData().status in ['searching', 'scheduled']
             && !isBlocked()
             && num(newData().fare, 1, 200000)
             && (!('tip' in newData()) || num(newData().tip, 0, 300))
-            && !newData().keys().hasAny(['driverPhone', 'driverName', 'assignedAt', 'startedAt', 'doneAt', 'fareFinal', 'fx', 'comm', 'commLocal', 'pinOk', 'ledgerAt']));
+            && !newData().keys().hasAny(['driverPhone', 'driverName', 'assignedAt', 'startedAt', 'doneAt', 'fareFinal', 'fx', 'comm', 'commLocal', 'pinOk', 'ledgerAt',
+                                             'fareFlag', 'fareWas', 'kmWas', 'limitWhy', 'cancelledBy', 'dispatchedBy']));
 
       allow update: if isStaff()
         // customer: cancel (before the trip starts), rate, tip, switch payment, confirm the PIN the driver typed

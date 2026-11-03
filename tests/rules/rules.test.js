@@ -46,6 +46,16 @@ test('customer cannot create with fare 0 or huge tip', async () => {
   await assertFails(addDoc(collection(as.cust(), 'bookings'), booking({ fare: 0 })));
   await assertFails(addDoc(collection(as.cust(), 'bookings'), booking({ tip: 5000 })));
 });
+test('customer bookings must say src app and cannot pre-set server fields (fare check / limits)', async () => {
+  await assertFails(addDoc(collection(as.cust(), 'bookings'), booking({ src: 'phone' })));
+  const { src, ...noSrc } = booking(); await assertFails(addDoc(collection(as.cust(), 'bookings'), noSrc));
+  await assertFails(addDoc(collection(as.cust(), 'bookings'), booking({ fareFlag: 'corrected' })));
+  await assertFails(addDoc(collection(as.cust(), 'bookings'), booking({ fareWas: 1 })));
+});
+test('limits are server-only', async () => {
+  await assertFails(setDoc(doc(as.cust(), 'limits', CUST), { open: [], n: 0 }));
+  await assertFails(getDoc(doc(as.cust(), 'limits', CUST)));
+});
 test('customer cannot create a booking already assigned / with final fare', async () => {
   await assertFails(addDoc(collection(as.cust(), 'bookings'), booking({ driverPhone: DRV })));
   await assertFails(addDoc(collection(as.cust(), 'bookings'), booking({ fareFinal: 1 })));
