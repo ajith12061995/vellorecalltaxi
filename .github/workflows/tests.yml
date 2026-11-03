@@ -27,4 +27,5 @@ jobs:
         timeout-minutes: 12
         run: |
           (cd functions && npm install --no-audit --no-fund)
+          printf 'FN_REGION=asia-south1\nBACKUP_BUCKET=emulator-none\n' > functions/.env.demo-vct
           cd tests/fnint && npm install --no-audit --no-fund && npm test
