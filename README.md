@@ -19,10 +19,22 @@ Live site: https://ajith12061995.github.io/vellorecalltaxi/
 | `core/geo.js` | Distance (`hav`), road-graph route, point along a path | all three apps |
 | `core/map.js` | Map engine (Google / Leaflet / drawn Vellore map), road routes, place search, reverse geocode, vehicle markers | all three apps |
 | `core/chat.js` | Customer ↔ driver chat on a booking | customer, driver |
+| `core/fare.js` | Final bill at trip end (rental / outstation extras, toll, parking, waiting) and commission | all three apps |
+| `core/pin.js` | Ride PIN check that works when the customer's phone is offline | customer, driver |
+| `core/clock.js` | Server-time correction for dispatch timing | customer, driver |
+| `core/report.js` | Script-error reports to the `errors` collection | all apps |
 | `vct-cloud.js` | Firebase loader (Auth + Firestore) | all apps |
 | `index.html`, `driver/index.html`, `office/index.html` | Each app's own screens and logic | — |
 
 Core files are plain scripts loaded before each app's main script; fix a map or chat bug once in `core/` and all apps get it.
+
+### Production, tests, operations
+
+- `docs/DEPLOY.md` — step-by-step go-live checklist (rules v2, Blaze, Cloud Functions, push, keys, go-live test, rollback)
+- `docs/OPERATIONS.md` — daily checks, backups and restore, monitoring, what to do when something goes wrong
+- `docs/TESTING.md` — all test suites and how to run them
+- `functions/` — Cloud Functions (commission ledger, housekeeping, push, PIN check, daily backup)
+- `firestore.rules` (v2) · `firestore.rules.v1-backup` (previous) · `firestore.indexes.json` · `firebase.json`
 
 ### Releasing
 

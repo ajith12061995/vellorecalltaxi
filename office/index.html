@@ -25,7 +25,7 @@
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('../vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV=window.VCT_V='2026-11-03-41',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV=window.VCT_V='2026-11-03-42',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('../version.json',location.href)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -695,10 +695,10 @@ details.faq p{margin:0;padding:0 14px 14px;color:var(--muted);font-size:14px;lin
 <div class="app" id="app"></div>
 <div class="toast" id="toast"></div>
 
-<script src="../core/report.js?v=2026-11-03-41"></script>
-<script src="../core/geo.js?v=2026-11-03-41"></script>
-<script src="../core/fare.js?v=2026-11-03-41"></script>
-<script src="../core/map.js?v=2026-11-03-41"></script>
+<script src="../core/report.js?v=2026-11-03-42"></script>
+<script src="../core/geo.js?v=2026-11-03-42"></script>
+<script src="../core/fare.js?v=2026-11-03-42"></script>
+<script src="../core/map.js?v=2026-11-03-42"></script>
 <script>
 /* shared with the customer app: icons, places, fares, map engine */
 const I = {
@@ -1709,7 +1709,7 @@ function settings(){
 
 /* ================= CLOUD: Firebase (live on GitHub Pages; demo everywhere else) ================= */
 let CL=null,OUNS=[],LIVE={},RAWB=[],RAWBL=[],RAWBA=[],RAWD=[],RAWR=[],RAWRP=[],RAWT=[],RTIMER=null,SEEN=null;
-const ON_PAGES=/github\.io$/.test(location.hostname);
+const ON_PAGES=!/^(localhost|127\.0\.0\.1|)$/.test(location.hostname);
 const cloudP=(window.CLOUD_READY||Promise.resolve(null)).then(c=>{CL=c||null;return CL}).catch(()=>null);
 const F=()=>CL.fs;const ts=()=>F().serverTimestamp();
 const shortB=id=>'B'+id.slice(0,5).toUpperCase();

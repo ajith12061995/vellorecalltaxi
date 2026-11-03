@@ -28,7 +28,7 @@
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('../vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV=window.VCT_V='2026-11-03-41',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV=window.VCT_V='2026-11-03-42',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('../version.json',location.href)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -623,13 +623,13 @@ a.btn{text-decoration:none}
 <div class="app" id="app"></div>
 <div class="toast" id="toast"></div>
 
-<script src="../core/report.js?v=2026-11-03-41"></script>
-<script src="../core/geo.js?v=2026-11-03-41"></script>
-<script src="../core/fare.js?v=2026-11-03-41"></script>
-<script src="../core/pin.js?v=2026-11-03-41"></script>
-<script src="../core/clock.js?v=2026-11-03-41"></script>
-<script src="../core/map.js?v=2026-11-03-41"></script>
-<script src="../core/chat.js?v=2026-11-03-41"></script>
+<script src="../core/report.js?v=2026-11-03-42"></script>
+<script src="../core/geo.js?v=2026-11-03-42"></script>
+<script src="../core/fare.js?v=2026-11-03-42"></script>
+<script src="../core/pin.js?v=2026-11-03-42"></script>
+<script src="../core/clock.js?v=2026-11-03-42"></script>
+<script src="../core/map.js?v=2026-11-03-42"></script>
+<script src="../core/chat.js?v=2026-11-03-42"></script>
 <script>
 /* shared with the customer app: icons, places, fares, map engine */
 const I = {
@@ -1143,11 +1143,11 @@ function roundOf(b){const o=offerAt(b);if(!isFinite(o))return 0;const base=Math.
 function missReq(b){if(!b||!b.id&&!b._id)return;const id=b.id||b._id,m=MISS.get(id)||{n:0};m.n++;m.r=roundOf(b);m.tip=+b.tip||0;MISS.set(id,m)}
 function canOffer(b){const m=MISS.get(b.id);if(!m)return true;if(m.n>=MAXMISS)return false;return roundOf(b)>m.r||(+b.tip||0)>m.tip}
 const CFGD={upi:'',office:''};
-const ON_PAGES=/github\.io$/.test(location.hostname);
+const ON_PAGES=!/^(localhost|127\.0\.0\.1|)$/.test(location.hostname);
 const cloudP=(window.CLOUD_READY||Promise.resolve(null)).then(c=>{CL=c||null;return CL}).catch(()=>null);
 const F=()=>CL.fs;
 const ts=()=>F().serverTimestamp();
-const ON_PAGES_D=()=>/github\.io$/.test(location.hostname);
+const ON_PAGES_D=()=>!/^(localhost|127\.0\.0\.1|)$/.test(location.hostname);
 function offlineD(){go(`<section class="screen"><div class="hero pad"><span class="mini">DRIVER APP</span><h1>${L('Internet இல்லை','You are offline')}</h1><p>${L('Connection-ஐ பார்த்துட்டு மறுபடி முயற்சி பண்ணுங்க.','Check your connection and try again.')}</p></div><div class="body pad"><div style="flex:1"></div><button class="btn" id="rl">${L('மறுபடி முயற்சி','Try again')}</button></div></section>`,()=>document.getElementById('rl').onclick=()=>location.reload())}
 function notDriver(){
   F().getDoc(F().doc(CL.db,'staff',CL.phone)).then(st=>{if(st.exists())ownerD();else if(ON_PAGES_D())location.replace('join/');else notDriver2()}).catch(()=>{if(ON_PAGES_D())location.replace('join/');else notDriver2()});
@@ -1311,7 +1311,7 @@ async function acceptCloud(){
   }catch(e){SHOWING=null;MISS.set(id,{n:99});J=null;home();toast(e&&e.message==='taken'?L('இந்த ride-ஐ வேற driver எடுத்துட்டாங்க','Another driver took this ride'):CL.errText(e,S.lang==='ta'))}
 }
 function adoptJob(b){
-  J=buildJ(b,b.id);watchJob(b.id);beep();
+  J=buildJ(b,b.id);watchJob(b.id);beep();if(CL&&!S.online)setOnline(true); // a driver in a trip is on duty (also after reopening the app)
   toast(L('உங்களுக்கு ஒரு ride இருக்கு','You have a ride'));
   if(b.status==='ontrip')onTrip();else if(b.arrivedAt)atPickup();else toPickup();
 }

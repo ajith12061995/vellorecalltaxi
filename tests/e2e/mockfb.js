@@ -43,6 +43,9 @@
       const res=await fn(tx);q.forEach(f=>f());notify();return res},
     writeBatch(){const q=[];return{update:(r,d)=>q.push(()=>write(r.path,d,true)),set:(r,d,o)=>q.push(()=>write(r.path,d,o&&o.merge)),delete:r=>q.push(()=>store.delete(r.path)),async commit(){q.forEach(f=>f());notify()}}},
   };
+  // network simulation for tests: MOCK.delay = ms added to every call; MOCK.down = true makes calls fail like no internet
+  ['getDoc','getDocs','setDoc','updateDoc','addDoc','deleteDoc','runTransaction'].forEach(k=>{const f=fs[k];fs[k]=async(...a)=>{
+    if(window.MOCK&&MOCK.delay)await new Promise(r=>setTimeout(r,MOCK.delay));if(window.MOCK&&MOCK.down)throw{code:'unavailable',message:'offline'};return f(...a)}});
   window.MOCK={store,fs,dump:()=>{const o={};store.forEach((v,k)=>o[k]=clone(v));return o}};
   window.makeApi=function(){
     let user=null,pending=null;const cbs=[];

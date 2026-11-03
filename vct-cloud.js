@@ -6,7 +6,7 @@ import {
   GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult,
 } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
 import {
-  getFirestore, doc, getDoc, getDocs, setDoc, updateDoc, addDoc, deleteDoc,
+  getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager, doc, getDoc, getDocs, setDoc, updateDoc, addDoc, deleteDoc,
   collection, query, where, orderBy, limit, onSnapshot, serverTimestamp, increment, runTransaction, writeBatch,
 } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 import { firebaseConfig, VCT_ENV } from './firebase-config.js';
@@ -15,7 +15,11 @@ if (!firebaseConfig) throw new Error('no Firebase config for ' + VCT_ENV + ' (se
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 auth.languageCode = 'ta';
-const db = getFirestore(app);
+// Offline cache: a trip closed or a request written with no signal is kept on the phone and sent when the
+// network returns (even if the app was closed). Falls back to memory-only where the browser has no storage.
+let db;
+try { db = initializeFirestore(app, { localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }) }); }
+catch (e) { console.warn('offline cache off', e); db = getFirestore(app); }
 
 let verifier = null, confirmation = null;
 function recaptchaBox() {
