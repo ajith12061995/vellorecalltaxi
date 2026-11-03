@@ -67,7 +67,7 @@ async def main():
         check('office list shows the phone booking number','9443322110' in otx)
         await pg.screenshot(path='shots/phone_office.png')
         # 5) switch OFF (before the new rules are published): number stays in the booking as before
-        await cf.evaluate("CFG.privPhone=false;S.rider=null;S.dest='cmc';S.veh='auto';S.pay='cash';fareScreen()");await pg.wait_for_timeout(1200)
+        await cf.evaluate("CFG.privPhone=false;S.rider=null;S.dest='cmc';S.veh='sedan';S.pay='cash';fareScreen()");await pg.wait_for_timeout(1200)
         await C.locator('#bookb').click();await pg.wait_for_timeout(3000);oid=await cf.evaluate("R.id");dump=await pg.evaluate('MOCK.dump()')
         check('switch off: old behaviour (number in booking) + contact also saved',dump[f'bookings/{oid}'].get('custPhone')=='+919999900001' and dump.get(f'bookings/{oid}/private/contact',{}).get('custPhone')=='+919999900001')
         print('ERR',errs)
