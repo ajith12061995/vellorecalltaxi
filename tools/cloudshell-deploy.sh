@@ -25,7 +25,12 @@ if ! gcloud storage buckets describe "gs://$BUCKET" >/dev/null 2>&1; then
 fi
 gcloud beta services identity create --service=firestore.googleapis.com --project="$PROJECT" >/dev/null 2>&1 || true
 gcloud storage buckets add-iam-policy-binding "gs://$BUCKET" --member="serviceAccount:service-${NUM}@gcp-sa-firestore.iam.gserviceaccount.com" --role=roles/storage.admin >/dev/null
-gcloud projects add-iam-policy-binding "$PROJECT" --member="serviceAccount:${NUM}-compute@developer.gserviceaccount.com" --role=roles/datastore.importExportAdmin --condition=None >/dev/null
+# Cloud Functions (2nd gen) run as the default compute service account; it appears once the Compute API is on
+gcloud services enable compute.googleapis.com cloudfunctions.googleapis.com cloudbuild.googleapis.com artifactregistry.googleapis.com run.googleapis.com eventarc.googleapis.com pubsub.googleapis.com cloudscheduler.googleapis.com
+SA="${NUM}-compute@developer.gserviceaccount.com"
+for i in $(seq 1 18); do gcloud iam service-accounts describe "$SA" >/dev/null 2>&1 && break; echo "waiting for $SA ($i/18)…"; sleep 10; done
+gcloud projects add-iam-policy-binding "$PROJECT" --member="serviceAccount:$SA" --role=roles/datastore.importExportAdmin --condition=None >/dev/null \
+  || echo "NOTE: backup permission not set yet — run this script again in 5 minutes (nothing else is affected)"
 echo "bucket gs://$BUCKET ready"
 
 say "3/6 Settings for the functions"
