@@ -18,4 +18,16 @@ ok('outstation round: extra day',()=>{const r=F.final(round,{km:300,days:3});ass
 ok('commission on trip only',()=>{assert.equal(F.comm(1149+22*13,10),144)});
 ok('billOf / tripOf',()=>{assert.equal(F.billOf({fare:100}),100);assert.equal(F.billOf({fare:100,fareFinal:150}),150);assert.equal(F.tripOf({fare:100,fareFinal:150,fx:{trip:120}}),120)});
 ok('garbage input never NaN',()=>{const r=F.final({fare:'abc',tariff:{t:'rent',h:'x'}},{km:'-5',toll:'abc'});assert.ok(isFinite(r.total))});
+const IST=(h,m)=>Date.UTC(2026,10,4,h,m)-19800000, NC={on:true,from:'22:00',to:'05:00',pct:25};
+ok('night: 22:00–05:00 Indian time, crossing midnight',()=>{assert.deepEqual([[21,59],[22,0],[23,30],[0,0],[4,59],[5,0],[12,0]].map(([h,m])=>F.nightPct(NC,IST(h,m))),[0,25,25,25,25,0,0])});
+ok('night: off, bad hours, 0 % or same from/to → no charge; % capped at 100',()=>{
+  assert.equal(F.nightPct({...NC,on:false},IST(23,0)),0);assert.equal(F.nightPct({...NC,from:'25:00'},IST(23,0)),0);
+  assert.equal(F.nightPct({...NC,pct:0},IST(23,0)),0);assert.equal(F.nightPct({...NC,to:'22:00'},IST(23,0)),0);
+  assert.equal(F.nightPct(null,IST(23,0)),0);assert.equal(F.nightPct({...NC,pct:500},IST(23,0)),100)});
+ok('night: a window inside one day (e.g. 05:00–09:00) also works',()=>{const c={on:true,from:'05:00',to:'09:00',pct:10};assert.equal(F.nightPct(c,IST(6,0)),10);assert.equal(F.nightPct(c,IST(23,0)),0)});
+ok('night: fare +25 % rounded to ₹5',()=>{assert.equal(F.withNight(190,25),240);assert.equal(F.withNight(100,25),125);assert.equal(F.withNight(190,0),190)});
+ok('night: final bill shows the night line, total unchanged; commission base unchanged',()=>{
+  const r=F.final({fare:240,tariff:{t:'local',night:25,nightAmt:50}},{toll:20});
+  assert.deepEqual(r.lines.map(l=>[l.k,l.amt]),[['fare',190],['night',50],['toll',20]]);assert.equal(r.trip,240);assert.equal(r.total,260)});
+ok('night: a broken nightAmt never changes the total',()=>{assert.equal(F.final({fare:190,tariff:{t:'local',night:25,nightAmt:999}},{}).total,190)});
 console.log(n,'fare tests passed');

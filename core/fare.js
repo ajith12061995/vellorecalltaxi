@@ -37,7 +37,9 @@ const FARE = (() => {
       trip += add('quote', 'முன்பதிவு கட்டணம்', 'Booked fare', quoted || calc);
       if (calc > (quoted || calc)) trip += add('xout', `கூடுதல் (${Math.round(km)} கி.மீ, ${days} நாள்)`, `Extra (${Math.round(km)} km, ${days} day${days > 1 ? 's' : ''})`, calc - quoted);
     } else {
-      trip += add('fare', 'பயணக் கட்டணம்', 'Ride fare', quoted);
+      const nt = n(t.nightAmt) < quoted ? n(t.nightAmt) : 0;   // night charge is inside the quoted fare; shown on its own line
+      trip += add('fare', 'பயணக் கட்டணம்', 'Ride fare', quoted - nt);
+      if (nt) trip += add('night', `இரவு கட்டணம் +${n(t.night)}%`, `Night charge +${n(t.night)}%`, nt);
       const wm = Math.max(0, Math.round(n(a.waitMin) - (t.free != null ? n(t.free) : 3)));
       if (wm && n(t.wait)) trip += add('wait', `காத்திருப்பு ${wm} நிமி`, `Waiting ${wm} min`, wm * n(t.wait));
     }
@@ -47,10 +49,20 @@ const FARE = (() => {
     pass += add('permit', 'மாநில permit', 'State permit', n(a.permit));
     return { trip, pass, total: trip + pass, lines };
   }
+  // Night charge on city rides. cfg = config/app.night = {on, from:'22:00', to:'05:00', pct}; at = pickup time (ms).
+  // Indian time is used whatever the phone's time zone; a window that crosses midnight (22:00–05:00) works.
+  const hm = x => { const m = /^(\d{1,2}):(\d{2})$/.exec(String(x || '')); return m && +m[1] < 24 && +m[2] < 60 ? +m[1] * 60 + +m[2] : null; };
+  function nightPct(cfg, at) {
+    if (!cfg || !cfg.on) return 0;
+    const pct = Math.min(100, n(cfg.pct)), f = hm(cfg.from), t = hm(cfg.to); if (!pct || f == null || t == null || f === t) return 0;
+    const m = ((Math.floor((+at + 19800000) / 60000) % 1440) + 1440) % 1440;   // minutes after midnight, IST
+    return (f < t ? m >= f && m < t : m >= f || m < t) ? pct : 0;
+  }
+  const withNight = (f, pct) => pct ? Math.round(n(f) * (1 + pct / 100) / 5) * 5 : n(f);
   const comm = (trip, pct) => Math.round(n(trip) * n(pct) / 100);
   // the amount a finished booking really cost (old bookings have no fareFinal)
   const billOf = b => b && b.fareFinal != null ? +b.fareFinal : +(b && b.fare) || 0;
   const tripOf = b => b && b.fx && b.fx.trip != null ? +b.fx.trip : billOf(b);
-  return { final, comm, billOf, tripOf, r10 };
+  return { final, comm, billOf, tripOf, r10, nightPct, withNight, hm };
 })();
 if (typeof module !== 'undefined') module.exports = FARE;
