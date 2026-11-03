@@ -68,7 +68,7 @@ async def main():
         check('GPS lost → red warning + voice',await df.evaluate("!document.getElementById('ngps').hidden") and any('GPS signal' in x for x in await df.evaluate("__said")))
         await pg.screenshot(path='shots/nav_gps.png',clip={'x':400,'y':0,'width':400,'height':860})
         await df.evaluate("LASTFIX=Date.now();navTick()")
-        await D.locator('#nmap').dispatch_event('pointerdown');f=await df.evaluate("NAV.follow-Date.now()")
+        await df.evaluate("document.querySelector('#navfs .map').dispatchEvent(new PointerEvent('pointerdown',{bubbles:true}))");f=await df.evaluate("NAV.follow-Date.now()")
         check('driver touches the map → stops following for ~8 s',7000<f<=8000,f)
         await df.evaluate("NAV.follow=0")
         check('GPS back → warning hidden',await df.evaluate("document.getElementById('ngps').hidden"))
