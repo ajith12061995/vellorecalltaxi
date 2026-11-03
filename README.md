@@ -12,6 +12,23 @@ Live site: https://ajith12061995.github.io/vellorecalltaxi/
 
 ## How it fits together
 
+### Code layout (modules)
+
+| File | What it holds | Used by |
+|---|---|---|
+| `core/geo.js` | Distance (`hav`), road-graph route, point along a path | all three apps |
+| `core/map.js` | Map engine (Google / Leaflet / drawn Vellore map), road routes, place search, reverse geocode, vehicle markers | all three apps |
+| `core/chat.js` | Customer ↔ driver chat on a booking | customer, driver |
+| `vct-cloud.js` | Firebase loader (Auth + Firestore) | all apps |
+| `index.html`, `driver/index.html`, `office/index.html` | Each app's own screens and logic | — |
+
+Core files are plain scripts loaded before each app's main script; fix a map or chat bug once in `core/` and all apps get it.
+
+### Releasing
+
+Run `python3 tools/bump.py <new-version>` (for example `2026-11-03-36`), then push to `main`. It updates the version in every page, the `?v=` on each `core/*.js` include and `version.json`, so open apps reload themselves within a few minutes.
+
+
 - `vct-cloud.js` loads Firebase (Auth + Firestore) from the official CDN and hands it to whichever app is open.
 - `firebase-config.js` holds the public web config.
 - If Firebase can't load, the apps fall back to a self-contained demo (used for previews).
