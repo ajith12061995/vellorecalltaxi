@@ -21,11 +21,13 @@
 .vi:has(.vimg){background:#fff!important}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .vimg{mix-blend-mode:normal;background:#fff;border-radius:8px}}
 :root[data-theme="dark"] .vimg{mix-blend-mode:normal;background:#fff;border-radius:8px}
+.chkbadge{flex:none;padding:9px 12px;border-radius:12px;font-weight:700;font-size:13.5px;margin:6px 0}.chkbadge.ok{background:rgba(30,138,90,.12);color:#1E8A5A}.chkbadge.warn{background:rgba(242,169,0,.14);color:#8a5a00}.chkbadge.bad{background:rgba(194,59,59,.12);color:#C23B3B}
+.chklist{flex:none;display:flex;flex-direction:column;gap:3px;max-height:220px;overflow:auto;font-size:13px;margin:4px 0 8px}.chklist div{display:flex;gap:8px;align-items:flex-start}.chklist i{font-style:normal;flex:none}.chklist .ok{color:var(--muted)}.chklist .bad{color:#C23B3B;font-weight:600}
 </style>
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('../vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV=window.VCT_V='2026-11-03-43',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV=window.VCT_V='2026-11-03-44',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('../version.json',location.href)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -697,10 +699,11 @@ details.faq p{margin:0;padding:0 14px 14px;color:var(--muted);font-size:14px;lin
 <div class="app" id="app"></div>
 <div class="toast" id="toast"></div>
 
-<script src="../core/report.js?v=2026-11-03-43"></script>
-<script src="../core/geo.js?v=2026-11-03-43"></script>
-<script src="../core/fare.js?v=2026-11-03-43"></script>
-<script src="../core/map.js?v=2026-11-03-43"></script>
+<script src="../core/report.js?v=2026-11-03-44"></script>
+<script src="../core/geo.js?v=2026-11-03-44"></script>
+<script src="../core/fare.js?v=2026-11-03-44"></script>
+<script src="../core/driverchecks.js?v=2026-11-03-44"></script>
+<script src="../core/map.js?v=2026-11-03-44"></script>
 <script>
 /* shared with the customer app: icons, places, fares, map engine */
 const I = {
@@ -1379,16 +1382,32 @@ const DOCN={photo:['Photo','Photo'],aadhaarF:['ஆதார் முன்','Aa
 function appsHtml(){const A=(DB.apps||[]).filter(a=>a.status==='pending');if(!CL)return '';
   return `<div class="sec"><h3>${L('புது Driver விண்ணப்பங்கள்','New driver applications')}</h3><span class="sample">${A.length}</span></div>
    <div class="cards" style="margin-bottom:18px">${A.length?A.map(a=>`<div class="scard"><div class="dtop"><span class="vi sm">${I[a.veh]||''}</span><div style="flex:1;min-width:0"><b>${esc(a.name||'')}</b><small>${esc(a.id)} · ${esc(a.plate||'')} · ${vname(a.veh)}</small></div><small class="muted">${ago(CL.toMs(a.submittedAt)||Date.now())}</small></div>
+     ${(()=>{const c=appCheck(a),late=Date.now()-(CL.toMs(a.submittedAt)||Date.now())>12*36e5;return `<div class="chkbadge ${c.bad?'bad':c.warn?'warn':'ok'}">${c.bad?`⛔ ${c.bad} ${L('சரி பண்ணணும்','to fix')}`:c.warn?`⚠️ ${L('சரிபார்க்கப்பட்டது','Checked')} · ${c.warn} ${L('கவனிக்க','to note')}`:`✅ ${L('எல்லா ஆவணமும் சரிபார்க்கப்பட்டது','All checks passed')}`}${late?` · ⏰ ${L('12 மணி+ காத்திருக்கு','waiting 12 h+')}`:''}</div>`})()}
      <div class="dact"><button class="btn sm" data-av="${esc(a.id)}">${L('பார்த்து முடிவு செய்','Review')}</button></div></div>`).join('')
      :`<div class="empty" style="padding:14px"><small class="muted">${L('காத்திருக்கும் விண்ணப்பம் இல்லை. Driver-களுக்கு இந்த link அனுப்புங்க:','No applications waiting. Send drivers this link:')}<br><b>ajith12061995.github.io/vellorecalltaxi/driver/</b> <button class="linkbtn" data-cpj="1">Copy</button></small></div>`}</div>`}
 function bindApps(){
   app.querySelectorAll('[data-cpj]').forEach(b=>b.onclick=()=>navigator.clipboard.writeText('https://ajith12061995.github.io/vellorecalltaxi/driver/').then(()=>toast(L('Link copy ஆச்சு','Link copied'))).catch(()=>{}));
   app.querySelectorAll('[data-av]').forEach(b=>b.onclick=()=>reviewApp((DB.apps||[]).find(a=>a.id===b.dataset.av)));
 }
-function reviewApp(a){if(!a)return;
+const appCheck=a=>VCTCHK.check(a,(RAWD||[]).map(d=>({id:d._id,name:d.name,plate:d.plate,dlNo:d.dlNo})),Date.now());
+const chkList=c=>`<div class="chklist">${c.items.filter(x=>x.level!=='ok').concat(c.items.filter(x=>x.level==='ok')).map(x=>`<div class="${x.level}"><i>${x.level==='ok'?'✅':x.level==='warn'?'⚠️':'⛔'}</i><span>${esc(S.lang==='ta'?x.ta:x.en)}</span></div>`).join('')}</div>`;
+/* the signed agreement as a printable page (Print → Save as PDF keeps a copy) */
+function printAgreement(a){const c=a.consent||{},w=window.open('');if(!w){toast(L('Pop-up அனுமதி கொடுங்க','Allow pop-ups'));return}
+  const T=VCTCHK.AGREEMENT,when=c.at?new Date(c.at).toLocaleString('en-IN'):'—';
+  w.document.write(`<!doctype html><meta charset="utf-8"><title>VCT driver agreement · ${esc(a.name||'')}</title><style>body{font:15px/1.6 system-ui,'Noto Sans Tamil',sans-serif;max-width:760px;margin:24px auto;padding:0 16px;color:#111}h1{font-size:20px}ol li{margin:0 0 6px}table{border-collapse:collapse;width:100%;margin:12px 0}td{border:1px solid #ccc;padding:6px 8px}.sig{margin-top:28px;display:flex;justify-content:space-between;gap:20px}.sig div{flex:1;border-top:1px solid #333;padding-top:6px;font-size:13px}@media print{button{display:none}}</style>
+    <h1>Vellore Taxi (VCT) — Driver agreement / ஓட்டுநர் ஒப்பந்தம்</h1><p>Version ${esc(T.v)}</p>
+    <table><tr><td>Driver</td><td>${esc(a.name||'')} · ${esc(a.id||'')}</td></tr><tr><td>Licence</td><td>${esc(a.dlNo||'')}</td></tr><tr><td>Vehicle</td><td>${esc(vname(a.veh))} · ${esc(a.plate||'')} · ${esc([a.brand,a.model,a.year].filter(Boolean).join(' '))}</td></tr>
+    <tr><td>Accepted in app</td><td>${c.name?`Signed as “${esc(c.name)}” on ${esc(when)} (${esc(c.lang||'')}, version ${esc(c.v||'')})`:'NOT SIGNED'}</td></tr></table>
+    <h3>தமிழ்</h3><ol>${T.ta.map(x=>`<li>${esc(x)}</li>`).join('')}</ol><h3>English</h3><ol>${T.en.map(x=>`<li>${esc(x)}</li>`).join('')}</ol>
+    <div class="sig"><div>Driver signature / ஓட்டுநர் கையெழுத்து</div><div>For Vellore Taxi / நிர்வாகம்</div><div>Date / தேதி</div></div>
+    <p><button onclick="print()">🖨 Print / Save as PDF</button></p>`);w.document.close()}
+function reviewApp(a){if(!a)return;const ck=appCheck(a);
   const dd=t=>t?new Date(t).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}):'—',now=Date.now();
   modal(`<h3>${esc(a.name)} · ${esc(a.id)}</h3>
-    <div class="bill"><div><span>${L('வண்டி','Vehicle')}</span><b>${vname(a.veh)} · ${esc(a.plate)}</b></div><div><span>${L('நிறுவனம் / Model / வருஷம்','Brand / model / year')}</span><b>${esc([a.brand,a.model,a.year].filter(Boolean).join(' · ')||'—')}</b></div>
+    <div class="chkbadge ${ck.bad?'bad':ck.warn?'warn':'ok'}">${ck.bad?`⛔ ${ck.bad} ${L('விஷயம் சரி பண்ணணும்','items must be fixed')}`:ck.warn?`⚠️ ${L('தானியங்கி சரிபார்ப்பு முடிந்தது','Automatic checks passed')} · ${ck.warn} ${L('கவனிக்க வேண்டியவை','things to note')}`:`✅ ${L('எல்லா ஆவணமும் சரிபார்க்கப்பட்டது — Approve பண்ணலாம்','All checks passed — ready to approve')}`}</div>
+    ${chkList(ck)}
+    <div class="two"><button class="btn ghost sm" id="agrv">📄 ${L('ஒப்பந்தம் பார் / Print','View / print agreement')}</button>${a.consent&&a.consent.at?`<small class="muted" style="align-self:center">✍ ${esc(a.consent.name)} · ${new Date(a.consent.at).toLocaleString('en-IN')}</small>`:''}</div>
+    <div class="bill"><div><span>${L('வண்டி','Vehicle')}</span><b>${vname(a.veh)} · ${esc(a.plate)}</b></div><div><span>UPI</span><b>${esc(a.upi||'—')}</b></div><div><span>${L('நிறுவனம் / Model / வருஷம்','Brand / model / year')}</span><b>${esc([a.brand,a.model,a.year].filter(Boolean).join(' · ')||'—')}</b></div>
      <div><span>${L('உரிம எண்','Licence no.')}</span><b>${esc(a.dlNo||'—')}</b></div>
      <div><span>${L('அனுபவம் / பகுதி','Experience / area')}</span><b>${a.years||0} ${L('வருடம்','yrs')} · ${esc(a.area||'—')}</b></div>
      <div><span>${L('அவசர தொடர்பு','Emergency contact')}</span><b>${esc(a.ecName||'—')} ${a.ecPhone?`· <a href="tel:${esc(a.ecPhone)}">${esc(a.ecPhone)}</a>`:''}</b></div><div><span>Police verification</span><b style="${(a.files||[]).includes('pcc')?'':'color:var(--danger)'}">${(a.files||[]).includes('pcc')?L('கொடுத்திருக்காங்க','Provided'):L('இல்லை — பின்னாடி வாங்குங்க','Not yet — collect later')}</b></div><div><span>${L('சொந்த வண்டியா','Own vehicle')}</span><b>${a.ownVehicle?L('ஆமா','Yes'):L('இல்லை','No')}</b></div>
@@ -1398,14 +1417,15 @@ function reviewApp(a){if(!a)return;
     ${S.role==='owner'?`<div class="two"><button class="btn" id="apok">✓ ${L('Approve','Approve')}</button><button class="btn ghost" id="apno" style="color:var(--danger)">${L('திருப்பி அனுப்பு','Send back')}</button></div>`:`<p class="muted">${L('Owner மட்டும் approve பண்ண முடியும்','Only the owner can approve')}</p>`}`,(m,close)=>{
     (a.files||[]).forEach(k=>F().getDoc(F().doc(CL.db,'driverApps',a.id,'files',k)).then(s=>{const el=m.querySelector('#im_'+k);if(!el||!s.exists())return;const d=s.data().data;
       el.firstChild.innerHTML=`<img src="${d}" alt="" style="width:100%;height:110px;object-fit:cover">`;el.onclick=e=>{e.preventDefault();const w=window.open('');if(w){w.document.write('<title>'+k+'</title><img src="'+d+'" style="max-width:100%">')}}}).catch(oerr));
-    const ok=m.querySelector('#apok'),no=m.querySelector('#apno');
+    const ok=m.querySelector('#apok'),no=m.querySelector('#apno');m.querySelector('#agrv').onclick=()=>printAgreement(a);
     if(ok)ok.onclick=()=>{if(DB.drv.some(d=>d.id===a.id)){toast(L('இந்த நம்பர் ஏற்கனவே driver','This number is already a driver'));return}
+      if(ck.bad&&!confirm(L(`${ck.bad} விஷயம் இன்னும் சரியில்லை. நேர்ல சரிபார்த்தீங்களா? இருந்தாலும் approve பண்ணவா?`,`${ck.bad} items are still not right. Did you check them in person? Approve anyway?`)))return;
       const D=365*864e5,n0=Date.now(),e=a.exp||{};const bt=F().writeBatch(CL.db);
       bt.set(F().doc(CL.db,'drivers',a.id),{name:a.name,veh:a.veh||'auto',plate:a.plate||'',model:[a.brand,a.model].filter(Boolean).join(' ')+(a.year?' ('+a.year+')':'')||vname(a.veh),brand:a.brand||'',year:a.year||null,wallet:0,rating:5,online:false,blocked:false,
-        docs:{dl:e.dl||null,ins:e.ins||null,permit:e.permit||null,fc:e.fc||null},dlNo:a.dlNo||'',upi:a.upi||'',ec:a.ecPhone?[{name:a.ecName||'',phone:a.ecPhone}]:[],pcc:(a.files||[]).includes('pcc'),fromApp:true,createdAt:ts(),updatedAt:ts()});
+        docs:{dl:e.dl||null,ins:e.ins||null,permit:e.permit||null,fc:e.fc||null},dlNo:a.dlNo||'',upi:a.upi||'',ec:a.ecPhone?[{name:a.ecName||'',phone:a.ecPhone}]:[],pcc:(a.files||[]).includes('pcc'),fromApp:true,consent:a.consent||null,checks:{bad:ck.bad,warn:ck.warn,by:CL.phone,at:Date.now()},createdAt:ts(),updatedAt:ts()});
       bt.update(F().doc(CL.db,'driverApps',a.id),{status:'approved',note:'',decidedAt:ts(),decidedBy:CL.phone,updatedAt:ts()});
       cw(bt.commit().then(()=>{close();toast(L(`${a.name} driver-ஆ சேர்க்கப்பட்டார். அவர் app தானா driver screen-க்கு மாறும்`,`${a.name} is now a driver. Their app switches over by itself`))}))};
-    if(no)no.onclick=()=>{const r=prompt(L('என்ன திருத்தணும்? (driver-க்கு தெரியும்)','What should they fix? (the driver will see this)'),L('DL photo தெளிவா இல்லை','The licence photo is not clear'));if(r==null)return;
+    if(no)no.onclick=()=>{const auto=ck.items.filter(x=>x.level==='bad').map(x=>S.lang==='ta'?x.ta:x.en).join('; ');const r=prompt(L('என்ன திருத்தணும்? (driver-க்கு தெரியும்)','What should they fix? (the driver will see this)'),auto||L('DL photo தெளிவா இல்லை','The licence photo is not clear'));if(r==null)return;
       cw(F().updateDoc(F().doc(CL.db,'driverApps',a.id),{status:'rejected',note:r.slice(0,200),decidedAt:ts(),decidedBy:CL.phone,updatedAt:ts()}).then(()=>{close();toast(L('திருப்பி அனுப்பியாச்சு','Sent back'))}))};
   });
 }

@@ -54,9 +54,10 @@ input:focus{outline:none;border-color:var(--g2)}
 .prog{height:8px;background:var(--line);border-radius:6px;overflow:hidden;margin-top:12px}.prog i{display:block;height:100%;width:0;background:var(--y);transition:width .3s}
 footer{text-align:center;color:var(--mut);font-size:13px;padding:6px 16px 30px}
 a{color:inherit}
+.agr{margin:0;padding-left:20px;max-height:260px;overflow:auto;border:1.5px solid var(--line,#e5e5e5);border-radius:12px;padding:10px 10px 10px 30px;font-size:13.5px;line-height:1.55}.agr li{margin:0 0 6px}
 </style>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV=window.VCT_V='2026-11-03-43',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV=window.VCT_V='2026-11-03-44',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('../../version.json',location.href)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -70,7 +71,8 @@ setTimeout(chk,3000);setInterval(chk,5*60*1000);document.addEventListener('visib
 </div></header>
 <main class="wrap" id="app"></main>
 <footer><a href="../../privacy/#drivers" target="_blank" rel="noopener" id="plink"></a> · Vellore Taxi</footer>
-<script src="../../core/report.js?v=2026-11-03-43"></script>
+<script src="../../core/report.js?v=2026-11-03-44"></script>
+<script src="../../core/driverchecks.js?v=2026-11-03-44"></script>
 <script>
 const S={lang:'ta',phone:'',veh:'auto',files:{},data:{}};
 try{const s=JSON.parse(localStorage.getItem('vctj')||'{}');if(s.lang)S.lang=s.lang}catch(e){}
@@ -137,7 +139,7 @@ function shrink(file){return new Promise((res,rej)=>{
 const SLOTS={photo:['உங்க photo','Your photo',1],aadhaarF:['முன் பக்கம்','Front',1],aadhaarB:['பின் பக்கம்','Back',1],panF:['முன் பக்கம்','Front',0],
   dlF:['முன் பக்கம்','Front',1],dlB:['பின் பக்கம்','Back',1],rcF:['முன் பக்கம்','Front',1],rcB:['பின் பக்கம்','Back',1],
   ins:['Policy முதல் பக்கம்','Policy first page',1],permit:['Permit','Permit',0],fc:['FC','FC',0],
-  vehF:['முன் பக்கம் (number plate)','Front (number plate)',1],vehIn:['உள் பக்கம் (seat)','Inside (seats)',0],pcc:['சான்று','Certificate',0]};
+  vehF:['முன் பக்கம் (number plate)','Front (number plate)',1],vehIn:['உள் பக்கம் (seat)','Inside (seats)',0],pcc:['சான்று','Certificate',0],agreeDoc:['கையெழுத்திட்ட copy','Signed copy',0]};
 const GROUPS=[['உங்க photo','Your photo',['photo'],'முகம் தெளிவா தெரியணும்','Face clearly visible'],
   ['ஆதார் கார்டு','Aadhaar card',['aadhaarF','aadhaarB'],'Masked Aadhaar (முதல் 8 இலக்கம் மறைச்சது) கொடுக்கலாம்','A masked Aadhaar (first 8 digits hidden) is fine'],
   ['PAN கார்டு (இருந்தா)','PAN card (if you have one)',['panF'],'',''],
@@ -194,12 +196,18 @@ function form(){
       ${GROUPS.map(([ta,en,keys,hta,hen])=>`<label style="margin-top:14px">${S.lang==='ta'?ta:en}</label>${hta?`<small style="display:block;color:var(--mut);margin:-2px 0 6px">${S.lang==='ta'?hta:hen}</small>`:''}<div class="docs">${keys.map(tile).join('')}</div>`).join('')}
       <label style="margin-top:18px">${L('காலாவதி தேதிகள் (document முடியுற நாள்)','Expiry dates (when each document ends)')}</label>
       <div class="row2">${EXP.map(([k,ta,en,req])=>`<div><label for="x_${k}" style="margin-top:4px">${S.lang==='ta'?ta:en}${req?' *':''}</label><input type="date" id="x_${k}" value="${dt(k)}"></div>`).join('')}</div></div>
-    <div class="card"><label class="chk" style="color:var(--fg);margin:0"><input type="checkbox" id="agree"> <span>${L('நான் கொடுத்த விவரங்களும் documents-உம் உண்மை. சரிபார்ப்புக்காக இவற்றை Vellore Taxi பயன்படுத்த ஒப்புக்கொள்கிறேன். <a href="../../privacy/#drivers" target="_blank" rel="noopener">Driver விதிமுறைகள் &amp; தனியுரிமைக் கொள்கை</a>.','The details and documents are true, and I agree that Vellore Taxi may use them to verify me. <a href="../../privacy/#drivers-en" target="_blank" rel="noopener">Driver terms and privacy policy</a>.')}</span></label>
+    <div class="card"><h2>${L('5. Driver ஒப்பந்தம்','5. Driver agreement')}</h2>
+      <p style="font-size:13px;color:var(--mut);margin:-4px 0 8px">${L('முழுசா படிங்க. கீழே உங்க பெயரை type பண்றது தான் உங்க கையெழுத்து.','Read it fully. Typing your name below is your signature.')}</p>
+      <ol class="agr">${VCTCHK.AGREEMENT[S.lang==='ta'?'ta':'en'].map(x=>`<li>${esc(x)}</li>`).join('')}</ol>
+      <label class="chk" style="color:var(--fg)"><input type="checkbox" id="agree" ${D.consent?'checked':''}> <span>${L('மேலே உள்ள 10 விதிகளையும் படித்தேன், ஏற்கிறேன். <a href="../../privacy/#drivers" target="_blank" rel="noopener">தனியுரிமை & விதிமுறைகள்</a>','I have read and accept all 10 points above. <a href="../../privacy/#drivers" target="_blank" rel="noopener">Privacy & Terms</a>')}</span></label>
+      <label for="sig">${L('கையெழுத்து: உங்க முழு பெயர் (மேலே போட்ட மாதிரியே) *','Signature: your full name (exactly as above) *')}</label><input id="sig" type="text" maxlength="40" value="${esc((D.consent&&D.consent.name)||'')}" autocomplete="off" style="font-style:italic">
+      <small style="display:block;color:var(--mut);margin-top:4px">${L('தேதி, நேரம் தானா பதிவாகும்.','The date and time are recorded automatically.')}</small>
+      <label style="margin-top:14px">${L('கையெழுத்திட்ட காகித copy (இருந்தா, விருப்பம்)','Signed paper copy (optional)')}</label><div class="docs">${tile('agreeDoc')}</div>
       <div class="err" id="e"></div><div class="prog" id="pg" hidden><i></i></div>
       <button class="btn y" id="sb">${L('Office-க்கு அனுப்பு','Send to office')}</button></div>`;
   const val=id=>(document.getElementById(id)||{}).value||'';
   const snap=()=>{const br=val('br'),mo=val('mo');
-    S.data={...S.data,name:val('nm').trim(),ecName:val('ecn').trim(),ecPhone:val('ecp').replace(/\D/g,'').slice(0,10),upi:(document.getElementById('upi')?val('upi').trim():''),dlNo:val('dln').trim().toUpperCase(),years:val('exp').replace(/\D/g,''),area:val('area').trim(),plate:val('pl').trim().toUpperCase(),
+    S.data={...S.data,name:val('nm').trim(),ecName:val('ecn').trim(),ecPhone:val('ecp').replace(/\D/g,'').slice(0,10),upi:(document.getElementById('upi')?val('upi').trim():''),sig:val('sig').trim(),agreed:document.getElementById('agree').checked,dlNo:val('dln').trim().toUpperCase(),years:val('exp').replace(/\D/g,''),area:val('area').trim(),plate:val('pl').trim().toUpperCase(),
       brand:br===OTHER?val('brx').trim():br,model:(br===OTHER||mo===OTHER)?val('mox').trim():mo,year:+val('yr')||'',ownVehicle:document.getElementById('own').checked,
       exp:Object.fromEntries(EXP.map(([k])=>[k,val('x_'+k)?new Date(val('x_'+k)+'T23:59:00').getTime():((S.data.exp||{})[k]||null)]))}};
   app.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>{snap();S.veh=b.dataset.v;S.data.brand='';S.data.model='';form()});
@@ -216,13 +224,18 @@ async function submit(){
   GROUPS.forEach(([gta,gen,keys])=>keys.forEach(k=>{const s=SLOTS[k];if(s[2]&&!S.files[k]&&!had.includes(k))missing.push((S.lang==='ta'?gta:gen)+(keys.length>1?' – '+(S.lang==='ta'?s[0]:s[1]):''))}));
   EXP.forEach(([k,ta,en,req])=>{if(req&&!(D.exp||{})[k])missing.push((S.lang==='ta'?ta:en)+L(' காலாவதி தேதி',' expiry date'))});
   if(missing.length){e.textContent=L('இது இல்லை: ','Missing: ')+missing.join(', ');return}
-  if(!document.getElementById('agree').checked){e.textContent=L('கீழே ✓ போடுங்க','Please tick the agreement');return}
+  if(!D.agreed){e.textContent=L('ஒப்பந்தத்தை படிச்சு ✓ போடுங்க','Read the agreement and tick it');return}
+  if(!VCTCHK.sameName(D.sig,D.name)){e.textContent=L('கையெழுத்து: மேலே போட்ட முழு பெயரை அப்படியே type பண்ணுங்க','Signature: type your full name exactly as given above');return}
+  {const files=[...new Set([...had,...Object.keys(S.files)])],consent={v:VCTCHK.AGREEMENT.v,name:D.sig,at:Date.now(),lang:S.lang};
+   const r=VCTCHK.check({...D,phone:CL.phone,ecPhone:'+91'+D.ecPhone,files,consent},[],Date.now()),bad=r.items.filter(x=>x.level==='bad');
+   if(bad.length){e.textContent=L('சரி பண்ணுங்க: ','Please fix: ')+bad.map(x=>S.lang==='ta'?x.ta:x.en).join(' · ');return}
+   D.consent=consent}
   const now=Date.now();if(Object.values(D.exp||{}).some(t=>t&&t<now)){e.textContent=L('ஒரு document காலாவதி ஆயிடுச்சு (தேதி இன்னைக்கு முன்னாடி). சரியான தேதி போடுங்க, அல்லது புதுப்பிச்ச பிறகு அனுப்புங்க','A document has expired (date is before today). Check the date or renew it first');return}
   const sb=document.getElementById('sb'),pg=document.getElementById('pg');sb.disabled=true;sb.textContent=L('அனுப்புது…','Sending…');pg.hidden=false;e.textContent='';
   const keys=Object.keys(S.files),bar=n=>pg.firstChild.style.width=Math.round(n*100)+'%';
   try{
     const ref=F.doc(CL.db,'driverApps',CL.phone);
-    await F.setDoc(ref,{name:D.name,phone:CL.phone,ecName:D.ecName,ecPhone:'+91'+D.ecPhone,dlNo:D.dlNo,years:+D.years||0,area:D.area||'',veh:S.veh,brand:D.brand,model:D.model,year:+D.year||null,plate:D.plate,ownVehicle:!!D.ownVehicle,exp:D.exp||{},
+    await F.setDoc(ref,{name:D.name,phone:CL.phone,ecName:D.ecName,ecPhone:'+91'+D.ecPhone,dlNo:D.dlNo,years:+D.years||0,area:D.area||'',veh:S.veh,brand:D.brand,model:D.model,year:+D.year||null,plate:D.plate,ownVehicle:!!D.ownVehicle,exp:D.exp||{},upi:D.upi||'',consent:{...D.consent,ua:navigator.userAgent.slice(0,140)},
       files:had,status:'pending',note:'',submittedAt:F.serverTimestamp(),updatedAt:F.serverTimestamp()},{merge:true});
     bar(.08);
     for(let i=0;i<keys.length;i++){await F.setDoc(F.doc(CL.db,'driverApps',CL.phone,'files',keys[i]),{data:S.files[keys[i]],at:Date.now()});bar(.08+.88*(i+1)/keys.length)}
