@@ -55,17 +55,41 @@ exports.housekeeping = onSchedule({ schedule: 'every 2 minutes', timeZone: 'Asia
 
 exports.onBookingCreated = onDocumentCreated('bookings/{id}', async ev => {
   const b = ev.data.data(); if (!b) return;
-  const c = await cfg();
-  if (L.fareLooksWrong(b, c.fares)) await ev.data.ref.update({ fareFlag: 'below-price-list' });
+  const c = await cfg(), id = ev.params.id, ref = ev.data.ref;
+  const now = b.createdAt && b.createdAt.toMillis ? b.createdAt.toMillis() : Date.now();
+  // 1) booking limits for app customers (stops fake / spam bookings)
+  if (b.customerUid && b.src === 'app' && (b.status === 'searching' || b.status === 'scheduled')) {
+    const lref = db.doc(`limits/${b.customerUid}`);
+    const res = await db.runTransaction(async tx => {
+      const ls = await tx.get(lref), lim = ls.exists ? ls.data() : {};
+      const ids = (lim.open || []).filter(x => x !== id).slice(-10);
+      const docs = ids.length ? await tx.getAll(...ids.map(x => db.doc(`bookings/${x}`))) : [];
+      const openNow = docs.filter(d => d.exists && ['searching', 'assigned', 'ontrip'].includes(d.data().status)).map(d => d.id);
+      const r = L.bookingLimit(lim, openNow, now);
+      if (r.ok) tx.set(lref, { open: [...openNow, id], hr: r.hr, n: r.n, at: FV.serverTimestamp() });
+      else tx.update(ref, { status: 'cancelled', cancelReason: 'limit', cancelledBy: 'server', limitWhy: r.why, updatedAt: FV.serverTimestamp() });
+      return r;
+    });
+    if (!res.ok) { logger.warn('booking limit', { id, uid: b.customerUid, why: res.why }); return; }
+  }
+  // 2) server fare check: a fare below the price list is corrected (never raised above it)
+  const fx = L.fareCheck(b, c, now);
+  if (fx) {
+    const tariff = { ...(b.tariff || { t: 'local' }) };
+    if (fx.night) { tariff.night = fx.night; tariff.nightAmt = fx.nightAmt; } else { delete tariff.night; delete tariff.nightAmt; }
+    await ref.update({ fare: fx.fare, km: fx.km, tariff, fareFlag: 'corrected', fareWas: fx.was, kmWas: fx.wasKm, updatedAt: FV.serverTimestamp() });
+    b.fare = fx.fare;
+    logger.warn('fare corrected', { id, was: fx.was, now: fx.fare, km: fx.km, wasKm: fx.wasKm });
+  } else if (L.fareLooksWrong(b, c.fares)) await ref.update({ fareFlag: 'below-price-list' });
   if (b.status !== 'searching' || !c.push || !c.push.vapid) return;
   const ds = await db.collection('drivers').where('veh', '==', b.veh).where('online', '==', true).get();
   const tokens = ds.docs.map(d => d.data().fcm).filter(Boolean).slice(0, 500);
   if (!tokens.length) return;
   const from = (b.from && (b.from.ta || b.from.en)) || '';
   const r = await admin.messaging().sendEachForMulticast({ tokens,
-    webpush: { notification: { title: '🚕 புது Ride / New ride', body: `${from} · ₹${b.fare}${b.tip ? ' + ₹' + b.tip : ''}`, requireInteraction: true, tag: ev.params.id },
+    webpush: { notification: { title: '🚕 புது Ride / New ride', body: `${from} · ₹${b.fare}${b.tip ? ' + ₹' + b.tip : ''}`, requireInteraction: true, tag: id },
                fcmOptions: { link: 'https://ajith12061995.github.io/vellorecalltaxi/driver/' } },
-    data: { bookingId: ev.params.id } });
+    data: { bookingId: id } });
   logger.info('push', { sent: r.successCount, failed: r.failureCount });
 });
 

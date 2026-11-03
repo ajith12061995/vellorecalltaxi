@@ -3,8 +3,11 @@ const n = v => { const x = +v; return isFinite(x) && x > 0 ? x : 0; };
 const MIN = 60e3;
 
 // Commission for a finished booking: on the trip amount only (tip, toll, parking, permit are not charged)
+// The trip amount is never taken below the booked fare: the apps' final bill can only add to the booked fare
+// (waiting, extra km / hours), so a lower one means a modified driver app.
 function commissionFor(b, pct) {
-  const trip = b && b.fx && b.fx.trip != null ? n(b.fx.trip) : (b && b.fareFinal != null ? n(b.fareFinal) : n(b && b.fare));
+  const told = b && b.fx && b.fx.trip != null ? n(b.fx.trip) : (b && b.fareFinal != null ? n(b.fareFinal) : n(b && b.fare));
+  const trip = Math.max(told, n(b && b.fare));
   return { trip, comm: Math.round(trip * n(pct) / 100) };
 }
 
@@ -56,4 +59,45 @@ function custPush(before, after, lang) {
   return r;
 }
 
-module.exports = { commissionFor, settle, housekeeping, fareLooksWrong, liveStale, custPush };
+// ---- server fare check for app city rides (the customer app makes the quote; the server makes sure it is not too low)
+// Same night rule as core/fare.js (kept in step by tests/unit/fare.test.js).
+const hm = x => { const m = /^(\d{1,2}):(\d{2})$/.exec(String(x || '')); return m && +m[1] < 24 && +m[2] < 60 ? +m[1] * 60 + +m[2] : null; };
+function nightPct(cfg, at) {
+  if (!cfg || !cfg.on) return 0;
+  const pct = Math.min(100, n(cfg.pct)), f = hm(cfg.from), t = hm(cfg.to); if (!pct || f == null || t == null || f === t) return 0;
+  const m = ((Math.floor((+at + 19800000) / 60000) % 1440) + 1440) % 1440;
+  return (f < t ? m >= f && m < t : m >= f || m < t) ? pct : 0;
+}
+const r5 = x => Math.round(x / 5) * 5;
+const withNight = (f, pct) => pct ? r5(n(f) * (1 + pct / 100)) : n(f);
+const crowKm = (a, b) => { if (!a || !b || !isFinite(a.lat) || !isFinite(a.lon) || !isFinite(b.lat) || !isFinite(b.lon)) return 0;
+  const R = 6371, r = Math.PI / 180, dl = (b.lat - a.lat) * r, dn = (b.lon - a.lon) * r;
+  const x = Math.sin(dl / 2) ** 2 + Math.cos(a.lat * r) * Math.cos(b.lat * r) * Math.sin(dn / 2) ** 2; return 2 * R * Math.asin(Math.sqrt(x)); };
+// Returns null when the fare is fine, else the corrected booking fields.
+//  - km can't be shorter than the straight line × 1.2 (the app's road km is always ≥ straight line × 1.25)
+//  - the night charge counts only when it applies now AND 15 minutes ago (a quote can be a few minutes old)
+//  - ₹5 is allowed for rounding; a fare at or above the price is never changed (never over-charges)
+function fareCheck(b, c, now) {
+  if (!b || b.src !== 'app' || (b.kind && b.kind !== 'ride' && b.kind !== 'schedule')) return null;
+  if (b.tariff && b.tariff.t && b.tariff.t !== 'local') return null;
+  const f = c && c.fares && c.fares[b.veh]; if (!f || !(n(f.base) > 0)) return null;
+  const minKm = crowKm(b.from, b.to) * 1.2, km = Math.max(n(b.km), minKm);
+  const base = r5(n(f.base) + n(f.per) * Math.max(0, km - 1.5));
+  const at = b.kind === 'schedule' && n(b.when) ? n(b.when) : now;
+  const np = Math.min(nightPct(c.night, at), nightPct(c.night, at - 15 * MIN));
+  const want = withNight(base, np);
+  if (n(b.fare) >= want - 5) return null;
+  return { fare: want, km: Math.round(km * 10) / 10, was: n(b.fare), wasKm: n(b.km), night: np, nightAmt: want - base };
+}
+
+// ---- booking limits per app customer: at most 3 open rides at once and 8 new bookings an hour
+const LIMIT_OPEN = 3, LIMIT_HOUR = 8;
+// lim = limits/{uid} doc {open:[ids], hr:hour start ms, n}; openNow = ids of those still searching/assigned/ontrip
+function bookingLimit(lim, openNow, now) {
+  lim = lim || {}; const hr = Math.floor(now / 3600e3) * 3600e3, cnt = lim.hr === hr ? n(lim.n) : 0;
+  if (openNow.length >= LIMIT_OPEN) return { ok: false, why: 'open' };
+  if (cnt >= LIMIT_HOUR) return { ok: false, why: 'hour' };
+  return { ok: true, hr, n: cnt + 1 };
+}
+
+module.exports = { commissionFor, settle, housekeeping, fareLooksWrong, liveStale, custPush, fareCheck, bookingLimit, nightPct, withNight, crowKm, LIMIT_OPEN, LIMIT_HOUR };

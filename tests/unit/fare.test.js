@@ -30,4 +30,8 @@ ok('night: final bill shows the night line, total unchanged; commission base unc
   const r=F.final({fare:240,tariff:{t:'local',night:25,nightAmt:50}},{toll:20});
   assert.deepEqual(r.lines.map(l=>[l.k,l.amt]),[['fare',190],['night',50],['toll',20]]);assert.equal(r.trip,240);assert.equal(r.total,260)});
 ok('night: a broken nightAmt never changes the total',()=>{assert.equal(F.final({fare:190,tariff:{t:'local',night:25,nightAmt:999}},{}).total,190)});
+ok('server copy of the night rule matches the apps (every 7 min over 2 days, several windows)',()=>{const S=require('../../functions/lib/logic.js');
+  const cs=[NC,{on:true,from:'05:00',to:'09:30',pct:10},{on:true,from:'23:45',to:'00:15',pct:40},{on:false,from:'22:00',to:'05:00',pct:25}];
+  for(const c of cs)for(let t=IST(0,0);t<IST(0,0)+2*864e5;t+=7*6e4)assert.equal(S.nightPct(c,t),F.nightPct(c,t));
+  for(const f of [0,95,190,333,1000])for(const p of [0,10,25,33])assert.equal(S.withNight(f,p),F.withNight(f,p))});
 console.log(n,'fare tests passed');

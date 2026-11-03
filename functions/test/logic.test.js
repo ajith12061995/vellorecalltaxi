@@ -56,3 +56,48 @@ test('customer push: none for phone bookings or for the customer\'s own cancel; 
   assert.equal(L.custPush({ customerUid: 'u', status: 'searching' }, { customerUid: 'u', status: 'cancelled', cancelReason: 'customer' }, 'ta'), null);
   assert.equal(L.custPush({ customerUid: 'u', status: 'assigned' }, { customerUid: 'u', status: 'cancelled', cancelReason: 'driver: car broke' }, 'ta').kind, 'cancelled');
 });
+
+// ---- server fare check
+const CFGF = { fares: { sedan: { base: 130, per: 19 }, auto: { base: 40, per: 16 } } };
+const A = { lat: 12.9165, lon: 79.1325 }, Bp = { lat: 12.9716, lon: 79.1588 };   // ~6.8 km apart in a straight line
+const ride = o => ({ src: 'app', kind: 'ride', veh: 'sedan', from: A, to: Bp, tariff: { t: 'local' }, ...o });
+const day = Date.UTC(2026, 10, 4, 6, 30);                                         // 12:00 IST
+test('fare check: an honest fare is never changed (also when a little above the price)', () => {
+  const km = 9.5, fare = Math.round((130 + 19 * (km - 1.5)) / 5) * 5;
+  assert.equal(L.fareCheck(ride({ km, fare }), CFGF, day), null);
+  assert.equal(L.fareCheck(ride({ km, fare: fare + 40 }), CFGF, day), null);
+  assert.equal(L.fareCheck(ride({ km, fare: fare - 5 }), CFGF, day), null, '₹5 rounding allowed');
+});
+test('fare check: a lowered fare is corrected to the price list', () => {
+  const r = L.fareCheck(ride({ km: 9.5, fare: 50 }), CFGF, day);
+  assert.equal(r.fare, 280); assert.equal(r.was, 50); assert.equal(r.night, 0);
+});
+test('fare check: a faked short distance is replaced by the straight line × 1.2', () => {
+  const r = L.fareCheck(ride({ km: 1.2, fare: 130 }), CFGF, day);
+  const crow = L.crowKm(A, Bp); assert.ok(crow > 6 && crow < 7.5, crow);
+  assert.ok(Math.abs(r.km - Math.round(crow * 12) / 10) < 0.11, r.km); assert.ok(r.fare > 230, r.fare);
+});
+test('fare check: night charge only when it applied now and 15 min ago; never for rental / outstation / phone', () => {
+  const c = { ...CFGF, night: { on: true, from: '22:00', to: '05:00', pct: 25 } };
+  const n23 = Date.UTC(2026, 10, 4, 17, 30), n2205 = Date.UTC(2026, 10, 4, 16, 35);  // 23:00 and 22:05 IST
+  assert.equal(L.fareCheck(ride({ km: 9.5, fare: 280 }), c, n23).fare, 350);         // 130 + 19 × 8 = 282 → ₹280; × 1.25 = ₹350
+  assert.equal(L.fareCheck(ride({ km: 9.5, fare: 280 }), c, n2205), null, 'just after 22:00 the quote may be from 21:55');
+  assert.equal(L.fareCheck(ride({ km: 9.5, fare: 10, tariff: { t: 'rent' } }), c, n23), null);
+  assert.equal(L.fareCheck(ride({ km: 9.5, fare: 10, src: 'phone' }), c, n23), null);
+  assert.equal(L.fareCheck(ride({ km: 9.5, fare: 10, kind: 'outstation' }), c, n23), null);
+  const s = L.fareCheck(ride({ kind: 'schedule', when: n23, km: 9.5, fare: 280 }), c, day);
+  assert.equal(s.night, 25, 'scheduled ride uses its pickup time');
+});
+test('limits: 3 open rides at once and 8 bookings an hour', () => {
+  const now = Date.UTC(2026, 10, 4, 6, 10), hr = Math.floor(now / 3600e3) * 3600e3;
+  assert.deepEqual(L.bookingLimit(null, [], now), { ok: true, hr, n: 1 });
+  assert.equal(L.bookingLimit({ hr, n: 2 }, ['a', 'b'], now).ok, true);
+  assert.deepEqual(L.bookingLimit({ hr, n: 3 }, ['a', 'b', 'c'], now), { ok: false, why: 'open' });
+  assert.deepEqual(L.bookingLimit({ hr, n: 8 }, [], now), { ok: false, why: 'hour' });
+  assert.equal(L.bookingLimit({ hr: hr - 3600e3, n: 8 }, [], now).n, 1, 'a new hour starts again');
+});
+test('commission never below the booked fare (a lowered final bill from a modified app)', () => {
+  assert.equal(L.commissionFor({ fare: 300, fx: { trip: 100 } }, 10).comm, 30);
+  assert.equal(L.commissionFor({ fare: 300, fx: { trip: 350 } }, 10).comm, 35);
+  assert.equal(L.settle({ fare: 300, fareFinal: 120 }, 10, true).walletDelta, -30);
+});

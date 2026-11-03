@@ -65,12 +65,44 @@ test('server mode: full commission taken on the trip amount, app claim ignored, 
   await db.doc('config/app').set({ serverComm: false }, { merge: true });
 });
 
-test('fare far below the price list is flagged', async () => {
+test('server fare check: a lowered app fare is corrected to the price list; a right one is left alone', async () => {
   await db.doc('bookings/f1').set(base({ status: 'searching', km: 10, fare: 20 }));
   await db.doc('bookings/f2').set(base({ status: 'searching', km: 10, fare: 205 }));
-  assert.equal(await waitFor(async () => (await db.doc('bookings/f1').get()).data().fareFlag), 'below-price-list');
+  assert.equal(await waitFor(async () => (await db.doc('bookings/f1').get()).data().fareFlag), 'corrected');
+  const f1 = (await db.doc('bookings/f1').get()).data();
+  assert.equal(f1.fare, 190); assert.equal(f1.fareWas, 20);           // 60 + 15 × 8.5 = 187.5 → ₹190
   await sleep(1500);
-  assert.equal((await db.doc('bookings/f2').get()).data().fareFlag, undefined);
+  const f2 = (await db.doc('bookings/f2').get()).data();
+  assert.equal(f2.fareFlag, undefined); assert.equal(f2.fare, 205);
+  // a faked 1 km for a 7 km trip: the straight line counts
+  await db.doc('bookings/f3').set(base({ customerUid: 'u-f3', status: 'searching', km: 1, fare: 60, from: { lat: 12.9165, lon: 79.1325 }, to: { lat: 12.9716, lon: 79.1588 } }));
+  const f3 = await waitFor(async () => { const d = (await db.doc('bookings/f3').get()).data(); return d.fareFlag ? d : null; });
+  assert.equal(f3.fareFlag, 'corrected'); assert.ok(f3.km > 7.5 && f3.fare > 150, JSON.stringify([f3.km, f3.fare]));
+});
+
+test('booking limits: a 4th open booking from the same customer is cancelled by the server', async () => {
+  for (const id of ['l1', 'l2', 'l3']) await db.doc(`bookings/${id}`).set(base({ customerUid: 'u-spam', status: 'searching', km: 3, fare: 100 }));
+  assert.ok(await waitFor(async () => ((await db.doc('limits/u-spam').get()).data() || { open: [] }).open.length === 3), 'three counted');
+  await db.doc('bookings/l4').set(base({ customerUid: 'u-spam', status: 'searching', km: 3, fare: 100 }));
+  const l4 = await waitFor(async () => { const d = (await db.doc('bookings/l4').get()).data(); return d.status === 'cancelled' ? d : null; });
+  assert.ok(l4, 'l4 cancelled'); assert.equal(l4.cancelReason, 'limit'); assert.equal(l4.limitWhy, 'open');
+  for (const id of ['l1', 'l2', 'l3']) assert.equal((await db.doc(`bookings/${id}`).get()).data().status, 'searching');
+  // after one finishes, a new one is allowed
+  await db.doc('bookings/l1').update({ status: 'cancelled', cancelReason: 'customer' });
+  await db.doc('bookings/l5').set(base({ customerUid: 'u-spam', status: 'searching', km: 3, fare: 100 }));
+  await sleep(3000);
+  assert.equal((await db.doc('bookings/l5').get()).data().status, 'searching');
+});
+
+test('commission is never taken below the booked fare', async () => {
+  await db.doc('config/app').set({ serverComm: true }, { merge: true });
+  await db.doc(`drivers/${DRV2}`).set({ name: 'T2', veh: 'sedan', wallet: 500 });
+  const ref = db.doc('bookings/c1');
+  await ref.set(base({ status: 'ontrip', driverPhone: DRV2, fare: 300 }));
+  await ref.update({ status: 'done', fareFinal: 120, fx: { trip: 100 } });   // a modified app reports a lower bill
+  const l = await waitFor(async () => (await db.doc('ledger/c1').get()).data());
+  assert.equal(l.comm, 30); assert.equal(l.trip, 300);
+  await db.doc('config/app').set({ serverComm: false }, { merge: true });
 });
 
 test('verifyPin: right driver + right PIN starts the trip; wrong PIN counted; other driver refused; 5 wrong locks', async () => {
