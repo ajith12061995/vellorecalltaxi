@@ -2,7 +2,7 @@
   "name": "vct-functions",
   "private": true,
   "main": "index.js",
-  "engines": { "node": "20" },
+  "engines": { "node": "22" },
   "scripts": { "test": "node --test test/*.test.js" },
   "dependencies": {
     "firebase-admin": "^12.7.0",

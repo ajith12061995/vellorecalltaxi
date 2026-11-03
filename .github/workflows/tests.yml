@@ -13,7 +13,7 @@ jobs:
       - uses: actions/setup-java@v4
         with: { distribution: temurin, java-version: '21' }
       - uses: actions/setup-node@v4
-        with: { node-version: '20' }
+        with: { node-version: '22' }
       - name: Unit tests (fare, geo)
         run: for f in tests/unit/*.test.js; do node "$f"; done
       - name: Security rules tests (Firestore emulator)
