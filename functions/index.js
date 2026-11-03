@@ -19,7 +19,7 @@ const L = require('./lib/logic');
 
 admin.initializeApp();
 const db = admin.firestore();
-const FV = admin.firestore.FieldValue;
+const { FieldValue: FV } = require('firebase-admin/firestore'); // (admin.firestore.FieldValue is undefined in firebase-admin 12)
 // Firestore triggers must run in the database's region; tools/cloudshell-deploy.sh writes FN_REGION into functions/.env.<project>
 const REGION = process.env.FN_REGION || 'asia-south1';
 setGlobalOptions({ region: REGION, maxInstances: 10 });
