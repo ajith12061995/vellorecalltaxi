@@ -30,6 +30,8 @@ gcloud storage buckets add-iam-policy-binding "gs://$BUCKET" --member="serviceAc
 gcloud services enable cloudbilling.googleapis.com compute.googleapis.com cloudfunctions.googleapis.com cloudbuild.googleapis.com artifactregistry.googleapis.com run.googleapis.com eventarc.googleapis.com pubsub.googleapis.com cloudscheduler.googleapis.com
 SA="${NUM}-compute@developer.gserviceaccount.com"
 for i in $(seq 1 18); do gcloud iam service-accounts describe "$SA" >/dev/null 2>&1 && break; echo "waiting for $SA ($i/18)…"; sleep 10; done
+# new projects: Cloud Build runs as this account and needs the builder role, or every function build fails
+gcloud projects add-iam-policy-binding "$PROJECT" --member="serviceAccount:$SA" --role=roles/cloudbuild.builds.builder --condition=None >/dev/null || true
 gcloud projects add-iam-policy-binding "$PROJECT" --member="serviceAccount:$SA" --role=roles/datastore.importExportAdmin --condition=None >/dev/null \
   || echo "NOTE: backup permission not set yet — run this script again in 5 minutes (nothing else is affected)"
 echo "bucket gs://$BUCKET ready"
