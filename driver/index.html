@@ -28,7 +28,7 @@
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('../vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV='2026-11-03-38',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV='2026-11-03-39',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('/vellorecalltaxi/version.json',location.origin)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -623,10 +623,11 @@ a.btn{text-decoration:none}
 <div class="app" id="app"></div>
 <div class="toast" id="toast"></div>
 
-<script src="../core/geo.js?v=2026-11-03-38"></script>
-<script src="../core/fare.js?v=2026-11-03-38"></script>
-<script src="../core/map.js?v=2026-11-03-38"></script>
-<script src="../core/chat.js?v=2026-11-03-38"></script>
+<script src="../core/geo.js?v=2026-11-03-39"></script>
+<script src="../core/fare.js?v=2026-11-03-39"></script>
+<script src="../core/pin.js?v=2026-11-03-39"></script>
+<script src="../core/map.js?v=2026-11-03-39"></script>
+<script src="../core/chat.js?v=2026-11-03-39"></script>
 <script>
 /* shared with the customer app: icons, places, fares, map engine */
 const I = {
@@ -961,7 +962,7 @@ function atPickup(){
     const pk=P[J.from];
     makeMap(document.getElementById('map'),{driver:()=>({...POS,nlat:POS.lat,nlon:POS.lon+.0001}),pins:[{...pk,col:'#1E8A5A'}],hide:CUSTOM}).setView(pk.lat,pk.lon,60000);
     const stB=document.getElementById('stB');
-    TK=setInterval(()=>{const s=Math.floor((Date.now()-t0)/1000);stB.textContent=`${Math.floor(s/60)}:${String(s%60).padStart(2,'0')} ${s<180?L('· இலவச நேரம்','· free time'):L('· waiting charge ஆரம்பம்','· waiting charge on')}`},1000);
+    TK=setInterval(()=>{const s=Math.floor((Date.now()-t0)/1000),wf=(CFGD.wait&&CFGD.wait.free!=null?+CFGD.wait.free:3)*60,wr=CFGD.wait&&+CFGD.wait.rate||0;stB.textContent=`${Math.floor(s/60)}:${String(s%60).padStart(2,'0')} ${s<wf?L('· இலவச நேரம்','· free time'):wr?L(`· காத்திருப்பு ₹${wr}/நிமி`,`· waiting ₹${wr}/min`):L('· காத்திருக்கீங்க','· waiting')}`},1000);
     const ins=[...app.querySelectorAll('#pinb input')];
     ins.forEach((inp,i)=>{inp.oninput=()=>{inp.value=inp.value.replace(/\D/g,'').slice(-1);if(inp.value&&ins[i+1])ins[i+1].focus();document.getElementById('pe').textContent=''};
       inp.onkeydown=e=>{if(e.key==='Backspace'&&!inp.value&&ins[i-1])ins[i-1].focus()}});
@@ -1192,7 +1193,7 @@ function watchMe(){UNS.push(F().onSnapshot(F().doc(CL.db,'drivers',CL.phone),s=>
   if(S.online&&!J&&docState().expired.length){setOnline(false);toast(L('ஒரு document காலாவதி ஆயிடுச்சு. Offline ஆக்கப்பட்டீங்க','A document has expired. You have been taken offline'))}
   if(!J&&!document.querySelector('.modal')){if(S.tab==='wallet'&&before!==DS.wallet)walletTab();else if(S.tab==='home'&&(document.getElementById('ons')||(document.getElementById('ons')||document.getElementById('offs'))))home()}},()=>{}))}
 function watchCfgD(){UNS.push(F().onSnapshot(F().doc(CL.db,'config','app'),s=>{if(!s.exists())return;const d=s.data();
-  if(d.comm!=null)COMM=+d.comm;if(d.minbal!=null)MINBAL=+d.minbal;CFGD.upi=d.upi||'';CFGD.office=d.office||'';CFGD.serverComm=!!d.serverComm;
+  if(d.comm!=null)COMM=+d.comm;if(d.minbal!=null)MINBAL=+d.minbal;CFGD.upi=d.upi||'';CFGD.office=d.office||'';CFGD.serverComm=!!d.serverComm;CFGD.wait=d.wait||null;
   {const na=Array.isArray(d.announce)?d.announce:[],top=na[0];const fresh=top&&(!ANN[0]||ANN[0].id!==top.id)&&top.t>seenAt();ANN=na;
    if(fresh&&ANN.length&&!J&&!document.querySelector('.modal')){beep();toast('📢 '+(top.title||L('Office அறிவிப்பு','Office notice')));if(S.tab==='home'&&document.getElementById('menu'))home()}}if(d.dispatch)Object.assign(DISP,d.dispatch);
   if(d.fares)VEH.forEach(v=>{const f=d.fares[v.id];if(f){if(f.base!=null)v.base=+f.base;if(f.per!=null)v.per=+f.per}})},()=>{}))}
@@ -1308,12 +1309,22 @@ function watchJob(id){
 }
 function stopJob(){chatStop();if(JOBUNSUB){JOBUNSUB();JOBUNSUB=null}if(J)clearTimeout(J.waitPin)}
 function cUpd(o){if(!J||!J.id)return Promise.resolve();return F().updateDoc(F().doc(CL.db,'bookings',J.id),{...o,updatedAt:ts()}).catch(e=>toast(CL.errText(e,S.lang==='ta')))}
+/* start the trip from the driver side; older security rules only accept {status} */
+function startTrip(pinOk){const ref=F().doc(CL.db,'bookings',J.id);J.startAt=Date.now();clearTimeout(J.waitPin);
+  F().updateDoc(ref,{status:'ontrip',startedAt:ts(),pinOk:!!pinOk,updatedAt:ts()})
+    .catch(e=>{if(e&&e.code==='permission-denied')return F().updateDoc(ref,{status:'ontrip',updatedAt:ts()});throw e}).catch(e=>toast(CL.errText(e,S.lang==='ta')));
+  if(J.b)J.b.status='ontrip';onTrip();if(pinOk)toast(L('PIN சரி! Trip ஆரம்பம்','PIN verified. Trip started'))}
 function cloudStart(ins){
   const pe=document.getElementById('pe');
   const reset=()=>{const sl=document.getElementById('st');if(!sl)return;sl.classList.remove('done');const k=sl.querySelector('.knob');k.style.transform='';sl.style.setProperty('--p',0);bindSlide('st',()=>cloudStart(ins))};
-  if(!J.app){cUpd({status:'ontrip'});onTrip();return}
+  if(!J.app){startTrip(false);return}
   const pin=ins.map(x=>x.value).join('');
   if(pin.length!==4){pe.textContent=L('4 இலக்க PIN போடுங்க','Enter the 4-digit PIN');reset();return}
+  if(J.b&&J.b.pinHash){ // checked on this phone: works even when the customer's phone is offline
+    pe.style.color='var(--muted)';pe.textContent=L('PIN சரிபார்க்குது…','Checking the PIN…');
+    VCTPIN.check(J.b,pin).then(ok=>{if(!J)return;if(ok){startTrip(true);return}
+      pe.style.color='';pe.textContent=L('PIN தப்பு. Customer-கிட்ட மறுபடி கேளுங்க','Wrong PIN. Ask the customer again');ins.forEach(x=>x.value='');ins[0].focus();reset()})
+      .catch(()=>{pe.textContent=L('PIN check பண்ண முடியல. Office-ஐ அழைங்க','Could not check the PIN. Call the office');reset()});return}
   pe.style.color='var(--muted)';pe.textContent=L('Customer app PIN-ஐ சரிபார்க்குது…','The customer app is checking the PIN…');
   cUpd({pinTry:pin});
   clearTimeout(J.waitPin);

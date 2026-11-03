@@ -25,7 +25,7 @@
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('../vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV='2026-11-03-38',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV='2026-11-03-39',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('/vellorecalltaxi/version.json',location.origin)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -695,9 +695,9 @@ details.faq p{margin:0;padding:0 14px 14px;color:var(--muted);font-size:14px;lin
 <div class="app" id="app"></div>
 <div class="toast" id="toast"></div>
 
-<script src="../core/geo.js?v=2026-11-03-38"></script>
-<script src="../core/fare.js?v=2026-11-03-38"></script>
-<script src="../core/map.js?v=2026-11-03-38"></script>
+<script src="../core/geo.js?v=2026-11-03-39"></script>
+<script src="../core/fare.js?v=2026-11-03-39"></script>
+<script src="../core/map.js?v=2026-11-03-39"></script>
 <script>
 /* shared with the customer app: icons, places, fares, map engine */
 const I = {
@@ -991,11 +991,14 @@ function bookSheet(b){if(!b)return;const d=drvById(b.driver),st=AST[b.status]||[
      ${b.rating?`<div><span>Rating</span><b>${'★'.repeat(b.rating)}</b></div>`:''}${b.reason&&b.status==='cancelled'?`<div><span>${L('காரணம்','Reason')}</span><b>${esc(b.reason.replace(/^(driver|noshow|custask):?\s*/,''))||RSN(b)}</b></div>`:''}</div>
     <div class="two">${b.cust.phone?`<a class="btn ghost" href="tel:+91${b.cust.phone}">📞 Customer</a>`:''}${d?`<a class="btn ghost" href="tel:+91${d.phone}">📞 Driver</a>`:''}</div>
     ${b.status==='searching'||b.status==='scheduled'?`<button class="btn" id="bsa">${b.dispatch&&b.dispatch.review?L('சரிபார்','Review'):L('Driver assign','Assign a driver')}</button>`:''}
+    ${b.status==='assigned'&&b.driver?`<button class="btn ghost" id="bst">▶ ${L('Trip ஆரம்பி (PIN இல்லாம)','Start trip (skip PIN)')}</button>`:''}
     ${b.status==='done'&&S.role==='owner'&&b.driver?`<button class="btn ghost" id="bse">✏️ ${L('Bill திருத்து','Correct the bill')}</button>`:''}
     ${b.status==='cancelled'&&/^driver/.test(b.reason||'')?`<button class="btn" id="bsr">🔁 ${L('மறுபடி அனுப்பு','Send again')}</button>`:''}
     ${['searching','scheduled','assigned'].includes(b.status)?`<button class="btn ghost" id="bsc" style="color:var(--danger)">${L('ரத்து செய்','Cancel booking')}</button>`:''}`,(m,close)=>{
     const a=m.querySelector('#bsa');if(a)a.onclick=()=>{close();b.dispatch&&b.dispatch.review?reviewSheet(b):assignSheet(b)};
     {const e=m.querySelector('#bse');if(e)e.onclick=()=>{close();billSheet(b)}}
+    {const e=m.querySelector('#bst');if(e)e.onclick=()=>{if(!confirm(L('Customer-ஐ phone-ல பேசி உறுதி பண்ணீங்களா? Trip ஆரம்பிக்கவா?','Did you confirm with the customer by phone? Start the trip?')))return;
+      if(CL){cw(F().updateDoc(bkRef(b),{status:'ontrip',startedAt:ts(),startedBy:'office:'+CL.phone,updatedAt:ts()}).then(()=>{close();toast(L('Trip ஆரம்பிச்சாச்சு','Trip started'))}));return}b.status='ontrip';saveDB();close();show()}}
     const r=m.querySelector('#bsr');if(r)r.onclick=()=>{close();reopenSheet(b)};
     const c=m.querySelector('#bsc');if(c)c.onclick=()=>{close();cancelSheet(b)};
   });
