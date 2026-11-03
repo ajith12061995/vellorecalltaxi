@@ -10,6 +10,7 @@ async def main():
         b=await p.chromium.launch();ctx=await b.new_context(viewport={'width':1900,'height':880},geolocation={'latitude':12.955,'longitude':79.139},permissions=['geolocation'])
         pg=await ctx.new_page();errs=[];pg.on('pageerror',lambda e:errs.append(str(e)))
         await pg.goto(B+'harness_x.html');await pg.wait_for_timeout(2500)
+        await pg.evaluate("(()=>{const c=MOCK.store.get('config/app');if(c)c.privPhone=true;else MOCK.store.set('config/app',{privPhone:true})})()")
         C=pg.frame_locator('#c');D=pg.frame_locator('#d');O=pg.frame_locator('#o')
         cf=pg.frame(url=B+'c2.html');df=pg.frame(url=B+'d2.html');of=pg.frame(url=B+'o2.html')
         await O.locator('#ph').fill('8220201462');await O.locator('#lgn').click();await pg.wait_for_timeout(300)
@@ -65,6 +66,10 @@ async def main():
         otx=await of.evaluate("document.body.innerText")
         check('office list shows the phone booking number','9443322110' in otx)
         await pg.screenshot(path='shots/phone_office.png')
+        # 5) switch OFF (before the new rules are published): number stays in the booking as before
+        await cf.evaluate("CFG.privPhone=false;S.rider=null;S.dest='cmc';S.veh='auto';S.pay='cash';fareScreen()");await pg.wait_for_timeout(1200)
+        await C.locator('#bookb').click();await pg.wait_for_timeout(3000);oid=await cf.evaluate("R.id");dump=await pg.evaluate('MOCK.dump()')
+        check('switch off: old behaviour (number in booking) + contact also saved',dump[f'bookings/{oid}'].get('custPhone')=='+919999900001' and dump.get(f'bookings/{oid}/private/contact',{}).get('custPhone')=='+919999900001')
         print('ERR',errs)
         check('no page errors',not errs,str(errs[:3]))
         await b.close()

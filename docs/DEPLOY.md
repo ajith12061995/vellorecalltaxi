@@ -48,24 +48,24 @@ Needed for: real SMS OTP volume, Cloud Functions, automatic backups, push notifi
 
 After v2 is live the office moves the old public "blocked numbers" list into the private list by itself (owner login).
 
-## 5. Deploy Cloud Functions (computer, 20 min — Claude can guide)
+## 5. Deploy security rules + Cloud Functions from Google Cloud Shell (🧑 20 min, no computer needed)
 
+1. Open https://shell.cloud.google.com signed in with the Google account that owns the Firebase project.
+2. Paste:
 ```
-npm install -g firebase-tools
-firebase login
-cd vellorecalltaxi
-firebase use vellore-taxi23
-cd functions && npm install && npm test && cd ..
-firebase deploy --only functions
+git clone https://github.com/ajith12061995/vellorecalltaxi.git && cd vellorecalltaxi && bash tools/cloudshell-deploy.sh
 ```
-On the first deploy it asks for `BACKUP_BUCKET`: create a bucket first (Cloud Storage → Create → name `vellore-taxi23-backups`,
-region asia-south1, lifecycle rule "delete after 30 days") and give the Firestore service agent "Storage Admin" on it
-(Cloud console → the bucket → Permissions → Grant access → `service-<project-number>@gcp-sa-firestore.iam.gserviceaccount.com`),
-and give the functions' service account (`<project-number>-compute@developer.gserviceaccount.com`) the role **Cloud Datastore Import Export Admin** (IAM page).
+3. The script: finds the database region, makes the backup bucket (30-day lifecycle) and gives the backup permissions,
+   runs the tests (stops if any fails), asks you to sign in to Firebase (open the link, pick the owner account,
+   paste the code back), then deploys `firestore.rules` and the functions. If it asks to DELETE anything, answer **N**.
+4. A first deploy sometimes fails with a permissions message because Google is still setting up services — wait 5 minutes and run
+   `bash tools/cloudshell-deploy.sh` again. It never deletes data.
+5. Check: Firebase console → Functions shows 5 functions (onBookingDone, housekeeping, onBookingCreated, verifyPin, dailyBackup).
 
 Then in Office → Settings → **Server & monitoring** (owner only):
 - turn ON "Server takes the commission" → the driver phone stops deducting; the server writes `ledger/` and corrects wallets.
 - turn ON "Server handles scheduled and stale bookings".
+- turn ON "Customer number only for the driver who accepted" (needs the rules from this step).
 Check the next 5 finished trips in Firestore → `ledger` (one entry each, `mismatch: false`).
 
 ## 6. Push notifications for drivers (🧑 10 min, after step 5)

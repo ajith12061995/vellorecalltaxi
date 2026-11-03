@@ -1846,7 +1846,7 @@ function watchConfig(){
   if(CFGUNSUB)return;
   CFGUNSUB=F().onSnapshot(F().doc(CL.db,'config','app'),s=>{if(!s.exists())return;const d=s.data();
     if(d.fares)VEH.forEach(v=>{const f=d.fares[v.id];if(f){if(f.base!=null)v.base=+f.base;if(f.per!=null)v.per=+f.per}});
-    CFG.upi=d.upi||'';CFG.office=d.office||'';CFG.comm=d.comm!=null?+d.comm:10;CFG.wait=d.wait||null;CFG.blocked=Array.isArray(d.blocked)?d.blocked:[];{const had=VEH.includes(BIKE);setBike(!!d.showBike);if(had!==VEH.includes(BIKE)&&S.tab==='home'&&document.querySelector('.vrow')&&!document.querySelector('.modal'))home(S.mode||undefined)}if(d.dispatch)Object.assign(DISPC,d.dispatch);applyTariff(d)},()=>{});
+    CFG.upi=d.upi||'';CFG.office=d.office||'';CFG.privPhone=!!d.privPhone;CFG.comm=d.comm!=null?+d.comm:10;CFG.wait=d.wait||null;CFG.blocked=Array.isArray(d.blocked)?d.blocked:[];{const had=VEH.includes(BIKE);setBike(!!d.showBike);if(had!==VEH.includes(BIKE)&&S.tab==='home'&&document.querySelector('.vrow')&&!document.querySelector('.modal'))home(S.mode||undefined)}if(d.dispatch)Object.assign(DISPC,d.dispatch);applyTariff(d)},()=>{});
   F().getDoc(F().doc(CL.db,'blocked','+91'+S.phone)).then(x=>{MEBLK=x.exists()}).catch(()=>{}); // only my own entry is readable
   if(CUID)VCTCLK.sync(F(),F().doc(CL.db,'users',CUID)); // learn the server time once
   watchMyB();
@@ -1900,6 +1900,7 @@ async function autoRebook(b){
 /* phone numbers are kept out of the booking (nearby drivers can read a waiting booking) and saved in
    bookings/{id}/private/contact, which only the office, this customer and the driver who accepted can read */
 function takeContact(d){const c={custPhone:d.custPhone||null,riderPhone:d.rider&&d.rider.phone?String(d.rider.phone):null};
+  if(!CFG.privPhone)return c; // switched on by the owner after the new security rules are published (office → Settings)
   delete d.custPhone;if(d.rider)d.rider={name:String(d.rider.name||'')};return c}
 const saveContact=(id,c)=>F().setDoc(F().doc(CL.db,'bookings',id,'private','contact'),c);
 function localTar(){const w=CFG.wait||{};return{t:'local',wait:+w.rate||0,free:w.free!=null?+w.free:3}} // prices saved in the booking for the final bill
@@ -2096,8 +2097,8 @@ async function cloudSchedule(rec){
   const v=VEH.find(x=>x.id===rec.veh.id)||VEH.find(x=>x.id==='auto');
   const to=(rec.kind==='schedule'||OFK.includes(rec.kind)&&rec.hasDrop)&&S.dest&&P[S.dest]?placeOf(S.dest):{key:null,ta:rec.to.ta,en:rec.to.en,lat:null,lon:null};
   let ph={};if(rec.pin)try{ph=await VCTPIN.fields(rec.pin)}catch(e){}
-  try{const ref=await F().addDoc(F().collection(CL.db,'bookings'),{...ph,customerUid:CUID,custName:S.name,src:'app',kind:rec.kind,
-      from:placeOf(S.from),to,path:[],veh:v.id,vehTa:v.ta,vehEn:v.en,km:rec.km||0,hrs:rec.hrs||null,otype:rec.otype||null,retAt:rec.ret||null,rider:S.rider?{name:String(S.rider.name||'')}:null,base:v.base,fare:rec.fare,pay:rec.pay||'cash',note:rec.note||null,tariff:rec.tar||null,
+  try{const ref=await F().addDoc(F().collection(CL.db,'bookings'),{...ph,customerUid:CUID,custName:S.name,...(CFG.privPhone?{}:{custPhone:'+91'+S.phone}),src:'app',kind:rec.kind,
+      from:placeOf(S.from),to,path:[],veh:v.id,vehTa:v.ta,vehEn:v.en,km:rec.km||0,hrs:rec.hrs||null,otype:rec.otype||null,retAt:rec.ret||null,rider:S.rider?(CFG.privPhone?{name:String(S.rider.name||'')}:S.rider):null,base:v.base,fare:rec.fare,pay:rec.pay||'cash',note:rec.note||null,tariff:rec.tar||null,
       ...(OFK.includes(rec.kind)?{status:'searching',dispatch:rec.kind==='outstation'&&rec.otype==='one'?{review:true,openAt:null,reviewUntil:Date.now()+(DISPC.review||10)*60e3,gap:DISPC.gap,fall:DISPC.fall}:{openAt:Date.now()+DISPC.win*1000,gap:DISPC.gap,fall:DISPC.fall}}:{status:'scheduled'}),
       when:rec.when,createdAt:F().serverTimestamp(),updatedAt:F().serverTimestamp()});
     if(rec.pin)F().setDoc(F().doc(CL.db,'bookings',ref.id,'private','pin'),{pin:rec.pin}).catch(()=>{});
