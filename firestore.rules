@@ -49,7 +49,11 @@ service cloud.firestore {
       allow create, delete: if isOwner();
       allow update: if (isStaff() && (!('wallet' in changes()) || isOwner()))
         || (signedIn() && phone() == ph
-            && changes().hasOnly(['online', 'lat', 'lon', 'updatedAt', 'wallet', 'fcm', 'fcmAt'])
+            && changes().hasOnly(['online', 'lat', 'lon', 'updatedAt', 'wallet', 'fcm', 'fcmAt', 'consent'])
+            // the driver signs the agreement in the app: own name, server time, nothing else
+            && (!('consent' in changes()) || (newData().consent.keys().hasOnly(['v', 'name', 'lang', 'ua', 'at'])
+                && newData().consent.v is string && newData().consent.name is string && newData().consent.name.size() <= 80
+                && newData().consent.at == request.time))
             // a driver can only lower their own wallet (commission), never raise it
             // ... and only while the server is not taking commission itself (config/app.serverComm)
             && (!('wallet' in changes()) || (newData().wallet is number && newData().wallet < resource.data.wallet

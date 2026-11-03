@@ -24,6 +24,7 @@
 .vi:has(.vimg){background:#fff!important}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .vimg{mix-blend-mode:normal;background:#fff;border-radius:8px}}
 :root[data-theme="dark"] .vimg{mix-blend-mode:normal;background:#fff;border-radius:8px}
+.signcard{display:block;width:100%;text-align:left;border:1.5px solid #E7B400;background:#FFF6D6;border-radius:16px;padding:12px 14px;margin:0 0 10px;color:#5b4300}.signcard b{display:block;font-size:15px}.signcard small{color:#7a5d00}.agr{max-height:42vh;overflow:auto;padding-left:20px;font-size:13.5px;line-height:1.5}.agck{display:flex;gap:8px;align-items:flex-start;font-weight:700;margin:8px 0}.agin{width:100%;height:46px;border:1.5px solid var(--line);border-radius:12px;padding:0 12px;font-size:16px;margin:4px 0}
 </style>
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('../vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
@@ -630,6 +631,7 @@ a.btn{text-decoration:none}
 <script src="../core/clock.js?v=2026-11-03-51"></script>
 <script src="../core/map.js?v=2026-11-03-51"></script>
 <script src="../core/chat.js?v=2026-11-03-51"></script>
+<script src="../core/driverchecks.js?v=2026-11-03-51"></script>
 <script>
 /* shared with the customer app: icons, places, fares, map engine */
 const I = {
@@ -754,6 +756,21 @@ document.addEventListener('visibilitychange',()=>{if(document.visibilityState===
 /* slide-to-confirm */
 const slider=(id,label,cls='')=>`<div class="slide ${cls}" id="${id}"><span class="slabel">${label}</span><button class="knob" aria-label="${label}">${'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h13M13 6l6 6-6 6"/></svg>'}</button></div>`;
 /* tap buttons: ON/OFF DUTY toggle and Accept (replaces swipe sliders there) */
+/* ---- driver agreement: drivers added before the join-form agreement sign it here (office can require it) ---- */
+const needSign=()=>!!(CL&&DME&&typeof VCTCHK!=='undefined'&&!(DME.consent&&DME.consent.v===VCTCHK.AGREEMENT.v));
+function signCard(){return needSign()?`<button class="signcard" id="sgn"><b>📄 ${L('Driver ஒப்பந்தத்தில் கையெழுத்து போடுங்க','Please sign the driver agreement')}</b><small>${CFGD.reqConsent?L('கையெழுத்து போட்ட பிறகு தான் Online போக முடியும்','You can go online after signing'):L('2 நிமிஷம் · படிச்சு ✔ போட்டு பெயர் type பண்ணுங்க','2 minutes · read, tick and type your name')}</small></button>`:''}
+function signAgreement(done){const A=VCTCHK.AGREEMENT,lines=S.lang==='ta'?A.ta:A.en,nm=(DME&&DME.en)||'';
+  modal(`<h3>📄 ${L('Driver ஒப்பந்தம்','Driver agreement')}</h3><ol class="agr">${lines.map(x=>`<li>${esc(x)}</li>`).join('')}</ol>
+    <label class="agck"><input type="checkbox" id="agok"> ${L('மேலே உள்ள 10 விதிகளையும் படித்தேன், ஏற்கிறேன்','I have read and accept all 10 points above')}</label>
+    <label class="muted" for="agnm" style="font-size:13px">${L('கையெழுத்து: உங்க முழு பெயர்','Signature: your full name')} (${esc(nm)})</label>
+    <input id="agnm" class="agin" maxlength="80" autocomplete="name"><div class="err" id="age"></div>
+    <button class="btn" id="agsv">${L('கையெழுத்து போடு','Sign')}</button>`,(m,close)=>{
+    m.querySelector('#agsv').onclick=()=>{const e=m.querySelector('#age'),typed=m.querySelector('#agnm').value.trim();
+      if(!m.querySelector('#agok').checked){e.textContent=L('முதல்ல ✔ போடுங்க','Tick the box first');return}
+      if(!VCTCHK.sameName(typed,nm)){e.textContent=L(`உங்க பெயரை registration-ல உள்ள மாதிரியே type பண்ணுங்க: ${nm}`,`Type your name exactly as registered: ${nm}`);return}
+      const c={v:A.v,name:typed,lang:S.lang,ua:navigator.userAgent.slice(0,120),at:ts()};m.querySelector('#agsv').disabled=true;
+      F().updateDoc(F().doc(CL.db,'drivers',CL.phone),{consent:c,updatedAt:ts()}).then(()=>{DME.consent={...c,at:Date.now()};close();toast(L('நன்றி! ஒப்பந்தம் பதிவாச்சு','Thank you. Agreement recorded'));if(done)done();else home()})
+        .catch(err=>{m.querySelector('#agsv').disabled=false;e.textContent=CL.errText(err,S.lang==='ta')})}})}
 function dutyBtn(on){const td=DS.trips.filter(x=>isToday(x.date)),net=td.reduce((a,x)=>a+x.net,0),om=onMinutes();
   const sum=`${L('இன்று','Today')} ${inr(net)} · ${td.length} ${L('trips','trips')} · ${Math.floor(om/60)}:${String(om%60).padStart(2,'0')} ${L('மணி online','hrs online')}`;
   return `<button class="duty ${on?'on':''}" id="${on?'offs':'ons'}" aria-pressed="${on}"><div><b>${on?'ON DUTY':'OFF DUTY'}</b><small>${on?sum:L('Online போக tap பண்ணுங்க','Tap to go online')}</small></div><i class="sw"></i></button>`}
@@ -834,7 +851,7 @@ function home(){
      ${S.online?`${CL&&!GOTFIX?`<div class="warn gpsw" id="gpsw"><b>📍 ${L('உங்க location இன்னும் கிடைக்கல','Your location is not available yet')}</b><br>${GPSERR===1?L('Location அனுமதி மறுக்கப்பட்டிருக்கு. Browser settings → Site settings → Location → Allow கொடுங்க.','Location permission is blocked. Allow it in browser site settings.'):L('Phone-ல Location / GPS on பண்ணுங்க. கிடைக்கும் வரை customer-க்கு உங்க வண்டி தெரியாது, request-உம் வராது.','Turn on Location/GPS. Until then customers cannot see you and no requests will come.')} <button class="linkbtn" id="gpsr">${L('மறுபடி முயற்சி','Retry')}</button></div>`:`<div class="liveCard"><span class="pulse"></span><div><b>${L('Online-ல இருக்கீங்க','You are online')}</b><small>${L('புது ride request-க்கு காத்திருக்கு…','Waiting for ride requests…')}</small></div></div>`}
         ${dutyBtn(true)}
         ${CL?'':`<button class="demo" id="dreq">${L('Demo: ride request கொண்டு வா','Demo: send a ride request')}</button>`}`
-      :`${dutyBtn(false)}`}
+      :`${signCard()}${dutyBtn(false)}`}
      ${pushReady()&&Notification.permission==='default'?`<button class="warn" id="pushon" style="text-align:left;border:0;width:100%">🔔 ${L('Phone lock ஆனாலும் ride alert வரணுமா? இங்கே தொட்டு Allow கொடுங்க','Get ride alerts even when the phone is locked: tap and Allow')}</button>`:''}
      ${upcHtml()}
      ${SHOW_SMGR?smgrHtml():''}
@@ -853,7 +870,8 @@ function home(){
     const gr=document.getElementById('gpsr');if(gr)gr.onclick=()=>{stopGeo();GPSERR=0;startGeo();try{navigator.geolocation.getCurrentPosition(p=>{POS={lat:p.coords.latitude,lon:p.coords.longitude};GOTFIX=true;pushLive(true);if(S.tab==='home'&&!J)home()},e=>{GPSERR=e.code;toast(L('Location இன்னும் கிடைக்கல','Still no location'))},{enableHighAccuracy:true,timeout:15000,maximumAge:0})}catch(e){}};
     if(S.online){bindTap('offs',()=>confirmOff(()=>{setOnline(false);home();toast(L('Offline ஆயிட்டீங்க','You are offline'))}));
       if(CL)maybeShowReq();else{document.getElementById('dreq').onclick=()=>incoming()}}
-    else bindTap('ons',()=>{if(DME&&DME.blocked){toast(L('உங்க account நிறுத்தி வைக்கப்பட்டிருக்கு. Owner-ஐ தொடர்பு கொள்ளுங்க','Your account is on hold. Contact the owner'));home();return}{const ds=docState();if(ds.expired.length){toast(L('காலாவதி ஆன document: ','Expired: ')+ds.expired.join(', ')+L('. புதுப்பிச்சு office-க்கு அனுப்புங்க','. Renew it and tell the office'));home();return}}if(DS.wallet<MINBAL){toast(L('Wallet recharge பண்ணிட்டு Online போங்க','Recharge your wallet to go online'));home();return}setOnline(true);home();toast(L('Online! Ride request வந்தா சத்தம் வரும்','You are online. Requests will ring'))});
+    {const sg=document.getElementById('sgn');if(sg)sg.onclick=()=>signAgreement()}
+    if(!S.online)bindTap('ons',()=>{if(CFGD.reqConsent&&needSign()){signAgreement(()=>home());return}if(DME&&DME.blocked){toast(L('உங்க account நிறுத்தி வைக்கப்பட்டிருக்கு. Owner-ஐ தொடர்பு கொள்ளுங்க','Your account is on hold. Contact the owner'));home();return}{const ds=docState();if(ds.expired.length){toast(L('காலாவதி ஆன document: ','Expired: ')+ds.expired.join(', ')+L('. புதுப்பிச்சு office-க்கு அனுப்புங்க','. Renew it and tell the office'));home();return}}if(DS.wallet<MINBAL){toast(L('Wallet recharge பண்ணிட்டு Online போங்க','Recharge your wallet to go online'));home();return}setOnline(true);home();toast(L('Online! Ride request வந்தா சத்தம் வரும்','You are online. Requests will ring'))});
   });
 }
 
@@ -1199,13 +1217,13 @@ async function loadMe(){
 const DOCNM={dl:['ஓட்டுநர் உரிமம்','Driving licence'],rc:['RC','RC'],ins:['Insurance','Insurance'],permit:['Permit','Permit'],fc:['FC','FC']};
 function docState(){const out={expired:[],soon:[]};if(!DME||!DME.docs)return out;const now=Date.now();
   Object.entries(DME.docs).forEach(([k,t])=>{if(!t||!DOCNM[k])return;const nm=DOCNM[k][S.lang==='ta'?0:1],d=Math.ceil((t-now)/864e5);if(t<now)out.expired.push(nm);else if(d<=15)out.soon.push(`${nm} (${d} ${L('நாள்','days')})`)});return out}
-function applyMe(d){const pv=DME&&DME.veh;if(REQUNSUB&&pv&&d.veh&&pv!==d.veh){REQUNSUB();REQUNSUB=null;setTimeout(()=>{if(S.online)listenReq()},0)}DME={id:CL.phone,ta:d.name||'Driver',en:d.name||'Driver',plate:d.plate||'',model:d.model||'',veh:d.veh||'auto',rating:RATE||d.rating||5,docs:d.docs||null,blocked:!!d.blocked,upi:d.upi||'',svc:d.svc||null,prio:d.prio||'auto',year:+d.year||+((String(d.model||'').match(/\b(19|20)\d\d\b/)||[''])[0])||0};DS.wallet=+d.wallet||0}
+function applyMe(d){const pv=DME&&DME.veh;if(REQUNSUB&&pv&&d.veh&&pv!==d.veh){REQUNSUB();REQUNSUB=null;setTimeout(()=>{if(S.online)listenReq()},0)}DME={id:CL.phone,ta:d.name||'Driver',en:d.name||'Driver',plate:d.plate||'',model:d.model||'',veh:d.veh||'auto',rating:RATE||d.rating||5,docs:d.docs||null,blocked:!!d.blocked,upi:d.upi||'',svc:d.svc||null,prio:d.prio||'auto',year:+d.year||+((String(d.model||'').match(/\b(19|20)\d\d\b/)||[''])[0])||0,consent:d.consent||null};DS.wallet=+d.wallet||0}
 function watchMe(){UNS.push(F().onSnapshot(F().doc(CL.db,'drivers',CL.phone),s=>{if(!s.exists())return;const before=DS.wallet;applyMe(s.data());
   if(DME.blocked&&S.online){setOnline(false);toast(L('உங்க account நிறுத்தி வைக்கப்பட்டிருக்கு','Your account is on hold'))}
   if(S.online&&!J&&docState().expired.length){setOnline(false);toast(L('ஒரு document காலாவதி ஆயிடுச்சு. Offline ஆக்கப்பட்டீங்க','A document has expired. You have been taken offline'))}
   if(!J&&!document.querySelector('.modal')){if(S.tab==='wallet'&&before!==DS.wallet)walletTab();else if(S.tab==='home'&&(document.getElementById('ons')||(document.getElementById('ons')||document.getElementById('offs'))))home()}},()=>{}))}
 function watchCfgD(){UNS.push(F().onSnapshot(F().doc(CL.db,'config','app'),s=>{if(!s.exists())return;const d=s.data();
-  if(d.comm!=null)COMM=+d.comm;if(d.minbal!=null)MINBAL=+d.minbal;CFGD.upi=d.upi||'';CFGD.office=d.office||'';CFGD.serverComm=!!d.serverComm;CFGD.serverPin=!!d.serverPin;CFGD.wait=d.wait||null;CFGD.push=d.push||null;
+  if(d.comm!=null)COMM=+d.comm;if(d.minbal!=null)MINBAL=+d.minbal;CFGD.upi=d.upi||'';CFGD.office=d.office||'';CFGD.serverComm=!!d.serverComm;CFGD.serverPin=!!d.serverPin;CFGD.reqConsent=!!d.reqConsent;CFGD.wait=d.wait||null;CFGD.push=d.push||null;
   {const na=Array.isArray(d.announce)?d.announce:[],top=na[0];const fresh=top&&(!ANN[0]||ANN[0].id!==top.id)&&top.t>seenAt();ANN=na;
    if(fresh&&ANN.length&&!J&&!document.querySelector('.modal')){beep();toast('📢 '+(top.title||L('Office அறிவிப்பு','Office notice')));if(S.tab==='home'&&document.getElementById('menu'))home()}}if(d.dispatch)Object.assign(DISP,d.dispatch);
   if(d.fares)VEH.forEach(v=>{const f=d.fares[v.id];if(f){if(f.base!=null)v.base=+f.base;if(f.per!=null)v.per=+f.per}})},()=>{}))}

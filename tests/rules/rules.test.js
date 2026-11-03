@@ -105,6 +105,13 @@ test('server commission mode: driver can no longer lower own wallet', async () =
   await assertFails(updateDoc(doc(as.drv(), 'drivers', DRV), { wallet: 480 }));
   await assertSucceeds(updateDoc(doc(as.drv(), 'drivers', DRV), { online: true }));
 });
+test('driver signs the agreement on own record (server time), nothing else rides along', async () => {
+  await assertSucceeds(updateDoc(doc(as.drv(), 'drivers', DRV), { consent: { v: '2026-11-03', name: 'Test', lang: 'ta', ua: 'x', at: serverTimestamp() }, updatedAt: serverTimestamp() }));
+  await assertFails(updateDoc(doc(as.drv(), 'drivers', DRV), { consent: { v: '2026-11-03', name: 'Test', at: 12345 } }));          // back-dated
+  await assertFails(updateDoc(doc(as.drv(), 'drivers', DRV), { consent: { v: '2026-11-03', name: 'Test', at: serverTimestamp(), ok: true } }));
+  await assertFails(updateDoc(doc(as.drv(), 'drivers', DRV), { consent: { v: '2026-11-03', name: 'T', at: serverTimestamp() }, blocked: false }));
+  await assertFails(updateDoc(doc(as.drv2(), 'drivers', DRV), { consent: { v: '2026-11-03', name: 'X', at: serverTimestamp() } })); // someone else's record
+});
 test('blocked driver cannot go online', async () => { await assertFails(updateDoc(doc(as.drv2(), 'drivers', DRV2), { online: true })); });
 test('driver live position: own doc, known fields only', async () => {
   await assertSucceeds(setDoc(doc(as.drv(), 'live', DRV), { lat: 12.9, lon: 79.1, gh: 'tf3k', online: true, busy: false, veh: 'sedan', updatedAt: serverTimestamp() }));
