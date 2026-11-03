@@ -27,7 +27,7 @@
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('../vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV=window.VCT_V='2026-11-03-49',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV=window.VCT_V='2026-11-03-50',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('../version.json',location.href)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -699,11 +699,11 @@ details.faq p{margin:0;padding:0 14px 14px;color:var(--muted);font-size:14px;lin
 <div class="app" id="app"></div>
 <div class="toast" id="toast"></div>
 
-<script src="../core/report.js?v=2026-11-03-49"></script>
-<script src="../core/geo.js?v=2026-11-03-49"></script>
-<script src="../core/fare.js?v=2026-11-03-49"></script>
-<script src="../core/driverchecks.js?v=2026-11-03-49"></script>
-<script src="../core/map.js?v=2026-11-03-49"></script>
+<script src="../core/report.js?v=2026-11-03-50"></script>
+<script src="../core/geo.js?v=2026-11-03-50"></script>
+<script src="../core/fare.js?v=2026-11-03-50"></script>
+<script src="../core/driverchecks.js?v=2026-11-03-50"></script>
+<script src="../core/map.js?v=2026-11-03-50"></script>
 <script>
 /* shared with the customer app: icons, places, fares, map engine */
 const I = {
@@ -997,6 +997,7 @@ function bookSheet(b){if(!b)return;const d=drvById(b.driver),st=AST[b.status]||[
      ${b.rider?`<div><span>${L('பயணம் செய்பவர்','Rider')}</span><b>${esc(b.rider.name)} · +91 ${b.rider.phone}</b></div>`:''}
      <div><span>Driver</span><b>${d?esc(d[S.lang])+' · '+esc(d.plate):esc(b.driverName||'—')}</b></div>
      <div><span>${L('வண்டி','Vehicle')}</span><b>${vname(b.veh)}${b.km?' · '+b.km+' '+L('கி.மீ','km'):''}</b></div>
+     ${b.custUid?`<div><span>PIN</span><b>${b.startedBy?L('Office ஆரம்பிச்சது','Started by the office'):b.pinOk?(b.pinHash?L('Driver phone சரிபார்த்தது','Checked on the driver phone'):L('Server சரிபார்த்தது ✅','Checked by the server ✅')):b.tSt?L('Customer app சரிபார்த்தது','Checked by the customer app'):'—'}${b.pinFails?' · '+b.pinFails+' '+L('தடவை தப்பு','wrong'):''}</b></div>`:''}
      <div><span>${L('கட்டணம்','Fare')}</span><b>${inr(b.fare)}${b.tip?' + tip '+inr(b.tip):''} · ${esc(String(b.pay).toUpperCase())}</b></div>
      ${b.fx&&Array.isArray(b.fx.lines)?b.fx.lines.map(x=>`<div><span class="muted">· ${esc(x[S.lang]||x.en||'')}</span><b class="muted">${inr(+x.amt||0)}</b></div>`).join('')+(b.fx.km?`<div><span class="muted">· ${L('ஓடிய கி.மீ','Km run')}</span><b class="muted">${+b.fx.km}${b.fx.gpsKm?' (GPS '+(+b.fx.gpsKm)+')':''}</b></div>`:''):''}
      ${b.status==='done'?`<div><span>Commission</span><b>${inr(commOf(b))}${b.commA==null?' ('+L('கணிப்பு','est.')+')':''}</b></div>`:''}
@@ -1465,7 +1466,7 @@ function mapBk(b,now){now=now||Date.now();const ct=CONT[b._id]||{};return{id:sho
   fromC:b.from,toC:b.to,veh:b.veh||'auto',km:+b.km||0,fare:FARE.billOf(b),fareQ:+b.fare||0,trip:FARE.tripOf(b),commA:b.comm!=null?+b.comm:null,fx:b.fx||null,tariff:b.tariff||null,tip:+b.tip||0,pay:b.pay||'cash',src:b.src||'app',status:b.status||'searching',kind:b.kind||'ride',dispatch:b.dispatch||null,otype:b.otype||null,ret:b.retAt||null,
   driver:b.driverPhone||null,driverName:b.driverName||'',created:CL.toMs(b.createdAt)||b.when||now,when:b.when||CL.toMs(b.createdAt)||now,done:CL.toMs(b.doneAt)||null,reason:b.cancelReason||'',
   rating:+b.rating||0,custRating:+b.custRating||0,exclude:b.exclude||[],rebookOf:b.rebookOf||null,upd:CL.toMs(b.updatedAt)||0,
-  tAs:CL.toMs(b.assignedAt)||0,tAr:CL.toMs(b.arrivedAt)||0,tSt:CL.toMs(b.startedAt)||0,plate:b.plate||'',vehModel:b.vehModel||''}}
+  tAs:CL.toMs(b.assignedAt)||0,tAr:CL.toMs(b.arrivedAt)||0,tSt:CL.toMs(b.startedAt)||0,plate:b.plate||'',vehModel:b.vehModel||'',pinOk:b.pinOk===true,pinFails:+b.pinFails||0,pinHash:!!b.pinHash,startedBy:b.startedBy||''}}
 async function loadHist(days){
   if(!CL){HIST={at:Date.now(),days,rows:DB.bk};return HIST.rows}
   if(HIST.days>=days&&Date.now()-HIST.at<60e3)return HIST.rows;
