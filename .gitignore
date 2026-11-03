@@ -1,0 +1,6 @@
+tests/e2e/out/
+tests/e2e/shots/
+node_modules/
+functions/node_modules/
+.firebase/
+*.log

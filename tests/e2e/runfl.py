@@ -1,0 +1,25 @@
+import asyncio
+from playwright.async_api import async_playwright
+async def main():
+    async with async_playwright() as p:
+        b=await p.chromium.launch();ctx=await b.new_context(viewport={'width':1900,'height':880},geolocation={'latitude':12.955,'longitude':79.139},permissions=['geolocation'])
+        pg=await ctx.new_page();errs=[];pg.on('pageerror',lambda e:errs.append(str(e)))
+        await pg.goto('http://localhost:8765/tests/e2e/out/harness_x.html');await pg.wait_for_timeout(1500)
+        await pg.evaluate("""(()=>{const vs=['auto','auto','auto','sedan','sedan','mini','bike','bike','suv','psuv'];vs.forEach((v,i)=>MOCK.store.set('drivers/+91900000000'+i,{name:'Driver '+(i+1),veh:v,plate:'TN 23 X '+i,model:'Model',wallet:i===4?20:300,rating:5,online:false,blocked:i===9,docs:{}}))})()""")
+        D=pg.frame_locator('#d');O=pg.frame_locator('#o');of=pg.frame(url='http://localhost:8765/tests/e2e/out/o2.html')
+        await O.locator('#ph').fill('8220201462');await O.locator('#lgn').click();await pg.wait_for_timeout(300)
+        await O.locator('#otp').fill('123456');await pg.wait_for_timeout(1200)
+        await D.locator('#ph').fill('9999900002');await D.locator('#go').click();await pg.wait_for_timeout(300)
+        for i,d in enumerate('123456'):await D.locator(f'#o{i}').fill(d)
+        await D.locator('#go').click();await pg.wait_for_timeout(1200)
+        await D.locator('#ons').click();await pg.wait_for_timeout(2500)
+        await of.evaluate("S.sec='dash';save();show()");await pg.wait_for_timeout(1500)
+        await pg.screenshot(path='shots/fl1.png',clip={'x':800,'y':0,'width':1100,'height':860})
+        await O.locator('[data-fv=auto]').click();await pg.wait_for_timeout(1500)
+        await pg.screenshot(path='shots/fl2.png',clip={'x':800,'y':0,'width':1100,'height':860})
+        print('auto drivers listed',await of.evaluate("document.querySelectorAll('.dcard').length"))
+        await of.evaluate("S.sec='dash';save();show()");await pg.wait_for_timeout(800)
+        await O.locator('[data-fx=cant]').click();await pg.wait_for_timeout(800)
+        print('cant listed',await of.evaluate("document.querySelectorAll('.dcard').length"))
+        print('ERR',errs);await b.close()
+asyncio.run(main())

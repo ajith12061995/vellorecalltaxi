@@ -37,7 +37,7 @@
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('./vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV='2026-11-03-36',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV='2026-11-03-37',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('/vellorecalltaxi/version.json',location.origin)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -534,9 +534,9 @@ details.faq p{margin:0;padding:0 14px 14px;color:var(--muted);font-size:14px;lin
 <div class="app" id="app"></div>
 <div class="toast" id="toast"></div>
 
-<script src="./core/geo.js?v=2026-11-03-36"></script>
-<script src="./core/map.js?v=2026-11-03-36"></script>
-<script src="./core/chat.js?v=2026-11-03-36"></script>
+<script src="./core/geo.js?v=2026-11-03-37"></script>
+<script src="./core/map.js?v=2026-11-03-37"></script>
+<script src="./core/chat.js?v=2026-11-03-37"></script>
 <script>
 /* ---------- icons ---------- */
 const I = {
@@ -774,7 +774,7 @@ function home(mode){
   const h=new Date().getHours();const g=h<12?t('morning'):h<17?t('afternoon'):t('evening');
   const recents=[['cmc','Auto',' ₹110','2 நாள் முன்','2 days ago'],['katpadi','Bike',' ₹35','போன வாரம்','Last week']];
   go(shell(`<div class="mapwrap"><canvas class="map" id="map"></canvas>
-     <div class="topbar"><div class="greet"><small>${g}</small><b>${S.name||'Vellore'}</b></div>
+     <div class="topbar"><div class="greet"><small>${g}</small><b>${esc(S.name||'Vellore')}</b></div>
        <button class="chipbtn" id="lg" aria-label="Language">${S.lang==='ta'?'EN':'தமிழ்'}</button></div>
      ${CL?`<span class="nearby" id="nbc" ${NEAR.length?'':'hidden'}><i class="dot"></i> ${NEAR.length} ${t('nearby')}</span>`:`<span class="nearby"><i class="dot"></i>6 ${t('nearby')}</span>`}${zoomCtl(34)}</div>
    <div class="sheet pad"><div class="grab"></div>
@@ -1253,7 +1253,7 @@ function receipt(x){
     <div class="receipt" id="rcpt">
       <div class="rhead"><div class="rbrand"><span class="rsign">TAXI</span><div><b>Vellore Taxi</b><small>வேலூர் டாக்ஸி · Katpadi, Vellore</small></div></div>
         <div class="rinv"><small>${L('Bill எண்','Bill no.')}</small><b>${inv}</b><small>${dt}</small></div></div>
-      <div class="rsec"><div class="rrow"><span>${L('வாடிக்கையாளர்','Customer')}</span><b>${S.name||'—'} · +91 ${S.phone||''}</b></div>
+      <div class="rsec"><div class="rrow"><span>${L('வாடிக்கையாளர்','Customer')}</span><b>${esc(S.name||'—')} · +91 ${S.phone||''}</b></div>
         <div class="rrow"><span>${t('pickup')}</span><b>${x.from[S.lang]}</b></div><div class="rrow"><span>${t('dropLbl')}</span><b>${x.to[S.lang]}</b></div></div>
       <div class="rsec"><div class="rrow"><span>${L('வண்டி','Vehicle')}</span><b>${x.veh[S.lang]} · ${x.model||''}</b></div>
         <div class="rrow"><span>${L('வண்டி எண்','Vehicle no.')}</span><b>${x.plate||'—'}</b></div><div class="rrow"><span>Driver</span><b>${x.driver?x.driver[S.lang]:'—'}</b></div>

@@ -1,0 +1,27 @@
+import asyncio
+from playwright.async_api import async_playwright
+async def main():
+    async with async_playwright() as p:
+        b=await p.chromium.launch();ctx=await b.new_context(viewport={'width':1900,'height':880},geolocation={'latitude':12.9941,'longitude':80.1709},permissions=['geolocation'])
+        pg=await ctx.new_page();errs=[];pg.on('pageerror',lambda e:errs.append(str(e)))
+        await pg.goto('http://localhost:8765/tests/e2e/out/harness_x.html');await pg.wait_for_timeout(2500)
+        C=pg.frame_locator('#c');D=pg.frame_locator('#d');cf=pg.frame(url='http://localhost:8765/tests/e2e/out/c2.html');df=pg.frame(url='http://localhost:8765/tests/e2e/out/d2.html')
+        await D.locator('#ph').fill('9999900002');await D.locator('#go').click();await pg.wait_for_timeout(300)
+        for i,d in enumerate('123456'):await D.locator(f'#o{i}').fill(d)
+        await D.locator('#go').click();await pg.wait_for_timeout(1200)
+        await D.locator("#ons").click();await pg.wait_for_timeout(3000)
+        print('driver POS',await df.evaluate("JSON.stringify(POS)"))
+        await C.locator('#go').click();await pg.wait_for_timeout(300)
+        await C.locator('#ph').fill('9999900001');await C.locator('#go').click();await pg.wait_for_timeout(500)
+        for i,d in enumerate('123456'):await C.locator(f'#o{i}').fill(d)
+        await pg.wait_for_timeout(800);await C.locator('#nm').fill('Priya');await C.locator('#go').click();await pg.wait_for_timeout(2000)
+        print('cust from',await cf.evaluate("S.from+' '+JSON.stringify(P[S.from])"))
+        await cf.evaluate("P.maa={ta:'Chennai Airport',en:'Chennai Airport',sub:'Meenambakkam',lat:12.9900,lon:80.1693,km:0};P.tbm={ta:'Tambaram',en:'Tambaram',sub:'',lat:12.9249,lon:80.1000,km:0};S.from='maa';S.dest='tbm';S.veh='sedan';S.pay='cash';fareScreen()");await pg.wait_for_timeout(2500)
+        print('NEAR',await cf.evaluate("JSON.stringify(NEAR)"))
+        print('book',await cf.evaluate("document.getElementById('bookb').disabled"),await cf.evaluate("document.getElementById('bookb').textContent"))
+        await pg.screenshot(path='shots/che1.png',clip={'x':0,'y':0,'width':400,'height':860})
+        await C.locator("#bookb").click();await pg.wait_for_timeout(4000);await D.locator("#acc").click();await pg.wait_for_timeout(2500);await cf.evaluate("chatSend(\"hello driver\")");await pg.wait_for_timeout(2000);print("driver chat",await df.evaluate("JSON.stringify(CHATMSGS.map(m=>m.text||m.t))"))
+        print('driver req?',await df.evaluate("!!document.getElementById('acc')"))
+        await pg.screenshot(path='shots/che2.png',clip={'x':0,'y':0,'width':900,'height':860})
+        print('ERR',errs);await b.close()
+asyncio.run(main())

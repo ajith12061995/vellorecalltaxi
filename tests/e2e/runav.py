@@ -1,0 +1,27 @@
+import asyncio
+from playwright.async_api import async_playwright
+async def main():
+    async with async_playwright() as p:
+        b=await p.chromium.launch();ctx=await b.new_context(viewport={'width':1900,'height':880},geolocation={'latitude':12.955,'longitude':79.139},permissions=['geolocation'])
+        pg=await ctx.new_page();errs=[];pg.on('pageerror',lambda e:errs.append(str(e)))
+        await pg.goto('http://localhost:8765/tests/e2e/out/harness_x.html');await pg.wait_for_timeout(2500)
+        C=pg.frame_locator('#c');D=pg.frame_locator('#d');cf=pg.frame(url='http://localhost:8765/tests/e2e/out/c2.html');df=pg.frame(url='http://localhost:8765/tests/e2e/out/d2.html')
+        await D.locator('#ph').fill('9999900002');await D.locator('#go').click();await pg.wait_for_timeout(300)
+        for i,d in enumerate('123456'):await D.locator(f'#o{i}').fill(d)
+        await D.locator('#go').click();await pg.wait_for_timeout(1200)
+        await D.locator('#ons').click();await pg.wait_for_timeout(1500)
+        await C.locator('#go').click();await pg.wait_for_timeout(300)
+        await C.locator('#ph').fill('9999900001');await C.locator('#go').click();await pg.wait_for_timeout(500)
+        for i,d in enumerate('123456'):await C.locator(f'#o{i}').fill(d)
+        await pg.wait_for_timeout(800);await C.locator('#nm').fill('Priya');await C.locator('#go').click();await pg.wait_for_timeout(2000)
+        await cf.evaluate("S.dest='cmc';S.veh='bike';S.pay='cash';fareScreen()");await pg.wait_for_timeout(1500)
+        print('NEAR',await cf.evaluate("JSON.stringify(NEAR)"))
+        print('book disabled (bike)?',await cf.evaluate("document.getElementById('bookb').disabled"),await cf.evaluate("document.getElementById('bookb').textContent"))
+        await pg.screenshot(path='shots/av1.png',clip={'x':0,'y':0,'width':400,'height':860})
+        await C.locator('[data-v=sedan]').click();await pg.wait_for_timeout(300)
+        print('sedan ok?',await cf.evaluate("!document.getElementById('bookb').disabled"),await cf.evaluate("document.getElementById('bookb').textContent"))
+        await pg.screenshot(path='shots/av2.png',clip={'x':0,'y':0,'width':400,'height':860})
+        await D.locator('#offs').click();await pg.wait_for_timeout(400);await D.locator('#off').click();await pg.wait_for_timeout(5500)
+        print('after driver offline, sedan ok?',await cf.evaluate("!document.getElementById('bookb').disabled"))
+        print('ERR',errs);await b.close()
+asyncio.run(main())

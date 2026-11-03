@@ -1,0 +1,35 @@
+import asyncio
+from playwright.async_api import async_playwright
+async def main():
+    async with async_playwright() as p:
+        b=await p.chromium.launch(); pg=await b.new_page(viewport={'width':1900,'height':880}); errs=[]
+        pg.on('pageerror',lambda e:errs.append(str(e))); pg.on('console',lambda m:errs.append(m.text) if m.type=='error' and 'TUNNEL' not in m.text and 'fonts' not in m.text else None)
+        await pg.goto('http://localhost:8765/tests/e2e/out/harness_j.html'); await pg.wait_for_timeout(2500)
+        J=pg.frame_locator('#c'); O=pg.frame_locator('#o'); D=pg.frame_locator('#d')
+        jf=pg.frame(url='http://localhost:8765/tests/e2e/out/j2.html'); of=pg.frame(url='http://localhost:8765/tests/e2e/out/o2.html')
+        await O.locator('#ph').fill('8220201462'); await O.locator('#lgn').click(); await pg.wait_for_timeout(300); await O.locator('#otp').fill('123456'); await pg.wait_for_timeout(1500)
+        await pg.screenshot(path='shots/j0.png')
+        await J.locator('#ph').fill('9876512345'); await J.locator('#ph').dispatch_event('input'); await J.locator('#go').click(); await pg.wait_for_timeout(400)
+        await J.locator('#o0').fill('123456'); await J.locator('#o0').dispatch_event('input'); await J.locator('#vf').click(); await pg.wait_for_timeout(800)
+        await J.locator('#nm').fill('Murugan K'); await J.locator('#dln').fill('TN2320200012345'); await J.locator('#exp').fill('6'); await J.locator('#area').fill('Katpadi'); await J.locator('#ecn').fill('Lakshmi (wife)'); await J.locator('#ecp').fill('9840011122')
+        await J.locator('[data-v=sedan]').click(); await pg.wait_for_timeout(200)
+        await J.locator('#br').select_option('Maruti Suzuki'); await pg.wait_for_timeout(200); await J.locator('#mo').select_option('Dzire'); await J.locator('#yr').select_option('2021')
+        await J.locator('#pl').fill('TN 23 CK 4455')
+        for k in ['photo','aadhaarF','aadhaarB','dlF','dlB','rcF','rcB','ins','vehF']:
+            await J.locator(f'[data-f={k}]').set_input_files('fixtures/doc.jpg'); await pg.wait_for_timeout(500)
+        for k,d in [('dl','2031-05-01'),('ins','2027-03-01')]:
+            await J.locator(f'#x_{k}').fill(d)
+        await pg.screenshot(path='shots/j1.png')
+        await J.locator('#sb').click(); await pg.wait_for_timeout(300); print('err after first click:', await jf.evaluate("document.getElementById('e')&&document.getElementById('e').textContent"))
+        await J.locator('#agree').check(); await J.locator('#sb').click(); await pg.wait_for_timeout(2000)
+        await pg.screenshot(path='shots/j2.png')
+        await of.evaluate("S.sec='appr';show()"); await pg.wait_for_timeout(600)
+        print('office apps pending:', await of.evaluate("(DB.apps||[]).map(a=>a.id+':'+a.status+':'+(a.files||[]).join('/'))"), 'badge', await of.evaluate("badge('appr')"))
+        await O.locator('[data-av]').first.click(); await pg.wait_for_timeout(1200); await pg.screenshot(path='shots/j3.png')
+        await O.locator('#apok').click(); await pg.wait_for_timeout(1200)
+        dump=await pg.evaluate('MOCK.dump()')
+        print('driver doc:', {k:v for k,v in dump.get('drivers/+919876512345',{}).items() if k in ('name','veh','plate','model','year','wallet','ec','docs','pcc')}, '| app status:', dump['driverApps/+919876512345']['status'])
+        await pg.wait_for_timeout(3500); print('auto switched to driver app:', await jf.evaluate('window.__went||0')); await pg.screenshot(path='shots/j4.png')
+        print('join final text:', (await jf.evaluate("document.querySelector('.status h2')&&document.querySelector('.status h2').textContent")))
+        print('ERR',errs); await b.close()
+asyncio.run(main())
