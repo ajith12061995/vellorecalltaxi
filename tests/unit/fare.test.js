@@ -1,0 +1,21 @@
+// node tests/unit/fare.test.js
+const F=require('../../core/fare.js');const assert=require('assert');let n=0;const ok=(name,fn)=>{fn();n++;console.log('PASS',name)};
+ok('local: fare only',()=>{const r=F.final({fare:190,tariff:{t:'local'}},{});assert.equal(r.total,190);assert.equal(r.trip,190)});
+ok('local: old booking without tariff',()=>{assert.equal(F.final({fare:250},{toll:0}).total,250)});
+ok('local: toll + parking are pass-through',()=>{const r=F.final({fare:190,tariff:{t:'local'}},{toll:65,parking:20});assert.equal(r.trip,190);assert.equal(r.pass,85);assert.equal(r.total,275)});
+ok('local: waiting charge after free minutes',()=>{const r=F.final({fare:190,tariff:{t:'local',wait:2,free:3}},{waitMin:10});assert.equal(r.trip,190+14)});
+ok('local: waiting off when rate 0',()=>{assert.equal(F.final({fare:190,tariff:{t:'local',wait:0}},{waitMin:30}).total,190)});
+const rent={fare:1149,tariff:{t:'rent',h:4,km:40,price:1149,xkm:13,xhr:170}};
+ok('rental within package',()=>{assert.equal(F.final(rent,{km:38,mins:235}).total,1149)});
+ok('rental grace 10 min',()=>{assert.equal(F.final(rent,{km:40,mins:250}).total,1149)});
+ok('rental extra km and time',()=>{const r=F.final(rent,{km:62,mins:300});assert.equal(r.trip,1149+22*13+2*85)});
+const one={fare:2190,tariff:{t:'out',otype:'one',km:140,days:1,rate:12,bata:300,min1:80,mind:250,daykm:400,longKm:400,longPct:0}};
+ok('outstation one-way: actual below quote keeps quote',()=>{assert.equal(F.final(one,{km:120}).trip,2190)});
+ok('outstation one-way: actual above quote charges extra',()=>{const r=F.final(one,{km:180,toll:150});assert.equal(r.trip,F.r10(180*12+300));assert.equal(r.total,F.r10(180*12+300)+150)});
+const round={fare:6600,tariff:{t:'out',otype:'round',km:140,days:2,rate:12,bata:300,min1:80,mind:250,daykm:400}};
+ok('outstation round: minimum km per day',()=>{assert.equal(F.final(round,{km:300}).trip,6600)});
+ok('outstation round: extra day',()=>{const r=F.final(round,{km:300,days:3});assert.equal(r.trip,F.r10(750*12+900))});
+ok('commission on trip only',()=>{assert.equal(F.comm(1149+22*13,10),144)});
+ok('billOf / tripOf',()=>{assert.equal(F.billOf({fare:100}),100);assert.equal(F.billOf({fare:100,fareFinal:150}),150);assert.equal(F.tripOf({fare:100,fareFinal:150,fx:{trip:120}}),120)});
+ok('garbage input never NaN',()=>{const r=F.final({fare:'abc',tariff:{t:'rent',h:'x'}},{km:'-5',toll:'abc'});assert.ok(isFinite(r.total))});
+console.log(n,'fare tests passed');

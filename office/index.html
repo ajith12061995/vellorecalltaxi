@@ -25,7 +25,7 @@
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('../vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV='2026-11-03-37',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV='2026-11-03-38',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('/vellorecalltaxi/version.json',location.origin)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -695,8 +695,9 @@ details.faq p{margin:0;padding:0 14px 14px;color:var(--muted);font-size:14px;lin
 <div class="app" id="app"></div>
 <div class="toast" id="toast"></div>
 
-<script src="../core/geo.js?v=2026-11-03-37"></script>
-<script src="../core/map.js?v=2026-11-03-37"></script>
+<script src="../core/geo.js?v=2026-11-03-38"></script>
+<script src="../core/fare.js?v=2026-11-03-38"></script>
+<script src="../core/map.js?v=2026-11-03-38"></script>
 <script>
 /* shared with the customer app: icons, places, fares, map engine */
 const I = {
@@ -794,6 +795,7 @@ try{Object.assign(S,JSON.parse(localStorage.getItem('vcto')||'{}'))}catch(e){}
 const save=()=>{try{localStorage.setItem('vcto',JSON.stringify({lang:S.lang,phone:S.phone,logged:S.logged,role:S.role,sec:S.sec}))}catch(e){}};
 const L=(ta,en)=>S.lang==='ta'?ta:en;
 const pn=k=>P[k]?P[k][S.lang]:esc(k); // free text from bookings is always escaped
+const commOf=b=>b.commA!=null?b.commA:FARE.comm(b.trip!=null?b.trip:b.fare,DB.cfg.comm); // commission actually taken (old trips: estimated)
 const pnT=k=>P[k]?P[k][S.lang]:String(k); // plain text (CSV / search), never put in HTML
 const digits=v=>String(v==null?'':v).replace(/\D/g,'').slice(-10); // phone numbers: digits only
 const num=v=>{const n=parseFloat(v);return isFinite(n)?n:null};
@@ -921,7 +923,7 @@ function liveRefresh(){if(document.querySelector('.modal')||typing())return;if(S
 /* ---------- dashboard ---------- */
 function kpisInner(){
   const today=DB.bk.filter(b=>b.status==='done'&&isToday(b.done||b.when));
-  const rev=today.reduce((a,b)=>a+b.fare,0),comm=Math.round(rev*DB.cfg.comm/100);
+  const rev=today.reduce((a,b)=>a+b.fare,0),comm=today.reduce((a,b)=>a+commOf(b),0);
   const on=DB.drv.filter(d=>d.status!=='off').length;
   return `    <div><small>${L('முடிந்த பயணம்','Rides done')}</small><b>${today.length}</b></div>
     <div><small>${L('வசூல்','Fares')}</small><b>${inr(rev)}</b></div>
@@ -983,20 +985,24 @@ function bookSheet(b){if(!b)return;const d=drvById(b.driver),st=AST[b.status]||[
      ${b.rider?`<div><span>${L('பயணம் செய்பவர்','Rider')}</span><b>${esc(b.rider.name)} · +91 ${b.rider.phone}</b></div>`:''}
      <div><span>Driver</span><b>${d?esc(d[S.lang])+' · '+esc(d.plate):esc(b.driverName||'—')}</b></div>
      <div><span>${L('வண்டி','Vehicle')}</span><b>${vname(b.veh)}${b.km?' · '+b.km+' '+L('கி.மீ','km'):''}</b></div>
-     <div><span>${L('கட்டணம்','Fare')}</span><b>${inr(b.fare)}${b.tip?' + tip '+inr(b.tip):''} · ${b.pay.toUpperCase()}</b></div>
+     <div><span>${L('கட்டணம்','Fare')}</span><b>${inr(b.fare)}${b.tip?' + tip '+inr(b.tip):''} · ${esc(String(b.pay).toUpperCase())}</b></div>
+     ${b.fx&&Array.isArray(b.fx.lines)?b.fx.lines.map(x=>`<div><span class="muted">· ${esc(x[S.lang]||x.en||'')}</span><b class="muted">${inr(+x.amt||0)}</b></div>`).join('')+(b.fx.km?`<div><span class="muted">· ${L('ஓடிய கி.மீ','Km run')}</span><b class="muted">${+b.fx.km}${b.fx.gpsKm?' (GPS '+(+b.fx.gpsKm)+')':''}</b></div>`:''):''}
+     ${b.status==='done'?`<div><span>Commission</span><b>${inr(commOf(b))}${b.commA==null?' ('+L('கணிப்பு','est.')+')':''}</b></div>`:''}
      ${b.rating?`<div><span>Rating</span><b>${'★'.repeat(b.rating)}</b></div>`:''}${b.reason&&b.status==='cancelled'?`<div><span>${L('காரணம்','Reason')}</span><b>${esc(b.reason.replace(/^(driver|noshow|custask):?\s*/,''))||RSN(b)}</b></div>`:''}</div>
     <div class="two">${b.cust.phone?`<a class="btn ghost" href="tel:+91${b.cust.phone}">📞 Customer</a>`:''}${d?`<a class="btn ghost" href="tel:+91${d.phone}">📞 Driver</a>`:''}</div>
     ${b.status==='searching'||b.status==='scheduled'?`<button class="btn" id="bsa">${b.dispatch&&b.dispatch.review?L('சரிபார்','Review'):L('Driver assign','Assign a driver')}</button>`:''}
+    ${b.status==='done'&&S.role==='owner'&&b.driver?`<button class="btn ghost" id="bse">✏️ ${L('Bill திருத்து','Correct the bill')}</button>`:''}
     ${b.status==='cancelled'&&/^driver/.test(b.reason||'')?`<button class="btn" id="bsr">🔁 ${L('மறுபடி அனுப்பு','Send again')}</button>`:''}
     ${['searching','scheduled','assigned'].includes(b.status)?`<button class="btn ghost" id="bsc" style="color:var(--danger)">${L('ரத்து செய்','Cancel booking')}</button>`:''}`,(m,close)=>{
     const a=m.querySelector('#bsa');if(a)a.onclick=()=>{close();b.dispatch&&b.dispatch.review?reviewSheet(b):assignSheet(b)};
+    {const e=m.querySelector('#bse');if(e)e.onclick=()=>{close();billSheet(b)}}
     const r=m.querySelector('#bsr');if(r)r.onclick=()=>{close();reopenSheet(b)};
     const c=m.querySelector('#bsc');if(c)c.onclick=()=>{close();cancelSheet(b)};
   });
 }
 function dash(){setTimeout(bindFleet,0);
   const today=DB.bk.filter(b=>b.status==='done'&&isToday(b.done||b.when));
-  const rev=today.reduce((a,b)=>a+b.fare,0),comm=Math.round(rev*DB.cfg.comm/100);
+  const rev=today.reduce((a,b)=>a+b.fare,0),comm=today.reduce((a,b)=>a+commOf(b),0);
   const on=DB.drv.filter(d=>d.status!=='off').length;
   const alerts=[...DB.drv.filter(d=>d.wallet<DB.cfg.minbal).map(d=>({c:'red',t:L(`${d.ta} wallet ${inr(d.wallet)} — online போக முடியாது`,`${d.en}: wallet ${inr(d.wallet)}, cannot go online`)})),
     ...DB.drv.filter(d=>d.docs.ins<30).map(d=>({c:'amber',t:L(`${d.ta} (${d.plate}) insurance ${d.docs.ins} நாள்ல முடியும்`,`${d.plate} insurance expires in ${d.docs.ins} days`)})),
@@ -1123,6 +1129,22 @@ function book(){
 function nearest(veh,from,exclude){const pt=typeof from==='object'?from:P[from];if(!pt||pt.lat==null)return DB.drv.filter(d=>d.veh===veh&&d.status==='avail'&&!d.blocked&&d.id!==exclude).map(d=>({d,km:0}));return DB.drv.filter(d=>d.veh===veh&&d.status==='avail'&&!d.blocked&&d.id!==exclude).map(d=>({d,km:hav(d,pt)*1.3})).sort((a,b)=>a.km-b.km)}
 /* office cancel with a reason; "no vehicle" sends the customer a polite apology */
 /* a driver cancelled: send it to other drivers, assign one, or tell the customer */
+/* owner corrects a finished bill; the driver's commission is adjusted by the difference in the same write */
+function billSheet(b){if(!b||S.role!=='owner')return;const pass=b.fx&&b.fx.pass?+b.fx.pass:0,oldC=commOf(b);
+  modal(`<h3>✏️ ${b.id} · ${L('Bill திருத்து','Correct the bill')}</h3>
+    <p class="muted" style="margin:0;font-size:13px">${L('Customer கொடுத்த மொத்த தொகை (tip இல்லாம). Toll/parking','Total the customer paid (without tip). Toll/parking')} ${inr(pass)} ${L('commission-க்கு கணக்கில்லை.','is not charged commission.')}</p>
+    <div class="field"><span class="cc">₹</span><input id="bnew" inputmode="numeric" maxlength="6" value="${b.fare}"></div>
+    <input id="bwhy" placeholder="${L('காரணம் (கட்டாயம்)','Reason (required)')}" maxlength="120" style="height:44px;border:1.5px solid var(--line);border-radius:12px;padding:0 12px">
+    <div class="bill" id="bprev"></div><button class="btn" id="bok">${L('சேமி','Save')}</button>`,(m,close)=>{
+    const nv=()=>Math.max(0,parseInt(m.querySelector('#bnew').value.replace(/\D/g,''))||0);
+    const pv=()=>{const t=Math.max(0,nv()-pass),c=FARE.comm(t,DB.cfg.comm);m.querySelector('#bprev').innerHTML=`<div><span>Commission</span><b>${inr(oldC)} → ${inr(c)}</b></div><div><span>${L('Driver wallet மாற்றம்','Driver wallet change')}</span><b>${c<oldC?'+':'−'}${inr(Math.abs(oldC-c))}</b></div>`};
+    m.querySelector('#bnew').oninput=pv;pv();
+    m.querySelector('#bok').onclick=()=>{const why=m.querySelector('#bwhy').value.trim();if(!why){toast(L('காரணம் போடுங்க','Enter a reason'));return}
+      const tot=nv(),t=Math.max(0,tot-pass),c=FARE.comm(t,DB.cfg.comm),delta=oldC-c;
+      if(!CL){b.fare=tot;b.commA=c;saveDB();close();show();return}
+      const bt=F().writeBatch(CL.db);bt.update(bkRef(b),{fareFinal:tot,comm:c,'fx.trip':t,billEdit:{by:CL.phone,why,at:Date.now(),from:b.fare},updatedAt:ts()});
+      if(delta&&b.commA!=null&&b.driver)bt.update(F().doc(CL.db,'drivers',b.driver),{wallet:F().increment(delta),updatedAt:ts()});
+      cw(bt.commit().then(()=>{close();toast(L('Bill திருத்தியாச்சு','Bill corrected'))}))}})}
 function noDrvSheet(b){if(!b)return;
   modal(`<h3>📞 ${b.id} · ${L('Driver கிடைக்கல','No driver found')}</h3>
     <p class="muted" style="margin:0">${L('3 சுற்று (3 நிமிடம்) தேடியும் யாரும் எடுக்கல. Customer-ஐ அழைச்சு வண்டி ஏற்பாடு பண்ணுங்க, அல்லது மன்னிப்பு கேளுங்க.','Searched 3 rounds (3 min) and nobody accepted. Call the customer to arrange a vehicle or apologise.')}</p>
@@ -1386,7 +1408,7 @@ const pct=(a,b)=>b?Math.round(a*100/b):0;
 const isDrvCx=b=>b.status==='cancelled'&&/^driver/.test(b.reason||'');
 function mapBk(b,now){now=now||Date.now();return{id:shortB(b._id),_id:b._id,cust:{name:b.custName||'—',phone:digits(b.custPhone)},rider:b.rider?{name:String(b.rider.name||''),phone:digits(b.rider.phone)}:null,custUid:b.customerUid||null,
   from:b.from&&b.from.key&&P[b.from.key]?b.from.key:(b.from?b.from[S.lang]||b.from.ta:'—'),to:b.to&&b.to.key&&P[b.to.key]?b.to.key:(b.to?b.to[S.lang]||b.to.ta:'—'),
-  fromC:b.from,toC:b.to,veh:b.veh||'auto',km:+b.km||0,fare:+b.fare||0,tip:+b.tip||0,pay:b.pay||'cash',src:b.src||'app',status:b.status||'searching',kind:b.kind||'ride',dispatch:b.dispatch||null,otype:b.otype||null,ret:b.retAt||null,
+  fromC:b.from,toC:b.to,veh:b.veh||'auto',km:+b.km||0,fare:FARE.billOf(b),fareQ:+b.fare||0,trip:FARE.tripOf(b),commA:b.comm!=null?+b.comm:null,fx:b.fx||null,tariff:b.tariff||null,tip:+b.tip||0,pay:b.pay||'cash',src:b.src||'app',status:b.status||'searching',kind:b.kind||'ride',dispatch:b.dispatch||null,otype:b.otype||null,ret:b.retAt||null,
   driver:b.driverPhone||null,driverName:b.driverName||'',created:CL.toMs(b.createdAt)||b.when||now,when:b.when||CL.toMs(b.createdAt)||now,done:CL.toMs(b.doneAt)||null,reason:b.cancelReason||'',
   rating:+b.rating||0,custRating:+b.custRating||0,exclude:b.exclude||[],rebookOf:b.rebookOf||null,upd:CL.toMs(b.updatedAt)||0,
   tAs:CL.toMs(b.assignedAt)||0,tAr:CL.toMs(b.arrivedAt)||0,tSt:CL.toMs(b.startedAt)||0,plate:b.plate||'',vehModel:b.vehModel||''}}
@@ -1518,7 +1540,7 @@ async function reports(){
   const now=Date.now(),from=dayStart(now)-(RD-1)*DAY;
   const rows=hist.filter(b=>b.created>=from),done=rows.filter(b=>b.status==='done'),cx=rows.filter(b=>b.status==='cancelled');
   const noTaker=rows.filter(b=>b.reason==='novehicle'||b.reason==='nodriver'||(b.status==='searching'&&now-b.created>15*60e3)).length;
-  const tot=done.reduce((a,b)=>a+b.fare,0),tips=done.reduce((a,b)=>a+b.tip,0),comm=Math.round(tot*DB.cfg.comm/100);
+  const tot=done.reduce((a,b)=>a+b.fare,0),tips=done.reduce((a,b)=>a+b.tip,0),comm=done.reduce((a,b)=>a+commOf(b),0);
   const newC=users.filter(u=>(u.joined||0)>=from).length,actD=new Set(done.map(b=>b.driver).filter(Boolean)).size;
   const days=[...Array(RD)].map((_,i)=>from+i*DAY);
   const perF=days.map(d=>done.filter(b=>dayStart(b.done||b.when)===d).reduce((a,b)=>a+b.fare,0)),perN=days.map(d=>done.filter(b=>dayStart(b.done||b.when)===d).length);
@@ -1595,7 +1617,9 @@ function settings(){
       <label class="lrow2"><span>${L('ஒரு வழி Outstation: office சரிபார்க்க நேரம் (அதுக்கு அப்புறம் தானா drivers-க்கு)','One-way outstation: time for office review (then auto to drivers)')}</span><select id="drv" class="selbox" style="max-width:160px">${opt([[2,'2 min'],[5,'5 min'],[10,'10 min'],[15,'15 min'],[30,'30 min']],dp.review)}</select></label>
       <label class="lrow2"><span>${L('ஒவ்வொரு படிக்கும் இடைவெளி','Gap between each level')}</span><select id="dg" class="selbox" style="max-width:160px">${opt([[30,'30 sec'],[60,'1 min'],[120,'2 min'],[300,'5 min']],dp.gap)}</select></label>
       <label class="lrow2"><span>🏍️ ${L('Customer app-ல Bike taxi காட்டு (தமிழ்நாட்டுல இப்போ அனுமதி இல்லை — அனுமதி கிடைச்சா மட்டும் ON பண்ணுங்க)','Show Bike taxi in the customer app (not permitted in Tamil Nadu now — turn on only once allowed)')}</span><input type="checkbox" id="sbk" ${c.showBike?'checked':''} style="width:22px;height:22px"></label>
-      <label class="lrow2"><span>${L('யாரும் எடுக்கலைன்னா எல்லா drivers-க்கும் அனுப்பு','If nobody takes it, send to all drivers')}</span><input type="checkbox" id="dfb" ${dp.fall?'checked':''} style="width:22px;height:22px"></label>`})()}</section>
+      <label class="lrow2"><span>${L('யாரும் எடுக்கலைன்னா எல்லா drivers-க்கும் அனுப்பு','If nobody takes it, send to all drivers')}</span><input type="checkbox" id="dfb" ${dp.fall?'checked':''} style="width:22px;height:22px"></label>
+      <label class="lrow2"><span>⏳ ${L('Local காத்திருப்பு கட்டணம் ₹/நிமி (0 = இல்லை)','Local waiting charge ₹/min (0 = none)')}</span><input id="wtr" inputmode="numeric" maxlength="3" class="selbox" style="max-width:90px" value="${(c.wait&&c.wait.rate)||0}"></label>
+      <label class="lrow2"><span>${L('இலவச காத்திருப்பு (நிமி)','Free waiting (min)')}</span><input id="wtf" inputmode="numeric" maxlength="2" class="selbox" style="max-width:90px" value="${c.wait&&c.wait.free!=null?c.wait.free:3}"></label>`})()}</section>
    <section class="panel" style="margin-top:14px"><div class="ph"><h3>📢 ${L('Drivers-க்கு அறிவிப்பு','Notice to drivers')}</h3></div>
     <p class="muted" style="margin:0 0 8px;font-size:13px">${L('எல்லா drivers app-லயும் ☰ → அறிவிப்புகள்-ல வரும், ஒலியோட. உதா: "இன்று மாலை Katpadi-ல booking அதிகம்", "நாளை office லீவு".','Shows in every driver app under ☰ → Notifications, with a sound. e.g. "Busy at Katpadi this evening", "Office closed tomorrow".')}</p>
     <div class="field" style="height:50px"><input id="ant" maxlength="60" placeholder="${L('தலைப்பு','Title')}"></div>
@@ -1619,8 +1643,9 @@ function settings(){
     if(of&&!/^[6-9]\d{9}$/.test(of)){toast(L('Office நம்பர் 10 இலக்கம்','Office number must be 10 digits'));return}
     if(OUTV.some(id=>!(c.out.rate[id]>0))){toast(L('Outstation கி.மீ விலை 0 ஆக இருக்கக்கூடாது','Outstation per-km fares can’t be 0'));return}
     if(!(c.out.daykm>=100)){toast(L('ஒரு நாள் கி.மீ குறைந்தது 100','Km per day must be at least 100'));return}
+    const wt={rate:Math.max(0,Math.min(20,parseInt(document.getElementById('wtr').value)||0)),free:Math.max(0,Math.min(30,parseInt(document.getElementById('wtf').value)||0))};c.wait=wt;
     const dsp={review:+document.getElementById('drv').value,win:+document.getElementById('dw').value,gap:+document.getElementById('dg').value,fall:document.getElementById('dfb').checked};c.dispatch=dsp;
-    if(CL){cw(F().setDoc(F().doc(CL.db,'config','app'),{fares:c.fares,comm:cm,minbal:mb||0,office:of,upi:up,dispatch:dsp,out:c.out,rent:c.rent,showBike:document.getElementById('sbk').checked,updatedAt:ts()},{merge:true}).then(()=>toast(L('சேமிச்சாச்சு. எல்லா app-லயும் உடனே மாறும்','Saved. All apps update right away'))));return}
+    if(CL){cw(F().setDoc(F().doc(CL.db,'config','app'),{fares:c.fares,comm:cm,minbal:mb||0,office:of,upi:up,dispatch:dsp,wait:wt,out:c.out,rent:c.rent,showBike:document.getElementById('sbk').checked,updatedAt:ts()},{merge:true}).then(()=>toast(L('சேமிச்சாச்சு. எல்லா app-லயும் உடனே மாறும்','Saved. All apps update right away'))));return}
     Object.assign(c,{comm:cm,minbal:mb||0,office:of,upi:up});log('Settings மாற்றம்','Settings changed');saveDB();toast(L('சேமிச்சாச்சு','Saved'))};
   const saveAnn=arr=>{c.announce=arr;if(CL){cw(F().setDoc(F().doc(CL.db,'config','app'),{announce:arr,updatedAt:ts()},{merge:true}).then(()=>{toast(L('சேமிச்சாச்சு','Saved'));settings()}));return}saveDB();settings()};
   document.getElementById('ans').onclick=()=>{const t=document.getElementById('ant').value.trim(),m=document.getElementById('anm').value.trim();if(t.length<2){toast(L('தலைப்பு போடுங்க','Add a title'));return}
@@ -1676,7 +1701,7 @@ function watchAll(){
   OUNS.push(F().onSnapshot(F().collection(CL.db,'driverApps'),s=>{const before=(DB.apps||[]).filter(a=>a.status==='pending').length;DB.apps=s.docs.map(d=>({id:d.id,...d.data()})).sort((x,y)=>CL.toMs(y.submittedAt)-CL.toMs(x.submittedAt));const n=DB.apps.filter(a=>a.status==='pending').length;if(SEEN!==null&&n>before){chime();toast(L('புது driver விண்ணப்பம் வந்திருக்கு','New driver application'))}remap()},oerr));
   OUNS.push(F().onSnapshot(F().collection(CL.db,'tickets'),s=>{RAWT=s.docs.map(d=>({_id:d.id,...d.data()}));remap()},oerr));
   OUNS.push(F().onSnapshot(F().doc(CL.db,'config','app'),s=>{if(s.exists()){const d=s.data();
-    Object.assign(DB.cfg,{comm:d.comm!=null?+d.comm:10,minbal:d.minbal!=null?+d.minbal:100,upi:d.upi||'',office:d.office||'',dispatch:{...DISPD,...(d.dispatch||{})},out:mergeOut(d.out),rent:mergeRent(d.rent),blocked:Array.isArray(d.blocked)?d.blocked:[],showBike:!!d.showBike,announce:Array.isArray(d.announce)?d.announce:[]});
+    Object.assign(DB.cfg,{comm:d.comm!=null?+d.comm:10,minbal:d.minbal!=null?+d.minbal:100,upi:d.upi||'',office:d.office||'',dispatch:{...DISPD,...(d.dispatch||{})},wait:d.wait||null,serverComm:!!d.serverComm,out:mergeOut(d.out),rent:mergeRent(d.rent),blocked:Array.isArray(d.blocked)?d.blocked:[],showBike:!!d.showBike,announce:Array.isArray(d.announce)?d.announce:[]});
     if(d.fares)Object.keys(d.fares).forEach(k=>{DB.cfg.fares[k]={...(DB.cfg.fares[k]||{}),...d.fares[k]}})}remap()},oerr));
   OUNS.push(F().onSnapshot(F().collection(CL.db,'staff'),s=>{DB.cfg.staff=s.docs.filter(d=>(d.data().role||'staff')!=='owner').map(d=>({name:d.data().name||'',phone:d.id.replace('+91','')}));remap()},oerr));
 }
