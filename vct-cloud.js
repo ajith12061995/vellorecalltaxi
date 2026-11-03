@@ -9,8 +9,9 @@ import {
   getFirestore, doc, getDoc, getDocs, setDoc, updateDoc, addDoc, deleteDoc,
   collection, query, where, orderBy, limit, onSnapshot, serverTimestamp, increment, runTransaction, writeBatch,
 } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
-import { firebaseConfig } from './firebase-config.js';
+import { firebaseConfig, VCT_ENV } from './firebase-config.js';
 
+if (!firebaseConfig) throw new Error('no Firebase config for ' + VCT_ENV + ' (see firebase-config.js)');
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 auth.languageCode = 'ta';
@@ -29,6 +30,16 @@ const toMs = (v) => (v && typeof v.toMillis === 'function') ? v.toMillis() : (ty
 
 const api = {
   live: true,
+  env: VCT_ENV,
+  // web push for the driver app (loaded only when used). Returns the device token or null.
+  async pushToken(vapidKey, swUrl, scope) {
+    try {
+      const m = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging.js');
+      if (!(await m.isSupported())) return null;
+      const reg = await navigator.serviceWorker.register(swUrl, { scope });
+      return await m.getToken(m.getMessaging(app), { vapidKey, serviceWorkerRegistration: reg });
+    } catch (e) { console.warn('push', e); return null; }
+  },
   auth, db,
   fs: { doc, getDoc, getDocs, setDoc, updateDoc, addDoc, deleteDoc, collection, query, where, orderBy, limit, onSnapshot, serverTimestamp, increment, runTransaction, writeBatch },
   toMs,

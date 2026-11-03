@@ -56,8 +56,8 @@ footer{text-align:center;color:var(--mut);font-size:13px;padding:6px 16px 30px}
 a{color:inherit}
 </style>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV='2026-11-03-40',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
-function chk(){try{fetch(new URL('/vellorecalltaxi/version.json',location.origin)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
+(function(){var APPV=window.VCT_V='2026-11-03-41',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+function chk(){try{fetch(new URL('../../version.json',location.href)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
 setTimeout(chk,3000);setInterval(chk,5*60*1000);document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible')chk()});})();</script>
@@ -70,6 +70,7 @@ setTimeout(chk,3000);setInterval(chk,5*60*1000);document.addEventListener('visib
 </div></header>
 <main class="wrap" id="app"></main>
 <footer><a href="../../privacy/#drivers" target="_blank" rel="noopener" id="plink"></a> · Vellore Taxi</footer>
+<script src="../../core/report.js?v=2026-11-03-41"></script>
 <script>
 const S={lang:'ta',phone:'',veh:'auto',files:{},data:{}};
 try{const s=JSON.parse(localStorage.getItem('vctj')||'{}');if(s.lang)S.lang=s.lang}catch(e){}

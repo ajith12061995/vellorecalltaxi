@@ -28,8 +28,8 @@
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('../vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV='2026-11-03-40',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
-function chk(){try{fetch(new URL('/vellorecalltaxi/version.json',location.origin)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
+(function(){var APPV=window.VCT_V='2026-11-03-41',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+function chk(){try{fetch(new URL('../version.json',location.href)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
 setTimeout(chk,3000);setInterval(chk,5*60*1000);document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible')chk()});})();</script>
@@ -623,12 +623,13 @@ a.btn{text-decoration:none}
 <div class="app" id="app"></div>
 <div class="toast" id="toast"></div>
 
-<script src="../core/geo.js?v=2026-11-03-40"></script>
-<script src="../core/fare.js?v=2026-11-03-40"></script>
-<script src="../core/pin.js?v=2026-11-03-40"></script>
-<script src="../core/clock.js?v=2026-11-03-40"></script>
-<script src="../core/map.js?v=2026-11-03-40"></script>
-<script src="../core/chat.js?v=2026-11-03-40"></script>
+<script src="../core/report.js?v=2026-11-03-41"></script>
+<script src="../core/geo.js?v=2026-11-03-41"></script>
+<script src="../core/fare.js?v=2026-11-03-41"></script>
+<script src="../core/pin.js?v=2026-11-03-41"></script>
+<script src="../core/clock.js?v=2026-11-03-41"></script>
+<script src="../core/map.js?v=2026-11-03-41"></script>
+<script src="../core/chat.js?v=2026-11-03-41"></script>
 <script>
 /* shared with the customer app: icons, places, fares, map engine */
 const I = {
@@ -834,6 +835,7 @@ function home(){
         ${dutyBtn(true)}
         ${CL?'':`<button class="demo" id="dreq">${L('Demo: ride request கொண்டு வா','Demo: send a ride request')}</button>`}`
       :`${dutyBtn(false)}`}
+     ${pushReady()&&Notification.permission==='default'?`<button class="warn" id="pushon" style="text-align:left;border:0;width:100%">🔔 ${L('Phone lock ஆனாலும் ride alert வரணுமா? இங்கே தொட்டு Allow கொடுங்க','Get ride alerts even when the phone is locked: tap and Allow')}</button>`:''}
      ${upcHtml()}
      ${SHOW_SMGR?smgrHtml():''}
      <div class="sec"><h3>${L('இன்று','Today')}</h3><span class="sample">${new Date().toLocaleDateString(S.lang==='ta'?'ta-IN':'en-IN',{day:'numeric',month:'short'})}</span></div>
@@ -847,6 +849,7 @@ function home(){
     document.getElementById('menu').onclick=drawer;document.getElementById('tpill').onclick=()=>{S.tab='earn';earnTab()};
     bindSmgr();
     const rc=document.getElementById('rc');if(rc)rc.onclick=()=>{S.tab='wallet';walletTab();recharge()};
+    {const pb=document.getElementById('pushon');if(pb)pb.onclick=()=>enablePush(true)}
     const gr=document.getElementById('gpsr');if(gr)gr.onclick=()=>{stopGeo();GPSERR=0;startGeo();try{navigator.geolocation.getCurrentPosition(p=>{POS={lat:p.coords.latitude,lon:p.coords.longitude};GOTFIX=true;pushLive(true);if(S.tab==='home'&&!J)home()},e=>{GPSERR=e.code;toast(L('Location இன்னும் கிடைக்கல','Still no location'))},{enableHighAccuracy:true,timeout:15000,maximumAge:0})}catch(e){}};
     if(S.online){bindTap('offs',()=>confirmOff(()=>{setOnline(false);home();toast(L('Offline ஆயிட்டீங்க','You are offline'))}));
       if(CL)maybeShowReq();else{document.getElementById('dreq').onclick=()=>incoming()}}
@@ -1195,7 +1198,7 @@ function watchMe(){UNS.push(F().onSnapshot(F().doc(CL.db,'drivers',CL.phone),s=>
   if(S.online&&!J&&docState().expired.length){setOnline(false);toast(L('ஒரு document காலாவதி ஆயிடுச்சு. Offline ஆக்கப்பட்டீங்க','A document has expired. You have been taken offline'))}
   if(!J&&!document.querySelector('.modal')){if(S.tab==='wallet'&&before!==DS.wallet)walletTab();else if(S.tab==='home'&&(document.getElementById('ons')||(document.getElementById('ons')||document.getElementById('offs'))))home()}},()=>{}))}
 function watchCfgD(){UNS.push(F().onSnapshot(F().doc(CL.db,'config','app'),s=>{if(!s.exists())return;const d=s.data();
-  if(d.comm!=null)COMM=+d.comm;if(d.minbal!=null)MINBAL=+d.minbal;CFGD.upi=d.upi||'';CFGD.office=d.office||'';CFGD.serverComm=!!d.serverComm;CFGD.wait=d.wait||null;
+  if(d.comm!=null)COMM=+d.comm;if(d.minbal!=null)MINBAL=+d.minbal;CFGD.upi=d.upi||'';CFGD.office=d.office||'';CFGD.serverComm=!!d.serverComm;CFGD.wait=d.wait||null;CFGD.push=d.push||null;
   {const na=Array.isArray(d.announce)?d.announce:[],top=na[0];const fresh=top&&(!ANN[0]||ANN[0].id!==top.id)&&top.t>seenAt();ANN=na;
    if(fresh&&ANN.length&&!J&&!document.querySelector('.modal')){beep();toast('📢 '+(top.title||L('Office அறிவிப்பு','Office notice')));if(S.tab==='home'&&document.getElementById('menu'))home()}}if(d.dispatch)Object.assign(DISP,d.dispatch);
   if(d.fares)VEH.forEach(v=>{const f=d.fares[v.id];if(f){if(f.base!=null)v.base=+f.base;if(f.per!=null)v.per=+f.per}})},()=>{}))}
@@ -1228,10 +1231,18 @@ function rebuildTx(){
 function stopAllD(){UNS.forEach(u=>{try{u()}catch(e){}});UNS=[];if(REQUNSUB){REQUNSUB();REQUNSUB=null}stopJob();stopGeo()}
 
 /* going online: GPS + live position + ride requests */
+/* push: "new ride" alerts when the phone is locked (works once the owner adds the web-push key in Settings
+   and the Cloud Functions are deployed). The token is saved on the driver's own record. */
+const pushReady=()=>!!(CL&&CFGD.push&&CFGD.push.vapid&&'Notification' in window&&'serviceWorker' in navigator);
+async function enablePush(ask){if(!pushReady())return false;
+  if(Notification.permission!=='granted'){if(!ask)return false;if(await Notification.requestPermission()!=='granted'){toast(L('Notification அனுமதி கொடுக்கல','Notifications not allowed'));return false}}
+  const t=await CL.pushToken(CFGD.push.vapid,'./fcm-sw.js','./fcm/');if(!t){if(ask)toast(L('இந்த phone-ல push வேலை செய்யாது','Push is not supported on this phone'));return false}
+  if(t!==localStorage.getItem('vct_fcm')){await F().updateDoc(F().doc(CL.db,'drivers',CL.phone),{fcm:t,fcmAt:ts()}).catch(()=>{});try{localStorage.setItem('vct_fcm',t)}catch(e){}}
+  if(ask){toast(L('சரி! Phone lock-லயும் ride alert வரும்','Done! Ride alerts will come even when locked'));home()}return true}
 function goLive(on){
   F().updateDoc(F().doc(CL.db,'drivers',CL.phone),{online:on,updatedAt:ts()}).catch(()=>{});
   pushLive(true);
-  if(on){startGeo();listenReq()}else{stopGeo();if(REQUNSUB){REQUNSUB();REQUNSUB=null}REQS=[]}
+  if(on){startGeo();listenReq();enablePush(false)}else{stopGeo();if(REQUNSUB){REQUNSUB();REQUNSUB=null}REQS=[]}
 }
 function pushLive(force){
   if(!CL||!CL.phone)return;if(S.online&&!GOTFIX)return;const now=Date.now();if(!force&&now-LASTLIVE<8000)return;LASTLIVE=now;
