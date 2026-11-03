@@ -69,6 +69,29 @@ exports.onBookingCreated = onDocumentCreated('bookings/{id}', async ev => {
   logger.info('push', { sent: r.successCount, failed: r.failureCount });
 });
 
+// Customer push: driver found / arrived / trip started / completed / cancelled by driver or office.
+// Token on users/{uid}.fcm (saved by the customer app after the customer allows notifications). Same switch as
+// the driver alerts: config/app.push.vapid. A dead token is removed so it is not tried again.
+exports.onBookingCust = onDocumentUpdated('bookings/{id}', async ev => {
+  const before = ev.data.before.data(), after = ev.data.after.data();
+  if (!after || !after.customerUid) return;
+  const quick = L.custPush(before, after, 'ta'); if (!quick) return;
+  const c = await cfg(); if (!c.push || !c.push.vapid) return;
+  const uref = db.doc(`users/${after.customerUid}`), u = (await uref.get()).data() || {};
+  if (!u.fcm) return;
+  const msg = L.custPush(before, after, u.lang === 'en' ? 'en' : 'ta');
+  try {
+    await admin.messaging().send({ token: u.fcm,
+      webpush: { notification: { title: msg.title, body: msg.body, tag: `${ev.params.id}-${msg.kind}`, icon: 'https://ajith12061995.github.io/vellorecalltaxi/icon-192.png' },
+                 fcmOptions: { link: 'https://ajith12061995.github.io/vellorecalltaxi/' } },
+      data: { bookingId: ev.params.id, kind: msg.kind } });
+    logger.info('cust push', { id: ev.params.id, kind: msg.kind });
+  } catch (e) {
+    if (/registration-token-not-registered|invalid-registration-token|invalid-argument/.test(e.code || e.message || '')) await uref.update({ fcm: FV.delete() }).catch(() => {});
+    logger.warn('cust push failed', { id: ev.params.id, code: e.code || String(e) });
+  }
+});
+
 exports.verifyPin = onCall(async req => {
   const ph = req.auth && req.auth.token.phone_number, { bookingId, pin } = req.data || {};
   if (!ph || !bookingId || !/^\d{4}$/.test(String(pin))) throw new HttpsError('invalid-argument', 'bad request');

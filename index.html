@@ -33,11 +33,12 @@
 .vi:has(.vimg){background:#fff!important}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .vimg{mix-blend-mode:normal;background:#fff;border-radius:8px}}
 :root[data-theme="dark"] .vimg{mix-blend-mode:normal;background:#fff;border-radius:8px}
+.pushask{display:flex;align-items:center;gap:10px;margin:10px 0;padding:10px 12px;border-radius:14px;background:#FFF7DB;border:1px solid #F2D27A;font-size:13.5px}.pushask span{flex:1}
 </style>
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('./vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV=window.VCT_V='2026-11-03-55',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV=window.VCT_V='2026-11-03-56',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('./version.json',location.href)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -534,13 +535,13 @@ details.faq p{margin:0;padding:0 14px 14px;color:var(--muted);font-size:14px;lin
 <div class="app" id="app"></div>
 <div class="toast" id="toast"></div>
 
-<script src="./core/report.js?v=2026-11-03-55"></script>
-<script src="./core/geo.js?v=2026-11-03-55"></script>
-<script src="./core/fare.js?v=2026-11-03-55"></script>
-<script src="./core/pin.js?v=2026-11-03-55"></script>
-<script src="./core/clock.js?v=2026-11-03-55"></script>
-<script src="./core/map.js?v=2026-11-03-55"></script>
-<script src="./core/chat.js?v=2026-11-03-55"></script>
+<script src="./core/report.js?v=2026-11-03-56"></script>
+<script src="./core/geo.js?v=2026-11-03-56"></script>
+<script src="./core/fare.js?v=2026-11-03-56"></script>
+<script src="./core/pin.js?v=2026-11-03-56"></script>
+<script src="./core/clock.js?v=2026-11-03-56"></script>
+<script src="./core/map.js?v=2026-11-03-56"></script>
+<script src="./core/chat.js?v=2026-11-03-56"></script>
 <script>
 /* ---------- icons ---------- */
 const I = {
@@ -1846,7 +1847,7 @@ function watchConfig(){
   if(CFGUNSUB)return;
   CFGUNSUB=F().onSnapshot(F().doc(CL.db,'config','app'),s=>{if(!s.exists())return;const d=s.data();
     if(d.fares)VEH.forEach(v=>{const f=d.fares[v.id];if(f){if(f.base!=null)v.base=+f.base;if(f.per!=null)v.per=+f.per}});
-    CFG.upi=d.upi||'';CFG.office=d.office||'';CFG.privPhone=!!d.privPhone;CFG.serverPin=!!d.serverPin;CFG.comm=d.comm!=null?+d.comm:10;CFG.wait=d.wait||null;CFG.blocked=Array.isArray(d.blocked)?d.blocked:[];{const had=VEH.includes(BIKE);setBike(!!d.showBike);if(had!==VEH.includes(BIKE)&&S.tab==='home'&&document.querySelector('.vrow')&&!document.querySelector('.modal'))home(S.mode||undefined)}if(d.dispatch)Object.assign(DISPC,d.dispatch);applyTariff(d)},()=>{});
+    CFG.upi=d.upi||'';CFG.office=d.office||'';CFG.push=d.push||null;if(CUID&&pushReadyC()&&Notification.permission==='granted')enablePushC(false);CFG.privPhone=!!d.privPhone;CFG.serverPin=!!d.serverPin;CFG.comm=d.comm!=null?+d.comm:10;CFG.wait=d.wait||null;CFG.blocked=Array.isArray(d.blocked)?d.blocked:[];{const had=VEH.includes(BIKE);setBike(!!d.showBike);if(had!==VEH.includes(BIKE)&&S.tab==='home'&&document.querySelector('.vrow')&&!document.querySelector('.modal'))home(S.mode||undefined)}if(d.dispatch)Object.assign(DISPC,d.dispatch);applyTariff(d)},()=>{});
   F().getDoc(F().doc(CL.db,'blocked','+91'+S.phone)).then(x=>{MEBLK=x.exists()}).catch(()=>{}); // only my own entry is readable
   if(CUID)VCTCLK.sync(F(),F().doc(CL.db,'users',CUID)); // learn the server time once
   watchMyB();
@@ -1951,6 +1952,17 @@ R.lastTry=b.pinTry;
 }
 const LROUND=60,LROUNDS=3,TIPMAX=200;let NODRV=null; // local search: 3 rounds of 1 min, then auto-cancel
 const tipNowTxt=()=>R&&R.boost?L(`இப்போ tip: <b>₹${R.boost}</b> · இன்னும் கூட்டலாம்`,`Tip now: <b>₹${R.boost}</b> · you can add more`):L('இன்னும் யாரும் எடுக்கல. Tip முழுசா driver-க்கே போகும்.','No one has accepted yet. The whole tip goes to the driver.');
+/* push: "driver found / arrived / trip started / done" alerts even when the app is closed. Works once the owner
+   adds the web-push key in Office → Settings and the Cloud Functions are deployed. Token saved on users/{uid}. */
+const pushReadyC=()=>!!(CL&&CFG.push&&CFG.push.vapid&&'Notification' in window&&'serviceWorker' in navigator);
+async function enablePushC(ask){if(!pushReadyC()||!CUID)return false;
+  if(Notification.permission!=='granted'){if(!ask)return false;if(await Notification.requestPermission()!=='granted'){toast(L('Notification அனுமதி கொடுக்கல','Notifications not allowed'));return false}}
+  const t=await CL.pushToken(CFG.push.vapid,'./fcm-sw.js','./fcm/');if(!t){if(ask)toast(L('இந்த phone-ல notification வேலை செய்யாது','Notifications are not supported on this phone'));return false}
+  let old='',ol='';try{old=localStorage.getItem('vct_cfcm')||'';ol=localStorage.getItem('vct_cfcml')||''}catch(e){}
+  if(t!==old||S.lang!==ol){await F().setDoc(F().doc(CL.db,'users',CUID),{fcm:t,lang:S.lang==='en'?'en':'ta',fcmAt:F().serverTimestamp()},{merge:true}).catch(()=>{});try{localStorage.setItem('vct_cfcm',t);localStorage.setItem('vct_cfcml',S.lang)}catch(e){}}
+  if(ask)toast(L('சரி! Driver வந்ததும் phone-க்கு alert வரும்','Done! You will get an alert when the driver comes'));return true}
+const pushAskHtml=()=>pushReadyC()&&Notification.permission==='default'?`<div class="pushask" id="pushask"><span>🔔 ${L('Driver கிடைச்சதும், வந்ததும் phone-க்கு alert வேணுமா?','Get an alert when the driver is found and arrives?')}</span><button class="chip" id="pushon">${L('ஆமா','Yes')}</button></div>`:'';
+function bindPushAsk(){const b=document.getElementById('pushon');if(b)b.onclick=async()=>{const ok=await enablePushC(true);const w=document.getElementById('pushask');if(w&&(ok||Notification.permission!=='default'))w.remove()}}
 function searchingCloud(){
   R.phase='search';const pu={lat:R.b.from.lat,lon:R.b.from.lon};
   go(`<section class="screen"><div class="mapwrap"><canvas class="map" id="map"></canvas><div class="radar"><i></i><i></i><i></i></div>
@@ -1963,9 +1975,9 @@ function searchingCloud(){
      <div class="tipbox" id="tipbox" ${R.boost?'':'hidden'}><b id="tiph">💡 ${L('Tip சேர்த்தா driver சீக்கிரம் கிடைப்பார்','Add a tip to get a driver faster')}</b>
        <small id="tipnow">${tipNowTxt()}</small>
        <div class="tiprow">${[10,20,30,40,50,60,70,80,90].map(x=>`<button class="chip" data-boost="${x}">+₹${x}</button>`).join('')}</div></div>
-     ${stopsHtml()}
+     ${pushAskHtml()}${stopsHtml()}
      <button class="btn ghost" id="cxs">${L('Booking-ஐ ரத்து செய்','Cancel booking')}</button></div></section>`,()=>{
-    const m=makeMap(document.getElementById('map'),{cars:true,pins:[{...pu,col:'#1E8A5A'}],hide:CUSTOM});m.setView(pu.lat,pu.lon,32000);
+    const m=makeMap(document.getElementById('map'),{cars:true,pins:[{...pu,col:'#1E8A5A'}],hide:CUSTOM});m.setView(pu.lat,pu.lon,32000);bindPushAsk();
     document.getElementById('cxs').onclick=cancelSheet;
     app.querySelectorAll('[data-boost]').forEach(b=>b.onclick=()=>{const add=+b.dataset.boost,v=Math.min(TIPMAX,(R.boost||0)+add);if(v<=(R.boost||0)){toast(L(`அதிகபட்ச tip ₹${TIPMAX}`,`Maximum tip is ₹${TIPMAX}`));return}
       R.boost=v;F().updateDoc(F().doc(CL.db,'bookings',R.id),{tip:v,updatedAt:F().serverTimestamp()}).catch(e=>toast(CL.errText(e,S.lang==='ta')));

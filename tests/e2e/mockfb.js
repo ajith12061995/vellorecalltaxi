@@ -56,6 +56,8 @@
       waitUser(){return Promise.resolve(user)},onUser(cb){cbs.push(cb);return()=>{}},
       async googleLogin(){user={uid:'g123',phoneNumber:null,email:'priya@gmail.com',displayName:'Priya G'};cbs.forEach(c=>c(user));return user},
       async logout(){user=null},errText:(e)=>'ERR '+(e&&e.code||e),
+      // web push: no real Firebase here; returns a fake device token and records which service worker was asked for
+      async pushToken(v,sw,sc){if(!v)return null;(window.__pushReg=window.__pushReg||[]).push(sw+'|'+sc);return 'tok-'+(user&&user.uid||'x')},
       // same decisions as functions/index.js verifyPin
       async call(name,data){if(window.MOCK&&MOCK.down)throw{code:'functions/unavailable'};if(window.MOCK&&MOCK.fnDown)throw{code:'functions/internal'};
         if(name!=='verifyPin')throw{code:'functions/not-found'};

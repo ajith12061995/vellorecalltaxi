@@ -39,3 +39,20 @@ test('live position older than 10 min is stale', () => {
   assert.equal(L.liveStale({ online: true, updatedAt: T(now - 2 * 60e3) }, now), false);
   assert.equal(L.liveStale({ online: false, updatedAt: T(0) }, now), false);
 });
+
+test('customer push: driver accepted / arrived / trip started / done, each once', () => {
+  const base = { customerUid: 'u1', driverName: 'Ravi', plate: 'TN23 1234', fare: 190 };
+  const a = L.custPush({ ...base, status: 'searching' }, { ...base, status: 'assigned' }, 'ta');
+  assert.equal(a.kind, 'assigned'); assert.match(a.body, /Ravi · TN23 1234/);
+  assert.equal(L.custPush({ ...base, status: 'assigned' }, { ...base, status: 'assigned', updatedAt: 1 }, 'ta'), null, 'no repeat on other updates');
+  assert.equal(L.custPush({ ...base, status: 'assigned' }, { ...base, status: 'assigned', arrivedAt: 1 }, 'en').title, '📍 Driver has arrived');
+  assert.equal(L.custPush({ ...base, status: 'assigned', arrivedAt: 1 }, { ...base, status: 'ontrip', arrivedAt: 1 }, 'ta').kind, 'ontrip');
+  const d = L.custPush({ ...base, status: 'ontrip' }, { ...base, status: 'done', fareFinal: 274 }, 'en');
+  assert.equal(d.kind, 'done'); assert.match(d.body, /₹274/);
+  assert.equal(L.custPush({ ...base, status: 'done' }, { ...base, status: 'done', custRating: 5 }, 'ta'), null);
+});
+test('customer push: none for phone bookings or for the customer\'s own cancel; driver/office cancel is told', () => {
+  assert.equal(L.custPush({ status: 'searching' }, { status: 'assigned', customerUid: null }, 'ta'), null);
+  assert.equal(L.custPush({ customerUid: 'u', status: 'searching' }, { customerUid: 'u', status: 'cancelled', cancelReason: 'customer' }, 'ta'), null);
+  assert.equal(L.custPush({ customerUid: 'u', status: 'assigned' }, { customerUid: 'u', status: 'cancelled', cancelReason: 'driver: car broke' }, 'ta').kind, 'cancelled');
+});

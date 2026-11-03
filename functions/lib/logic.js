@@ -42,4 +42,18 @@ function fareLooksWrong(b, fares) {
 // A live position older than 10 minutes means the app is closed or offline: mark the driver not available
 const liveStale = (l, now) => !!l && l.online === true && (!l.updatedAt || now - l.updatedAt.toMillis() > 10 * MIN);
 
-module.exports = { commissionFor, settle, housekeeping, fareLooksWrong, liveStale };
+// Customer push: which message (if any) a booking change deserves. Phone bookings (no customerUid) get none.
+function custPush(before, after, lang) {
+  if (!after || !after.customerUid) return null;
+  const b = before || {}, ta = lang !== 'en', who = [after.driverName, after.plate].filter(Boolean).join(' · ');
+  const m = (t, e, bt, be) => ({ title: ta ? t : e, body: ta ? bt : be, kind: '' });
+  let r = null;
+  if (after.status === 'assigned' && b.status !== 'assigned') r = { ...m('🚕 Driver கிடைச்சாச்சு', '🚕 Driver found', `${who} உங்க ride-ஐ ஏற்றுக்கிட்டார்`, `${who} accepted your ride`), kind: 'assigned' };
+  else if (after.arrivedAt && !b.arrivedAt && after.status === 'assigned') r = { ...m('📍 Driver வந்துட்டார்', '📍 Driver has arrived', `${who} pickup இடத்துல காத்திருக்கார். PIN-ஐ driver-கிட்ட சொல்லுங்க`, `${who} is waiting at the pickup. Tell the driver your PIN`), kind: 'arrived' };
+  else if (after.status === 'ontrip' && b.status !== 'ontrip') r = { ...m('▶️ Trip ஆரம்பம்', '▶️ Trip started', 'பாதுகாப்பான பயணம்! Live-ஆ app-ல பார்க்கலாம்', 'Have a safe ride! Follow it live in the app'), kind: 'ontrip' };
+  else if (after.status === 'done' && b.status !== 'done') { const f = after.fareFinal || after.fare; r = { ...m('✅ Trip முடிஞ்சது', '✅ Trip completed', `மொத்தம் ₹${f}. நன்றி! Driver-க்கு rating கொடுங்க`, `Total ₹${f}. Thank you! Please rate your driver`), kind: 'done' }; }
+  else if (after.status === 'cancelled' && b.status !== 'cancelled' && !/^(customer|nodriver)$/.test(after.cancelReason || '')) r = { ...m('❌ Booking cancel ஆச்சு', '❌ Booking cancelled', 'மன்னிக்கவும். App-ல மறுபடி book பண்ணலாம்', 'Sorry. You can book again in the app'), kind: 'cancelled' };
+  return r;
+}
+
+module.exports = { commissionFor, settle, housekeeping, fareLooksWrong, liveStale, custPush };
