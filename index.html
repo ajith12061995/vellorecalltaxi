@@ -39,7 +39,7 @@
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('./vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV=window.VCT_V='2026-11-04-58',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV=window.VCT_V='2026-11-04-59',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('./version.json',location.href)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -536,13 +536,13 @@ details.faq p{margin:0;padding:0 14px 14px;color:var(--muted);font-size:14px;lin
 <div class="app" id="app"></div>
 <div class="toast" id="toast"></div>
 
-<script src="./core/report.js?v=2026-11-04-58"></script>
-<script src="./core/geo.js?v=2026-11-04-58"></script>
-<script src="./core/fare.js?v=2026-11-04-58"></script>
-<script src="./core/pin.js?v=2026-11-04-58"></script>
-<script src="./core/clock.js?v=2026-11-04-58"></script>
-<script src="./core/map.js?v=2026-11-04-58"></script>
-<script src="./core/chat.js?v=2026-11-04-58"></script>
+<script src="./core/report.js?v=2026-11-04-59"></script>
+<script src="./core/geo.js?v=2026-11-04-59"></script>
+<script src="./core/fare.js?v=2026-11-04-59"></script>
+<script src="./core/pin.js?v=2026-11-04-59"></script>
+<script src="./core/clock.js?v=2026-11-04-59"></script>
+<script src="./core/map.js?v=2026-11-04-59"></script>
+<script src="./core/chat.js?v=2026-11-04-59"></script>
 <script>
 /* ---------- icons ---------- */
 const I = {
@@ -942,6 +942,21 @@ function soonTab(k){
   go(shell(`<div class="head pad"><h2>${t(k)}</h2></div><div class="body pad" style="padding-top:4px">${hist}
      <div class="soon"><span class="badge">${s.n}</span><b>${t('coming')}</b><ul>${s[S.lang].map(x=>`<li>${x}</li>`).join('')}</ul></div></div>`),bindNav);
 }
+/* account deletion (store rule): server function deleteMyAccount removes the profile, login, contact details and
+   chats; trip and payment records stay for accounts but without the name or number */
+function deleteAccountSheet(){
+  modal(`<h3 id="delh">${L('Account-ஐ நீக்கவா?','Delete your account?')}</h3>
+    <p style="margin:0;line-height:1.55">${L('உங்க பெயர், phone நம்பர், login, அவசர தொடர்புகள், chat எல்லாம் <b>நிரந்தரமா நீக்கப்படும்</b>. பழைய trip-களோட கட்டண கணக்கு மட்டும் (பெயர், நம்பர் இல்லாம) கணக்கு வழக்குக்காக இருக்கும்.','Your name, phone number, login, emergency contacts and chats will be <b>permanently deleted</b>. Only the fare records of past trips stay for accounts, without your name or number.')}</p>
+    <p class="muted" style="margin:0;font-size:13px">${L('நடந்துட்டு இருக்கிற அல்லது முன்பதிவு ride இருந்தா முதல்ல அதை முடிங்க / ரத்து பண்ணுங்க.','Finish or cancel any ongoing or scheduled ride first.')}</p>
+    <button class="btn" id="dno">${L('வேண்டாம்','Keep my account')}</button><button class="btn ghost" id="dyes" style="color:var(--danger)">${L('ஆமா, நிரந்தரமா நீக்கு','Yes, delete permanently')}</button>`,(m,close)=>{
+    m.querySelector('#dno').onclick=close;
+    m.querySelector('#dyes').onclick=async()=>{const b=m.querySelector('#dyes');if(b.disabled)return;b.disabled=true;b.textContent=L('நீக்குது…','Deleting…');
+      let r=null;try{r=await CL.call('deleteMyAccount',{})}catch(e){b.disabled=false;b.textContent=L('மறுபடி முயற்சி','Try again');toast(L('இப்போ முடியல. Internet பார்த்துட்டு மறுபடி முயற்சி பண்ணுங்க','Could not delete now. Check the internet and try again'));return}
+      if(r&&r.ok===false&&r.why==='active'){close();toast(L('ஒரு ride இன்னும் நடந்துட்டு இருக்கு. அதை முடிச்சதும் நீக்கலாம்','You have an ongoing or scheduled ride. Delete after it ends'));return}
+      close();try{stopWatch();forgetRide()}catch(e){}EC=[];try{saveEc()}catch(e){}
+      try{['vct_cfcm','vct_cfcml'].forEach(k=>localStorage.removeItem(k))}catch(e){}
+      try{await CL.logout()}catch(e){}S.logged=false;S.name='';S.phone='';save();login();
+      toast(L('உங்க account நீக்கப்பட்டது. Vellore Taxi-ஐ பயன்படுத்தினதுக்கு நன்றி','Your account has been deleted. Thank you for using Vellore Taxi'))}})}
 function profile(){
   const dark=document.documentElement.dataset.theme==='dark';
   go(shell(`<div class="head pad"><h2>${t('me')}</h2></div><div class="body pad" style="padding-top:4px">
@@ -955,13 +970,15 @@ function profile(){
     <button class="row" id="lg"><span class="ic">அ</span><div><b>${t('lang')}</b><small>${S.lang==='ta'?'தமிழ்':'English'}</small></div></button>
     <button class="row" id="th"><span class="ic">${dark?'☾':'☀'}</span><div><b>${t('theme')}</b><small>${dark?'On':'Off'}</small></div></button>
     <button class="row" id="rq"><span class="ic">${I.chat}</span><div><b>${L('என் requests & உதவி','My requests & help')}</b><small>${TIX.length} ${L('requests','requests')}</small></div></button>
-    <button class="row" id="lo"><span class="ic" style="color:var(--danger)">⏻</span><div><b style="color:var(--danger)">${t('logout')}</b><small>+91 ${S.phone}</small></div></button></div>
+    <button class="row" id="lo"><span class="ic" style="color:var(--danger)">⏻</span><div><b style="color:var(--danger)">${t('logout')}</b><small>+91 ${S.phone}</small></div></button>
+    ${CL?`<button class="row" id="delacc"><span class="ic" style="color:var(--danger)">🗑</span><div><b style="color:var(--danger)">${L('என் account-ஐ நீக்கு','Delete my account')}</b><small>${L('Profile, login, தொடர்பு விவரம் நிரந்தரமா நீங்கும்','Removes your profile, login and contact details')}</small></div></button>`:''}</div>
     <p class="fine muted"><a href="./privacy/" target="_blank" rel="noopener" style="color:inherit">${L('தனியுரிமை & விதிமுறைகள்','Privacy & Terms')}</a> · Vellore Taxi · Customer app v0.5</p></div>`),()=>{
     bindNav();
     document.getElementById('lg').onclick=()=>{S.lang=S.lang==='ta'?'en':'ta';save();profile()};
     document.getElementById('th').onclick=()=>{document.documentElement.dataset.theme=dark?'light':'dark';profile()};
     document.getElementById('rq').onclick=()=>{S.tab='help';helpTab()};
     document.getElementById('lo').onclick=()=>{if(CL)CL.logout();stopWatch();forgetRide();S.logged=false;S.name='';save();login()};
+    const da=document.getElementById('delacc');if(da)da.onclick=deleteAccountSheet;
     const ae=document.getElementById('addec');if(ae)ae.onclick=()=>ecAdd(profile);
     app.querySelectorAll('[data-rm]').forEach(b=>b.onclick=()=>{EC.splice(+b.dataset.rm,1);saveEc();saveProfile();profile()});
     document.getElementById('ed').onclick=()=>modal(`<h3>${L('பெயர் மாற்று','Edit name')}</h3><div class="field" style="height:52px"><input id="nn" maxlength="30" value="${esc(S.name||'')}"></div><button class="btn" id="ns">${L('சேமி','Save')}</button>`,(m,close)=>{

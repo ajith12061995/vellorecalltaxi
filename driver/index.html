@@ -46,7 +46,7 @@
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('../vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV=window.VCT_V='2026-11-04-58',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV=window.VCT_V='2026-11-04-59',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('../version.json',location.href)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -641,15 +641,15 @@ a.btn{text-decoration:none}
 <div class="app" id="app"></div>
 <div class="toast" id="toast"></div>
 
-<script src="../core/report.js?v=2026-11-04-58"></script>
-<script src="../core/geo.js?v=2026-11-04-58"></script>
-<script src="../core/fare.js?v=2026-11-04-58"></script>
-<script src="../core/pin.js?v=2026-11-04-58"></script>
-<script src="../core/clock.js?v=2026-11-04-58"></script>
-<script src="../core/map.js?v=2026-11-04-58"></script>
-<script src="../core/chat.js?v=2026-11-04-58"></script>
-<script src="../core/driverchecks.js?v=2026-11-04-58"></script>
-<script src="../core/nav.js?v=2026-11-04-58"></script>
+<script src="../core/report.js?v=2026-11-04-59"></script>
+<script src="../core/geo.js?v=2026-11-04-59"></script>
+<script src="../core/fare.js?v=2026-11-04-59"></script>
+<script src="../core/pin.js?v=2026-11-04-59"></script>
+<script src="../core/clock.js?v=2026-11-04-59"></script>
+<script src="../core/map.js?v=2026-11-04-59"></script>
+<script src="../core/chat.js?v=2026-11-04-59"></script>
+<script src="../core/driverchecks.js?v=2026-11-04-59"></script>
+<script src="../core/nav.js?v=2026-11-04-59"></script>
 <script>
 /* shared with the customer app: icons, places, fares, map engine */
 const I = {
@@ -1252,13 +1252,21 @@ function profileTab(){
     <div class="recent"><button class="row" id="lg"><span class="ic">அ</span><div><b>${L('மொழி','Language')}</b><small>${S.lang==='ta'?'தமிழ்':'English'}</small></div></button>
       <button class="row" id="th"><span class="ic">☾</span><div><b>Dark mode</b><small>${document.documentElement.dataset.theme==='dark'?'On':'Off'}</small></div></button>
       ${CL?'':`<button class="row" id="sw"><span class="ic">${I.navHome}</span><div><b>${L('வேற வண்டி (demo)','Switch vehicle (demo)')}</b><small>${L('Owner assign பண்றது','Assigned by owner')}</small></div></button>`}
-      <button class="row" id="lo"><span class="ic" style="color:var(--danger)">⏻</span><div><b style="color:var(--danger)">Logout</b><small>+91 ${S.phone}</small></div></button></div>
+      <button class="row" id="lo"><span class="ic" style="color:var(--danger)">⏻</span><div><b style="color:var(--danger)">Logout</b><small>+91 ${S.phone}</small></div></button>
+      ${CL?`<button class="row" id="delacc"><span class="ic" style="color:var(--danger)">🗑</span><div><b style="color:var(--danger)">${L('Account நீக்க கோரிக்கை','Request account deletion')}</b><small>${L('Office wallet பணத்தை settle பண்ணிட்டு நீக்கும்','The office settles your wallet, then deletes it')}</small></div></button>`:''}</div>
     <p class="fine muted"><a href="../privacy/#drivers" target="_blank" rel="noopener" style="color:inherit">${L('தனியுரிமை & விதிமுறைகள்','Privacy & Terms')}</a> · Vellore Taxi · Driver app v0.1</p></div>`),()=>{
     bindNav();
     document.getElementById('lg').onclick=()=>{S.lang=S.lang==='ta'?'en':'ta';save();profileTab()};
     document.getElementById('th').onclick=()=>{const r=document.documentElement;r.dataset.theme=r.dataset.theme==='dark'?'light':'dark';profileTab()};
     const sw=document.getElementById('sw');if(sw)sw.onclick=()=>{setOnline(false);pickProfile()};
     document.getElementById('lo').onclick=()=>{setOnline(false);if(CL){stopAllD();DME=null;CL.logout()}S.logged=false;S.pid=null;save();login()};
+    const da=document.getElementById('delacc');if(da)da.onclick=()=>modal(`<h3>${L('Account நீக்க கோரிக்கை அனுப்பவா?','Send an account deletion request?')}</h3>
+      <p style="margin:0;line-height:1.55">${L('Office உங்க wallet பணம், நிலுவை எல்லாத்தையும் settle பண்ணிட்டு 7 நாளுக்குள்ள உங்க account, documents-ஐ நீக்கும். அதுவரை ride எடுக்க முடியாது.','The office settles your wallet and dues, then deletes your account and documents within 7 days. You cannot take rides after this.')}</p>
+      <button class="btn" id="dno">${L('வேண்டாம்','Cancel')}</button><button class="btn ghost" id="dyes" style="color:var(--danger)">${L('ஆமா, கோரிக்கை அனுப்பு','Yes, send request')}</button>`,(m,close)=>{
+      m.querySelector('#dno').onclick=close;
+      m.querySelector('#dyes').onclick=async()=>{const b=m.querySelector('#dyes');if(b.disabled)return;b.disabled=true;
+        try{const r=await CL.call('deleteMyAccount',{});close();setOnline(false);toast(r&&r.queued?L('கோரிக்கை office-க்கு போயிடுச்சு. அவங்க உங்களை அழைப்பாங்க','Request sent. The office will call you'):L('முடிஞ்சது','Done'))}
+        catch(e){b.disabled=false;toast(L('இப்போ முடியல. மறுபடி முயற்சி பண்ணுங்க','Could not send now. Try again'))}}});
   });
 }
 

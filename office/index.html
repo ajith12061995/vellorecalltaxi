@@ -29,7 +29,7 @@
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('../vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV=window.VCT_V='2026-11-04-58',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV=window.VCT_V='2026-11-04-59',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('../version.json',location.href)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -701,11 +701,11 @@ details.faq p{margin:0;padding:0 14px 14px;color:var(--muted);font-size:14px;lin
 <div class="app" id="app"></div>
 <div class="toast" id="toast"></div>
 
-<script src="../core/report.js?v=2026-11-04-58"></script>
-<script src="../core/geo.js?v=2026-11-04-58"></script>
-<script src="../core/fare.js?v=2026-11-04-58"></script>
-<script src="../core/driverchecks.js?v=2026-11-04-58"></script>
-<script src="../core/map.js?v=2026-11-04-58"></script>
+<script src="../core/report.js?v=2026-11-04-59"></script>
+<script src="../core/geo.js?v=2026-11-04-59"></script>
+<script src="../core/fare.js?v=2026-11-04-59"></script>
+<script src="../core/driverchecks.js?v=2026-11-04-59"></script>
+<script src="../core/map.js?v=2026-11-04-59"></script>
 <script>
 /* shared with the customer app: icons, places, fares, map engine */
 const I = {
@@ -1456,15 +1456,23 @@ function reviewApp(a){if(!a)return;const ck=appCheck(a);
       cw(F().updateDoc(F().doc(CL.db,'driverApps',a.id),{status:'rejected',note:r.slice(0,200),decidedAt:ts(),decidedBy:CL.phone,updatedAt:ts()}).then(()=>{close();toast(L('திருப்பி அனுப்பியாச்சு','Sent back'))}))};
   });
 }
+/* account deletion requests from drivers (store rule). The office settles the wallet, blocks / removes the driver,
+   then marks the request done. Customers delete their own account in the app (server function). */
+function loadDelReq(){if(!CL)return;const box=document.getElementById('delreq');if(!box)return;
+  F().getDocs(F().query(F().collection(CL.db,'deletionRequests'),F().where('status','==','pending'))).then(q=>{const el=document.getElementById('delreq');if(!el)return;
+    if(!q.docs.length){el.innerHTML='';return}
+    el.innerHTML=`<div class="sec"><h3>🗑 ${L('Account நீக்க கோரிக்கைகள்','Account deletion requests')}</h3></div><p class="muted" style="margin:0 0 8px;font-size:13px">${L('Wallet பணத்தை settle பண்ணி, driver-ஐ block / நீக்கிட்டு "முடிஞ்சது" அழுத்துங்க. 7 நாளுக்குள்ள முடிக்கணும் (Play Store விதி).','Settle the wallet, block or remove the driver, then press Done. Finish within 7 days (store rule).')}</p>
+      <div class="cards">${q.docs.map(d=>{const r=d.data(),dr=drvById(d.id);return `<div class="scard"><div><b>${esc(dr?dr[S.lang]:d.id)}</b><small class="muted"> · ${esc(d.id)}${dr?' · '+L('Wallet','Wallet')+' '+inr(dr.wallet||0):''}</small></div><div class="dact"><button class="btn sm" data-drd="${esc(d.id)}">${L('முடிஞ்சது','Done')}</button></div></div>`}).join('')}</div>`;
+    el.querySelectorAll('[data-drd]').forEach(b=>b.onclick=()=>{b.disabled=true;F().updateDoc(F().doc(CL.db,'deletionRequests',b.dataset.drd),{status:'done',doneAt:ts()}).then(()=>{toast(L('முடிஞ்சது','Done'));loadDelReq()}).catch(e=>{b.disabled=false;toast(CL.errText(e,S.lang==='ta'))})})}).catch(()=>{})}
 function approvals(){
   const pend=DB.rch.filter(r=>r.status==='pending'),done=DB.rch.filter(r=>r.status!=='pending');
   main().innerHTML=`${head(L('Wallet recharge approvals','Wallet recharge approvals'),L('Driver UPI-ல அனுப்பின பணம் உங்க account-ல வந்ததை பார்த்துட்டு approve பண்ணுங்க','Check the money reached your account before approving'))}
-   ${appsHtml()}<div class="sec"><h3>${L('Wallet recharge','Wallet recharges')}</h3></div><div class="cards">${pend.length?pend.map(r=>{const d=drvById(r.driver);return `<div class="scard"><div class="dtop"><span class="vi sm">${I[d.veh]}</span><div style="flex:1;min-width:0"><b>${d[S.lang]}</b><small>${d.plate} · ${ago(r.date)}</small></div><b class="amtbig">${inr(r.amt)}</b></div>
+   <div id="delreq"></div>${appsHtml()}<div class="sec"><h3>${L('Wallet recharge','Wallet recharges')}</h3></div><div class="cards">${pend.length?pend.map(r=>{const d=drvById(r.driver);return `<div class="scard"><div class="dtop"><span class="vi sm">${I[d.veh]}</span><div style="flex:1;min-width:0"><b>${d[S.lang]}</b><small>${d.plate} · ${ago(r.date)}</small></div><b class="amtbig">${inr(r.amt)}</b></div>
      <div class="utr"><small>UTR</small><b>${esc(r.utr)}</b><button class="linkbtn" data-cp="${esc(r.utr)}">Copy</button></div>
      <div class="dact"><button class="btn sm" data-ok="${r.id}">${L('பணம் வந்தது — Approve','Received — approve')}</button><button class="linkbtn" data-no="${r.id}" style="color:var(--danger)">${L('நிராகரி','Reject')}</button></div></div>`}).join('')
      :`<div class="empty"><h3>${L('காத்திருக்கும் request இல்லை','No pending requests')}</h3></div>`}</div>
    ${done.length?`<div class="sec" style="margin-top:18px"><h3>${L('முன்னாடி','Earlier')}</h3></div><div class="table">${done.slice(0,20).map(r=>{const d=drvById(r.driver);return `<div class="tr t4"><span>${d?d[S.lang]:''}</span><span>${inr(r.amt)}</span><span>UTR ${esc(r.utr)}</span><span><em class="sst ${r.status==='approved'?'closed':'open'}">${r.status==='approved'?L('Approve ஆச்சு','Approved'):L('நிராகரிப்பு','Rejected')}</em></span></div>`}).join('')}</div>`:''}`;
-  bindApps();
+  bindApps();loadDelReq();
   app.querySelectorAll('[data-cp]').forEach(b=>b.onclick=()=>navigator.clipboard.writeText(b.dataset.cp).then(()=>toast('UTR copied')).catch(()=>toast(b.dataset.cp)));
   app.querySelectorAll('[data-ok]').forEach(b=>b.onclick=()=>{const r=DB.rch.find(x=>x.id===b.dataset.ok),d=drvById(r.driver);if(CL){if(b.disabled)return;b.disabled=true;const rr=F().doc(CL.db,'recharges',r.id);
       // one transaction: the wallet is credited only if this recharge is still pending (no double credit on a double tap or from two office screens)

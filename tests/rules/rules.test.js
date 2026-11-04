@@ -52,6 +52,11 @@ test('customer bookings must say src app and cannot pre-set server fields (fare 
   await assertFails(addDoc(collection(as.cust(), 'bookings'), booking({ fareFlag: 'corrected' })));
   await assertFails(addDoc(collection(as.cust(), 'bookings'), booking({ fareWas: 1 })));
 });
+test('deletion requests: written only by the server; office reads them, drivers cannot', async () => {
+  await assertFails(setDoc(doc(as.drv(), 'deletionRequests', DRV), { status: 'pending' }));
+  await assertFails(getDoc(doc(as.drv(), 'deletionRequests', DRV)));
+  await assertSucceeds(getDoc(doc(as.owner(), 'deletionRequests', DRV)));
+});
 test('limits are server-only', async () => {
   await assertFails(setDoc(doc(as.cust(), 'limits', CUST), { open: [], n: 0 }));
   await assertFails(getDoc(doc(as.cust(), 'limits', CUST)));

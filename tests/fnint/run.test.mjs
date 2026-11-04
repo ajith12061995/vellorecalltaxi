@@ -124,3 +124,26 @@ test('verifyPin: right driver + right PIN starts the trip; wrong PIN counted; ot
   assert.equal((await call('verifyPin', { bookingId: 'p2', pin: '9999' }, t1)).error.status, 'RESOURCE_EXHAUSTED');
   assert.equal((await r2.get()).data().status, 'assigned');
 });
+
+test('deleteMyAccount: customer data removed, trips kept without name/number; refused with an active ride; driver → office request', async () => {
+  const CP = '+919999900011', tok = await phoneToken(CP);
+  const uid = JSON.parse(Buffer.from(tok.split('.')[1], 'base64url').toString()).user_id;
+  await db.doc(`users/${uid}`).set({ name: 'Ravi', phone: CP });
+  await db.doc('bookings/d1').set(base({ customerUid: uid, custName: 'Ravi', custPhone: CP, status: 'searching' }));
+  await db.doc('bookings/d1/chat/m1').set({ from: 'c', text: 'hi' });
+  await db.doc('bookings/d1/private/contact').set({ custPhone: CP });
+  assert.equal((await call('deleteMyAccount', {}, tok)).result.why, 'active');
+  assert.ok((await db.doc(`users/${uid}`).get()).exists, 'nothing deleted while active');
+  await db.doc('bookings/d1').update({ status: 'done' });
+  const r = (await call('deleteMyAccount', {}, tok)).result;
+  assert.equal(r.ok, true); assert.equal(r.bookings, 1);
+  const b = (await db.doc('bookings/d1').get()).data();
+  assert.equal(b.custName, 'Deleted user'); assert.equal(b.custPhone, undefined); assert.equal(b.fare, 190);
+  assert.equal((await db.doc(`users/${uid}`).get()).exists, false);
+  assert.equal((await db.doc('bookings/d1/chat/m1').get()).exists, false);
+  assert.equal((await db.doc('bookings/d1/private/contact').get()).exists, false);
+  await assert.rejects(admin.auth().getUser(uid));
+  const dt = await phoneToken(DRV);
+  assert.equal((await call('deleteMyAccount', {}, dt)).result.queued, true);
+  assert.equal((await db.doc(`deletionRequests/${DRV}`).get()).data().status, 'pending');
+});

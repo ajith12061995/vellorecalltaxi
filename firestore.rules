@@ -184,6 +184,10 @@ service cloud.firestore {
     }
 
     // App error reports (monitoring): anyone can send a small report, only the office reads them
+    // account deletion requests (written only by the deleteMyAccount function); the office reads and closes them
+    match /deletionRequests/{ph} {
+      allow read, update: if isStaff();
+    }
     match /errors/{id} {
       allow create: if newData().keys().hasOnly(['app', 'v', 'msg', 'src', 'line', 'ua', 'at', 'who'])
         && newData().msg is string && newData().msg.size() <= 1000;

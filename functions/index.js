@@ -118,6 +118,35 @@ exports.onBookingCust = onDocumentUpdated('bookings/{id}', async ev => {
   }
 });
 
+// Account deletion (Play Store / App Store rule). Customers: deleted at once — profile, login, contact details
+// and chats go; trip and money records stay for accounts/tax but without the name or phone number.
+// Drivers: a request for the office (wallet money and documents need a person to settle first).
+exports.deleteMyAccount = onCall(async req => {
+  const uid = req.auth && req.auth.uid, ph = req.auth && req.auth.token.phone_number;
+  if (!uid) throw new HttpsError('unauthenticated', 'login first');
+  if (ph && (await db.doc(`drivers/${ph}`).get()).exists) {
+    await db.doc(`deletionRequests/${ph}`).set({ kind: 'driver', phone: ph, uid, status: 'pending', at: FV.serverTimestamp() }, { merge: true });
+    return { queued: true };
+  }
+  const bs = await db.collection('bookings').where('customerUid', '==', uid).get();
+  if (bs.docs.some(d => ['searching', 'assigned', 'ontrip', 'scheduled'].includes(d.data().status))) return { ok: false, why: 'active' };
+  let n = 0;
+  for (const d of bs.docs) {
+    const chats = await d.ref.collection('chat').get(), priv = await d.ref.collection('private').get();
+    const batch = db.batch();
+    batch.update(d.ref, { custName: 'Deleted user', custPhone: FV.delete(), rider: null, custDeleted: true });
+    chats.docs.forEach(c => batch.delete(c.ref));
+    priv.docs.filter(x => x.id === 'contact').forEach(x => batch.delete(x.ref));
+    await batch.commit(); n++;
+  }
+  await db.doc(`users/${uid}`).delete().catch(() => {});
+  await db.doc(`limits/${uid}`).delete().catch(() => {});
+  await db.collection('deletions').add({ kind: 'customer', bookings: n, at: FV.serverTimestamp() });   // audit: no name or number
+  await admin.auth().deleteUser(uid).catch(e => logger.warn('auth delete', { code: e.code }));
+  logger.info('customer account deleted', { bookings: n });
+  return { ok: true, bookings: n };
+});
+
 exports.verifyPin = onCall(async req => {
   const ph = req.auth && req.auth.token.phone_number, { bookingId, pin } = req.data || {};
   if (!ph || !bookingId || !/^\d{4}$/.test(String(pin))) throw new HttpsError('invalid-argument', 'bad request');

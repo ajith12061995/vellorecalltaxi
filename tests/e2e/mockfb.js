@@ -60,6 +60,11 @@
       async pushToken(v,sw,sc){if(!v)return null;(window.__pushReg=window.__pushReg||[]).push(sw+'|'+sc);return 'tok-'+(user&&user.uid||'x')},
       // same decisions as functions/index.js verifyPin
       async call(name,data){if(window.MOCK&&MOCK.down)throw{code:'functions/unavailable'};if(window.MOCK&&MOCK.fnDown)throw{code:'functions/internal'};
+        if(name==='deleteMyAccount'){if(!user)throw{code:'functions/unauthenticated'};const ph=user.phoneNumber;
+          if(ph&&store.get('drivers/'+ph)){store.set('deletionRequests/'+ph,{kind:'driver',phone:ph,uid:user.uid,status:'pending'});return{queued:true}}
+          const mine=[...store.keys()].filter(k=>/^bookings\/[^/]+$/.test(k)&&store.get(k).customerUid===user.uid);
+          if(mine.some(k=>['searching','assigned','ontrip','scheduled'].includes(store.get(k).status)))return{ok:false,why:'active'};
+          mine.forEach(k=>{const b=store.get(k);delete b.custPhone;b.custName='Deleted user';b.custDeleted=true;store.set(k,b)});store.delete('users/'+user.uid);(window.__deleted=window.__deleted||[]).push(user.uid);return{ok:true,bookings:mine.length}}
         if(name!=='verifyPin')throw{code:'functions/not-found'};
         const ph=user&&user.phoneNumber,{bookingId,pin}=data||{};if(!ph||!bookingId||!/^\d{4}$/.test(String(pin)))throw{code:'functions/invalid-argument'};
         const b=store.get('bookings/'+bookingId);if(!b||b.driverPhone!==ph)throw{code:'functions/permission-denied'};
