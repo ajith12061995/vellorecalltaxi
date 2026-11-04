@@ -8,6 +8,7 @@
    - onBookingCreated: flags app bookings whose fare is far below the office price list; push to nearby drivers
                        (only drivers who allowed notifications; needs config/app.push.vapid).
    - verifyPin       : callable; checks the ride PIN on the server (strongest check).
+   - purgeDriver     : callable, owner only; removes a driver completely (backup copy kept 30 days).
    - dailyBackup     : 02:30 IST export of the whole database to the bucket in BACKUP_BUCKET. */
 const { onDocumentUpdated, onDocumentCreated } = require('firebase-functions/v2/firestore');
 const { onSchedule } = require('firebase-functions/v2/scheduler');
@@ -52,6 +53,9 @@ exports.housekeeping = onSchedule({ schedule: 'every 2 minutes', timeZone: 'Asia
   const live = await db.collection('live').where('online', '==', true).get();
   live.forEach(d => { if (L.liveStale(d.data(), now)) { batch.update(d.ref, { online: false }); n++; } });
   if (n) await batch.commit();
+  // driver-removal backup copies are kept 30 days
+  const old = await db.collection('purgeBackups').where('at', '<', new Date(now - 30 * 864e5)).limit(5).get();
+  for (const r of old.docs) { await db.recursiveDelete(r.ref); n++; }
   logger.info('housekeeping', { changed: n });
 });
 
@@ -145,6 +149,49 @@ exports.deleteMyAccount = onCall(async req => {
   await admin.auth().deleteUser(uid).catch(e => logger.warn('auth delete', { code: e.code }));
   logger.info('customer account deleted', { bookings: n });
   return { ok: true, bookings: n };
+});
+
+// Owner only: remove a driver completely so they can join again from zero (profile, documents, agreement,
+// application, live position, trips they drove with chats, ledger, recharges, their own tickets, login).
+// Before anything is deleted every document is copied to purgeBackups/{run}/items (no app can read it; the
+// housekeeping job removes copies older than 30 days). Refused while the driver is on a ride; wallet money must be confirmed (force) first.
+exports.purgeDriver = onCall({ timeoutSeconds: 300 }, async req => {
+  const me = req.auth && req.auth.token.phone_number, { phone, confirm, force } = req.data || {};
+  if (!me) throw new HttpsError('unauthenticated', 'login first');
+  const st = (await db.doc(`staff/${me}`).get()).data();
+  if (!st || st.role !== 'owner') throw new HttpsError('permission-denied', 'owner only');
+  if (!/^\+91[6-9]\d{9}$/.test(String(phone || '')) || String(confirm) !== String(phone).slice(-4)) throw new HttpsError('invalid-argument', 'bad request');
+  const dref = db.doc(`drivers/${phone}`), drv = await dref.get(), app = await db.doc(`driverApps/${phone}`).get();
+  if (!drv.exists && !app.exists) return { ok: false, why: 'none' };
+  if (drv.exists && (+drv.data().wallet || 0) !== 0 && force !== true) return { ok: false, why: 'wallet', wallet: +drv.data().wallet };
+  const bks = await db.collection('bookings').where('driverPhone', '==', phone).get();
+  if (bks.docs.some(d => ['assigned', 'arrived', 'ontrip'].includes(d.data().status))) return { ok: false, why: 'active' };
+  let uid = null; try { uid = (await admin.auth().getUserByPhoneNumber(phone)).uid; } catch (e) { /* never logged in */ }
+  const refs = [dref, db.doc(`live/${phone}`), db.doc(`driverApps/${phone}`), db.doc(`deletionRequests/${phone}`)];
+  refs.push(...(await db.collection(`driverApps/${phone}/files`).get()).docs.map(d => d.ref));
+  for (const b of bks.docs) {
+    refs.push(b.ref);
+    for (const sub of ['chat', 'private']) refs.push(...(await b.ref.collection(sub).get()).docs.map(d => d.ref));
+  }
+  for (const [col, f, v] of [['ledger', 'driverPhone', phone], ['recharges', 'driverPhone', phone], ['tickets', 'uid', uid]])
+    if (v) refs.push(...(await db.collection(col).where(f, '==', v).get()).docs.map(d => d.ref));
+  // 1) backup copy first — nothing is deleted unless every copy was written
+  const run = db.collection('purgeBackups').doc(), snaps = (await db.getAll(...refs)).filter(s => s.exists);
+  await run.set({ phone, uid, by: me, count: snaps.length, at: FV.serverTimestamp() });
+  for (let i = 0; i < snaps.length; i += 20) {
+    const batch = db.batch();
+    snaps.slice(i, i + 20).forEach((s, j) => batch.set(run.collection('items').doc(String(i + j)), { path: s.ref.path, data: s.data() }));
+    await batch.commit();
+  }
+  // 2) delete (children before parents)
+  const order = snaps.map(s => s.ref).sort((a, b) => b.path.split('/').length - a.path.split('/').length);
+  for (let i = 0; i < order.length; i += 400) { const batch = db.batch(); order.slice(i, i + 400).forEach(r => batch.delete(r)); await batch.commit(); }
+  if (uid) await admin.auth().deleteUser(uid).catch(e => logger.warn('auth delete', { code: e.code }));
+  const count = k => snaps.filter(s => s.ref.parent.id === k && s.ref.path.split('/').length === 2).length;
+  const out = { ok: true, trips: count('bookings'), ledger: count('ledger'), recharges: count('recharges'), tickets: count('tickets'), docs: count('files'), total: snaps.length, backup: run.id };
+  await db.collection('deletions').add({ kind: 'driver-purge', last4: phone.slice(-4), by: me, ...out, at: FV.serverTimestamp() });
+  logger.info('driver purged', out);
+  return out;
 });
 
 exports.verifyPin = onCall(async req => {

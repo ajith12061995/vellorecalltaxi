@@ -147,3 +147,41 @@ test('deleteMyAccount: customer data removed, trips kept without name/number; re
   assert.equal((await call('deleteMyAccount', {}, dt)).result.queued, true);
   assert.equal((await db.doc(`deletionRequests/${DRV}`).get()).data().status, 'pending');
 });
+
+test('purgeDriver: owner only; refused on a ride / with wallet money; backup copy first; everything of that driver removed, others kept', async () => {
+  const OWN = '+919999900050', STF = '+919999900051', PD = '+919999900060', OTHER = '+919999900061';
+  await db.doc(`staff/${OWN}`).set({ name: 'Owner', role: 'owner' });
+  await db.doc(`staff/${STF}`).set({ name: 'Staff', role: 'staff' });
+  const dTok = await phoneToken(PD), dUid = JSON.parse(Buffer.from(dTok.split('.')[1], 'base64url').toString()).user_id;
+  await db.doc(`drivers/${PD}`).set({ name: 'Subbu', veh: 'auto', wallet: 0, consent: { v: '1', name: 'Subbu' } });
+  await db.doc(`live/${PD}`).set({ online: false });
+  await db.doc(`driverApps/${PD}`).set({ status: 'approved', files: ['dl'] });
+  await db.doc(`driverApps/${PD}/files/dl`).set({ data: 'data:image/jpeg;base64,xx' });
+  await db.doc('bookings/pd1').set(base({ driverPhone: PD, status: 'assigned' }));
+  await db.doc('bookings/pd1/chat/m1').set({ from: 'd', text: 'coming' });
+  await db.doc('bookings/pd2').set(base({ driverPhone: PD, status: 'done' }));
+  await db.doc('bookings/pd3').set(base({ driverPhone: OTHER, status: 'done' }));
+  await db.doc('ledger/pd2').set({ driverPhone: PD, comm: 19 });
+  await db.doc('ledger/pd3').set({ driverPhone: OTHER, comm: 19 });
+  await db.doc('recharges/r1').set({ driverPhone: PD, amt: 100, status: 'approved' });
+  await db.doc('tickets/t1').set({ uid: dUid, type: 'sos' });
+  await db.doc('tickets/t2').set({ uid: 'someone-else', type: 'complaint' });
+  const own = await phoneToken(OWN), stf = await phoneToken(STF);
+  assert.ok((await call('purgeDriver', { phone: PD, confirm: PD.slice(-4) }, stf)).error, 'staff cannot');
+  assert.ok((await call('purgeDriver', { phone: PD, confirm: '0000' }, own)).error, 'wrong confirm digits');
+  assert.equal((await call('purgeDriver', { phone: PD, confirm: PD.slice(-4) }, own)).result.why, 'active');
+  await db.doc('bookings/pd1').update({ status: 'cancelled' });
+  await db.doc(`drivers/${PD}`).update({ wallet: -40 });
+  const w = (await call('purgeDriver', { phone: PD, confirm: PD.slice(-4) }, own)).result;
+  assert.equal(w.why, 'wallet'); assert.equal(w.wallet, -40);
+  assert.ok((await db.doc(`drivers/${PD}`).get()).exists, 'nothing deleted when refused');
+  const r = (await call('purgeDriver', { phone: PD, confirm: PD.slice(-4), force: true }, own)).result;
+  assert.equal(r.ok, true); assert.equal(r.trips, 2); assert.equal(r.ledger, 1); assert.equal(r.recharges, 1); assert.equal(r.tickets, 1); assert.equal(r.docs, 1);
+  for (const p of [`drivers/${PD}`, `live/${PD}`, `driverApps/${PD}`, `driverApps/${PD}/files/dl`, 'bookings/pd1', 'bookings/pd1/chat/m1', 'bookings/pd2', 'ledger/pd2', 'recharges/r1', 'tickets/t1'])
+    assert.equal((await db.doc(p).get()).exists, false, p + ' removed');
+  for (const p of ['bookings/pd3', 'ledger/pd3', 'tickets/t2', `drivers/${DRV}`]) assert.ok((await db.doc(p).get()).exists, p + ' kept');
+  await assert.rejects(admin.auth().getUser(dUid));
+  const bk = await db.collection(`purgeBackups/${r.backup}/items`).get();
+  assert.equal(bk.size, r.total); assert.ok(bk.docs.some(d => d.data().path === `drivers/${PD}` && d.data().data.name === 'Subbu'), 'backup holds the driver');
+  assert.equal((await call('purgeDriver', { phone: PD, confirm: PD.slice(-4) }, own)).result.why, 'none');
+});

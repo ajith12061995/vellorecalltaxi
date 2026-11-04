@@ -29,7 +29,7 @@
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('../vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV=window.VCT_V='2026-11-04-59',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV=window.VCT_V='2026-11-04-60',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('../version.json',location.href)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -701,11 +701,11 @@ details.faq p{margin:0;padding:0 14px 14px;color:var(--muted);font-size:14px;lin
 <div class="app" id="app"></div>
 <div class="toast" id="toast"></div>
 
-<script src="../core/report.js?v=2026-11-04-59"></script>
-<script src="../core/geo.js?v=2026-11-04-59"></script>
-<script src="../core/fare.js?v=2026-11-04-59"></script>
-<script src="../core/driverchecks.js?v=2026-11-04-59"></script>
-<script src="../core/map.js?v=2026-11-04-59"></script>
+<script src="../core/report.js?v=2026-11-04-60"></script>
+<script src="../core/geo.js?v=2026-11-04-60"></script>
+<script src="../core/fare.js?v=2026-11-04-60"></script>
+<script src="../core/driverchecks.js?v=2026-11-04-60"></script>
+<script src="../core/map.js?v=2026-11-04-60"></script>
 <script>
 /* shared with the customer app: icons, places, fares, map engine */
 const I = {
@@ -1582,6 +1582,28 @@ function custDetail(c){if(!c)return;
       DB.cfg.blocked=arr;saveDB();close();customers()}});
 }
 
+/* owner: remove a driver completely (server function purgeDriver — backup copy kept 30 days, then gone) */
+function purgeDriverSheet(d,force){
+  const last4=String(d.id).slice(-4);
+  modal(`<h3 style="color:var(--danger)">🗑️ ${L('Driver-ஐ முழுசா நீக்கவா?','Remove driver completely?')}</h3>
+    <p style="margin:0"><b>${esc(d.ta||d.en||'')}</b> · ${esc(String(d.id).replace('+91',''))}</p>
+    <p class="muted" style="margin:0;font-size:13.5px">${L('நீக்கப்படுவது: profile, documents, agreement, application, அவர் ஓட்டின எல்லா trips + chat, commission கணக்கு, recharges, அவர் login. மொத்த வருமான கணக்கும் அதுக்கேத்த மாதிரி குறையும். அதே நம்பர்ல join link வழியா புதுசா சேரலாம்.','Removed: profile, documents, agreement, application, all trips he drove with chats, commission ledger, recharges and his login. Revenue totals drop accordingly. He can join again with the same number from the join link.')}</p>
+    <p class="muted" style="margin:0;font-size:12.5px">${L('பாதுகாப்புக்கு ஒரு backup copy 30 நாள் server-ல மட்டும் இருக்கும் (எந்த app-லயும் தெரியாது), அப்புறம் தானா அழிஞ்சிடும்.','For safety a backup copy stays on the server for 30 days (not visible in any app), then is erased automatically.')}</p>
+    ${force?`<div class="warn">⚠️ ${force<0?L(`இவர் office-க்கு ₹${-force} கொடுக்க வேண்டியது பாக்கி இருக்கு. நீக்கினா அந்த கணக்கும் போயிடும்.`,`He still owes the office ₹${-force}. Removing him clears that too.`):L(`Wallet-ல ₹${force} இருக்கு. அதையும் சேர்த்து நீக்கப்படும்.`,`Wallet has ₹${force}. It will be removed too.`)}</div>`:''}
+    <div class="field" style="height:50px"><input id="pc" inputmode="numeric" maxlength="4" placeholder="${L(`உறுதி செய்ய நம்பரின் கடைசி 4 இலக்கம் (${last4})`,`Type the last 4 digits to confirm (${last4})`)}"></div>
+    <small id="pe" class="neg"></small>
+    <button class="btn" id="py" style="background:var(--danger);color:#fff">${L('முழுசா நீக்கு','Remove completely')}</button>
+    <button class="btn ghost" id="pn">${L('வேண்டாம்','Cancel')}</button>`,(m,close)=>{
+    m.querySelector('#pn').onclick=close;
+    const y=m.querySelector('#py');y.onclick=async()=>{const c=m.querySelector('#pc').value.trim(),e=m.querySelector('#pe');
+      if(c!==last4){e.textContent=L('கடைசி 4 இலக்கம் சரியா இல்லை','Last 4 digits do not match');return}
+      y.disabled=true;y.textContent=L('நீக்குது…','Removing…');let r;
+      try{r=await CL.call('purgeDriver',{phone:d.id,confirm:c,force:!!force})}catch(er){y.disabled=false;y.textContent=L('மறுபடி முயற்சி','Try again');e.textContent=CL.errText(er,S.lang==='ta');return}
+      if(r&&r.ok){close();HIST.at=0;toast(L(`நீக்கியாச்சு: ${r.trips} trips, ${r.docs} documents`,`Removed: ${r.trips} trips, ${r.docs} documents`));setTimeout(drivers,600);return}
+      if(r&&r.why==='wallet'){close();purgeDriverSheet(d,r.wallet);return}
+      y.disabled=false;y.textContent=L('முழுசா நீக்கு','Remove completely');
+      e.textContent=r&&r.why==='active'?L('இவர் இப்போ ride-ல இருக்கார். Ride முடிஞ்சதும் நீக்குங்க.','He is on a ride now. Remove after it ends.'):r&&r.why==='none'?L('இந்த driver ஏற்கனவே நீக்கப்பட்டார்','Already removed'):L('முடியல, மறுபடி முயற்சி பண்ணுங்க','Could not remove, try again')}});
+}
 /* ---------- driver monitoring ---------- */
 function drvStats(d,hist){
   const mine=hist.filter(b=>b.driver===d.id),now=Date.now();
@@ -1615,8 +1637,10 @@ function driverDetail(d){
       <span class="kind">${L('Office குறிப்புகள்','Office notes')}</span>
       <div class="mlist">${notes.length?notes.slice().reverse().map(n=>`<div class="lrow"><div><b>${esc(n.text)}</b><small>${dt(n.t)} · ${esc(n.by||'')}</small></div></div>`).join(''):`<p class="muted" style="margin:0">${L('இன்னும் குறிப்பு இல்லை','No notes yet')}</p>`}</div>
       <div class="field" style="height:auto"><textarea id="dnote" rows="2" maxlength="200" placeholder="${L('உதா: 15/11 லேட்டா வந்தார், எச்சரிக்கை கொடுத்தாச்சு','e.g. Late on 15/11, warned')}" style="width:100%;border:0;background:none;font:inherit;padding:10px 0;resize:vertical;color:var(--fg)"></textarea></div>
-      <button class="btn" id="dns">${L('குறிப்பு சேர்','Add note')}</button>`,(m,close)=>{
+      <button class="btn" id="dns">${L('குறிப்பு சேர்','Add note')}</button>
+      ${S.role==='owner'&&CL?`<button class="btn ghost" id="dpurge" style="color:var(--danger);margin-top:14px">🗑️ ${L('இந்த driver-ஐ முழுசா நீக்கு','Remove this driver completely')}</button>`:''}`,(m,close)=>{
       m.querySelector('.card').classList.add('wide');
+      const pb=m.querySelector('#dpurge');if(pb)pb.onclick=()=>{close();purgeDriverSheet(d)};
       m.querySelector('#dupi').onclick=()=>{const v=(prompt(L('Driver UPI ID (உதா: name@okaxis)','Driver UPI ID (e.g. name@okaxis)'),raw.upi||'')||'').trim();if(!v&&v!=='')return;
         if(v&&!/^[\w.\-]{2,}@[a-zA-Z]{2,}$/.test(v)){toast(L('UPI ID சரியா இல்லை','That UPI ID looks wrong'));return}
         if(CL){cw(F().updateDoc(F().doc(CL.db,'drivers',d.id),{upi:v,updatedAt:ts()}).then(()=>{raw.upi=v;close();toast(L('UPI சேமிச்சாச்சு','UPI saved'));driverDetail(d)}));return}raw.upi=v;close();driverDetail(d)};

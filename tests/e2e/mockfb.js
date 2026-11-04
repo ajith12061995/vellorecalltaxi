@@ -65,6 +65,18 @@
           const mine=[...store.keys()].filter(k=>/^bookings\/[^/]+$/.test(k)&&store.get(k).customerUid===user.uid);
           if(mine.some(k=>['searching','assigned','ontrip','scheduled'].includes(store.get(k).status)))return{ok:false,why:'active'};
           mine.forEach(k=>{const b=store.get(k);delete b.custPhone;b.custName='Deleted user';b.custDeleted=true;store.set(k,b)});store.delete('users/'+user.uid);(window.__deleted=window.__deleted||[]).push(user.uid);return{ok:true,bookings:mine.length}}
+        // same decisions as functions/index.js purgeDriver (owner only; refused on a ride; wallet needs force; backup copy first)
+        if(name==='purgeDriver'){const me=user&&user.phoneNumber,st=me&&store.get('staff/'+me),{phone,confirm,force}=data||{};
+          if(!st||st.role!=='owner')throw{code:'functions/permission-denied'};if(!/^\+91[6-9]\d{9}$/.test(String(phone||''))||String(confirm)!==String(phone).slice(-4))throw{code:'functions/invalid-argument'};
+          const dr=store.get('drivers/'+phone);if(!dr&&!store.get('driverApps/'+phone))return{ok:false,why:'none'};
+          if(dr&&(+dr.wallet||0)!==0&&force!==true)return{ok:false,why:'wallet',wallet:+dr.wallet};
+          const bk=[...store.keys()].filter(k=>/^bookings\/[^/]+$/.test(k)&&store.get(k).driverPhone===phone);
+          if(bk.some(k=>['assigned','arrived','ontrip'].includes(store.get(k).status)))return{ok:false,why:'active'};
+          const keys=[...store.keys()].filter(k=>k==='drivers/'+phone||k==='live/'+phone||k.startsWith('driverApps/'+phone)||k==='deletionRequests/'+phone||bk.some(b=>k===b||k.startsWith(b+'/'))
+            ||(/^(ledger|recharges)\/[^/]+$/.test(k)&&store.get(k).driverPhone===phone));
+          window.__purgeBackup=keys.map(k=>({path:k,data:JSON.parse(JSON.stringify(store.get(k)))}));
+          const n=c=>keys.filter(k=>k.split('/')[0]===c&&k.split('/').length===2).length,out={ok:true,trips:n('bookings'),ledger:n('ledger'),recharges:n('recharges'),docs:keys.filter(k=>k.startsWith('driverApps/'+phone+'/files/')).length,total:keys.length,backup:'b1'};
+          keys.forEach(k=>store.delete(k));notify();return out}
         if(name!=='verifyPin')throw{code:'functions/not-found'};
         const ph=user&&user.phoneNumber,{bookingId,pin}=data||{};if(!ph||!bookingId||!/^\d{4}$/.test(String(pin)))throw{code:'functions/invalid-argument'};
         const b=store.get('bookings/'+bookingId);if(!b||b.driverPhone!==ph)throw{code:'functions/permission-denied'};
