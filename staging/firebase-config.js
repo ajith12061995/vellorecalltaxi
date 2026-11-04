@@ -23,5 +23,5 @@ export const firebaseConfig = isStaging ? STAGING : PRODUCTION;
 // App Check (blocks programs that are not our apps from using the database / functions).
 // reCAPTCHA Enterprise SITE key — public by design (it is visible in every page), NOT a secret.
 // Empty = App Check off. Staging stays off (localhost / staging addresses are not on the key's domain list).
-const APPCHECK_PRODUCTION = '';
+const APPCHECK_PRODUCTION = '6LdZ3w8uAAAAAIhLj74FTMvVzj62cpgNkQRNsn7r';
 export const APPCHECK_SITE_KEY = isStaging ? '' : APPCHECK_PRODUCTION;
