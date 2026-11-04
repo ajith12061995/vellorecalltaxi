@@ -77,14 +77,13 @@ test('fare check: a faked short distance is replaced by the straight line × 1.2
   const crow = L.crowKm(A, Bp); assert.ok(crow > 6 && crow < 7.5, crow);
   assert.ok(Math.abs(r.km - Math.round(crow * 12) / 10) < 0.11, r.km); assert.ok(r.fare > 230, r.fare);
 });
-test('fare check: night charge only when it applied now and 15 min ago; never for rental / outstation / phone', () => {
+test('fare check: night charge only when it applied now and 15 min ago; never for phone bookings', () => {
   const c = { ...CFGF, night: { on: true, from: '22:00', to: '05:00', pct: 25 } };
   const n23 = Date.UTC(2026, 10, 4, 17, 30), n2205 = Date.UTC(2026, 10, 4, 16, 35);  // 23:00 and 22:05 IST
   assert.equal(L.fareCheck(ride({ km: 9.5, fare: 280 }), c, n23).fare, 350);         // 130 + 19 × 8 = 282 → ₹280; × 1.25 = ₹350
   assert.equal(L.fareCheck(ride({ km: 9.5, fare: 280 }), c, n2205), null, 'just after 22:00 the quote may be from 21:55');
-  assert.equal(L.fareCheck(ride({ km: 9.5, fare: 10, tariff: { t: 'rent' } }), c, n23), null);
+  assert.equal(L.fareCheck(ride({ km: 9.5, fare: 10, tariff: { t: 'rent' } }), c, n23), null, 'rental without a known package: left to the office');
   assert.equal(L.fareCheck(ride({ km: 9.5, fare: 10, src: 'phone' }), c, n23), null);
-  assert.equal(L.fareCheck(ride({ km: 9.5, fare: 10, kind: 'outstation' }), c, n23), null);
   const s = L.fareCheck(ride({ kind: 'schedule', when: n23, km: 9.5, fare: 280 }), c, day);
   assert.equal(s.night, 25, 'scheduled ride uses its pickup time');
 });
@@ -105,4 +104,55 @@ test('commission never below the booked fare (a lowered final bill from a modifi
 test('backup folder name uses the Indian date and time (02:30 IST is still today)', () => {
   assert.equal(L.istStamp(Date.UTC(2026, 10, 3, 21, 0)), '2026-11-04_0230');
   assert.equal(L.istStamp(Date.UTC(2026, 10, 4, 6, 15)), '2026-11-04_1145');
+});
+
+// ---- rental + outstation server check (same tables as the customer app)
+const rent = o => ({ src: 'app', kind: 'rental', veh: 'sedan', from: A, to: { lat: null, lon: null }, ...o });
+test('rental: honest package price untouched; lowered price / cheaper extra rates corrected; owner prices win', () => {
+  const ok = { fare: 1149, km: 40, hrs: 4, tariff: { t: 'rent', h: 4, km: 40, price: 1149, xkm: 13, xhr: 170 } };
+  assert.equal(L.fareCheck(rent(ok), {}, day), null);
+  const r = L.fareCheck(rent({ ...ok, fare: 99, tariff: { ...ok.tariff, price: 99 } }), {}, day);
+  assert.equal(r.fare, 1149); assert.equal(r.tariff.price, 1149); assert.equal(r.was, 99);
+  const x = L.fareCheck(rent({ ...ok, tariff: { ...ok.tariff, xkm: 1, xhr: 1 } }), {}, day);
+  assert.equal(x.fare, 1149, 'fare fine, not changed'); assert.equal(x.tariff.xkm, 13); assert.equal(x.tariff.xhr, 170);
+  assert.equal(L.fareCheck(rent({ ...ok, tariff: { ...ok.tariff, km: 400 } }), {}, day).tariff.km, 40, 'package km cannot be raised');
+  assert.equal(L.fareCheck(rent({ ...ok, fare: 1149 }), { rent: { price: { sedan: [400, 700, 1500, 2500, 3500] } } }, day).fare, 1500);
+  assert.equal(L.fareCheck(rent({ fare: 10, tariff: { t: 'rent', h: 3, km: 30, price: 10 } }), {}, day).fare, 899, '3 hr between 2 and 4: 649→1149 → ₹899');
+  assert.equal(L.rentPrice(L.tariffs({}).RENT, 'auto', 8), null, 'auto has no 8-hour package');
+});
+const VLR = { lat: 12.9165, lon: 79.1325 }, CHN = { lat: 13.0827, lon: 80.2707 };      // Vellore → Chennai ~125 km straight, ~140 km road
+const out = o => ({ src: 'app', kind: 'outstation', veh: 'sedan', from: VLR, to: CHN, ...o });
+test('outstation one way: honest quote untouched; lowered fare, short km or cheap rate corrected', () => {
+  const tar = { t: 'out', otype: 'one', km: 140, days: 1, rate: 12, bata: 300, min1: 80, mind: 250, daykm: 400, longKm: 400, longPct: 0 };
+  const fare = Math.round((140 * 12 + 300) / 10) * 10;                                  // ₹1980
+  assert.equal(L.fareCheck(out({ fare, km: 140, otype: 'one', tariff: tar }), {}, day), null);
+  const a = L.fareCheck(out({ fare: 500, km: 140, otype: 'one', tariff: tar }), {}, day);
+  assert.equal(a.fare, 1980); assert.equal(a.was, 500);
+  const b = L.fareCheck(out({ fare: 600, km: 20, otype: 'one', tariff: { ...tar, km: 20 } }), {}, day);
+  const crow = L.crowKm(VLR, CHN); assert.ok(crow > 120 && crow < 135, crow);
+  assert.equal(b.tariff.km, Math.round(crow * 1.1)); assert.ok(b.fare >= Math.round(crow * 1.1) * 12, b.fare);
+  const c = L.fareCheck(out({ fare, km: 140, otype: 'one', tariff: { ...tar, rate: 1 } }), {}, day);
+  assert.equal(c.tariff.rate, 12, 'extra-km rate restored'); assert.equal(c.fare, fare, 'fare itself was right');
+  assert.equal(L.fareCheck(out({ fare: 1500, km: 140, otype: 'one', tariff: tar }), { out: { rate1: { sedan: 14 } } }, day).fare, Math.round((140 * 14 + 300) / 10) * 10);
+});
+test('outstation round trip: days from the Indian calendar dates; minimum km per day', () => {
+  const leave = Date.UTC(2026, 10, 5, 2, 30), back = Date.UTC(2026, 10, 6, 12, 30);    // 5 Nov 08:00 → 6 Nov 18:00 IST = 2 days
+  const tar = { t: 'out', otype: 'round', km: 140, days: 2, rate: 12, bata: 300, min1: 80, mind: 250, daykm: 400, longKm: 400, longPct: 0 };
+  const fare = Math.round((Math.max(280, 500) * 12 + 600) / 10) * 10;                  // 500 km min × ₹12 + ₹600 = ₹6600
+  assert.equal(L.fareCheck(out({ fare, km: 500, otype: 'round', when: leave, retAt: back, tariff: tar }), {}, day), null);
+  const r = L.fareCheck(out({ fare: 2000, km: 280, otype: 'round', when: leave, retAt: back, tariff: { ...tar, days: 1 } }), {}, day);
+  assert.equal(r.fare, 6600); assert.equal(r.tariff.days, 2); assert.equal(r.km, 500);
+  assert.equal(L.fareCheck(out({ fare: 10, veh: 'auto', otype: 'one', tariff: { ...tar, otype: 'one' } }), {}, day), null, 'no outstation price for auto: office decides');
+});
+test('rental/outstation tables match the customer app (index.html)', () => {
+  const fs = require('fs'), src = fs.readFileSync(require('path').join(__dirname, '../../index.html'), 'utf8');
+  const grab = re => { const m = re.exec(src); assert.ok(m, re); return Function('return ' + m[1])(); };
+  const T = L.tariffs({});
+  assert.deepEqual(grab(/const RENT=(\{[^;]*\});/), T.RENT);
+  assert.deepEqual(grab(/const XKM=(\{[^}]*\})/), T.XKM); assert.deepEqual(grab(/XHR=(\{[^}]*\});/), T.XHR);
+  assert.deepEqual(grab(/const ORATE1=(\{[^}]*\})/), T.R1); assert.deepEqual(grab(/OBATA1=(\{[^}]*\});/), T.B1);
+  assert.deepEqual(grab(/const ORATE=(\{[^}]*\})/), T.R); assert.deepEqual(grab(/,OBATA=(\{[^}]*\});/), T.B);
+  assert.deepEqual(grab(/const RANCH=(\[[^\]]*\]);/), [1, 2, 4, 8, 12]);
+  assert.deepEqual(grab(/const PKG=(\[[^\]]*\]);/).map(p => p.h), [1, 2, 3, 4, 5, 6, 8, 10, 12]);
+  assert.match(src, /let OMIN1=80,OMIND=250,OLONGKM=400,OLONGPCT=0;/); assert.match(src, /let ODAYKM=400;/);
 });

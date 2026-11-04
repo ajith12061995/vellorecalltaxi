@@ -80,6 +80,24 @@ test('server fare check: a lowered app fare is corrected to the price list; a ri
   assert.equal(f3.fareFlag, 'corrected'); assert.ok(f3.km > 7.5 && f3.fare > 150, JSON.stringify([f3.km, f3.fare]));
 });
 
+test('server fare check: rental and outstation app bookings — lowered fare corrected, cheap extra rates fixed, honest left alone', async () => {
+  await db.doc('bookings/rt1').set(base({ customerUid: 'u-rt1', kind: 'rental', status: 'searching', km: 40, hrs: 4, fare: 99, tariff: { t: 'rent', h: 4, km: 40, price: 99, xkm: 13, xhr: 170 } }));
+  await db.doc('bookings/rt2').set(base({ customerUid: 'u-rt2', kind: 'rental', status: 'searching', km: 40, hrs: 4, fare: 1149, tariff: { t: 'rent', h: 4, km: 40, price: 1149, xkm: 1, xhr: 1 } }));
+  const tar = { t: 'out', otype: 'one', km: 140, days: 1, rate: 12, bata: 300, min1: 80, mind: 250, daykm: 400, longKm: 400, longPct: 0 };
+  const VC = { from: { lat: 12.9165, lon: 79.1325 }, to: { lat: 13.0827, lon: 80.2707 } };
+  await db.doc('bookings/ot1').set(base({ customerUid: 'u-ot1', kind: 'outstation', otype: 'one', status: 'searching', km: 140, fare: 300, tariff: tar, ...VC }));
+  await db.doc('bookings/ot2').set(base({ customerUid: 'u-ot2', kind: 'outstation', otype: 'one', status: 'searching', km: 140, fare: 1980, tariff: tar, ...VC }));
+  const r1 = await waitFor(async () => { const d = (await db.doc('bookings/rt1').get()).data(); return d.fareFlag ? d : null; });
+  assert.equal(r1.fareFlag, 'corrected'); assert.equal(r1.fare, 1149); assert.equal(r1.tariff.price, 1149); assert.equal(r1.fareWas, 99);
+  const r2 = await waitFor(async () => { const d = (await db.doc('bookings/rt2').get()).data(); return d.tariffFixed ? d : null; });
+  assert.equal(r2.fare, 1149); assert.equal(r2.fareFlag, undefined); assert.equal(r2.tariff.xkm, 13); assert.equal(r2.tariff.xhr, 170);
+  const o1 = await waitFor(async () => { const d = (await db.doc('bookings/ot1').get()).data(); return d.fareFlag ? d : null; });
+  assert.equal(o1.fare, 1980); assert.equal(o1.tariff.rate, 12);
+  await sleep(1500);
+  const o2 = (await db.doc('bookings/ot2').get()).data();
+  assert.equal(o2.fareFlag, undefined); assert.equal(o2.tariffFixed, undefined); assert.equal(o2.fare, 1980);
+});
+
 test('booking limits: a 4th open booking from the same customer is cancelled by the server', async () => {
   for (const id of ['l1', 'l2', 'l3']) await db.doc(`bookings/${id}`).set(base({ customerUid: 'u-spam', status: 'searching', km: 3, fare: 100 }));
   assert.ok(await waitFor(async () => ((await db.doc('limits/u-spam').get()).data() || { open: [] }).open.length === 3), 'three counted');

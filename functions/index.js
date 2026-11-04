@@ -5,7 +5,7 @@
    - housekeeping    : every 2 minutes — sends scheduled local rides to drivers 30 min before pickup,
                        closes local searches nobody took for 15 min, marks drivers whose app went quiet as offline.
                        Set config/app.serverOps = true so office screens stop doing the same.
-   - onBookingCreated: flags app bookings whose fare is far below the office price list; push to nearby drivers
+   - onBookingCreated: corrects app fares below the price list (city rides, rentals, outstation); push to nearby drivers
                        (only drivers who allowed notifications; needs config/app.push.vapid).
    - verifyPin       : callable; checks the ride PIN on the server (strongest check).
    - purgeDriver     : callable, owner only; removes a driver completely (backup copy kept 30 days).
@@ -81,9 +81,10 @@ exports.onBookingCreated = onDocumentCreated('bookings/{id}', async ev => {
   // 2) server fare check: a fare below the price list is corrected (never raised above it)
   const fx = L.fareCheck(b, c, now);
   if (fx) {
-    const tariff = { ...(b.tariff || { t: 'local' }) };
-    if (fx.night) { tariff.night = fx.night; tariff.nightAmt = fx.nightAmt; } else { delete tariff.night; delete tariff.nightAmt; }
-    await ref.update({ fare: fx.fare, km: fx.km, tariff, fareFlag: 'corrected', fareWas: fx.was, kmWas: fx.wasKm, updatedAt: FV.serverTimestamp() });
+    const tariff = fx.tariff || { ...(b.tariff || { t: 'local' }) };
+    if (!fx.tariff) { if (fx.night) { tariff.night = fx.night; tariff.nightAmt = fx.nightAmt; } else { delete tariff.night; delete tariff.nightAmt; } }
+    if (fx.fare !== fx.was) await ref.update({ fare: fx.fare, km: fx.km, tariff, fareFlag: 'corrected', fareWas: fx.was, kmWas: fx.wasKm, updatedAt: FV.serverTimestamp() });
+    else await ref.update({ tariff, tariffFixed: true, updatedAt: FV.serverTimestamp() });   // fare fine, extra-km/hour prices were too low
     b.fare = fx.fare;
     logger.warn('fare corrected', { id, was: fx.was, now: fx.fare, km: fx.km, wasKm: fx.wasKm });
   } else if (L.fareLooksWrong(b, c.fares)) await ref.update({ fareFlag: 'below-price-list' });

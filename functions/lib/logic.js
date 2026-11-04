@@ -78,7 +78,10 @@ const crowKm = (a, b) => { if (!a || !b || !isFinite(a.lat) || !isFinite(a.lon) 
 //  - the night charge counts only when it applies now AND 15 minutes ago (a quote can be a few minutes old)
 //  - ₹5 is allowed for rounding; a fare at or above the price is never changed (never over-charges)
 function fareCheck(b, c, now) {
-  if (!b || b.src !== 'app' || (b.kind && b.kind !== 'ride' && b.kind !== 'schedule')) return null;
+  if (!b || b.src !== 'app') return null;
+  if (b.kind === 'rental' || (b.tariff && b.tariff.t === 'rent')) return rentCheck(b, c);
+  if (b.kind === 'outstation' || (b.tariff && b.tariff.t === 'out')) return outCheck(b, c);
+  if (b.kind && b.kind !== 'ride' && b.kind !== 'schedule') return null;
   if (b.tariff && b.tariff.t && b.tariff.t !== 'local') return null;
   const f = c && c.fares && c.fares[b.veh]; if (!f || !(n(f.base) > 0)) return null;
   const minKm = crowKm(b.from, b.to) * 1.2, km = Math.max(n(b.km), minKm);
@@ -88,6 +91,82 @@ function fareCheck(b, c, now) {
   const want = withNight(base, np);
   if (n(b.fare) >= want - 5) return null;
   return { fare: want, km: Math.round(km * 10) / 10, was: n(b.fare), wasKm: n(b.km), night: np, nightAmt: want - base };
+}
+
+// ---- server check for app RENTAL and OUTSTATION bookings. Same price tables and rules as the customer app
+// (index.html RENT/XKM/XHR/ORATE…/rentPrice/oDays/oQuote + applyTariff; tests/unit/fare.test.js keeps them in step).
+// The owner's prices in config/app.rent / config/app.out win over these defaults, exactly like the app.
+const RANCH = [1, 2, 4, 8, 12], PKG_H = [1, 2, 3, 4, 5, 6, 8, 10, 12];
+const RENT0 = { auto: [199, 379, null, null, null], mini: [299, 549, 999, 1799, 2599], sedan: [349, 649, 1149, 2099, 2999], suv: [499, 899, 1599, 2799, 3999], psuv: [699, 1199, 2099, 3599, 4999], trav: [null, null, 2499, 3999, 5499] };
+const XKM0 = { auto: 14, mini: 12, sedan: 13, suv: 17, psuv: 21, trav: 24 }, XHR0 = { auto: 120, mini: 150, sedan: 170, suv: 230, psuv: 290, trav: 350 };
+const ORATE0 = { mini: 11, sedan: 12, suv: 16, psuv: 20, trav: 22 }, OBATA0 = { mini: 300, sedan: 300, suv: 350, psuv: 400, trav: 500 };
+const OUT0 = { min1: 80, mind: 250, daykm: 400, longKm: 400, longPct: 0 };
+function tariffs(c) {            // = applyTariff() in the customer app
+  const RENT = JSON.parse(JSON.stringify(RENT0)), XKM = { ...XKM0 }, XHR = { ...XHR0 };
+  const R1 = { ...ORATE0 }, B1 = { ...OBATA0 }, R = { ...ORATE0 }, B = { ...OBATA0 }, O = { ...OUT0 };
+  const o = c && c.out;
+  if (o) {
+    Object.keys(R).forEach(id => {
+      R1[id] = +((o.rate1 && o.rate1[id] > 0) ? o.rate1[id] : (o.rate && o.rate[id] > 0 ? o.rate[id] : R1[id]));
+      B1[id] = +((o.bata1 && o.bata1[id] != null) ? o.bata1[id] : (o.bata && o.bata[id] != null ? o.bata[id] : B1[id]));
+      if (o.rate && o.rate[id] > 0) R[id] = +o.rate[id];
+      if (o.bata && o.bata[id] != null) B[id] = +o.bata[id];
+    });
+    if (o.min1 != null) O.min1 = +o.min1; if (o.mind != null) O.mind = +o.mind; if (o.daykm >= 100) O.daykm = +o.daykm;
+    if (o.longKm != null) O.longKm = +o.longKm; if (o.longPct != null) O.longPct = +o.longPct;
+  }
+  const r = c && c.rent;
+  if (r) Object.keys(RENT).forEach(id => {
+    if (r.price && Array.isArray(r.price[id])) RENT[id] = r.price[id].map(x => +x > 0 ? +x : null);
+    if (r.xkm && r.xkm[id] != null) XKM[id] = +r.xkm[id];
+    if (r.xhr && r.xhr[id] != null) XHR[id] = +r.xhr[id];
+  });
+  return { RENT, XKM, XHR, R1, B1, R, B, O };
+}
+function rentPrice(RENT, id, h) {  // = rentPrice() in the customer app
+  const row = RENT[id]; if (!row) return null;
+  const pts = RANCH.map((x, i) => [x, row[i]]).filter(x => x[1] != null);
+  if (!pts.length || h < pts[0][0] || h > pts[pts.length - 1][0]) return null;
+  for (let i = 0; i < pts.length; i++) {
+    if (pts[i][0] === h) return pts[i][1];
+    if (pts[i][0] > h) { const [a, pa] = pts[i - 1], [b, pb] = pts[i]; return Math.round((pa + (pb - pa) * (h - a) / (b - a)) / 50) * 50 - 1; }
+  }
+  return null;
+}
+const istDay = ms => Math.floor((+ms + 19800000) / 864e5);    // Indian calendar day number
+// Returns null when fine, else {fare, km, was, wasKm, tariff} (the corrected booking fields).
+function rentCheck(b, c) {
+  const t = b.tariff || {}, T = tariffs(c), id = b.veh, h = n(t.h);
+  if (!PKG_H.includes(h)) return null;                         // unknown package: the office sees it anyway
+  const want = rentPrice(T.RENT, id, h); if (!want) return null;
+  const xkm = Math.max(n(t.xkm), n(T.XKM[id])), xhr = Math.max(n(t.xhr), n(T.XHR[id]));
+  const low = n(b.fare) < want - 5, tlow = n(t.km) !== h * 10 || n(t.xkm) < n(T.XKM[id]) || n(t.xhr) < n(T.XHR[id]) || n(t.price) < want - 5;
+  if (!low && !tlow) return null;
+  const fare = low ? want : n(b.fare);
+  return { fare, km: h * 10, was: n(b.fare), wasKm: n(b.km), tariff: { ...t, t: 'rent', h, km: h * 10, price: Math.max(n(t.price), want), xkm, xhr } };
+}
+function outCheck(b, c) {
+  const t = b.tariff || {}, T = tariffs(c), id = b.veh, one = (t.otype || b.otype) !== 'round';
+  const rate = (one ? T.R1 : T.R)[id], bata = (one ? T.B1 : T.B)[id];
+  if (!(rate > 0) || bata == null) return null;
+  const O = T.O, crow = crowKm(b.from, b.to);
+  const km = Math.round(Math.max(n(t.km), crow * 1.1));        // one-way road km; highways run only ~1.12 × the straight line
+  if (!km) return null;
+  let days;
+  if (one) days = Math.max(1, Math.ceil(km / O.daykm));
+  else {
+    const leave = n(b.when), back = n(b.retAt) || leave;
+    days = Math.max((leave ? istDay(back) - istDay(leave) + 1 : 1), Math.ceil(2 * km / O.daykm), 1);
+  }
+  const billed = one ? Math.max(km, O.min1) : Math.max(km * 2, O.mind * days);
+  const extra = one && O.longPct > 0 && km > O.longKm ? Math.round((km - O.longKm) * rate * O.longPct / 100) : 0;
+  const want = Math.round((billed * rate + bata * days + extra) / 10) * 10;
+  const tar = { ...t, t: 'out', otype: one ? 'one' : 'round', km, days, rate, bata, min1: O.min1, mind: O.mind, daykm: O.daykm, longKm: O.longKm, longPct: O.longPct };
+  const low = n(b.fare) < want - 10;
+  const tlow = n(t.km) < km || n(t.days) < days || n(t.rate) < rate || n(t.bata) < bata || n(t.min1) < O.min1 || n(t.mind) < O.mind
+    || (t.daykm != null && n(t.daykm) > O.daykm) || n(t.longPct) < O.longPct;
+  if (!low && !tlow) return null;
+  return { fare: low ? want : n(b.fare), km: low ? billed : n(b.km), was: n(b.fare), wasKm: n(b.km), tariff: tar };
 }
 
 // ---- booking limits per app customer: at most 3 open rides at once and 8 new bookings an hour
@@ -103,4 +182,4 @@ function bookingLimit(lim, openNow, now) {
 // '2026-11-04_0230' — Indian date and time, for backup folder names
 const istStamp = ms => new Date(ms + 19800000).toISOString().slice(0, 16).replace('T', '_').replace(':', '');
 
-module.exports = { istStamp, commissionFor, settle, housekeeping, fareLooksWrong, liveStale, custPush, fareCheck, bookingLimit, nightPct, withNight, crowKm, LIMIT_OPEN, LIMIT_HOUR };
+module.exports = { rentCheck, outCheck, tariffs, rentPrice, istStamp, commissionFor, settle, housekeeping, fareLooksWrong, liveStale, custPush, fareCheck, bookingLimit, nightPct, withNight, crowKm, LIMIT_OPEN, LIMIT_HOUR };

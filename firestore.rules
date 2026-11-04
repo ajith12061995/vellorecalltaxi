@@ -86,7 +86,7 @@ service cloud.firestore {
             && num(newData().fare, 1, 200000)
             && (!('tip' in newData()) || num(newData().tip, 0, 300))
             && !newData().keys().hasAny(['driverPhone', 'driverName', 'assignedAt', 'startedAt', 'doneAt', 'fareFinal', 'fx', 'comm', 'commLocal', 'pinOk', 'ledgerAt',
-                                             'fareFlag', 'fareWas', 'kmWas', 'limitWhy', 'cancelledBy', 'dispatchedBy']));
+                                             'fareFlag', 'fareWas', 'kmWas', 'limitWhy', 'cancelledBy', 'dispatchedBy', 'tariffFixed']));
 
       allow update: if isStaff()
         // customer: cancel (before the trip starts), rate, tip, switch payment, confirm the PIN the driver typed
