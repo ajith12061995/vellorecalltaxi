@@ -9,10 +9,28 @@ import {
   getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager, doc, getDoc, getDocs, setDoc, updateDoc, addDoc, deleteDoc,
   collection, query, where, orderBy, limit, onSnapshot, serverTimestamp, increment, runTransaction, writeBatch,
 } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
-import { firebaseConfig, VCT_ENV } from './firebase-config.js';
+import { firebaseConfig, VCT_ENV, APPCHECK_SITE_KEY } from './firebase-config.js';
 
 if (!firebaseConfig) throw new Error('no Firebase config for ' + VCT_ENV + ' (see firebase-config.js)');
 const app = initializeApp(firebaseConfig);
+// TEST copy (velloretaxi.app/staging/, separate Firebase project): a red banner so nobody mistakes it for the real app
+if (VCT_ENV === 'staging' && typeof document !== 'undefined') {
+  const show = () => { if (document.getElementById('vct-testbar')) return; const b = document.createElement('div'); b.id = 'vct-testbar';
+    b.textContent = 'TEST · சோதனை — real bookings are NOT made here';
+    b.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:2147483647;background:#C23B3B;color:#fff;font:700 11px/18px system-ui,sans-serif;text-align:center;pointer-events:none;opacity:.92';
+    document.body.appendChild(b); };
+  if (document.body) show(); else addEventListener('DOMContentLoaded', show);
+}
+// App Check first, so every database / function call carries the proof that it comes from our site.
+// Loaded only when a site key is set; a failure here never stops the app (the server decides what to enforce).
+let appCheckOn = false;
+if (APPCHECK_SITE_KEY) {
+  try {
+    const ac = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-app-check.js');
+    ac.initializeAppCheck(app, { provider: new ac.ReCaptchaEnterpriseProvider(APPCHECK_SITE_KEY), isTokenAutoRefreshEnabled: true });
+    appCheckOn = true;
+  } catch (e) { console.warn('app check', e); }
+}
 const auth = getAuth(app);
 auth.languageCode = 'ta';
 // Offline cache: a trip closed or a request written with no signal is kept on the phone and sent when the
@@ -35,6 +53,7 @@ const toMs = (v) => (v && typeof v.toMillis === 'function') ? v.toMillis() : (ty
 const api = {
   live: true,
   env: VCT_ENV,
+  appCheck: () => appCheckOn,
   // web push for the driver app (loaded only when used). Returns the device token or null.
   async pushToken(vapidKey, swUrl, scope) {
     try {

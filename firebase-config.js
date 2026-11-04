@@ -19,3 +19,9 @@ const STAGING = null; // e.g. { apiKey: "...", authDomain: "vellore-taxi-staging
 const isStaging = /staging/i.test(location.href) || /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
 export const VCT_ENV = isStaging ? 'staging' : 'production';
 export const firebaseConfig = isStaging ? STAGING : PRODUCTION;
+
+// App Check (blocks programs that are not our apps from using the database / functions).
+// reCAPTCHA Enterprise SITE key — public by design (it is visible in every page), NOT a secret.
+// Empty = App Check off. Staging stays off (localhost / staging addresses are not on the key's domain list).
+const APPCHECK_PRODUCTION = '';
+export const APPCHECK_SITE_KEY = isStaging ? '' : APPCHECK_PRODUCTION;

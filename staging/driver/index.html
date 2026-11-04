@@ -1,0 +1,1665 @@
+<!doctype html>
+<html lang="ta">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0B4A36">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="robots" content="noindex">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" type="image/png" href="./icon-192.png?v=8">
+<link rel="apple-touch-icon" href="./apple-touch-icon.png?v=8">
+<meta name="apple-mobile-web-app-title" content="VCT Driver">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="../maps-config.js"></script>
+<script>(function(){if(!window.GMAPS_KEY)return;var l='ta';try{var s=JSON.parse(localStorage.getItem('vctd')||'{}');if(s.lang)l=s.lang}catch(e){}document.write('<script src="https://maps.googleapis.com/maps/api/js?key='+encodeURIComponent(window.GMAPS_KEY)+'&libraries=places&language='+l+'&region=IN&v=weekly"><\/script>')})();</script>
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{height:100%}body{margin:0;font-family:system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}
+.hasdot{position:relative}.hasdot::after{content:"";position:absolute;top:-3px;right:-3px;width:10px;height:10px;border-radius:50%;background:#D9443B;border:2px solid var(--surface)}
+.chatlog .msg.dr small,.chatlog .msg.me small{display:block;font-size:10px;opacity:.6;margin-top:2px}
+.lcar2{width:48px;height:48px;transition:transform .5s}.lcar2 svg{display:block;width:100%;height:100%}
+
+.vimg{object-fit:contain;mix-blend-mode:multiply}
+.vi:has(.vimg){background:#fff!important}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .vimg{mix-blend-mode:normal;background:#fff;border-radius:8px}}
+:root[data-theme="dark"] .vimg{mix-blend-mode:normal;background:#fff;border-radius:8px}
+.signcard{display:block;width:100%;text-align:left;border:1.5px solid #E7B400;background:#FFF6D6;border-radius:16px;padding:12px 14px;margin:0 0 10px;color:#5b4300}.signcard b{display:block;font-size:15px}.signcard small{color:#7a5d00}.agr{max-height:42vh;overflow:auto;padding-left:20px;font-size:13.5px;line-height:1.5}.agck{display:flex;gap:8px;align-items:flex-start;font-weight:700;margin:8px 0}.agin{width:100%;height:46px;border:1.5px solid var(--line);border-radius:12px;padding:0 12px;font-size:16px;margin:4px 0}
+.navbtn{border:0;cursor:pointer;font:inherit}
+.navfs{position:fixed;inset:0;z-index:60;background:#dfe7e2;display:flex;flex-direction:column}
+.navfs .map{position:absolute;inset:0;width:100%;height:100%}
+.nbanner{position:absolute;left:10px;right:10px;top:calc(10px + env(safe-area-inset-top));display:flex;gap:12px;align-items:center;background:#0B4A36;color:#fff;border-radius:18px;padding:12px 14px;box-shadow:0 6px 20px rgba(0,0,0,.25);z-index:2}
+.nbanner .nico{flex:none;width:56px;height:56px;border-radius:14px;background:rgba(255,255,255,.12);display:grid;place-items:center;color:#FFC21A}
+.nbanner b{display:block;font-size:30px;line-height:1.05}.nbanner span{font-size:16px;font-weight:700}
+.ngps{position:absolute;left:10px;right:10px;top:calc(104px + env(safe-area-inset-top));z-index:2;background:#C23B3B;color:#fff;border-radius:14px;padding:10px 12px;display:flex;gap:8px;align-items:center;font-weight:700}
+.ngps[hidden]{display:none}
+.ngps button{margin-left:auto;border:0;border-radius:10px;padding:6px 10px;font-weight:800}
+.nbar{position:absolute;left:10px;right:10px;bottom:calc(10px + env(safe-area-inset-bottom));z-index:2;display:flex;gap:8px;align-items:center;background:var(--surface,#fff);border-radius:18px;padding:10px 12px;box-shadow:0 6px 20px rgba(0,0,0,.2)}
+.nbar>div{flex:1;min-width:0}.nbar b{display:block;font-size:20px}.nbar small{color:var(--muted);font-size:13px;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nbar button{flex:none;width:46px;height:46px;border-radius:14px;border:1.5px solid var(--line,#ddd);background:var(--surface,#fff);font-size:20px}
+.nbar .nx{background:#C23B3B;color:#fff;border-color:#C23B3B;font-weight:800}
+.nmenu{position:absolute;right:10px;bottom:calc(76px + env(safe-area-inset-bottom));z-index:3;background:var(--surface,#fff);border-radius:14px;box-shadow:0 6px 20px rgba(0,0,0,.25);display:flex;flex-direction:column;padding:6px;min-width:240px}
+.nmenu[hidden]{display:none}
+.nmenu a,.nmenu button{padding:12px;border:0;background:none;text-align:left;font:inherit;font-weight:700;color:inherit;text-decoration:none}
+.nmenu small{padding:0 12px 8px;color:var(--muted);font-size:11px}
+</style>
+<script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
+<script type="module">import('../vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
+<script>/* auto-update: reload when a newer version of the app is published */
+(function(){var APPV=window.VCT_V='2026-11-04-61',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+function chk(){try{fetch(new URL('../version.json',location.href)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
+ if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
+ location.reload()}).catch(function(){})}catch(e){}}
+setTimeout(chk,3000);setInterval(chk,5*60*1000);document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible')chk()});})();</script>
+</head>
+<body>
+<title>Vellore Taxi Driver</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+Thambi+2:wght@500;600;700;800&family=Hind+Madurai:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: one phone-width app column; map is the stage, a white bottom sheet carries the actions. */
+:root{
+  --yellow:#FFC21A; --yellow-soft:#FFF5C9; --yellow-ink:#7A5A00;
+  --navy:#12664A; --navy-2:#2C5196; --navy-soft:#E6EDF9;
+  --bg:#F5F7F2; --surface:#FFFFFF; --surface-2:#F7FAF8;
+  --fg:#0B4A36; --muted:#5B6B64; --line:#E1E8E4;
+  --map-land:#EDF1F7; --map-block:#E3E9F2; --map-road:#FFFFFF; --map-edge:#D3E2DA; --map-river:#CBE1F4; --map-label:#56657F; --map-bldg:#D6DEEA;
+  --ok:#1E8A5A; --danger:#C23B3B;
+  --shadow:0 10px 30px rgba(19,40,79,.12);
+  --display:"Baloo Thambi 2","Hind Madurai",system-ui,sans-serif;
+  --body:"Hind Madurai","Noto Sans Tamil",system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --yellow:#FFC21A; --yellow-soft:#3A3417; --yellow-ink:#FFE38A;
+  --navy:#7FD3A8; --navy-2:#A8D5C0; --navy-soft:#1B3129;
+  --bg:#0A1712; --surface:#11231C; --surface-2:#183026; --fg:#E8F2EC; --muted:#9DB3A9; --line:#23392F;
+  --map-land:#0E1D17; --map-block:#12241D; --map-road:#284236; --map-edge:#182E25; --map-river:#164032; --map-label:#8FA59B; --map-bldg:#1A3328;
+  --ok:#4CC28C; --danger:#F07A7A; --shadow:0 10px 30px rgba(0,0,0,.4); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --yellow:#FFC21A; --yellow-soft:#3A3417; --yellow-ink:#FFE38A;
+  --navy:#7FD3A8; --navy-2:#A8D5C0; --navy-soft:#1B3129;
+  --bg:#0A1712; --surface:#11231C; --surface-2:#183026; --fg:#E8F2EC; --muted:#9DB3A9; --line:#23392F;
+  --map-land:#0E1D17; --map-block:#12241D; --map-road:#284236; --map-edge:#182E25; --map-river:#164032; --map-label:#8FA59B; --map-bldg:#1A3328;
+  --ok:#4CC28C; --danger:#F07A7A; --shadow:0 10px 30px rgba(0,0,0,.4); color-scheme:dark}
+
+html,body{height:100%}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;overflow:hidden}
+*{box-sizing:border-box}
+button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
+button:focus-visible,input:focus-visible{outline:3px solid var(--yellow);outline-offset:2px}
+.app{position:relative;height:100%;max-width:440px;margin:0 auto;background:var(--surface);overflow:hidden}
+@media (min-width:520px){.app{height:calc(100% - 32px);margin-block:16px;border-radius:28px;box-shadow:var(--shadow);border:1px solid var(--line)}}
+.screen{position:absolute;inset:0;display:flex;flex-direction:column;background:var(--surface);animation:in .32s ease both}
+@keyframes in{from{opacity:.4;transform:translateY(10px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+.pad{padding-left:max(18px,env(safe-area-inset-left,0px));padding-right:max(18px,env(safe-area-inset-right,0px))}
+h1,h2,h3{font-family:var(--display);margin:0;line-height:1.15;text-wrap:balance}
+.muted{color:var(--muted)}
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;height:54px;border-radius:16px;background:var(--navy);color:#fff;font-weight:700;font-size:16px;transition:transform .12s, opacity .2s}
+:root[data-theme="dark"] .btn{color:#0A1712}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .btn{color:#0A1712}}
+.btn:active{transform:scale(.98)}
+.btn[disabled]{opacity:.4;cursor:not-allowed}
+.btn.yellow{background:var(--yellow);color:#0B4A36}
+
+/* splash */
+#splash{background:#0B4A36;color:#fff;align-items:center;justify-content:center;gap:22px}
+.roofsign{background:var(--yellow);color:#0B4A36;border-radius:14px 14px 6px 6px;padding:14px 22px 10px;text-align:center;box-shadow:0 14px 0 -6px #0b1a36, 0 0 0 4px rgba(255,216,77,.25);animation:pop .6s cubic-bezier(.2,1.4,.4,1) both}
+.roofsign b{display:block;font-family:var(--display);font-size:30px;font-weight:800;letter-spacing:.06em}
+.roofsign span{font-family:var(--display);font-size:17px;font-weight:600}
+@keyframes pop{from{transform:scale(.6);opacity:0}}
+.road{width:220px;height:6px;border-radius:3px;background:repeating-linear-gradient(90deg,#FFC21A 0 26px,transparent 26px 44px);background-size:44px 6px;animation:roll .6s linear infinite;opacity:.8}
+@keyframes roll{to{background-position:-44px 0}}
+.tag{font-size:13px;letter-spacing:.14em;text-transform:uppercase;opacity:.7}
+
+/* onboarding */
+.hero{background:linear-gradient(170deg,var(--yellow) 0%,var(--yellow-soft) 100%);padding-top:48px;padding-bottom:28px;display:flex;flex-direction:column;gap:10px;border-radius:0 0 32px 32px}
+.hero h1{font-size:30px;color:#0B4A36}
+.hero p{margin:0;color:#3D4D6E}
+.hero .mini{display:inline-flex;align-self:flex-start;background:#0B4A36;color:var(--yellow);font-family:var(--display);font-weight:700;padding:4px 12px;border-radius:999px;font-size:13px;letter-spacing:.06em}
+.body{flex:1;display:flex;flex-direction:column;gap:16px;padding-top:24px;padding-bottom:max(20px,env(safe-area-inset-bottom,0px));overflow:auto}
+.langcard{display:flex;align-items:center;justify-content:space-between;padding:18px;border:2px solid var(--line);border-radius:18px;text-align:left;background:var(--surface)}
+.langcard.sel{border-color:var(--navy);background:var(--navy-soft)}
+.langcard b{font-family:var(--display);font-size:22px}
+.radio{width:22px;height:22px;border-radius:50%;border:2px solid var(--line)}
+.sel .radio{border:7px solid var(--navy)}
+.field{display:flex;align-items:center;gap:10px;height:58px;border:2px solid var(--line);border-radius:16px;padding:0 16px;background:var(--surface)}
+.field:focus-within{border-color:var(--navy)}
+.field input{flex:1;min-width:0;border:0;outline:0;background:none;font:inherit;font-size:19px;color:var(--fg);letter-spacing:.04em}
+.field .cc{font-weight:700;padding-right:10px;border-right:1px solid var(--line)}
+.otp{display:flex;gap:12px}
+.otp input{width:100%;min-width:0;height:62px;text-align:center;font-size:26px;font-family:var(--display);font-weight:700;border:2px solid var(--line);border-radius:16px;background:var(--surface);color:var(--fg)}
+.otp input:focus{border-color:var(--navy);outline:0}
+.note{background:var(--yellow-soft);color:var(--yellow-ink);border-radius:14px;padding:10px 14px;font-size:13.5px}
+.err{color:var(--danger);font-size:13.5px;min-height:18px}
+.linkbtn{color:var(--navy);font-weight:700;font-size:14px}
+.fine{font-size:12.5px;text-align:center}
+
+/* home */
+.mapwrap{position:relative;flex:1 1 auto;min-height:230px}
+canvas.map{position:absolute;inset:0;width:100%;height:100%;display:block}
+.topbar{position:absolute;top:max(14px,env(safe-area-inset-top,0px));left:max(14px,env(safe-area-inset-left,0px));right:max(14px,env(safe-area-inset-right,0px));display:flex;align-items:center;gap:10px;z-index:2}
+.chipbtn{height:42px;min-width:42px;border-radius:14px;background:var(--surface);box-shadow:var(--shadow);display:flex;align-items:center;justify-content:center;gap:6px;padding:0 12px;font-weight:700;font-size:13.5px}
+.greet{flex:1;min-width:0;background:var(--surface);box-shadow:var(--shadow);border-radius:14px;padding:6px 12px;line-height:1.2}
+.greet small{display:block;color:var(--muted);font-size:12px}
+.greet b{font-family:var(--display);font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+.locate{position:absolute;right:max(14px,env(safe-area-inset-right,0px));bottom:30px;z-index:2}
+.nearby{position:absolute;left:max(14px,env(safe-area-inset-left,0px));bottom:30px;z-index:2;background:var(--navy);color:#fff;border-radius:999px;padding:6px 12px;font-size:12.5px;font-weight:600;display:flex;align-items:center;gap:6px}
+:root[data-theme="dark"] .nearby{color:#0A1712}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .nearby{color:#0A1712}}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--yellow);box-shadow:0 0 0 0 rgba(255,216,77,.7);animation:ping 1.6s infinite}
+@keyframes ping{70%{box-shadow:0 0 0 8px rgba(255,216,77,0)}100%{box-shadow:0 0 0 0 rgba(255,216,77,0)}}
+.sheet{position:relative;z-index:3;margin-top:-22px;background:var(--surface);border-radius:26px 26px 0 0;box-shadow:0 -8px 24px rgba(19,40,79,.08);display:flex;flex-direction:column;gap:16px;padding-top:12px;padding-bottom:14px;max-height:62%;overflow:auto}
+.grab{width:40px;height:5px;border-radius:3px;background:var(--line);align-self:center}
+.where{display:flex;align-items:center;gap:12px;height:58px;border-radius:18px;background:var(--surface-2);border:1px solid var(--line);padding:0 8px 0 16px;text-align:left;width:100%}
+.where span{flex:1;font-family:var(--display);font-weight:700;font-size:19px}
+.where i{width:42px;height:42px;border-radius:13px;background:var(--yellow);display:flex;align-items:center;justify-content:center}
+.chips{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;margin-inline:-2px;padding:2px}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;display:flex;align-items:center;gap:6px;height:38px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:var(--surface);font-size:13.5px;font-weight:600;white-space:nowrap}
+.sec{display:flex;align-items:baseline;justify-content:space-between}
+.sec h3{font-size:17px}
+.services{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.svc{display:flex;flex-direction:column;align-items:center;gap:6px;font-size:12.5px;font-weight:600;text-align:center;line-height:1.2}
+.svc i{width:100%;aspect-ratio:1;max-width:72px;border-radius:18px;background:var(--navy-soft);display:flex;align-items:center;justify-content:center}
+.svc:first-child i{background:var(--yellow)}
+.offers{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;padding-bottom:2px}
+.offers::-webkit-scrollbar{display:none}
+.offer{flex:none;width:78%;scroll-snap-align:start;border-radius:20px;padding:16px;display:flex;flex-direction:column;gap:6px;position:relative;overflow:hidden;min-height:120px}
+.offer b{font-family:var(--display);font-size:20px;line-height:1.15}
+.offer small{opacity:.85;font-size:12.5px}
+.offer .code{align-self:flex-start;margin-top:auto;border:1.5px dashed currentColor;border-radius:8px;padding:2px 10px;font-weight:700;letter-spacing:.08em;font-size:13px}
+.offer.o1{background:#0B4A36;color:#FFC21A}
+.offer.o2{background:#FFC21A;color:#0B4A36}
+.offer.o3{background:#2C5196;color:#fff}
+.offer svg{position:absolute;right:-14px;bottom:-12px;opacity:.18}
+.sample{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.recent{display:flex;flex-direction:column}
+.row{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--line);text-align:left;width:100%}
+.row:last-child{border-bottom:0}
+.row .ic{width:40px;height:40px;border-radius:12px;background:var(--surface-2);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;flex:none}
+.row div{flex:1;min-width:0}
+.row b{display:block;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row small{color:var(--muted);font-size:12.5px}
+.nav{display:grid;grid-template-columns:repeat(5,1fr);border-top:1px solid var(--line);background:var(--surface);padding-bottom:max(6px,env(safe-area-inset-bottom,0px));position:relative;z-index:4}
+.nav button{display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 0 4px;font-size:11.5px;font-weight:600;color:var(--muted)}
+.nav button.on{color:var(--navy)}
+.nav button.on svg{background:var(--yellow-soft);border-radius:10px}
+.nav svg{width:44px;height:28px;padding:3px 10px}
+
+/* search */
+.head{display:flex;align-items:center;gap:10px;padding-top:max(14px,env(safe-area-inset-top,0px));padding-bottom:10px}
+.head h2{font-size:20px;flex:1}
+.back{width:42px;height:42px;border-radius:14px;background:var(--surface-2);border:1px solid var(--line);display:flex;align-items:center;justify-content:center}
+.route-in{display:flex;gap:12px;background:var(--surface-2);border:1px solid var(--line);border-radius:18px;padding:10px 12px}
+.rail{display:flex;flex-direction:column;align-items:center;padding-top:14px;gap:0}
+.rail .a{width:10px;height:10px;border-radius:50%;background:var(--ok)}
+.rail .l{width:2px;flex:1;min-height:28px;background:repeating-linear-gradient(var(--muted) 0 3px,transparent 3px 6px)}
+.rail .b{width:10px;height:10px;border-radius:2px;background:var(--danger)}
+.ins{flex:1;min-width:0;display:flex;flex-direction:column}
+.ins input{height:44px;border:0;outline:0;background:none;font:inherit;font-size:16px;color:var(--fg);min-width:0}
+.ins input:first-child{border-bottom:1px solid var(--line)}
+.ins input:focus{color:var(--navy)}
+.mic{width:44px;height:44px;border-radius:14px;background:var(--yellow);display:flex;align-items:center;justify-content:center;align-self:flex-end;flex:none}
+.list{flex:1;overflow:auto;padding-bottom:20px}
+.tagline{font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);padding:16px 0 4px}
+
+/* fare */
+.fare-sheet{gap:12px;max-height:68%}
+.trip{display:flex;gap:10px;align-items:center;font-size:13.5px}
+.trip b{font-family:var(--display);font-size:16px}
+.pill{display:inline-flex;align-items:center;gap:4px;background:var(--navy-soft);color:var(--navy);border-radius:999px;padding:3px 10px;font-weight:700;font-size:12.5px;white-space:nowrap}
+.veh{display:flex;align-items:center;gap:12px;padding:12px;border-radius:18px;border:2px solid var(--line);text-align:left;width:100%;background:var(--surface);transition:border-color .15s, background .15s}
+.veh.sel{border-color:var(--navy);background:var(--navy-soft)}
+.veh .vi{width:58px;height:44px;border-radius:12px;background:var(--yellow-soft);display:flex;align-items:center;justify-content:center;flex:none}
+.veh div{flex:1;min-width:0}
+.veh b{font-family:var(--display);font-size:17px;display:block}
+.veh small{color:var(--muted);font-size:12.5px}
+.veh .price{text-align:right;flex:none}
+.veh .price b{font-size:20px;font-variant-numeric:tabular-nums}
+.veh .price s{color:var(--muted);font-size:12px}
+.payrow{display:flex;gap:8px}
+.pay{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;height:44px;border-radius:14px;border:1.5px solid var(--line);font-weight:700;font-size:14px}
+.pay.sel{border-color:var(--navy);background:var(--navy-soft);color:var(--navy)}
+
+
+canvas.map{touch-action:none;cursor:grab;-webkit-user-select:none;user-select:none}
+canvas.map:active{cursor:grabbing}
+.zoomctl{position:absolute;right:max(14px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:8px;z-index:2}
+.zoomctl .chipbtn{font-size:22px;font-weight:700;width:44px;height:44px;padding:0}
+.hint{position:absolute;left:50%;transform:translateX(-50%);top:calc(max(14px,env(safe-area-inset-top,0px)) + 56px);z-index:2;background:rgba(19,40,79,.88);color:#fff;font-size:12.5px;font-weight:600;padding:6px 12px;border-radius:999px;white-space:nowrap;transition:opacity .4s;pointer-events:none}
+.hint.gone{opacity:0}
+.pin{position:absolute;left:50%;top:50%;z-index:3;pointer-events:none;transform:translate(-50%,-97%);transition:transform .2s cubic-bezier(.3,1.6,.5,1)}
+.pin.lift{transform:translate(-50%,calc(-97% - 16px))}
+.pinshadow{position:absolute;left:50%;top:50%;width:18px;height:7px;border-radius:50%;background:rgba(19,40,79,.4);transform:translate(-50%,-50%);z-index:2;pointer-events:none;transition:.2s}
+.pin.lift + .pinshadow{width:10px;opacity:.45}
+.pickcard{display:flex;flex-direction:column;gap:12px;padding-top:16px;padding-bottom:max(16px,env(safe-area-inset-bottom,0px));border-top:1px solid var(--line);background:var(--surface);border-radius:24px 24px 0 0;margin-top:-20px;position:relative;z-index:4;box-shadow:0 -8px 24px rgba(19,40,79,.08)}
+.addr{display:flex;gap:12px;align-items:flex-start;min-height:52px}
+.addr .ic{width:44px;height:44px;border-radius:14px;background:var(--yellow-soft);color:var(--yellow-ink);display:flex;align-items:center;justify-content:center;flex:none}
+.addr div{min-width:0}
+.addr b{font-family:var(--display);font-size:19px;display:block;line-height:1.2}
+.addr small{color:var(--muted);font-size:13px;font-variant-numeric:tabular-nums}
+.addr b,.addr small{transition:opacity .15s}
+.addr.loading b,.addr.loading small{opacity:.35}
+.kind{font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.row.onmap b{color:var(--navy)}
+.row.onmap .ic{background:var(--yellow);border-color:var(--yellow);color:#0B4A36}
+.ins input[readonly]{cursor:pointer}
+.greet.tap{cursor:pointer;text-align:left}
+
+
+[hidden]{display:none!important}
+.radar{position:absolute;left:50%;top:50%;z-index:2;pointer-events:none}
+.radar i{position:absolute;left:-60px;top:-60px;width:120px;height:120px;border-radius:50%;border:2px solid var(--navy-2);background:rgba(44,81,150,.10);animation:radar 2.4s ease-out infinite;opacity:0}
+.radar i:nth-child(2){animation-delay:.8s}.radar i:nth-child(3){animation-delay:1.6s}
+@keyframes radar{0%{transform:scale(.2);opacity:.9}100%{transform:scale(1.7);opacity:0}}
+.ride-sheet{gap:14px;max-height:66%}
+.searchrow{display:flex;gap:14px;align-items:center}
+.searchrow>div{min-width:0}
+.searchrow .vi{width:62px;height:48px;border-radius:14px;background:var(--yellow-soft);display:flex;align-items:center;justify-content:center;flex:none;animation:bob .8s ease-in-out infinite alternate}
+@keyframes bob{to{transform:translateY(-4px)}}
+.searchrow h3{font-size:19px}
+.bar{height:6px;border-radius:3px;background:var(--line);overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--navy),var(--navy-2));border-radius:3px;animation:fill 4.2s linear forwards}
+@keyframes fill{to{width:100%}}
+.btn.ghost{background:transparent;color:var(--danger)!important;border:1.5px solid var(--line);height:48px}
+.tripcard{display:flex;gap:12px;padding:12px 14px;border-radius:16px;background:var(--surface-2);border:1px solid var(--line)}
+.tripcard .rail{padding-top:6px}
+.tripcard .rail .l{min-height:22px}
+.stops{flex:1;min-width:0;display:flex;flex-direction:column;gap:10px;font-size:14px}
+.stops b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stops small{color:var(--muted);font-size:11.5px;text-transform:uppercase;letter-spacing:.08em;font-weight:700}
+.amt{text-align:right;flex:none}
+.amt b{font-family:var(--display);font-size:21px;font-variant-numeric:tabular-nums}
+.status b{font-size:17px}
+.chipbtn.sos{background:#C23B3B;color:#fff;font-weight:800;letter-spacing:.08em;box-shadow:0 6px 18px rgba(194,59,59,.35)}
+.chipbtn.ff{position:absolute;right:max(14px,env(safe-area-inset-right,0px));bottom:34px;z-index:2;font-size:12.5px}
+.pinbox{display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--yellow-soft);border-radius:16px;padding:10px 14px}
+.pinbox span{font-size:13px;color:var(--yellow-ink);font-weight:600;line-height:1.3}
+.pinbox b{display:flex;gap:6px;flex:none}
+.pinbox i{font-style:normal;width:34px;height:40px;border-radius:10px;background:var(--surface);color:var(--fg);display:flex;align-items:center;justify-content:center;font-family:var(--display);font-size:22px;font-weight:800;box-shadow:0 2px 0 var(--line)}
+.drv{display:flex;align-items:center;gap:12px}
+.drv>div:not(.vehbox){flex:1;min-width:0}
+.drv b{font-family:var(--display);font-size:18px;display:block}
+.drv small{color:var(--muted);font-size:12.5px}
+.drv .avatar{width:50px;height:50px;font-size:22px;border-radius:16px}
+.vehbox{display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex:none}
+.plate{background:#FFC21A;color:#111;border:2px solid #111;border-radius:6px;padding:1px 8px;font-weight:700;font-size:13.5px;letter-spacing:.06em;white-space:nowrap}
+.acts{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.acts button{display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 0;border-radius:14px;background:var(--surface-2);border:1px solid var(--line);font-size:12px;font-weight:600}
+.acts button svg{color:var(--navy)}
+.modal{position:absolute;inset:0;z-index:30;display:flex;flex-direction:column;justify-content:flex-end;background:rgba(10,20,40,.45);animation:fade .2s}
+@keyframes fade{from{opacity:0}}
+.modal .card{background:var(--surface);border-radius:24px 24px 0 0;padding-top:20px;padding-bottom:max(18px,env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:12px;max-height:82%;overflow:auto;animation:in .25s}
+.modal h3{font-size:20px}
+.reason{display:flex;align-items:center;gap:12px;padding:12px 14px;border:1.5px solid var(--line);border-radius:14px;text-align:left;width:100%;font-weight:600}
+.reason .radio{flex:none}
+.reason.sel{border-color:var(--navy);background:var(--navy-soft)}
+.reason.sel .radio{border:7px solid var(--navy)}
+.chatlog{display:flex;flex-direction:column;gap:8px;min-height:120px;max-height:240px;overflow:auto;padding:4px 0}
+.msg{max-width:78%;padding:8px 12px;border-radius:14px;font-size:14px}
+.msg.me{align-self:flex-end;background:#12664A;color:#fff;border-bottom-right-radius:4px}
+.msg.dr{align-self:flex-start;background:var(--surface-2);border:1px solid var(--line);border-bottom-left-radius:4px}
+.sosbig{height:64px;border-radius:18px;background:#C23B3B;color:#fff;font-family:var(--display);font-size:20px;font-weight:800;width:100%;letter-spacing:.06em}
+.donehero{background:linear-gradient(170deg,var(--yellow),var(--yellow-soft));padding-top:40px;padding-bottom:24px;border-radius:0 0 32px 32px;display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center;color:#0B4A36}
+.check{width:72px;height:72px;border-radius:50%;background:#0B4A36;display:flex;align-items:center;justify-content:center;animation:pop .5s cubic-bezier(.2,1.5,.4,1)}
+.bill{display:flex;flex-direction:column;gap:8px;padding:14px 16px;border:1px solid var(--line);border-radius:18px}
+.bill div{display:flex;justify-content:space-between;gap:12px;font-size:14.5px;font-variant-numeric:tabular-nums}
+.bill .tot{border-top:1px dashed var(--line);padding-top:10px;font-family:var(--display);font-size:20px;font-weight:700}
+.qr{display:flex;gap:14px;align-items:center;padding:14px;border-radius:18px;background:var(--surface-2);border:1px solid var(--line)}
+.qr svg{flex:none;border-radius:10px;background:#fff;padding:6px}
+.stars{display:flex;gap:6px;justify-content:center}
+.stars button{width:48px;height:48px;font-size:36px;line-height:1;color:var(--line);transition:transform .15s,color .15s}
+.stars button.on{color:#F2A900;transform:scale(1.08)}
+.tags{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.chip.sel{background:var(--navy-soft);border-color:var(--navy);color:var(--navy)}
+textarea{width:100%;min-height:70px;border:1.5px solid var(--line);border-radius:14px;padding:10px 12px;font:inherit;background:var(--surface);color:var(--fg);resize:vertical}
+
+
+.vsvg .wh{transform-box:fill-box;transform-origin:center}
+.vsvg .bd{transform-box:fill-box}
+.veh .vi,.searchrow .vi{position:relative;overflow:hidden;width:68px;height:48px}
+.veh .vi::after,.searchrow .vi::after{content:"";position:absolute;left:0;right:0;bottom:4px;height:2px;background:repeating-linear-gradient(90deg,var(--muted) 0 8px,transparent 8px 14px);background-size:14px 2px;opacity:0;transition:opacity .2s}
+.veh.sel .vi::after,.searchrow .vi::after{opacity:.5;animation:road .45s linear infinite}
+.veh.sel .vsvg .wh,.searchrow .vsvg .wh{animation:spin .55s linear infinite}
+.veh.sel .vsvg .bd,.searchrow .vsvg .bd{animation:bump .28s ease-in-out infinite alternate}
+.veh:not(.sel):hover .vsvg{transform:translateX(2px);transition:transform .2s}
+.searchrow .vi{animation:none}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes bump{to{transform:translateY(-1.2px)}}
+@keyframes road{to{background-position:-14px 0}}
+
+
+.fleet{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;padding:2px 2px 6px}
+.fleet::-webkit-scrollbar{display:none}
+.fcard{flex:none;width:62%;max-width:240px;scroll-snap-align:start;position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:4px;text-align:left;padding:16px 16px 12px;border-radius:22px;border:1px solid var(--line);background:var(--surface);min-height:190px;overflow:hidden}
+.fcard b{font-family:var(--display);font-size:20px;line-height:1.1}
+.fcard small{color:var(--muted);font-size:13px;line-height:1.3}
+.fcard.hot{background:var(--navy);border-color:var(--navy)}
+.fcard.hot b,.fcard.hot small,.fcard.hot .farr{color:#fff}
+.fcard.hot .fseat{background:rgba(255,255,255,.16);color:#fff}
+:root[data-theme="dark"] .fcard.hot b,:root[data-theme="dark"] .fcard.hot small,:root[data-theme="dark"] .fcard.hot .farr{color:#0A1712}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .fcard.hot b,:root:not([data-theme="light"]) .fcard.hot small,:root:not([data-theme="light"]) .fcard.hot .farr{color:#0A1712}}
+.fseat{font-size:11.5px;font-weight:700;padding:2px 8px;border-radius:999px;background:var(--yellow-soft);color:var(--yellow-ink)}
+.fart{margin-top:auto;align-self:flex-end;margin-right:-10px;margin-bottom:-6px;filter:drop-shadow(0 8px 6px rgba(19,40,79,.18))}
+.fcard:active .fart{transform:translateX(6px);transition:transform .2s}
+.fcard:hover .vsvg .wh{animation:spin .6s linear infinite}
+.farr{position:absolute;left:16px;bottom:14px;font-style:normal;font-size:20px;color:var(--fg)}
+
+.sheet>*,.body>*{flex-shrink:0}
+
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.stats div{background:var(--surface-2);border:1px solid var(--line);border-radius:16px;padding:10px 12px;display:flex;flex-direction:column}
+.stats b{font-family:var(--display);font-size:20px;font-variant-numeric:tabular-nums}
+.stats small{color:var(--muted);font-size:12px}
+.trow .tv{width:52px;background:var(--yellow-soft);border-color:transparent}
+.trow .tv svg{width:46px;height:28px}
+.tamt{flex:none;text-align:right;display:flex;flex-direction:column;align-items:flex-end}
+.tamt b{font-family:var(--display);font-size:17px;font-variant-numeric:tabular-nums}
+.tamt small{color:var(--muted);font-size:12px}
+.st{font-style:normal;font-size:12px;font-weight:700;padding:2px 10px;border-radius:999px}
+.st.cx{background:rgba(194,59,59,.12);color:var(--danger)}
+.empty{display:flex;flex-direction:column;align-items:center;text-align:center;gap:8px;padding:40px 10px;color:var(--muted)}
+.empty h3{color:var(--fg)}
+.empty .btn{margin-top:8px;max-width:260px}
+.minimap{position:relative;height:200px;border-radius:20px;overflow:hidden;border:1px solid var(--line)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.two .btn:only-child{grid-column:1/-1}
+.btn.wa{background:#1E8A5A;color:#fff!important;text-decoration:none;text-align:center;font-size:15px}
+.receipt{background:#fff;color:#0B4A36;border-radius:18px;border:1px solid #E1E8E4;padding:18px 18px 22px;display:flex;flex-direction:column;gap:14px;position:relative;box-shadow:0 10px 30px rgba(19,40,79,.10)}
+.receipt::after{content:"";position:absolute;left:10px;right:10px;bottom:-7px;height:14px;background:radial-gradient(circle at 7px 0,transparent 6px,#fff 6.5px) 0 0/14px 14px repeat-x}
+.rhead{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;padding-bottom:12px;border-bottom:2px solid #FFC21A}
+.rbrand{display:flex;gap:10px;align-items:center;min-width:0}
+.rbrand b{font-family:var(--display);font-size:17px;display:block;line-height:1.1}
+.rbrand small{font-size:11px;color:#5B6B64}
+.rsign{background:#FFC21A;color:#0B4A36;font-family:var(--display);font-weight:800;font-size:13px;letter-spacing:.08em;padding:4px 8px;border-radius:8px 8px 3px 3px;border:1.5px solid #0B4A36;flex:none}
+.rinv{display:flex;flex-direction:column;align-items:flex-end;text-align:right;flex:none}
+.rinv b{font-size:13px;font-variant-numeric:tabular-nums}
+.rinv small{font-size:11px;color:#5B6B64}
+.rsec{display:flex;flex-direction:column;gap:6px;padding-bottom:12px;border-bottom:1px dashed #D3E2DA}
+.rsec:last-of-type{border-bottom:0}
+.rrow{display:flex;justify-content:space-between;gap:12px;font-size:13.5px}
+.rrow span{color:#5B6B64;flex:none}
+.rrow b{text-align:right;font-weight:600;min-width:0;font-variant-numeric:tabular-nums}
+.rtot{font-family:var(--display);font-size:19px;padding-top:4px}
+.rtot span{color:#0B4A36}
+.rthanks{margin:0;text-align:center;font-size:13px;color:#5B6B64}
+.walcard{background:#0B4A36;color:#fff;border-radius:24px;padding:20px;display:flex;flex-direction:column;gap:4px;position:relative;overflow:hidden}
+.walcard::before{content:"";position:absolute;right:-40px;top:-40px;width:160px;height:160px;border-radius:50%;background:rgba(255,216,77,.16)}
+.walcard small{opacity:.75}
+.walcard b{font-family:var(--display);font-size:40px;line-height:1.1;color:#FFC21A;font-variant-numeric:tabular-nums}
+.walcard span{font-size:13px;opacity:.8;margin-bottom:10px}
+.walcard .btn{color:#0B4A36!important}
+.refer{display:flex;align-items:center;gap:12px;padding:14px;border-radius:18px;background:var(--yellow-soft)}
+.refer div{flex:1;min-width:0;display:flex;flex-direction:column}
+.refer b{font-family:var(--display);font-size:17px;color:var(--yellow-ink)}
+.refer small{font-size:12.5px;color:var(--yellow-ink);opacity:.85}
+.code{flex:none;display:flex;flex-direction:column;align-items:center;border:1.5px dashed var(--yellow-ink);border-radius:12px;padding:6px 10px;font-weight:800;letter-spacing:.08em;color:var(--yellow-ink)}
+.code i{font-style:normal;font-size:11px;font-weight:600;letter-spacing:0;opacity:.8}
+.row .ic.in{background:rgba(30,138,90,.12);color:var(--ok);font-weight:800;font-size:18px;border-color:transparent}
+.row .ic.out{background:rgba(194,59,59,.10);color:var(--danger);font-weight:800;font-size:18px;border-color:transparent}
+b.pos{color:var(--ok)}
+
+
+.wherewrap{display:flex;gap:10px}
+.wherewrap .where{flex:1;min-width:0}
+.micbig{flex:none;width:58px;height:58px;border-radius:18px;background:#0B4A36;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 16px rgba(19,40,79,.25)}
+.upnext{display:flex;align-items:center;gap:12px;width:100%;text-align:left;padding:12px 14px;border-radius:18px;background:var(--yellow-soft);border:1px solid transparent}
+.upnext .ic{width:40px;height:40px;border-radius:12px;background:var(--yellow);color:#0B4A36;display:flex;align-items:center;justify-content:center;flex:none}
+.upnext div{flex:1;min-width:0}
+.upnext small{display:block;font-size:12px;color:var(--yellow-ink);font-weight:600}
+.upnext b{display:block;font-family:var(--display);font-size:16px;color:var(--yellow-ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.upnext i{font-style:normal;font-size:20px;color:var(--yellow-ink)}
+.st.up{background:var(--navy-soft);color:var(--navy);white-space:nowrap}
+.kindtag{align-self:flex-start;background:var(--navy);color:#fff;border-radius:999px;padding:3px 12px;font-weight:700;font-size:12.5px}
+:root[data-theme="dark"] .kindtag{color:#0A1712}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .kindtag{color:#0A1712}}
+.bill div b{text-align:right}
+.whenrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.whenrow .chip svg{width:16px;height:16px}
+.selbox{width:100%;height:52px;border-radius:14px;border:2px solid var(--line);background:var(--surface);color:var(--fg);font:inherit;font-size:17px;padding:0 12px}
+.pickrow{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:16px;background:var(--surface-2);border:1px solid var(--line)}
+.pickrow div{flex:1;min-width:0}
+.pickrow small{display:block;font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;font-weight:700}
+.pickrow b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dotg,.dotr{width:12px;height:12px;flex:none;border-radius:50%;background:var(--ok)}
+.dotr{border-radius:3px;background:var(--danger)}
+.pkgs{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.pkg{display:flex;flex-direction:column;align-items:center;padding:10px 4px;border-radius:14px;border:2px solid var(--line);background:var(--surface)}
+.pkg b{font-family:var(--display);font-size:16px;white-space:nowrap}
+.pkg small{font-size:11.5px;color:var(--muted)}
+.pkg.sel{border-color:var(--navy);background:var(--navy-soft)}
+.veh[disabled]{opacity:.45;cursor:not-allowed}
+.seg{display:grid;grid-template-columns:1fr 1fr;background:var(--surface-2);border:1px solid var(--line);border-radius:16px;padding:4px}
+.seg button{height:42px;border-radius:12px;font-weight:700;color:var(--muted)}
+.seg button.on{background:var(--navy);color:#fff}
+:root[data-theme="dark"] .seg button.on{color:#0A1712}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .seg button.on{color:#0A1712}}
+.vwrap{display:flex;flex-direction:column;align-items:center;gap:10px;padding:6px 0}
+.vmic{width:92px;height:92px;border-radius:50%;background:#0B4A36;display:flex;align-items:center;justify-content:center;position:relative}
+.vmic.on::before,.vmic.on::after{content:"";position:absolute;inset:0;border-radius:50%;border:3px solid #FFC21A;animation:radar 1.6s ease-out infinite}
+.vmic.on::after{animation-delay:.8s}
+.chip.ex{font-weight:500;color:var(--muted)}
+
+
+.helphero{background:linear-gradient(160deg,var(--yellow),var(--yellow-soft));border-radius:22px;padding:16px;display:flex;flex-direction:column;gap:12px}
+.helphero b{font-family:var(--display);font-size:20px;color:#0B4A36}
+.helphero .field{border-color:transparent}
+.lastride{display:flex;flex-direction:column;gap:10px;padding:14px;border:1px solid var(--line);border-radius:18px}
+.lastride b{font-family:var(--display);font-size:17px;display:block}
+.lastride small{color:var(--muted);font-size:12.5px}
+.fgrp{display:flex;flex-direction:column;gap:8px;margin-bottom:10px}
+details.faq{border:1px solid var(--line);border-radius:14px;background:var(--surface);overflow:hidden}
+details.faq summary{cursor:pointer;list-style:none;padding:12px 40px 12px 14px;font-weight:600;position:relative}
+details.faq summary::-webkit-details-marker{display:none}
+details.faq summary::after{content:"+";position:absolute;right:14px;top:50%;transform:translateY(-50%);font-size:20px;color:var(--navy);transition:transform .2s}
+details.faq[open] summary::after{transform:translateY(-50%) rotate(45deg)}
+details.faq[open]{border-color:var(--navy)}
+details.faq p{margin:0;padding:0 14px 14px;color:var(--muted);font-size:14px;line-height:1.5}
+.helpcta{display:flex;flex-direction:column;gap:12px;padding:16px;border-radius:20px;background:var(--navy-soft)}
+.helpcta b{font-family:var(--display);font-size:18px;display:block}
+.helpcta small{color:var(--muted);font-size:13px}
+.helpcta .btn svg{width:18px;height:18px}
+.photo{display:flex;align-items:center;justify-content:center;height:48px;border:1.5px dashed var(--line);border-radius:14px;color:var(--navy);font-weight:600;cursor:pointer}
+.eclist{display:flex;flex-wrap:wrap;gap:6px}
+.btn.dashed{background:var(--surface-2);color:var(--fg)!important;border:1.5px dashed var(--line)}
+
+
+.lmap{position:absolute;inset:0;z-index:0;background:var(--map-land)}
+.lmap .leaflet-bottom{margin-bottom:24px}
+.lmap .leaflet-control-attribution{font-size:10px;background:rgba(255,255,255,.85);color:#333}
+.lmk{background:none;border:0}
+.lpin{filter:drop-shadow(0 3px 3px rgba(0,0,0,.3))}
+.lme{display:block;width:18px;height:18px;border-radius:50%;background:#2C5196;border:3px solid #fff;box-shadow:0 0 0 7px rgba(44,81,150,.22);box-sizing:border-box}
+.lcar{width:36px;height:36px;display:flex;align-items:center;justify-content:center;transition:transform .4s}
+.lcar i{display:block;width:30px;height:18px;border-radius:6px;background:#0B4A36;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.35);position:relative}
+.lcar i::after{content:"";position:absolute;left:9px;top:2px;width:10px;height:10px;border-radius:2px;background:#FFC21A}
+.lfleet{position:relative;display:block;width:26px;height:26px;border-radius:50%;border:2.5px solid #fff;font:800 11px/21px sans-serif;text-align:center;box-shadow:0 2px 5px rgba(0,0,0,.3);box-sizing:border-box}
+.lfleet b{position:absolute;left:28px;top:3px;background:#fff;color:#0B4A36;font:700 10.5px/14px sans-serif;padding:1px 4px;border-radius:4px;white-space:nowrap;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+
+
+.mapwrap .gmap{bottom:22px}
+.minimap .gmap,.omap .gmap{bottom:0}
+.gsat{margin:0 0 12px 12px;height:34px;padding:0 12px;border-radius:10px;border:0;background:#fff;color:#0B4A36;font:700 12.5px system-ui,sans-serif;box-shadow:0 2px 6px rgba(0,0,0,.25);cursor:pointer}
+.gsat.on{background:#0B4A36;color:#FFC21A}
+
+/* placeholder pages */
+.soon{border:1px dashed var(--line);border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:8px;background:var(--surface-2)}
+.soon ul{margin:0;padding-left:18px;display:grid;gap:4px}
+.badge{align-self:flex-start;background:var(--yellow);color:#0B4A36;border-radius:999px;padding:2px 10px;font-weight:700;font-size:12px}
+.prof{display:flex;align-items:center;gap:14px}
+.avatar{width:58px;height:58px;border-radius:18px;background:var(--yellow);color:#0B4A36;display:flex;align-items:center;justify-content:center;font-family:var(--display);font-weight:800;font-size:26px;flex:none}
+
+.toast{position:absolute;left:50%;bottom:calc(86px + env(safe-area-inset-bottom,0px));transform:translate(-50%,20px);background:#0B4A36;color:#fff;padding:10px 16px;border-radius:14px;font-size:13.5px;font-weight:600;opacity:0;transition:.25s;z-index:20;width:max-content;max-width:calc(100% - 32px);text-align:center;pointer-events:none}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+
+/* ---------- driver app ---------- */
+.drvtag{background:#FFC21A;color:#0B4A36;font-family:var(--display);font-weight:800;letter-spacing:.3em;padding:2px 14px;border-radius:6px;font-size:15px}
+.lang2{display:flex;gap:8px;margin-top:6px}
+.lang2 button{height:36px;padding:0 14px;border-radius:999px;border:1.5px solid #0B4A36;color:#0B4A36;font-weight:700;font-size:13.5px}
+.lang2 button.on{background:#0B4A36;color:#FFC21A}
+.otpwrap{display:flex;flex-direction:column;gap:10px}
+.nav.n4{grid-template-columns:repeat(4,1fr)}
+.stpill{display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 14px;border-radius:14px;background:var(--surface);box-shadow:var(--shadow);font-weight:800;font-size:14px;color:var(--muted)}
+.stpill i{width:10px;height:10px;border-radius:50%;background:var(--muted)}
+.stpill.on{background:#1E8A5A;color:#fff}
+.stpill.on i{background:#fff;animation:ping 1.4s infinite}
+.chipbtn.lowbal{background:#C23B3B;color:#fff}
+.warn{background:rgba(194,59,59,.10);color:var(--danger);border-radius:14px;padding:10px 14px;font-size:13.5px;font-weight:600}
+.liveCard{display:flex;align-items:center;gap:14px;padding:14px;border-radius:18px;background:rgba(30,138,90,.10)}
+.liveCard b{font-family:var(--display);font-size:18px;display:block;color:var(--ok)}
+.liveCard small{color:var(--muted)}
+.pulse{width:18px;height:18px;border-radius:50%;background:var(--ok);flex:none;box-shadow:0 0 0 0 rgba(30,138,90,.6);animation:ping2 1.4s infinite}
+@keyframes ping2{70%{box-shadow:0 0 0 14px rgba(30,138,90,0)}100%{box-shadow:0 0 0 0 rgba(30,138,90,0)}}
+.duty{display:flex;align-items:center;gap:14px;width:100%;padding:12px 14px 12px 20px;border-radius:999px;border:2px solid #C23B3B;background:#FFF1F1;color:#8A1C1C;text-align:left;transition:transform .12s}
+.duty div{flex:1}.duty b{display:block;font-family:var(--display);font-size:21px;letter-spacing:.06em}.duty small{display:block;font-size:12.5px;opacity:.8}
+.duty .sw{width:64px;height:36px;border-radius:999px;background:#E6B4B4;position:relative;flex:none;transition:background .2s}
+.duty .sw::after{content:"";position:absolute;top:4px;left:4px;width:28px;height:28px;border-radius:50%;background:#C23B3B;transition:transform .2s,background .2s;box-shadow:0 2px 6px rgba(0,0,0,.2)}
+.duty.on{border-color:#1E8A5A;background:#E9F7EF;color:#14653F}.duty.on .sw{background:#A7DDBF}.duty.on .sw::after{transform:translateX(28px);background:#1E8A5A}
+.duty.tapped{transform:scale(.97)}.duty.tapped .sw::after{transform:translateX(28px);background:#1E8A5A}.duty.on.tapped .sw::after{transform:none;background:#C23B3B}
+:root[data-theme="dark"] .duty{background:#3A1E1E;color:#FFB4B4}:root[data-theme="dark"] .duty.on{background:#16352A;color:#9FE3BF}
+.tipadd{font-style:normal;color:#1E8A5A;font-size:.75em}
+a.btn{text-decoration:none}
+.menub{position:relative;font-size:20px;font-weight:800;width:46px}.mdot{position:absolute;top:8px;right:8px;width:10px;height:10px;border-radius:50%;background:#C23B3B;box-shadow:0 0 0 2px var(--surface)}
+.tpill{display:flex;align-items:center;gap:8px;height:46px;padding:0 14px;border-radius:999px;background:var(--surface);box-shadow:0 4px 14px rgba(0,0,0,.12);color:var(--fg);margin-left:8px}
+.tpill b{font-size:15px}.tpill span:not(.stdot){font-weight:800;color:#1E8A5A}.tpill i{font-style:normal;color:var(--muted);font-size:18px}
+.stdot{width:10px;height:10px;border-radius:50%;background:#9AA5A0}.stdot.on{background:#1E8A5A;box-shadow:0 0 0 4px rgba(30,138,90,.18)}
+.drw{position:fixed;inset:0;z-index:60;background:rgba(0,0,0,0);transition:background .2s}.drw.on{background:rgba(0,0,0,.45)}
+.drwp{position:absolute;left:0;top:0;bottom:0;width:min(330px,86vw);background:var(--bg,var(--surface));overflow:auto;padding:14px 12px 18px;transform:translateX(-102%);transition:transform .22s ease;box-shadow:8px 0 30px rgba(0,0,0,.2)}
+.drw.on .drwp{transform:none}
+.dhead{display:flex;align-items:center;gap:12px;padding:16px;border-radius:20px;background:linear-gradient(150deg,#0B4A36,#12664A);color:#fff;position:relative;overflow:hidden}
+.dhead::after{content:"";position:absolute;right:-30px;top:-30px;width:120px;height:120px;border-radius:50%;background:radial-gradient(circle,rgba(255,194,26,.35),transparent 70%)}
+.avatar.lg{width:56px;height:56px;font-size:24px;background:#FFC21A;color:#0B4A36;flex:none}
+.dhead b{display:block;font-family:var(--display);font-size:19px}.dhead small{display:block;opacity:.8;font-size:12.5px}.tierb{display:inline-block;margin-top:6px;font-style:normal;font-size:11.5px;font-weight:800;padding:3px 9px;border-radius:999px;background:linear-gradient(90deg,#FFD54A,#FFC21A);color:#0B4A36}
+.dgrid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin:10px 0}.dgrid3 div{padding:8px 10px;border-radius:12px;background:var(--surface-2);border:1px solid var(--line);min-width:0}.dgrid3 small{display:block;font-size:10.5px;color:var(--muted);font-weight:700}.dgrid3 b{display:block;font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dlist{display:flex;flex-direction:column}.dlist button{display:flex;align-items:center;gap:12px;padding:12px 10px;border-radius:12px;text-align:left;color:var(--fg);background:none;width:100%}
+.dlist button:hover{background:var(--surface-2)}.dlist span{width:30px;text-align:center;font-size:19px}.dlist b{flex:1;font-size:15px}.dlist small{font-size:12px;color:var(--muted);font-weight:700}
+.dlist .out b{color:var(--danger)}.nb{font-style:normal;min-width:20px;height:20px;padding:0 6px;border-radius:999px;background:#C23B3B;color:#fff;font-size:11.5px;display:inline-flex;align-items:center;justify-content:center}.nb.g{background:#1E8A5A}
+.seg3{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none}.seg3 button{flex:none;height:36px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:var(--surface);font-weight:700;font-size:13px;color:var(--muted)}.seg3 button.on{background:#0B4A36;color:#fff;border-color:#0B4A36}
+.nlist{display:flex;flex-direction:column;gap:8px}.nitem{display:flex;align-items:flex-start;gap:12px;padding:12px;border-radius:16px;border:1px solid var(--line);background:var(--surface);text-align:left;color:var(--fg);width:100%}
+.nitem.new{border-color:#FFC21A;background:var(--yellow-soft)}.nic{font-size:22px;width:30px;text-align:center}.nitem div{flex:1;min-width:0}.nitem b{display:block;font-size:14.5px}.nitem small{display:block;color:var(--muted);font-size:13px;margin-top:2px}.nitem em{font-style:normal;font-size:11.5px;color:var(--muted);white-space:nowrap}
+.empty2{display:flex;flex-direction:column;align-items:center;gap:8px;padding:40px 0;font-size:36px}.empty2 b{font-size:15px}
+.perfhero{display:flex;align-items:center;gap:14px;padding:16px;border-radius:20px;background:linear-gradient(150deg,#0B4A36,#12664A);color:#fff}.perfhero>span{font-size:36px}.perfhero b{display:block;font-family:var(--display);font-size:20px;color:#FFD54A}.perfhero small{opacity:.9;font-size:13px}
+.pgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.pgrid div{padding:10px 12px;border-radius:14px;background:var(--surface-2);border:1px solid var(--line)}.pgrid small{display:block;font-size:11.5px;color:var(--muted)}.pgrid b{font-family:var(--display);font-size:19px}.pgrid b span{font-size:12px;color:var(--muted)}.pgrid .bad{border-color:#C23B3B}.pgrid .bad b{color:#C23B3B}
+.pbar{height:12px;border-radius:999px;background:var(--surface-2);overflow:hidden;border:1px solid var(--line)}.pbar i{display:block;height:100%;background:linear-gradient(90deg,#1E8A5A,#FFC21A)}
+.tips{padding:14px 16px;border-radius:16px;background:var(--yellow-soft);font-size:13.5px}.tips ul{margin:6px 0 0;padding-left:18px;display:flex;flex-direction:column;gap:4px}
+.dst2{font-style:normal;font-size:12px;font-weight:800;padding:3px 9px;border-radius:999px;background:var(--surface-2)}.dst2.ok{color:#1E8A5A}.dst2.warn2{color:#B07A00;background:var(--yellow-soft)}.dst2.bad{color:#fff;background:#C23B3B}
+.qrbox{background:#fff;padding:12px;border-radius:18px;box-shadow:0 6px 20px rgba(0,0,0,.12);min-width:244px;min-height:244px;display:flex;align-items:center;justify-content:center}
+.faq{border:1px solid var(--line);border-radius:14px;padding:12px 14px;background:var(--surface)}.faq summary{font-weight:700;cursor:pointer}.faq p{margin:8px 0 0;color:var(--muted);font-size:14px;line-height:1.5}
+.reqdist{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:16px;background:var(--surface-2);border:1px solid var(--line)}
+.reqdist div{flex:1}.reqdist b{display:block;font-family:var(--display);font-size:26px;line-height:1.1}.reqdist b em{font-style:normal;font-size:14px;color:var(--muted)}.reqdist small{color:var(--muted);font-size:12.5px}.reqdist>i{font-style:normal;font-size:22px;color:var(--muted)}
+.reqact{display:flex;align-items:center;gap:14px}
+.decl{position:relative;width:64px;height:64px;flex:none;border-radius:50%;background:var(--surface);box-shadow:0 2px 10px rgba(0,0,0,.12)}
+.decl svg{position:absolute;inset:0}.decl i{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-style:normal;font-size:34px;font-weight:800;color:#C23B3B;line-height:1}
+.accbtn{flex:1;height:64px;border-radius:999px;background:#1E8A5A;color:#fff;font-weight:800;font-size:20px;box-shadow:0 6px 18px rgba(30,138,90,.35);transition:transform .12s}
+.accbtn.tapped,.accbtn:active{transform:scale(.97)}
+.slide{--p:0;position:relative;height:62px;border-radius:20px;background:var(--navy);overflow:hidden;display:flex;align-items:center;justify-content:center;user-select:none;-webkit-user-select:none;touch-action:none}
+.slide.green{background:#1E8A5A}.slide.red{background:#C23B3B}
+.slide::before{content:"";position:absolute;inset:0;background:rgba(255,255,255,.18);transform-origin:left;transform:scaleX(var(--p))}
+.slabel{position:relative;color:#fff;font-family:var(--display);font-weight:700;font-size:17px;padding-left:44px;opacity:calc(1 - var(--p))}
+.knob{position:absolute;left:4px;top:4px;width:54px;height:54px;border-radius:16px;background:#FFC21A;color:#0B4A36;display:flex;align-items:center;justify-content:center;transition:transform .25s;cursor:grab;touch-action:none;box-shadow:0 4px 10px rgba(0,0,0,.2)}
+.slide.done .slabel{opacity:0}
+.demo{align-self:center;border:1.5px dashed var(--line);border-radius:999px;padding:6px 14px;font-size:12.5px;font-weight:600;color:var(--muted)}
+.demo.sm{padding:4px 10px;font-size:11.5px;flex:none}
+.smgr{border-radius:22px;padding:16px;background:linear-gradient(150deg,#0B4A36 0%,#12664A 60%,#0E5A41 100%);color:#fff;display:flex;flex-direction:column;gap:12px;box-shadow:0 10px 26px rgba(11,74,54,.28);position:relative;overflow:hidden}
+.smgr::after{content:"";position:absolute;right:-40px;top:-40px;width:150px;height:150px;border-radius:50%;background:radial-gradient(circle,rgba(255,194,26,.35),transparent 70%)}
+.smgr .sh{display:flex;align-items:center;gap:10px;position:relative;z-index:1}.smgr .sh b{font-family:var(--display);font-size:18px;letter-spacing:.02em;flex:1}
+.smgr .sh em{font-style:normal;font-size:11px;font-weight:800;letter-spacing:.12em;color:#0B4A36;background:linear-gradient(90deg,#FFD54A,#FFC21A);padding:4px 8px;border-radius:999px}
+.smgr .sv{display:flex;align-items:center;gap:12px;padding:12px;border-radius:16px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);position:relative;z-index:1;width:100%;color:#fff;text-align:left}
+.smgr .sv .ico{width:40px;height:40px;border-radius:12px;background:rgba(255,194,26,.18);display:flex;align-items:center;justify-content:center;font-size:20px;flex:none}
+.smgr .sv div{flex:1;min-width:0}.smgr .sv b{display:block;font-size:15px}.smgr .sv small{display:block;font-size:12px;color:rgba(255,255,255,.72)}
+.smgr .sw{width:48px;height:28px;border-radius:999px;background:rgba(255,255,255,.22);position:relative;flex:none;transition:background .2s}
+.smgr .sw::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;transition:transform .2s}
+.smgr .sv.on .sw{background:#FFC21A}.smgr .sv.on .sw::after{transform:translateX(20px)}
+.smgr .sv.lock{opacity:.62}.smgr .sv.lock .sw{display:none}.smgr .lk{font-size:11px;font-weight:700;color:#FFD54A;flex:none;text-align:right;max-width:92px}
+.smgr .tier{position:relative;z-index:1;display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:14px;background:rgba(0,0,0,.18);font-size:12.5px}
+.smgr .tier b{font-size:14px;color:#FFD54A;display:block}
+.kband{display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:14px;background:var(--yellow-soft);color:var(--yellow-ink);font-weight:700;font-size:14px}
+.adjg{display:grid;gap:8px}.adjg>div{min-width:0}.adjg .field{min-width:0;width:100%}.adjg input{width:100%;min-width:0}
+.kband.rpt{background:#E8F0FF;color:#1D4ED8}
+.upc{display:flex;align-items:center;gap:12px;padding:12px;border-radius:16px;border:1.5px solid var(--yellow);background:var(--yellow-soft)}
+.upc div{flex:1;min-width:0}.upc b{display:block}.upc small{color:var(--muted);font-size:12.5px}
+.upc .btn{width:auto;height:40px;padding:0 12px;font-size:13px;flex:none}
+.vcard{display:flex;align-items:center;gap:12px;padding:12px;border-radius:18px;border:1px solid var(--line)}
+.vcard .vi{width:68px;height:48px;border-radius:14px;background:var(--yellow-soft);display:flex;align-items:center;justify-content:center;flex:none}
+.vcard div{flex:1;min-width:0}
+.vcard b{font-family:var(--display);font-size:16px;display:block}
+.vcard small{color:var(--muted);font-size:12.5px}
+.veh .plate{flex:none}
+.reqsheet{max-height:72%}
+.reqtop{display:flex;align-items:center;gap:16px}
+.ring{position:relative;width:64px;height:64px;flex:none}
+.ring circle#rg{transition:stroke-dashoffset .2s linear}
+.ring b{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:var(--display);font-size:22px}
+.reqfare{display:flex;flex-direction:column}
+.reqfare small{color:var(--muted);font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase}
+.reqfare b{font-family:var(--display);font-size:36px;line-height:1.05;font-variant-numeric:tabular-nums}
+.reqfare span{font-size:13.5px;color:var(--muted)}
+.pm{font-style:normal;font-weight:700;font-size:11.5px;padding:1px 8px;border-radius:999px}
+.pm.cash{background:var(--yellow-soft);color:var(--yellow-ink)}
+.pm.upi{background:var(--navy-soft);color:var(--navy)}
+.pm.wallet{background:rgba(30,138,90,.12);color:var(--ok)}
+.custrow{display:flex;align-items:center;gap:10px}
+.custrow small{color:var(--muted)}
+.avatar.sm{width:36px;height:36px;font-size:16px;border-radius:12px}
+.cbtns{display:flex;gap:8px;flex:none}
+.round{width:46px;height:46px;border-radius:14px;background:var(--surface-2);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;color:var(--navy)}
+.navbtn{display:flex;align-items:center;justify-content:center;gap:8px;height:54px;border-radius:16px;background:var(--surface-2);border:1.5px solid var(--line);color:var(--navy);font-weight:700;text-decoration:none}
+.sheet .addr{align-items:center}
+.sheet .addr small.kind{display:block}
+.sheet .addr .pill{margin-left:auto;flex:none}
+.bigic{width:56px;height:56px;border-radius:16px;background:var(--yellow);color:#0B4A36;display:flex;align-items:center;justify-content:center;flex:none}
+.earncard{display:flex;justify-content:space-between;gap:12px;padding:16px;border-radius:20px;background:#0B4A36;color:#fff}
+.earncard small{opacity:.75;font-size:12.5px}
+.earncard b{display:block;font-family:var(--display);font-size:34px;color:#FFC21A;font-variant-numeric:tabular-nums}
+.ec2{text-align:right;display:flex;flex-direction:column;justify-content:center}
+.ec2 span{font-size:12.5px;opacity:.8}
+.ec2 b{font-size:20px;color:#fff}
+.hero2{display:flex;flex-direction:column;padding:4px 2px}
+.hero2 small{color:var(--muted);font-weight:700;font-size:12px;letter-spacing:.08em;text-transform:uppercase}
+.hero2 b{font-family:var(--display);font-size:42px;line-height:1.1;font-variant-numeric:tabular-nums}
+.hero2 span{color:var(--muted);font-size:13.5px}
+.chart{position:relative;display:grid;grid-template-columns:auto 1fr;gap:8px;height:190px;padding:12px 12px 8px;border:1px solid var(--line);border-radius:18px}
+.yax{display:flex;flex-direction:column;justify-content:space-between;font-size:10.5px;color:var(--muted);padding-bottom:20px;font-variant-numeric:tabular-nums}
+.bars{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;align-items:end;background:linear-gradient(var(--line) 1px,transparent 1px) 0 0/100% calc((100% - 20px)/2);padding-bottom:0}
+.bcol{height:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:4px;padding:0}
+.bar{position:relative;width:min(70%,22px);background:var(--navy-2);border-radius:4px 4px 0 0;min-height:2px;transition:background .15s}
+.bcol.today .bar{background:var(--navy)}
+.bcol.hl .bar{background:#F2A900}
+.bar em{position:absolute;bottom:100%;left:50%;transform:translateX(-50%);font-style:normal;font-size:10.5px;font-weight:700;color:var(--fg);white-space:nowrap;padding-bottom:2px}
+.bcol small{height:16px;font-size:11px;color:var(--muted)}
+.ctip{position:absolute;right:12px;top:8px;background:#0B4A36;color:#fff;font-size:12px;font-weight:600;padding:4px 10px;border-radius:8px}
+.steps{display:flex;flex-direction:column;gap:8px;font-size:13.5px}
+.steps div{display:flex;gap:10px;align-items:flex-start}
+.steps i{font-style:normal;width:22px;height:22px;border-radius:50%;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex:none}
+.st.okst{background:rgba(30,138,90,.12);color:var(--ok)}
+.st.warnst{background:rgba(245,180,0,.18);color:var(--yellow-ink)}
+.row .ic .pm{font-size:10px;padding:1px 5px}
+</style>
+
+<div class="app" id="app"></div>
+<div class="toast" id="toast"></div>
+
+<script src="../core/report.js?v=2026-11-04-61"></script>
+<script src="../core/geo.js?v=2026-11-04-61"></script>
+<script src="../core/fare.js?v=2026-11-04-61"></script>
+<script src="../core/pin.js?v=2026-11-04-61"></script>
+<script src="../core/clock.js?v=2026-11-04-61"></script>
+<script src="../core/map.js?v=2026-11-04-61"></script>
+<script src="../core/chat.js?v=2026-11-04-61"></script>
+<script src="../core/driverchecks.js?v=2026-11-04-61"></script>
+<script src="../core/nav.js?v=2026-11-04-61"></script>
+<script>
+/* shared with the customer app: icons, places, fares, map engine */
+const I = {
+  bike:`<img class="vsvg vimg" src="../vehicles/bike.jpg?v=1" width="58" height="36" alt="" loading="lazy" decoding="async">`,
+  auto:`<img class="vsvg vimg" src="../vehicles/auto.jpg?v=1" width="58" height="36" alt="" loading="lazy" decoding="async">`,
+  car:`<img class="vsvg vimg" src="../vehicles/sedan.jpg?v=1" width="58" height="36" alt="" loading="lazy" decoding="async">`,
+  mini:`<img class="vsvg vimg" src="../vehicles/mini.jpg?v=1" width="58" height="36" alt="" loading="lazy" decoding="async">`,
+  suv:`<img class="vsvg vimg" src="../vehicles/suv.jpg?v=1" width="58" height="36" alt="" loading="lazy" decoding="async">`,
+  psuv:`<img class="vsvg vimg" src="../vehicles/psuv.jpg?v=1" width="58" height="36" alt="" loading="lazy" decoding="async">`,
+  trav:`<img class="vsvg vimg" src="../vehicles/trav.jpg?v=1" width="58" height="36" alt="" loading="lazy" decoding="async">`,
+  bus:`<img class="vsvg vimg" src="../vehicles/bus.jpg?v=1" width="58" height="36" alt="" loading="lazy" decoding="async">`,
+  search:`<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0B4A36" stroke-width="2.5" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>`,
+  mic:`<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0B4A36" stroke-width="2.4" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0014 0M12 18v3"/></svg>`,
+  back:`<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>`,
+  pin:`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 22s7-6.5 7-12a7 7 0 10-14 0c0 5.5 7 12 7 12z"/><circle cx="12" cy="10" r="2.5"/></svg>`,
+  home:`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="M3 11l9-7 9 7v9a1 1 0 01-1 1h-5v-6h-6v6H4a1 1 0 01-1-1z"/></svg>`,
+  hosp:`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="3" width="18" height="18" rx="4"/><path d="M12 8v8M8 12h8"/></svg>`,
+  train:`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="5" y="3" width="14" height="13" rx="3"/><path d="M5 10h14M8 20l2-4M16 20l-2-4"/></svg>`,
+  clock:`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>`,
+  gps:`<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>`,
+  now:`<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#0B4A36" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></svg>`,
+  sched:`<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4M12 14v3l2 1"/></svg>`,
+  rent:`<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2M9 2h6"/></svg>`,
+  out:`<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20L10 4h4l6 16M12 8v2M12 13v2M12 18v1"/></svg>`,
+  navHome:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="M3 11l9-7 9 7v9a1 1 0 01-1 1h-5v-6h-6v6H4a1 1 0 01-1-1z"/></svg>`,
+  navTrips:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="6" cy="18" r="2.5"/><circle cx="18" cy="6" r="2.5"/><path d="M8.5 18H15a3 3 0 000-6H9a3 3 0 010-6h6.5"/></svg>`,
+  navWallet:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><rect x="3" y="6" width="18" height="14" rx="3"/><path d="M3 10h18M16 15h2"/></svg>`,
+  navHelp:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 114 2c-1 .7-1.5 1.2-1.5 2.5M12 17h.01"/></svg>`,
+  navMe:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/></svg>`,
+  cash:`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/></svg>`,
+  upi:`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h3v3h-3zM20 14v7h-6"/></svg>`
+};
+
+
+/* ---------- Vellore places (approx. coordinates) ---------- */
+const P = {
+  home:{ta:'காந்தி நகர், காட்பாடி',en:'Gandhi Nagar, Katpadi',lat:12.9550,lon:79.1390,ic:'home'},
+  katpadi:{ta:'காட்பாடி ஜங்ஷன்',en:'Katpadi Junction',sub:'Railway station',lat:12.9716,lon:79.1376,ic:'train'},
+  vit:{ta:'VIT பல்கலைக்கழகம்',en:'VIT University',sub:'Katpadi',lat:12.9692,lon:79.1559,ic:'pin'},
+  cmc:{ta:'CMC மருத்துவமனை',en:'CMC Hospital',sub:'Ida Scudder Road',lat:12.9246,lon:79.1356,ic:'hosp'},
+  newbus:{ta:'புதிய பேருந்து நிலையம்',en:'New Bus Stand',sub:'Vellore',lat:12.9349,lon:79.1435,ic:'pin'},
+  oldbus:{ta:'பழைய பேருந்து நிலையம்',en:'Old Bus Stand',sub:'Vellore town',lat:12.9180,lon:79.1330,ic:'pin'},
+  fort:{ta:'வேலூர் கோட்டை',en:'Vellore Fort',sub:'Jalakandeswarar Temple',lat:12.9206,lon:79.1295,ic:'pin'},
+  golden:{ta:'ஸ்ரீபுரம் தங்கக் கோவில்',en:'Sripuram Golden Temple',sub:'Thirumalaikodi',lat:12.8710,lon:79.0880,ic:'pin'},
+  sathu:{ta:'சத்துவாச்சாரி',en:'Sathuvachari',sub:'Vellore',lat:12.9370,lon:79.1640,ic:'pin'},
+  bagayam:{ta:'பாகாயம்',en:'Bagayam',sub:'Vellore',lat:12.8890,lon:79.1350,ic:'pin'}
+};
+let ROADS=[['home','katpadi'],['home','vit'],['katpadi','vit'],['home','newbus'],['newbus','sathu'],['newbus','oldbus'],['oldbus','fort'],['fort','cmc'],['cmc','oldbus'],['oldbus','bagayam'],['bagayam','golden'],['newbus','cmc'],['vit','sathu']];
+I.sedan=I.car;
+const VEH=[
+  {id:'bike',en:'Bike',ta:'பைக்',seats:1,base:25,per:7,eta:2},
+  {id:'auto',en:'Auto',ta:'ஆட்டோ',seats:3,base:40,per:16,eta:3},
+  {id:'mini',en:'Mini',ta:'Mini கார்',seats:4,base:100,per:16,eta:4,models:'Swift · Wagon R'},
+  {id:'sedan',en:'Sedan',ta:'Sedan கார்',seats:4,base:130,per:19,eta:5,models:'Dzire · Aura · Etios'},
+  {id:'suv',en:'MPV',ta:'MPV',seats:6,base:180,per:22,eta:6,models:'Ertiga · Rumion',tag:'7-seater'},
+  {id:'psuv',en:'Premium MPV',ta:'Premium MPV',seats:7,base:250,per:26,eta:8,models:'Innova Crysta · Hycross',tag:'Premium'},
+  {id:'trav',en:'Tempo Traveller / Maxi Cab',ta:'Tempo Traveller / Maxi Cab',seats:12,base:600,per:28,eta:25,models:'Tempo Traveller · Maxi Cab',tag:'12-seater'}
+];
+const fare=(v,km)=>Math.round((v.base+v.per*Math.max(0,km-1.5))/5)*5;
+
+
+Object.assign(I,{
+  phone:`<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="M5 3h4l2 5-2.5 1.5a11 11 0 006 6L16 13l5 2v4a2 2 0 01-2 2A16 16 0 013 5a2 2 0 012-2z"/></svg>`,
+  chat:`<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="M4 5h16v11H9l-5 4z"/></svg>`,
+  share:`<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="M8.2 10.8l7.6-4.4M8.2 13.2l7.6 4.4"/></svg>`,
+  shield:`<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/></svg>`,
+  tick:`<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#FFC21A" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7"/></svg>`
+});
+Object.assign(I,{
+  navEarn:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>`,
+  nav:`<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"><path d="M3 11l18-8-8 18-2-8z"/></svg>`
+});
+
+/* position along a lat/lon polyline at fraction f */
+
+function modal(html,bind){const m=document.createElement('div');m.className='modal';m.innerHTML=`<div class="card pad">${html}</div>`;app.appendChild(m);const close=()=>m.remove();m.onclick=e=>{if(e.target===m)close()};bind&&bind(m,close);return close}
+/* ---------- interactive Vellore map: drag, pinch, wheel, double-tap, fling ---------- */
+
+
+/* ================= VELLORE CALL TAXI — DRIVER APP ================= */
+const T={ta:{km:'கி.மீ',m:'மீ',near:'அருகில்',from:'ல இருந்து'},en:{km:'km',m:'m',near:'Near',from:'from'}};
+const CUSTOM=['pick','drop'];
+let mapLoop=null,TK=null,REQ=null;
+const S={lang:'ta',phone:'',logged:false,pid:null,tab:'home',online:false,onSince:0};
+try{Object.assign(S,JSON.parse(localStorage.getItem('vctd')||'{}'),{online:false,tab:'home'})}catch(e){}
+const save=()=>{try{localStorage.setItem('vctd',JSON.stringify({lang:S.lang,phone:S.phone,logged:S.logged,pid:S.pid}))}catch(e){}};
+const L=(ta,en)=>S.lang==='ta'?ta:en;
+const pn=k=>esc(P[k][S.lang]); // place names may come from customers: always escaped
+const inr=n=>'₹'+Math.round(n).toLocaleString('en-IN');
+const esc=v=>String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
+let COMM=10,MINBAL=100;
+const DPROF=[
+  {id:'auto',ta:'செல்வம் R',en:'Selvam R',plate:'TN 23 Q 7788',model:'Bajaj RE',veh:'auto',rating:4.8},
+  {id:'sedan',ta:'ரவிக்குமார் M',en:'Ravikumar M',plate:'TN 23 CA 3344',model:'Swift Dzire',veh:'sedan',rating:4.9},
+  {id:'mini',ta:'சுரேஷ் P',en:'Suresh P',plate:'TN 23 CA 2108',model:'Maruti Swift',veh:'mini',rating:4.8},
+  {id:'suv',ta:'பாலாஜி T',en:'Balaji T',plate:'TN 23 CB 5566',model:'Maruti Ertiga',veh:'suv',rating:4.9},
+  {id:'bike',ta:'கார்த்திக் S',en:'Karthik S',plate:'TN 23 BK 1290',model:'Honda Shine',veh:'bike',rating:4.9}];
+const me=()=>DME||DPROF.find(d=>d.id===S.pid)||DPROF[0];
+const CUST=[['பிரியா','Priya',4.9],['அருண்','Arun',4.7],['லட்சுமி','Lakshmi',4.8],['முகமது','Mohammed',4.9],['திவ்யா','Divya',4.6],['சரவணன்','Saravanan',4.8]];
+
+/* data */
+function seed(){const tr=[],now=new Date();
+  for(let d=1;d<=6;d++){const n=3+((d*7)%5);for(let i=0;i<n;i++){const day=new Date(now);day.setDate(day.getDate()-d);day.setHours(8+i*2,(i*17)%60);
+    const fare=60+((d*31+i*47)%180),comm=Math.round(fare*COMM/100);tr.push({id:'S'+d+i,date:day.getTime(),fare,comm,net:fare-comm,pay:['cash','upi','cash','wallet'][(d+i)%4],km:+(2+((d+i)*1.7)%9).toFixed(1),from:{ta:'காட்பாடி',en:'Katpadi'},to:{ta:'வேலூர் டவுன்',en:'Vellore Town'},sample:true})}}
+  return{wallet:350,tx:[{amt:350,ta:'தொடக்க இருப்பு',en:'Opening balance',date:Date.now()-6*864e5}],trips:tr,pending:[],onMs:0,onDay:new Date().toDateString()}}
+let DS=seed();try{const d=JSON.parse(localStorage.getItem('vctd_data')||'null');if(d&&d.trips)DS=d}catch(e){}
+const saveDS=()=>{try{localStorage.setItem('vctd_data',JSON.stringify(DS))}catch(e){}};
+if(DS.onDay!==new Date().toDateString()){DS.onMs=0;DS.onDay=new Date().toDateString()}
+let POS={lat:P.home.lat+.003,lon:P.home.lon-.002};
+let J=null; // active job
+
+const app=document.getElementById('app');
+function go(html,after){cancelAnimationFrame(mapLoop);clearInterval(TK);clearTimeout(REQ);app.innerHTML=html;after&&after()}
+function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(toast.h);toast.h=setTimeout(()=>el.classList.remove('show'),2600)}
+const isToday=ts=>new Date(ts).toDateString()===new Date().toDateString();
+const onMinutes=()=>Math.round((DS.onMs+(S.online?Date.now()-S.onSince:0))/6e4);
+function setOnline(v){if(v===S.online)return;if(v){S.onSince=Date.now()}else{DS.onMs+=Date.now()-S.onSince;saveDS()}S.online=v;if(CL)goLive(v);keepAwake(v)}
+/* keep the screen on while Online, so ride requests and live location keep working */
+let WL=null;async function keepAwake(on){try{if(on&&'wakeLock' in navigator){if(!WL||WL.released){WL=await navigator.wakeLock.request('screen')}}else if(!on&&WL){await WL.release();WL=null}}catch(e){}}
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&S.online)keepAwake(true)});
+
+/* slide-to-confirm */
+const slider=(id,label,cls='')=>`<div class="slide ${cls}" id="${id}"><span class="slabel">${label}</span><button class="knob" aria-label="${label}">${'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h13M13 6l6 6-6 6"/></svg>'}</button></div>`;
+/* tap buttons: ON/OFF DUTY toggle and Accept (replaces swipe sliders there) */
+/* ---- driver agreement: drivers added before the join-form agreement sign it here (office can require it) ---- */
+const needSign=()=>!!(CL&&DME&&typeof VCTCHK!=='undefined'&&!(DME.consent&&DME.consent.v===VCTCHK.AGREEMENT.v));
+function signCard(){return needSign()?`<button class="signcard" id="sgn"><b>📄 ${L('Driver ஒப்பந்தத்தில் கையெழுத்து போடுங்க','Please sign the driver agreement')}</b><small>${CFGD.reqConsent?L('கையெழுத்து போட்ட பிறகு தான் Online போக முடியும்','You can go online after signing'):L('2 நிமிஷம் · படிச்சு ✔ போட்டு பெயர் type பண்ணுங்க','2 minutes · read, tick and type your name')}</small></button>`:''}
+function signAgreement(done){const A=VCTCHK.AGREEMENT,lines=S.lang==='ta'?A.ta:A.en,nm=(DME&&DME.en)||'';
+  modal(`<h3>📄 ${L('Driver ஒப்பந்தம்','Driver agreement')}</h3><ol class="agr">${lines.map(x=>`<li>${esc(x)}</li>`).join('')}</ol>
+    <label class="agck"><input type="checkbox" id="agok"> ${L('மேலே உள்ள 10 விதிகளையும் படித்தேன், ஏற்கிறேன்','I have read and accept all 10 points above')}</label>
+    <label class="muted" for="agnm" style="font-size:13px">${L('கையெழுத்து: உங்க முழு பெயர்','Signature: your full name')} (${esc(nm)})</label>
+    <input id="agnm" class="agin" maxlength="80" autocomplete="name"><div class="err" id="age"></div>
+    <button class="btn" id="agsv">${L('கையெழுத்து போடு','Sign')}</button>`,(m,close)=>{
+    m.querySelector('#agsv').onclick=()=>{const e=m.querySelector('#age'),typed=m.querySelector('#agnm').value.trim();
+      if(!m.querySelector('#agok').checked){e.textContent=L('முதல்ல ✔ போடுங்க','Tick the box first');return}
+      if(!VCTCHK.sameName(typed,nm)){e.textContent=L(`உங்க பெயரை registration-ல உள்ள மாதிரியே type பண்ணுங்க: ${nm}`,`Type your name exactly as registered: ${nm}`);return}
+      const c={v:A.v,name:typed,lang:S.lang,ua:navigator.userAgent.slice(0,120),at:ts()};m.querySelector('#agsv').disabled=true;
+      F().updateDoc(F().doc(CL.db,'drivers',CL.phone),{consent:c,updatedAt:ts()}).then(()=>{DME.consent={...c,at:Date.now()};close();toast(L('நன்றி! ஒப்பந்தம் பதிவாச்சு','Thank you. Agreement recorded'));if(done)done();else home()})
+        .catch(err=>{m.querySelector('#agsv').disabled=false;e.textContent=CL.errText(err,S.lang==='ta')})}})}
+function dutyBtn(on){const td=DS.trips.filter(x=>isToday(x.date)),net=td.reduce((a,x)=>a+x.net,0),om=onMinutes();
+  const sum=`${L('இன்று','Today')} ${inr(net)} · ${td.length} ${L('trips','trips')} · ${Math.floor(om/60)}:${String(om%60).padStart(2,'0')} ${L('மணி online','hrs online')}`;
+  return `<button class="duty ${on?'on':''}" id="${on?'offs':'ons'}" aria-pressed="${on}"><div><b>${on?'ON DUTY':'OFF DUTY'}</b><small>${on?sum:L('Online போக tap பண்ணுங்க','Tap to go online')}</small></div><i class="sw"></i></button>`}
+function confirmOff(yes){
+  modal(`<div style="text-align:center;font-size:38px">⏸️</div><h3 style="text-align:center">${L('Offline போகவா?','Go offline?')}</h3>
+    <p class="muted" style="margin:0;text-align:center">${L('Offline ஆனா புது ride request வராது.','You will stop getting new ride requests.')}</p>
+    <button class="btn" id="stay" style="background:#1E8A5A">${L('ON DUTY-லயே இரு','Stay on duty')}</button><button class="btn ghost" id="off" style="color:#C23B3B">${L('ஆமா, Offline போறேன்','Yes, go offline')}</button>`,(m,close)=>{
+    m.querySelector('#stay').onclick=()=>{close();home()};m.querySelector('#off').onclick=()=>{close();yes()}});
+}
+function bindTap(id,done){const el=document.getElementById(id);if(!el)return;let busy=false;el.onclick=()=>{if(busy)return;busy=true;el.classList.add('tapped');try{navigator.vibrate&&navigator.vibrate(30)}catch(e){}setTimeout(()=>{done()},120)}}
+function bindSlide(id,done){const el=document.getElementById(id),k=el.querySelector('.knob');let sx=0,dx=0,drag=false,fired=false;
+  const max=()=>el.clientWidth-k.offsetWidth-8;
+  const fire=()=>{if(fired)return;fired=true;k.style.transform=`translateX(${max()}px)`;el.classList.add('done');setTimeout(done,180)};
+  k.onpointerdown=e=>{drag=true;sx=e.clientX;dx=0;try{k.setPointerCapture(e.pointerId)}catch(_){}k.style.transition='none'};
+  k.onpointermove=e=>{if(!drag)return;dx=Math.max(0,Math.min(max(),e.clientX-sx));k.style.transform=`translateX(${dx}px)`;el.style.setProperty('--p',(dx/max()).toFixed(2))};
+  k.onpointerup=k.onpointercancel=()=>{if(!drag)return;drag=false;k.style.transition='';if(dx>max()*.78)fire();else{k.style.transform='';el.style.setProperty('--p',0)}};
+  k.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();fire()}};
+}
+const gmapsUrl=p=>`https://www.google.com/maps/dir/?api=1&destination=${p.lat},${p.lon}&travelmode=driving`;
+const navLink=(p,txt)=>CFGD.extNav?`<a class="navbtn" href="${gmapsUrl(p)}" target="_blank" rel="noopener">${I.nav}${txt}</a>`
+  :`<button class="navbtn" type="button" data-nav="${(+p.lat).toFixed(6)},${(+p.lon).toFixed(6)}" data-navl="${esc(txt)}">${I.nav}${txt}</button>`;
+document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-nav]');if(!b)return;e.preventDefault();const ll=b.dataset.nav.split(',').map(Number);navOpen({lat:ll[0],lon:ll[1]},b.dataset.navl||'')});
+
+/* ---------- in-app turn-by-turn navigation (core/nav.js does the maths; our own turn sentences + voice) ---------- */
+let NAV=null;
+const NAVIC={left:'M14 19V10H6m0 0 4-4M6 10l4 4',right:'M10 19V10h8m0 0-4-4m4 4-4 4','slight-left':'M15 19v-6l-7-7m0 0v5m0-5h5','slight-right':'M9 19v-6l7-7m0 0v5m0-5h-5',
+  uturn:'M8 19V9a4 4 0 0 1 8 0v4m0 0-3-3m3 3 3-3',straight:'M12 19V5m0 0-5 5m5-5 5 5',arrive:'M12 21s-7-6.5-7-11a7 7 0 0 1 14 0c0 4.5-7 11-7 11zm0-9a2 2 0 1 0 0-4 2 2 0 0 0 0 4'};
+const navIcon=t=>`<svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="${NAVIC[t]||NAVIC.straight}"/></svg>`;
+const NT=()=>VNAV.TXT[S.lang==='ta'?'ta':'en'];
+function navVoices(){try{return ('speechSynthesis' in window)?speechSynthesis.getVoices()||[]:[]}catch(e){return[]}}
+function navSay(txt){if(!NAV||NAV.mute||!('speechSynthesis' in window)||!txt)return;NAV.lastSaid=txt;try{const u=new SpeechSynthesisUtterance(txt),vs=navVoices(),want=/[஀-௿]/.test(txt)?'ta':'en';
+  const v=vs.find(x=>(x.lang||'').toLowerCase().replace('_','-').startsWith(want+'-in'))||vs.find(x=>(x.lang||'').toLowerCase().startsWith(want));
+  u.lang=v?v.lang:(want==='ta'?'ta-IN':'en-IN');if(v)try{u.voice=v}catch(e){};u.rate=.95;speechSynthesis.cancel();speechSynthesis.speak(u)}catch(e){}}
+// Tamil voice when the phone has one; otherwise speak the English sentence (the screen stays Tamil)
+const navTaVoice=()=>{const vs=navVoices();return !vs.length||vs.some(x=>(x.lang||'').toLowerCase().startsWith('ta'))};
+function navSayKey(type,m){navSay(VNAV.phrase(type,m,S.lang==='ta'&&navTaVoice()?'ta':'en'))}
+function navSayTxt(k){navSay(VNAV.TXT[S.lang==='ta'&&navTaVoice()?'ta':'en'][k])}
+async function navRouteTo(traffic){if(!NAV)return;const from={lat:POS.lat,lon:POS.lon},want=NAV;
+  let r=null;try{r=typeof navRoute==='function'?await navRoute(from,NAV.dest,traffic):null}catch(e){}
+  if(!NAV||NAV!==want)return;
+  const pts=r&&r.pts&&r.pts.length>1?r.pts:[from,NAV.dest];NAV.route=VNAV.build(pts,r?r.secs:0);NAV.man=VNAV.maneuvers(NAV.route);NAV.src=r?r.src:'line';
+  NAV.hint=0;NAV.said=new Set();NAV.off={};NAV.prog=VNAV.progress(NAV.route,from,0);navDraw()}
+function navOpen(dest,label){if(NAV)navClose();
+  let mute=false;try{mute=localStorage.getItem('vct_navmute')==='1'}catch(e){}
+  NAV={dest,label,mute,reroutes:0,lastRe:0,prev:null,cur:null,follow:0,gpsWarn:false,arrived:false,said:new Set(),off:{},withJob:!!J};
+  const el=document.createElement('div');el.className='navfs';el.id='navfs';
+  el.innerHTML=`<canvas class="map" id="nmap"></canvas>
+    <div class="nbanner" id="nban"><span class="nico" id="nico">${navIcon('straight')}</span><div><b id="ndist">…</b><span id="ntxt">${L('வழி தேடுது…','Finding the route…')}</span></div></div>
+    <div class="ngps" id="ngps" hidden>📡 <span>${L('GPS signal கிடைக்கல. திறந்த இடத்துக்கு வாங்க','GPS signal lost. Move to an open spot')}</span><button id="ngr">${L('மறுபடி','Retry')}</button></div>
+    <div class="nbar"><div><b id="nrem">—</b><small id="neta">${esc(label||'')}</small></div>
+      <button id="nmute" aria-label="Voice">${mute?'🔇':'🔊'}</button><button id="nmore" aria-label="More">⋮</button><button id="nclose" class="nx" aria-label="Close">✕</button></div>
+    <div class="nmenu" id="nmenu" hidden><button id="nre">🔄 ${L('வழியை மறுபடி தேடு','Find the route again')}</button><a href="${gmapsUrl(dest)}" target="_blank" rel="noopener">🗺️ ${L('Google Maps-ல திற (backup)','Open in Google Maps (backup)')}</a><small id="nsrc"></small></div>`;
+  document.body.appendChild(el);
+  NAV.map=makeMap(el.querySelector('#nmap'),{
+    driver:()=>{const n=NAV;if(!n)return POS;const p=n.prev;return p&&(p.lat!==POS.lat||p.lon!==POS.lon)?{lat:POS.lat,lon:POS.lon,nlat:POS.lat+(POS.lat-p.lat),nlon:POS.lon+(POS.lon-p.lon)}:{lat:POS.lat,lon:POS.lon}},
+    line:()=>{const n=NAV;if(!n||!n.route)return[POS,dest];const r=n.route,pr=n.prog||{along:0,seg:1};return[VNAV.at(r,pr.along),...r.pts.slice(Math.max(1,pr.seg))]},
+    pins:[{lat:dest.lat,lon:dest.lon,col:'#C23B3B'}],sat:false});
+  // stop following for 8 s only when the DRIVER touches the map (the map's own onStart also fires on our follow moves)
+  const hold=e=>{if(NAV&&!e.target.closest('.nbanner,.nbar,.nmenu,.ngps'))NAV.follow=Date.now()+8000};
+  ['pointerdown','wheel','touchstart'].forEach(t=>el.addEventListener(t,hold,{capture:true,passive:true}));
+  NAV.map.setView(POS.lat,POS.lon,sFromZ(17));
+  el.querySelector('#nclose').onclick=navClose;
+  el.querySelector('#nmute').onclick=()=>{NAV.mute=!NAV.mute;try{localStorage.setItem('vct_navmute',NAV.mute?'1':'0')}catch(e){}el.querySelector('#nmute').textContent=NAV.mute?'🔇':'🔊';if(NAV.mute)try{speechSynthesis.cancel()}catch(e){}};
+  el.querySelector('#nmore').onclick=()=>{const m=el.querySelector('#nmenu');m.hidden=!m.hidden};
+  el.querySelector('#nre').onclick=()=>{el.querySelector('#nmenu').hidden=true;navRouteTo(false)};
+  el.querySelector('#ngr').onclick=()=>{stopGeo();GPSERR=0;startGeo();toast(L('GPS மறுபடி தேடுது…','Looking for GPS again…'))};
+  if(CL&&GEO==null)startGeo();keepAwake(true);navVoices();
+  navSayTxt('start');
+  navRouteTo(true);NAV.tick=setInterval(navTick,1000);
+}
+function navClose(){if(!NAV)return;clearInterval(NAV.tick);try{speechSynthesis.cancel()}catch(e){}const el=document.getElementById('navfs');if(el)el.remove();NAV=null;if(!S.online)keepAwake(false)}
+function navDraw(){if(!NAV||!NAV.route)return;const el=document.getElementById('navfs');if(!el)return;const T=NT();
+  const pr=NAV.prog||{along:0},nx=VNAV.next(NAV.man,pr.along),d=Math.max(0,nx.at-pr.along),rem=Math.max(0,NAV.route.len-pr.along),far=d>1500&&nx.type!=='arrive';
+  el.querySelector('#nico').innerHTML=navIcon(NAV.arrived?'arrive':far?'straight':nx.type);
+  el.querySelector('#ndist').textContent=NAV.arrived?L('வந்தாச்சு','Arrived'):VNAV.distTxt(d,S.lang);
+  el.querySelector('#ntxt').textContent=NAV.arrived?T.arrived:far?T.straight:T[nx.type];
+  const secs=NAV.route.secs&&NAV.route.len?NAV.route.secs*rem/NAV.route.len:rem/1000/22*3600,eta=new Date(Date.now()+secs*1000);
+  el.querySelector('#nrem').textContent=`${VNAV.distTxt(rem,S.lang)} · ${Math.max(1,Math.round(secs/60))} ${L('நிமி','min')}`;
+  el.querySelector('#neta').textContent=`${L('சேரும் நேரம்','Arrive')} ${eta.toLocaleTimeString(S.lang==='ta'?'ta-IN':'en-IN',{hour:'numeric',minute:'2-digit'})}${NAV.label?' · '+NAV.label:''}`;
+  el.querySelector('#nsrc').textContent=NAV.src==='osrm'?'Routing: OSRM · © OpenStreetMap':NAV.src==='line'?L('சாலை வழி கிடைக்கல — நேர்கோடு மட்டும்','No road route — straight line only'):''}
+function navTick(){const n=NAV;if(!n)return;const el=document.getElementById('navfs');if(!el||(n.withJob&&!J)){navClose();return}
+  const stale=!!CL&&(!GOTFIX||Date.now()-LASTFIX>15000);el.querySelector('#ngps').hidden=!stale;
+  if(stale){if(!n.gpsWarn){n.gpsWarn=true;navSayTxt('gpslost')}return}n.gpsWarn=false;
+  if(!n.route)return;
+  const pos={lat:POS.lat,lon:POS.lon};if(!n.cur||VNAV.dist(n.cur,pos)>=3){n.prev=n.cur||pos;n.cur=pos}
+  const pr=VNAV.progress(n.route,pos,n.hint);n.prog=pr;n.hint=pr.seg;
+  if(Date.now()>n.follow)n.map.flyTo(pos.lat,pos.lon,sFromZ(17));
+  if(!n.arrived&&(VNAV.dist(pos,n.dest)<40||(pr.off<40&&n.route.len-pr.along<25))){n.arrived=true;navSayKey('arrive',0);navDraw();setTimeout(()=>{if(NAV===n)navClose()},6000);return}
+  // off the route → a new route (not more often than every 20 s, at most 8 per leg)
+  if(n.src!=='line'&&VNAV.offRoute(n.off,pr.off,POSACC)&&Date.now()-n.lastRe>20000&&n.reroutes<8){n.lastRe=Date.now();n.reroutes++;n.off={};
+    navSayTxt('reroute');el.querySelector('#ntxt').textContent=NT().reroute;navRouteTo(false);return}
+  const nx=VNAV.next(n.man,pr.along),d=nx.at-pr.along,th=VNAV.due(nx,d,n.said);if(th!=null)navSayKey(nx.type,d);
+  navDraw();
+}
+
+
+/* ---------- login ---------- */
+function splash(){
+  go(`<section class="screen" id="splash"><div class="roofsign"><b>TAXI</b><span>வேலூர் டாக்ஸி</span></div><span class="drvtag">DRIVER</span>
+    <div class="road"></div><div class="tag">Vellore Taxi · Driver</div></section>`);
+  setTimeout(async()=>{if(await cloudBootD())return;S.logged&&S.pid?home():login()},1500);
+}
+function login(){
+  go(`<section class="screen"><div class="hero pad"><img src="./icon-192.png" alt="" style="width:84px;height:84px;border-radius:20px;display:block;margin-bottom:12px;box-shadow:0 4px 14px rgba(0,0,0,.15)" onerror="this.remove()"><span class="mini">VCT DRIVER</span><h1>${L('வணக்கம் Driver!','Welcome, driver!')}</h1>
+    <p>${L('உங்க நம்பர்ல login பண்ணுங்க. புது driver-னா சேர்வதற்கான form வரும்','Log in with your number. New drivers will see the sign-up form')}</p>
+    <div class="lang2"><button data-l="ta" class="${S.lang==='ta'?'on':''}">தமிழ்</button><button data-l="en" class="${S.lang==='en'?'on':''}">English</button></div></div>
+   <div class="body pad"><label class="muted" for="ph" style="font-weight:600">${L('மொபைல் நம்பர்','Mobile number')}</label>
+    <div class="field"><span class="cc">+91</span><input id="ph" inputmode="numeric" maxlength="10" value="${S.phone}" placeholder="98765 43210"></div>
+    <div class="err" id="e"></div><div class="otpwrap" id="ow" hidden><label class="muted" style="font-weight:600">OTP</label>
+    <div class="otp">${[...Array(CL?6:4).keys()].map(i=>`<input id="o${i}" inputmode="numeric" maxlength="1" autocomplete="one-time-code" aria-label="OTP ${i+1}">`).join('')}</div>
+    <div class="note">${CL?L('SMS-ல வந்த 6 இலக்க OTP-ஐ போடுங்க','Enter the 6-digit OTP from the SMS'):'Demo OTP: 1234'}</div></div><div style="flex:1"></div>
+    <button class="btn" id="go" disabled>${L('OTP அனுப்பு','Send OTP')}</button></div></section>`,()=>{
+    app.querySelectorAll('[data-l]').forEach(b=>b.onclick=()=>{S.lang=b.dataset.l;save();login()});
+    const ph=document.getElementById('ph'),b=document.getElementById('go'),e=document.getElementById('e'),ow=document.getElementById('ow');let stage=0;
+    ph.oninput=()=>{ph.value=ph.value.replace(/\D/g,'').slice(0,10);if(!stage)b.disabled=ph.value.length!==10;e.textContent=''};b.disabled=ph.value.length!==10;
+    const ins=[...app.querySelectorAll('.otp input')];
+    ins.forEach((inp,i)=>{inp.oninput=()=>{inp.value=inp.value.replace(/\D/g,'').slice(-1);if(inp.value&&ins[i+1])ins[i+1].focus();b.disabled=ins.map(x=>x.value).join('').length!==(CL?6:4)};
+      inp.onkeydown=ev=>{if(ev.key==='Backspace'&&!inp.value&&ins[i-1])ins[i-1].focus()}});
+    b.onclick=()=>{
+      if(!stage){if(!/^[6-9]\d{9}$/.test(ph.value)){e.textContent=L('10 இலக்க நம்பர் கொடுங்க','Enter a 10-digit number');return}
+        S.phone=ph.value;save();
+        if(CL){b.disabled=true;b.textContent=L('OTP அனுப்புது…','Sending OTP…');CL.sendOtp(ph.value).then(()=>{stage=1;ow.hidden=false;ph.disabled=true;b.textContent=L('சரிபார்','Verify');b.disabled=true;ins[0].focus()}).catch(er=>{b.disabled=false;b.textContent=L('OTP அனுப்பு','Send OTP');e.textContent=CL.errText(er,S.lang==='ta')});return}
+        stage=1;ow.hidden=false;ph.disabled=true;b.textContent=L('சரிபார்','Verify');b.disabled=true;ins[0].focus();return}
+      if(CL){b.disabled=true;CL.verifyOtp(ins.map(x=>x.value).join('')).then(async()=>{if(await loadMe())home()}).catch(er=>{b.disabled=false;e.textContent=CL.errText(er,S.lang==='ta');ins.forEach(x=>x.value='');ins[0].focus()});return}
+      if(ins.map(x=>x.value).join('')!=='1234'){e.textContent=L('OTP தவறு','Wrong OTP');ins.forEach(x=>x.value='');ins[0].focus();b.disabled=true;return}
+      S.logged=true;save();pickProfile();
+    };
+  });
+}
+function pickProfile(){
+  go(`<section class="screen"><div class="head pad"><h2>${L('உங்க வண்டி','Your vehicle')}</h2></div>
+   <div class="body pad" style="padding-top:0"><div class="note">${L('Demo: உண்மையான app-ல Owner உங்க நம்பருக்கு வண்டியை assign பண்ணுவாங்க. இங்கே ஒண்ணை தேர்வு பண்ணுங்க.','Demo: in the real app your owner assigns your vehicle. Pick one here.')}</div>
+    ${DPROF.map(d=>{const v=VEH.find(x=>x.id===d.veh);return `<button class="veh" data-p="${d.id}"><span class="vi">${I[d.veh]}</span><div><b>${d[S.lang]}</b><small>${v[S.lang]} · ${d.model}</small></div><span class="plate">${d.plate}</span></button>`}).join('')}
+   </div></section>`,()=>app.querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>{S.pid=b.dataset.p;save();home()}));
+}
+
+/* ---------- shell ---------- */
+function shell(content){
+  const tabs=[['home','navHome',L('Home','Home')],['earn','navEarn',L('வருமானம்','Earnings')],['wallet','navWallet','Wallet'],['me','navMe',L('நான்','Me')]];
+  return `<section class="screen">${content}<nav class="nav n4">${tabs.map(([k,ic,l])=>`<button data-tab="${k}" class="${S.tab===k?'on':''}">${I[ic]}${l}</button>`).join('')}</nav></section>`;
+}
+function bindNav(){app.querySelectorAll('.nav button').forEach(b=>b.onclick=()=>{S.tab=b.dataset.tab;({home,earn:earnTab,wallet:walletTab,me:profileTab})[S.tab]()})}
+
+/* ---------- home ---------- */
+function home(){
+  S.tab='home';const d=me(),today=DS.trips.filter(x=>isToday(x.date)),net=today.reduce((a,x)=>a+x.net,0);const low=DS.wallet<MINBAL;
+  go(shell(`<div class="mapwrap"><canvas class="map" id="map"></canvas>
+     <div class="topbar"><button class="chipbtn menub" id="menu" aria-label="Menu">☰${unread()?'<i class="mdot"></i>':''}</button><button class="tpill" id="tpill"><span class="stdot ${S.online?'on':''}"></span><b>${today.length} ${L('trips','trips')}</b><span>${inr(net)}</span><i>›</i></button><div style="flex:1"></div>
+       <button class="chipbtn ${low?'lowbal':''}" id="wb">${I.navWallet.replace('<svg ','<svg width="18" height="18" ')} ${inr(DS.wallet)}</button></div>
+     <div class="zoomctl" style="bottom:34px"><button class="chipbtn" id="loc" aria-label="My location">${I.gps}</button></div></div>
+   <div class="sheet pad"><div class="grab"></div>
+     ${(()=>{const ds=docState();return ds.expired.length?`<div class="warn">⛔ ${L('காலாவதி ஆன document: ','Expired: ')}${ds.expired.join(', ')}. ${L('புதுப்பிக்கும் வரை Online போக முடியாது. புது copy-ஐ office-க்கு அனுப்புங்க.','You can’t go online until it is renewed. Send the new copy to the office.')}</div>`:ds.soon.length?`<div class="warn">⚠️ ${L('சீக்கிரம் காலாவதி: ','Expiring soon: ')}${ds.soon.join(', ')}</div>`:''})()}
+     ${low?`<div class="warn">${L(`Wallet-ல ${inr(DS.wallet)} தான் இருக்கு. Online போக குறைந்தது ${inr(MINBAL)} வேணும்.`,`Only ${inr(DS.wallet)} in wallet. You need at least ${inr(MINBAL)} to go online.`)} <button class="linkbtn" id="rc">${L('Recharge பண்ணு','Recharge')}</button></div>`:''}
+     ${S.online?`${CL&&!GOTFIX?`<div class="warn gpsw" id="gpsw"><b>📍 ${L('உங்க location இன்னும் கிடைக்கல','Your location is not available yet')}</b><br>${GPSERR===1?L('Location அனுமதி மறுக்கப்பட்டிருக்கு. Browser settings → Site settings → Location → Allow கொடுங்க.','Location permission is blocked. Allow it in browser site settings.'):L('Phone-ல Location / GPS on பண்ணுங்க. கிடைக்கும் வரை customer-க்கு உங்க வண்டி தெரியாது, request-உம் வராது.','Turn on Location/GPS. Until then customers cannot see you and no requests will come.')} <button class="linkbtn" id="gpsr">${L('மறுபடி முயற்சி','Retry')}</button></div>`:`<div class="liveCard"><span class="pulse"></span><div><b>${L('Online-ல இருக்கீங்க','You are online')}</b><small>${L('புது ride request-க்கு காத்திருக்கு…','Waiting for ride requests…')}</small></div></div>`}
+        ${dutyBtn(true)}
+        ${CL?'':`<button class="demo" id="dreq">${L('Demo: ride request கொண்டு வா','Demo: send a ride request')}</button>`}`
+      :`${signCard()}${dutyBtn(false)}`}
+     ${pushReady()&&Notification.permission==='default'?`<button class="warn" id="pushon" style="text-align:left;border:0;width:100%">🔔 ${L('Phone lock ஆனாலும் ride alert வரணுமா? இங்கே தொட்டு Allow கொடுங்க','Get ride alerts even when the phone is locked: tap and Allow')}</button>`:''}
+     ${upcHtml()}
+     ${SHOW_SMGR?smgrHtml():''}
+     <div class="sec"><h3>${L('இன்று','Today')}</h3><span class="sample">${new Date().toLocaleDateString(S.lang==='ta'?'ta-IN':'en-IN',{day:'numeric',month:'short'})}</span></div>
+     <div class="stats"><div><b>${inr(net)}</b><small>${L('வருமானம்','Earnings')}</small></div><div><b>${today.length}</b><small>${L('பயணங்கள்','Rides')}</small></div><div><b>${Math.floor(onMinutes()/60)}:${String(onMinutes()%60).padStart(2,'0')}</b><small>${L('Online நேரம்','Online hrs')}</small></div></div>
+     <div class="vcard"><span class="vi">${I[d.veh]}</span><div><b>${d[S.lang]}</b><small>${VEH.find(v=>v.id===d.veh)[S.lang]} · ${d.model}</small></div><span class="plate">${d.plate}</span></div>
+   </div>`),()=>{
+    bindNav();
+    const m=makeMap(document.getElementById('map'),{driver:()=>({...POS,nlat:POS.lat,nlon:POS.lon+.0001}),cars:!CL&&S.online});m.setView(POS.lat,POS.lon,26000);
+    document.getElementById('loc').onclick=()=>m.flyTo(POS.lat,POS.lon,60000);
+    document.getElementById('wb').onclick=()=>{S.tab='wallet';walletTab()};
+    document.getElementById('menu').onclick=drawer;document.getElementById('tpill').onclick=()=>{S.tab='earn';earnTab()};
+    bindSmgr();
+    const rc=document.getElementById('rc');if(rc)rc.onclick=()=>{S.tab='wallet';walletTab();recharge()};
+    {const pb=document.getElementById('pushon');if(pb)pb.onclick=()=>enablePush(true)}
+    const gr=document.getElementById('gpsr');if(gr)gr.onclick=()=>{stopGeo();GPSERR=0;startGeo();try{navigator.geolocation.getCurrentPosition(p=>{POS={lat:p.coords.latitude,lon:p.coords.longitude};GOTFIX=true;pushLive(true);if(S.tab==='home'&&!J)home()},e=>{GPSERR=e.code;toast(L('Location இன்னும் கிடைக்கல','Still no location'))},{enableHighAccuracy:true,timeout:15000,maximumAge:0})}catch(e){}};
+    if(S.online){bindTap('offs',()=>confirmOff(()=>{setOnline(false);home();toast(L('Offline ஆயிட்டீங்க','You are offline'))}));
+      if(CL)maybeShowReq();else{document.getElementById('dreq').onclick=()=>incoming()}}
+    {const sg=document.getElementById('sgn');if(sg)sg.onclick=()=>signAgreement()}
+    if(!S.online)bindTap('ons',()=>{if(CFGD.reqConsent&&needSign()){signAgreement(()=>home());return}if(DME&&DME.blocked){toast(L('உங்க account நிறுத்தி வைக்கப்பட்டிருக்கு. Owner-ஐ தொடர்பு கொள்ளுங்க','Your account is on hold. Contact the owner'));home();return}{const ds=docState();if(ds.expired.length){toast(L('காலாவதி ஆன document: ','Expired: ')+ds.expired.join(', ')+L('. புதுப்பிச்சு office-க்கு அனுப்புங்க','. Renew it and tell the office'));home();return}}if(DS.wallet<MINBAL){toast(L('Wallet recharge பண்ணிட்டு Online போங்க','Recharge your wallet to go online'));home();return}setOnline(true);home();toast(L('Online! Ride request வந்தா சத்தம் வரும்','You are online. Requests will ring'))});
+  });
+}
+
+/* ---------- incoming request ---------- */
+function incoming(pre){
+  if(pre)return renderReq(pre);
+  const d=me(),v=VEH.find(x=>x.id===d.veh),keys=['katpadi','vit','cmc','newbus','oldbus','fort','sathu','home','bagayam'];
+  const from=keys[Math.floor(Math.random()*keys.length)];let to=from;while(to===from)to=keys[Math.floor(Math.random()*keys.length)];
+  const r=route(from,to),c=CUST[Math.floor(Math.random()*CUST.length)],f=fare(v,r.km),pk=P[from];
+  const away=hav(POS,pk)*1.3;
+  J={from,to,path:r.path,km:r.km,fare:f,comm:Math.round(f*COMM/100),pay:['upi','cash','cash','wallet'][Math.floor(Math.random()*4)],
+     cust:{ta:c[0],en:c[1],rating:c[2]},pin:String(1000+Math.floor(Math.random()*9000)),away,
+     approach:[{...POS},{lat:POS.lat,lon:pk.lon},{lat:pk.lat,lon:pk.lon}],trip:r.path.map(k=>({lat:P[k].lat,lon:P[k].lon}))};
+  J.away=away;renderReq(J);
+}
+const reqFareHtml=()=>`<small>${L('கட்டணம்','Fare')}</small><b>${inr(J.fare)}${J.tip?`<em class="tipadd"> + ${inr(J.tip)}</em>`:''}</b><span>${J.tip?L('Customer tip சேர்த்திருக்காங்க · ','Customer added a tip · '):''}${L('உங்களுக்கு','You get')} ${inr(J.fare-J.comm+(J.tip||0))} · <em class="pm ${J.pay}">${payName(J.pay)}</em></span>`;
+function renderReq(j){
+  J=j;const from=J.from,to=J.to,pk=P[from],away=J.away;
+  const SEC=20;
+  go(`<section class="screen req"><div class="mapwrap"><canvas class="map" id="map"></canvas>
+     <div class="topbar"><span class="stpill on"><i></i>${L('புது Ride!','New ride!')}</span></div></div>
+   <div class="sheet pad reqsheet"><div class="grab"></div>
+     <div class="reqtop"><div class="ring"><svg viewBox="0 0 44 44" width="64" height="64"><circle cx="22" cy="22" r="19" fill="none" stroke="var(--line)" stroke-width="4"/><circle id="rg" cx="22" cy="22" r="19" fill="none" stroke="var(--yellow)" stroke-width="4" stroke-linecap="round" stroke-dasharray="119.4" transform="rotate(-90 22 22)"/></svg><b id="sec">${SEC}</b></div>
+       <div class="reqfare" id="rqf">${reqFareHtml()}</div></div>
+     ${J.b&&J.b.kind&&J.b.kind!=='ride'?`<div class="kband">${J.b.kind==='outstation'?'🛣️ Outstation':'⏱️ Rental'} · ${whenTxt(J.b.when||Date.now())}${J.b.kind==='outstation'&&S_TIER()?` · ${TIERN[S_TIER()][S.lang==='ta'?0:1]}`:''}</div>`:''}
+     ${J.id&&MISS.get(J.id)?`<div class="kband rpt">🔁 ${L(`மறுபடி வந்திருக்கு (${MISS.get(J.id).n+1}/${MAXMISS})`,`Offered again (${MISS.get(J.id).n+1}/${MAXMISS})`)}${(J.tip||0)>(MISS.get(J.id).tip||0)?' · 💰 '+L('Tip கூடியிருக்கு','Tip increased'):''}</div>`:''}
+     <div class="reqdist"><div><b>${away.toFixed(1)} <em>${L('கி.மீ','km')}</em></b><small>📍 ${L('Pickup வரை','to pickup')}</small></div><i>→</i><div><b>${J.km.toFixed(1)} <em>${L('கி.மீ','km')}</em></b><small>🏁 ${L('பயணம்','trip')}</small></div></div>
+     <div class="tripcard"><div class="rail"><i class="a"></i><i class="l"></i><i class="b"></i></div>
+       <div class="stops"><div><small>${t2('pickup')} · ${away.toFixed(1)} ${L('கி.மீ தூரம்','km away')}</small><b>${pn(from)}</b></div><div><small>Drop · ${J.km.toFixed(1)} ${L('கி.மீ பயணம்','km trip')}</small><b>${pn(to)}</b></div></div></div>
+     <div class="custrow"><span class="avatar sm">${J.cust.en[0]}</span><b>${J.cust[S.lang]}</b><small>★ ${J.cust.rating}</small></div>
+     <div class="reqact"><button class="decl" id="dec" aria-label="${L('வேண்டாம்','Decline')}"><svg viewBox="0 0 44 44" width="64" height="64"><circle cx="22" cy="22" r="19" fill="none" stroke="var(--line)" stroke-width="3"/><circle id="rg2" cx="22" cy="22" r="19" fill="none" stroke="#C23B3B" stroke-width="3" stroke-linecap="round" stroke-dasharray="119.4" transform="rotate(-90 22 22)"/></svg><i>−</i></button>
+       <button class="accbtn" id="acc">${L('ஏற்கிறேன் · Accept','Accept')}</button></div>
+   </div></section>`,()=>{
+    const m=makeMap(document.getElementById('map'),{driver:()=>({...POS,nlat:pk.lat,nlon:pk.lon}),line:()=>J.trip,pins:[{...pk,col:'#1E8A5A'},{lat:P[to].lat,lon:P[to].lon,col:'#121212'}],hide:CUSTOM});
+    m.fit([POS,...J.trip],50,40);
+    const t0=Date.now(),rg=document.getElementById('rg'),sc=document.getElementById('sec');
+    TK=setInterval(()=>{const left=Math.max(0,SEC-(Date.now()-t0)/1000);sc.textContent=Math.ceil(left);rg.setAttribute('stroke-dashoffset',(119.4*(1-left/SEC)).toFixed(1));const r2=document.getElementById('rg2');if(r2)r2.setAttribute('stroke-dashoffset',(119.4*(1-left/SEC)).toFixed(1));
+      if(left<=0){if(J&&J.id){missReq({...J.b,id:J.id});SHOWING=null}J=null;home();toast(L('Request நேரம் முடிஞ்சது','Request timed out'))}},200);
+    ringReq();
+    bindTap('acc',()=>{stopReq();J&&J.id?acceptCloud():toPickup()});
+    document.getElementById('dec').onclick=()=>{stopReq();if(J&&J.id){missReq({...J.b,id:J.id});SHOWING=null}J=null;home();toast(L('Request-ஐ விட்டாச்சு','Request declined'))};
+  });
+}
+const t2=k=>({pickup:'Pickup'})[k];
+const payName=p=>p==='upi'?'UPI':p==='wallet'?'Wallet':'Cash';
+
+/* ---------- job screens ---------- */
+function jobShell(title,body,opts={}){
+  return `<section class="screen"><div class="mapwrap"><canvas class="map" id="map"></canvas>
+     <div class="topbar"><div class="greet status"><small id="stS">${title[0]}</small><b id="stB">${title[1]}</b></div><button class="chipbtn sos" id="sos">SOS</button></div>
+     ${opts.ff?`<button class="chipbtn ff" id="ff">Demo ⏩</button>`:''}</div>
+   <div class="sheet ride-sheet pad"><div class="grab"></div>${body}</div></section>`;
+}
+const custCard=()=>`<div class="drv"><span class="avatar">${J.cust.en[0]}</span><div><b>${J.cust[S.lang]}</b><small>★ ${J.cust.rating} · <em class="pm ${J.pay}">${payName(J.pay)}</em></small></div>
+  <div class="cbtns"><button class="round" id="call" aria-label="Call">${I.phone}</button><button class="round" id="chat" aria-label="Chat">${I.chat}</button></div></div>`;
+const CHAT_ME='d',CHAT_BTN='#chat';
+/* ---------- live chat (customer ↔ driver), stored in bookings/{id}/chat ---------- */
+function chatPing(t){beep();toast(L('Customer: ','Customer: ')+t)}
+/* the customer's number is in bookings/{id}/private/contact, readable only after this driver accepted;
+   older bookings still carry it in the booking itself */
+function custPh(){if(!J)return null;const c=J.contact||{},b=J.b||{};const rp=c.riderPhone||(b.rider&&b.rider.phone);
+  return rp?'+91'+String(rp).replace(/^\+?91/,''):(c.custPhone||b.custPhone||null)}
+function loadContact(id,n){if(!CL||!J||J.id!==id||J.contact)return;
+  F().getDoc(F().doc(CL.db,'bookings',id,'private','contact')).then(s=>{if(J&&J.id===id){if(s.exists())J.contact=s.data();else if((n||0)<4)setTimeout(()=>loadContact(id,(n||0)+1),3000)}})
+    .catch(()=>{if((n||0)<4)setTimeout(()=>loadContact(id,(n||0)+1),3000)})}
+function bindCust(){
+  if(CL&&J&&J.id){loadContact(J.id);chatStart(J.id);chatDot();
+    document.getElementById('call').onclick=()=>{const cp=custPh();if(cp)location.href='tel:'+cp;else{loadContact(J.id);toast(L('Customer நம்பர் இன்னும் வரல. சில நொடி கழிச்சு மீண்டும் அழுத்துங்க','Customer number not loaded yet. Try again in a few seconds'))}};
+    document.getElementById('chat').onclick=()=>{if(!J.app){toast(L('இது phone booking. Customer-ஐ call பண்ணுங்க','This is a phone booking. Please call the customer'));return}chatOpen(J.cust[S.lang],S.lang==='ta'?['வந்துகிட்டு இருக்கேன்','Pickup-ல நிக்கிறேன்','Traffic, 5 நிமி ஆகும்','எங்கே இருக்கீங்க?']:['On my way','I’m at the pickup','Traffic, 5 more minutes','Where are you?'])};
+  }else{
+  document.getElementById('call').onclick=()=>toast(L('Masked call: customer நம்பர் உங்களுக்கு தெரியாது (calling service connect ஆனதும்)','Masked call: the customer number stays hidden (once calling is connected)'));
+  document.getElementById('chat').onclick=()=>{const q=S.lang==='ta'?['வந்துகிட்டு இருக்கேன்','Pickup-ல நிக்கிறேன்','Traffic, 5 நிமி ஆகும்','எங்கே இருக்கீங்க?']:['On my way','I’m at the pickup','Traffic, 5 more minutes','Where are you?'];
+    modal(`<h3>${J.cust[S.lang]}</h3><p class="muted" style="margin:0;font-size:13px">${L('ஒரே tap-ல message அனுப்புங்க','Send a quick message')}</p><div style="display:flex;flex-direction:column;gap:8px">${q.map(x=>`<button class="reason" data-q="1">${x}</button>`).join('')}</div>`,(m,close)=>m.querySelectorAll('[data-q]').forEach(b=>b.onclick=()=>{close();toast(L('Message அனுப்பியாச்சு','Message sent'))}))};
+  }
+  document.getElementById('sos').onclick=()=>modal(`<h3>SOS</h3><p class="muted" style="margin:0">${L('உறுதி செய்தா Owner / dispatcher-க்கு உங்க location-ஓட alert போகும்.','Confirm to alert the owner and dispatcher with your location.')}</p>
+    <button class="sosbig" id="sb">${L('Alert அனுப்பு','Send alert')}</button><div class="bill"><div><span>${L('அவசர உதவி','Emergency')}</span><b>112</b></div><div><span>${L('காவல்','Police')}</span><b>100</b></div></div>`,(m,close)=>m.querySelector('#sb').onclick=()=>{close();if(CL){driverSos();toast(L('Alert அனுப்பியாச்சு. Office உடனே கூப்பிடுவாங்க','Alert sent. The office will call you'));return}toast(L('Alert அனுப்பியாச்சு (demo)','Alert sent (demo)'))});
+}
+function runAlong(o,pts,ms,onEnd,label){
+  let t0=performance.now(),done=false;J.f=0;
+  const tick=()=>{J.f=Math.min(1,(performance.now()-t0)/ms);POS=along(pts,J.f);label&&label();if(J.f>=1&&!done){done=true;clearInterval(TK);onEnd&&onEnd()}};
+  tick();TK=setInterval(tick,200);
+  return ()=>{t0=-1e9};
+}
+function toPickup(){
+  const pk=P[J.from];
+  go(jobShell([L('Pickup-க்கு போங்க','Head to pickup'),pn(J.from)],`${custCard()}
+     <div class="addr"><span class="ic" style="background:rgba(30,138,90,.14);color:var(--ok)">${I.pin}</span><div><small class="kind">Pickup</small><b>${pn(J.from)}</b></div></div>
+     <div class="two">${navLink(pk,L('Navigate','Navigate'))}<button class="btn yellow" id="arr">${L('வந்துட்டேன்','I have arrived')}</button></div>
+     <button class="linkbtn" id="jcx" style="align-self:center;color:var(--danger)">${L('Ride-ஐ ரத்து செய்','Cancel ride')}</button>`,{ff:!J.id}),()=>{
+    const o={driver:()=>POS,line:()=>{if(J&&J.id)return[POS,pk];const p=along(J.approach,J.f);return[p,...J.approach.slice(p.idx+1)]},pins:[{...pk,col:'#1E8A5A'}],hide:CUSTOM};
+    const m=makeMap(document.getElementById('map'),o);m.fit(J.id?[POS,pk]:J.approach,60,70);
+    const stS=document.getElementById('stS');
+    if(J.id){const up=()=>{const km=hav(POS,pk)*1.3;stS.textContent=km<0.15?L('Pickup வந்தாச்சு','At pickup'):L(`Pickup-க்கு ${km.toFixed(1)} கி.மீ`,`${km.toFixed(1)} km to pickup`)};up();TK=setInterval(up,2000);bindCust()}else{
+    const skip=runAlong(o,J.approach,12000,()=>{stS.textContent=L('Pickup வந்தாச்சு','At pickup')},()=>{const mn=Math.max(1,Math.ceil((1-J.f)*Math.max(2,J.away/0.35)));if(J.f<1)stS.textContent=L(`Pickup-க்கு ${mn} நிமி`,`${mn} min to pickup`)});
+    document.getElementById('ff').onclick=skip;bindCust();}
+    document.getElementById('arr').onclick=()=>{if(J.id){cUpd({arrivedAt:F().serverTimestamp()});atPickup();return}POS={lat:pk.lat,lon:pk.lon};atPickup()};
+    document.getElementById('jcx').onclick=()=>jobCancel();
+  });
+}
+function jobCancel(){
+  const rs=S.lang==='ta'?['Customer வரல (no-show)','Customer ரத்து பண்ண சொன்னாங்க','வண்டி பிரச்சனை','வேற காரணம்']:['Customer did not show up','Customer asked to cancel','Vehicle problem','Other reason'];
+  modal(`<h3>${L('ஏன் ரத்து?','Why cancel?')}</h3><div style="display:flex;flex-direction:column;gap:8px">${rs.map((r,i)=>`<button class="reason" data-i="${i}"><i class="radio"></i>${r}</button>`).join('')}</div>
+    <div class="note">${L('அடிக்கடி ரத்து செய்தா rating குறையும். Owner-க்கு தகவல் போகும்.','Frequent cancels lower your rating. The owner is informed.')}</div>
+    <button class="btn ghost" id="cy" disabled>${L('ரத்து செய்','Cancel ride')}</button><button class="btn" id="cn">${L('Ride-ஐ தொடரு','Keep the ride')}</button>`,(m,close)=>{
+    m.querySelectorAll('.reason').forEach(b=>b.onclick=()=>{m.querySelectorAll('.reason').forEach(x=>x.classList.toggle('sel',x===b));m.querySelector('#cy').disabled=false});
+    m.querySelector('#cn').onclick=close;m.querySelector('#cy').onclick=()=>{if(J&&J.id){const sel=m.querySelector('.reason.sel');cUpd({status:'cancelled',cancelReason:(sel&&+sel.dataset.i===0?'noshow: ':sel&&+sel.dataset.i===1?'custask: ':'driver: ')+(sel?sel.textContent.trim():'')});stopJob();setTimeout(()=>pushLive(true),300)}J=null;close();home();toast(L('Ride ரத்து ஆச்சு','Ride cancelled'))};
+  });
+}
+function atPickup(){
+  const t0=Date.now();
+  go(jobShell([L('Pickup-ல காத்திருக்கீங்க','Waiting at pickup'),'0:00'],`${custCard()}
+     ${J.id&&!J.app?'':`<span class="kind">${L('Customer சொல்லும் PIN-ஐ போடுங்க','Enter the PIN the customer tells you')}</span>
+     <div class="otp" id="pinb">${[0,1,2,3].map(i=>`<input id="p${i}" inputmode="numeric" maxlength="1" aria-label="PIN ${i+1}">`).join('')}</div>`}
+     <div class="err" id="pe"></div>${J.id?`<div class="note">${J.app?(CFGD.serverPin?L('PIN-ஐ server சரிபார்க்கும். 5 தடவை தப்பா போட்டா lock ஆயிடும்','The server checks the PIN. 5 wrong tries lock it'):L('PIN போட்டதும் customer app தானா சரிபார்க்கும்','The customer app checks the PIN automatically')):L('Phone booking. PIN தேவையில்லை','Phone booking. No PIN needed')}</div>`:`<div class="note">Demo PIN: ${J.pin}</div>`}
+     ${slider('st',L('Trip ஆரம்பிக்க இழுங்க','Slide to start trip'),'green')}
+     <button class="linkbtn" id="jcx" style="align-self:center;color:var(--danger)">${L('Customer வரல / ரத்து','No-show / cancel')}</button>`),()=>{
+    const pk=P[J.from];
+    makeMap(document.getElementById('map'),{driver:()=>({...POS,nlat:POS.lat,nlon:POS.lon+.0001}),pins:[{...pk,col:'#1E8A5A'}],hide:CUSTOM}).setView(pk.lat,pk.lon,60000);
+    const stB=document.getElementById('stB');
+    TK=setInterval(()=>{const s=Math.floor((Date.now()-t0)/1000),wf=(CFGD.wait&&CFGD.wait.free!=null?+CFGD.wait.free:3)*60,wr=CFGD.wait&&+CFGD.wait.rate||0;stB.textContent=`${Math.floor(s/60)}:${String(s%60).padStart(2,'0')} ${s<wf?L('· இலவச நேரம்','· free time'):wr?L(`· காத்திருப்பு ₹${wr}/நிமி`,`· waiting ₹${wr}/min`):L('· காத்திருக்கீங்க','· waiting')}`},1000);
+    const ins=[...app.querySelectorAll('#pinb input')];
+    ins.forEach((inp,i)=>{inp.oninput=()=>{inp.value=inp.value.replace(/\D/g,'').slice(-1);if(inp.value&&ins[i+1])ins[i+1].focus();document.getElementById('pe').textContent=''};
+      inp.onkeydown=e=>{if(e.key==='Backspace'&&!inp.value&&ins[i-1])ins[i-1].focus()}});
+    bindCust();document.getElementById('jcx').onclick=()=>jobCancel();
+    const start=()=>{if(J.id){cloudStart(ins);return}if(ins.map(x=>x.value).join('')!==J.pin){document.getElementById('pe').textContent=L('PIN தவறு. Customer-கிட்ட மறுபடி கேளுங்க','Wrong PIN. Ask the customer again');ins.forEach(x=>x.value='');ins[0].focus();
+        const sl=document.getElementById('st');sl.classList.remove('done');const k=sl.querySelector('.knob');k.style.transform='';sl.style.setProperty('--p',0);bindSlide('st',start);return}
+      onTrip()};
+    bindSlide('st',start);
+  });
+}
+function onTrip(){
+  const dp=P[J.to],mins=Math.round(J.km/22*60)+3;
+  go(jobShell([L('பயணத்தில்','On trip'),pn(J.to)],`${custCard()}
+     <div class="addr"><span class="ic" style="background:rgba(194,59,59,.12);color:var(--danger)">${I.pin}</span><div><small class="kind">Drop</small><b>${pn(J.to)}</b></div><span class="pill">${J.km.toFixed(1)} ${L('கி.மீ','km')}</span></div>
+     ${navLink(dp,L('Drop-க்கு Navigate','Navigate to drop'))}
+     ${slider('end',L('Trip முடிக்க இழுங்க','Slide to end trip'),'red')}`,{ff:!J.id}),()=>{
+    const o={driver:()=>POS,line:()=>{if(J&&J.id)return[POS,dp];const p=along(J.trip,J.f);return[p,...J.trip.slice(p.idx+1)]},pins:[{...dp,col:'#121212'}],hide:CUSTOM};
+    makeMap(document.getElementById('map'),o).fit(J.id?[POS,dp]:J.trip,60,70);
+    const stS=document.getElementById('stS');
+    if(J.id){const up=()=>{const km=hav(POS,dp)*1.3;stS.textContent=km<0.2?L('Drop வந்தாச்சு','At drop'):L(`Drop-க்கு ${km.toFixed(1)} கி.மீ`,`${km.toFixed(1)} km to drop`)};up();TK=setInterval(up,2000);bindCust()}else{
+    const skip=runAlong(o,J.trip,16000,()=>{stS.textContent=L('Drop வந்தாச்சு','At drop')},()=>{if(J.f<1)stS.textContent=L(`Drop-க்கு ${Math.max(1,Math.ceil((1-J.f)*mins))} நிமி`,`${Math.max(1,Math.ceil((1-J.f)*mins))} min to drop`)});
+    document.getElementById('ff').onclick=skip;bindCust();}
+    bindSlide('end',()=>{if(!J.id){POS={lat:dp.lat,lon:dp.lon};collect();return}const k=J.b&&J.b.kind;if(k==='rental'||k==='outstation')tripEndSheet(collect);else collect()});
+  });
+}
+/* ---- final bill (core/fare.js): km from GPS (or the driver's odometer), time, toll, parking ---- */
+function tripActual(o){const b=J.b||{},now=Date.now(),st=CL&&CL.toMs(b.startedAt)||J.startAt||now,ar=CL&&CL.toMs(b.arrivedAt)||0;
+  return Object.assign({km:J.gpsKm>0.5?+J.gpsKm.toFixed(1):+(J.km||0).toFixed(1),mins:Math.max(0,Math.round((now-st)/6e4)),waitMin:ar&&st>ar?Math.round((st-ar)/6e4):0},J.adj||{},o||{})}
+// bill more than 1.5 × the booked fare and at least ₹50 above it (same rule as the office alert)
+function billBig(){const f=J.fin||finNow(),q=+(J.b&&J.b.fare)||0;return q>0&&f.total>q*1.5&&f.total-q>=50}
+function finNow(){J.fin=FARE.final(J.b,tripActual());J.comm=FARE.comm(J.fin.trip,COMM);return J.fin}
+function tripEndSheet(after){
+  const k=J.b&&J.b.kind,need=k==='rental'||k==='outstation',a=tripActual(),gps=J.gpsKm>0.5?Math.round(J.gpsKm):0;
+  modal(`<h3>${L('Trip முடிவு விவரம்','Trip end details')}</h3>
+    <p class="muted" style="margin:0;font-size:13px">${need?L('Odometer-ல மொத்த கி.மீ பார்த்து போடுங்க. Customer-க்கு இந்த bill தான் போகும்.','Check the odometer and enter the total km. The customer gets this bill.'):L('Toll, parking இருந்தா மட்டும் போடுங்க.','Enter toll or parking only if there was any.')}</p>
+    <label class="kind">${L('மொத்த கி.மீ','Total km')}${gps?` <small class="muted">(GPS: ${gps})</small>`:''}</label><div class="field"><input id="tkm" inputmode="decimal" maxlength="6" value="${need?(gps||''):a.km}"></div>
+    ${need?`<label class="kind">${L('நேரம்','Time')}</label><div class="muted" style="margin-top:-4px">${Math.floor(a.mins/60)} ${L('மணி','hr')} ${a.mins%60} ${L('நிமி','min')}</div>`:''}
+    <div class="adjg" style="grid-template-columns:repeat(${k==='outstation'?3:2},minmax(0,1fr))"><div><label class="kind">Toll ₹</label><div class="field"><input id="ttl" inputmode="numeric" maxlength="5" value="${(J.adj&&J.adj.toll)||''}"></div></div>
+      <div><label class="kind">Parking ₹</label><div class="field"><input id="tpk" inputmode="numeric" maxlength="5" value="${(J.adj&&J.adj.parking)||''}"></div></div>
+      ${k==='outstation'?`<div><label class="kind">Permit ₹</label><div class="field"><input id="tpm" inputmode="numeric" maxlength="5" value="${(J.adj&&J.adj.permit)||''}"></div></div>`:''}</div>
+    <div class="bill" id="tfb"></div><button class="btn" id="tok">${L('Bill சரி · தொடரு','Bill OK · continue')}</button>`,(m,close)=>{
+    m.onclick=null;const v=id=>{const e=m.querySelector(id);return e?Math.max(0,parseFloat(e.value)||0):0};
+    const calc=()=>{const km=v('#tkm');J.adj={km:km||undefined,toll:v('#ttl'),parking:v('#tpk'),permit:v('#tpm')};if(!km)delete J.adj.km;const f=finNow();
+      m.querySelector('#tfb').innerHTML=f.lines.map(x=>`<div><span>${esc(x[S.lang])}</span><span>${inr(x.amt)}</span></div>`).join('')+`<div class="tot"><span>${L('மொத்தம்','Total')}</span><span>${inr(f.total)}</span></div>`};
+    m.querySelectorAll('input').forEach(i=>i.oninput=()=>{i.value=i.value.replace(/[^\d.]/g,'');calc()});calc();
+    m.querySelector('#tok').onclick=()=>{if(need&&!v('#tkm')){toast(L('மொத்த கி.மீ போடுங்க','Enter the total km'));return}try{localStorage.setItem('vct_adj_'+J.id,JSON.stringify(J.adj))}catch(e){}close();after&&after()}});
+}
+function collect(){
+  const v=VEH.find(x=>x.id===me().veh),base=J.b&&J.b.base!=null?+J.b.base:v.base,dist=J.fare-base;let pm=J.pay,stars=0,paid=false;
+  const fin=J.id?finNow():null,COL=(fin?fin.total:J.fare)+(J.tip||0);
+  go(`<section class="screen"><div class="donehero pad"><span class="check">${I.tick}</span><h1 style="font-size:26px">${L('Trip முடிஞ்சது!','Trip complete!')}</h1><span>${pn(J.from)} → ${pn(J.to)}</span></div>
+   <div class="body pad">
+    <div class="bill">${fin?fin.lines.map(x=>`<div><span>${esc(x[S.lang])}</span><span>${inr(x.amt)}</span></div>`).join(''):`<div><span>${L('அடிப்படை கட்டணம்','Base fare')}</span><span>${inr(base)}</span></div><div><span>${L(`தூரம் (${J.km.toFixed(1)} கி.மீ)`,`Distance (${J.km.toFixed(1)} km)`)}</span><span>${inr(dist)}</span></div>`}
+      ${J.tip?`<div><span>${L('Customer tip','Customer tip')}</span><span>${inr(J.tip)}</span></div>`:''}
+      <div class="tot"><span>${L('Customer கொடுக்க வேண்டியது','Collect from customer')}</span><span>${inr(COL)}</span></div></div>
+    ${fin?`<button class="linkbtn" id="adj" style="align-self:flex-start">＋ ${L('Toll / Parking / கி.மீ மாற்று','Toll / parking / change km')}</button>`:''}
+    <div id="pay">
+      <span class="kind">${L('Customer எப்படி கொடுத்தாங்க?','How did the customer pay?')}</span>
+      <div class="payrow" style="margin-top:8px">${['cash','upi'].concat(J.pay==='wallet'?['wallet']:[]).map(p=>`<button class="pay ${p===pm?'sel':''}" data-pm="${p}">${p==='cash'?I.cash:p==='upi'?I.upi:I.navWallet.replace('<svg ','<svg width="18" height="18" ')}${payName(p)}</button>`).join('')}</div>
+      <div class="qr" id="pmtxt" style="margin-top:10px"></div>
+      <button class="btn" id="got" style="margin-top:12px"></button></div>
+    <div id="sum" hidden style="display:flex;flex-direction:column;gap:14px">
+      <div class="earncard"><div><small>${L('உங்க வருமானம்','Your earnings')}</small><b>${inr((fin?fin.total:J.fare)-J.comm+(J.tip||0))}</b></div>
+        <div class="ec2"><span>${L('Commission','Commission')} ${COMM}%</span><b>−${inr(J.comm)}</b><small>${L('Wallet-ல இருந்து கழிக்கப்பட்டது','Taken from your wallet')}</small></div></div>
+      <span class="kind" style="text-align:center">${L(`${J.cust.ta} எப்படி?`,`Rate ${J.cust.en}`)}</span>
+      <div class="stars">${[1,2,3,4,5].map(n=>`<button data-s="${n}" aria-label="${n} stars">★</button>`).join('')}</div>
+      <button class="btn yellow" id="next">${L('அடுத்த ride-க்கு Online','Back online for the next ride')}</button>
+      <button class="linkbtn" id="off" style="align-self:center">${L('இப்போ Offline போறேன்','Go offline for now')}</button></div>
+   </div></section>`,()=>{
+    const pt=document.getElementById('pmtxt'),got=document.getElementById('got');
+    const setPm=p=>{pm=p;app.querySelectorAll('[data-pm]').forEach(b=>b.classList.toggle('sel',b.dataset.pm===p));
+      pt.innerHTML=p==='cash'?`<span class="bigic">${I.cash.replace('width="18" height="18"','width="30" height="30"')}</span><div><b>${L(`${inr(COL)} cash வாங்குங்க`,`Collect ${inr(COL)} in cash`)}</b><p class="muted" style="margin:4px 0 0;font-size:13px">${L('சில்லறை சரியா கொடுங்க','Give correct change')}</p></div>`
+        :p==='upi'?(CL&&me().upi?`<div id="dqr" style="background:#fff;padding:6px;border-radius:10px;flex:none;min-width:132px;min-height:132px"></div><div><b>${L(`Customer இந்த QR-ஐ scan பண்ணி ${inr(COL)} அனுப்பணும்`,`Customer scans this QR to pay ${inr(COL)}`)}</b><p class="muted" style="margin:4px 0 0;font-size:13px">${esc(me().upi)} · ${L('பணம் வந்ததை phone-ல பார்த்துட்டு confirm பண்ணுங்க.','Check the money arrived before confirming.')}</p></div>`
+          :`<span class="bigic">${I.upi.replace('width="18" height="18"','width="30" height="30"')}</span><div><b>${L(`Customer UPI-ல ${inr(COL)} அனுப்பணும்`,`Customer pays ${inr(COL)} by UPI`)}</b><p class="muted" style="margin:4px 0 0;font-size:13px">${CL?L('உங்க UPI ID இன்னும் சேர்க்கல. Office-ஐ சேர்க்க சொல்லுங்க. இப்போதைக்கு உங்க UPI app QR-ஐ காட்டுங்க.','Your UPI ID is not added yet — ask the office. For now, show your UPI app’s QR.'):L('உங்க UPI QR-ஐ காட்டுங்க.','Show your UPI QR.')}</p></div>`)
+        :`<span class="bigic">${I.navWallet.replace('<svg ','<svg width="30" height="30" ')}</span><div><b>${L('Customer wallet-ல இருந்து கழிஞ்சது','Paid from customer wallet')}</b><p class="muted" style="margin:4px 0 0;font-size:13px">${L('நீங்க எதுவும் வாங்க வேண்டாம். Owner settlement-ல சேரும்.','Collect nothing. It is settled by the owner.')}</p></div>`;
+      got.textContent=p==='wallet'?L('சரி','OK'):p==='cash'?L(`${inr(COL)} cash வாங்கியாச்சு`,`Collected ${inr(COL)} cash`):L('UPI பணம் வந்தாச்சு','UPI payment received');{const dq=document.getElementById('dqr');if(dq)drvQr(dq,COL)}};
+    setPm(pm);
+    {const aj=document.getElementById('adj');if(aj)aj.onclick=()=>{if(!paid)tripEndSheet(collect)}}
+    app.querySelectorAll('[data-pm]').forEach(b=>b.onclick=()=>{if(b.dataset.pm!==pm)toast(L(`${payName(b.dataset.pm)}-க்கு மாத்தியாச்சு`,`Switched to ${payName(b.dataset.pm)}`));setPm(b.dataset.pm)});
+    got.onclick=()=>{if(paid)return;
+      // a final bill far above the booked fare is double-checked here and flagged to the office
+      if(J.id&&!J.bigOk&&billBig()){const f=J.fin||finNow(),q=+J.b.fare||0;
+        modal(`<h3>⚠️ ${L('Bill அதிகமா இருக்கு','The bill is much higher')}</h3><p style="margin:0">${L(`Book பண்ணின கட்டணம் ${inr(q)}, இப்போ bill ${inr(f.total)}. Toll / parking / km சரியா போட்டீங்களா? இந்த bill customer-க்கும் office-க்கும் தெரியும்.`,`Booked fare ${inr(q)}, bill now ${inr(f.total)}. Are toll / parking / km right? The customer and the office both see this bill.`)}</p>
+          <div class="two"><button class="btn ghost" id="bfix">${L('திருத்து','Edit')}</button><button class="btn" id="bok">${L('சரி தான்','It is correct')}</button></div>`,(m,close)=>{
+          m.querySelector('#bfix').onclick=()=>{close();tripEndSheet(collect)};m.querySelector('#bok').onclick=()=>{close();J.bigOk=true;got.onclick()}});return}
+      paid=true;
+      if(J.id){cloudDone(pm);const aj=document.getElementById('adj');if(aj)aj.hidden=true;document.getElementById('pay').hidden=true;const sm=document.getElementById('sum');sm.hidden=false;sm.style.display='flex';return}
+      DS.trips.unshift({id:Date.now().toString(36),date:Date.now(),fare:J.fare,comm:J.comm,net:J.fare-J.comm+(J.tip||0),pay:pm,km:+J.km.toFixed(1),from:{ta:P[J.from].ta,en:P[J.from].en},to:{ta:P[J.to].ta,en:P[J.to].en},cust:J.cust});
+      DS.wallet-=J.comm;DS.tx.unshift({amt:-J.comm,ta:`Commission: ${P[J.to].ta}`,en:`Commission: ${P[J.to].en}`,date:Date.now()});saveDS();
+      document.getElementById('pay').hidden=true;const sm=document.getElementById('sum');sm.hidden=false;sm.style.display='flex'};
+    app.querySelectorAll('[data-s]').forEach(b=>b.onclick=()=>{stars=+b.dataset.s;if(J&&J.id)cUpd({custRating:stars});app.querySelectorAll('[data-s]').forEach(x=>x.classList.toggle('on',+x.dataset.s<=stars))});
+    document.getElementById('next').onclick=()=>{stopJob();J=null;if(DS.wallet<MINBAL){setOnline(false);home();toast(L('Wallet குறைவு. Recharge பண்ணிட்டு Online போங்க','Wallet is low. Recharge to go online'));return}home()};
+    document.getElementById('off').onclick=()=>{stopJob();J=null;setOnline(false);home()};
+  });
+}
+
+/* ---------- earnings ---------- */
+let EV='today';
+function earnTab(){
+  const days=[...Array(7)].map((_,i)=>{const d=new Date();d.setHours(0,0,0,0);d.setDate(d.getDate()-6+i);return d});
+  const inDay=(x,d)=>new Date(x.date).toDateString()===d.toDateString();
+  const list=EV==='today'?DS.trips.filter(x=>isToday(x.date)):DS.trips.filter(x=>x.date>=days[0].getTime());
+  const sum=k=>list.reduce((a,x)=>a+x[k],0),cash=list.filter(x=>x.pay==='cash').reduce((a,x)=>a+x.fare,0);
+  const per=days.map(d=>DS.trips.filter(x=>inDay(x,d)).reduce((a,x)=>a+x.net,0)),mx=Math.max(100,...per);
+  const nice=Math.ceil(mx/500)*500;const anySample=list.some(x=>x.sample);
+  go(shell(`<div class="head pad"><h2>${L('வருமானம்','Earnings')}</h2></div><div class="body pad" style="padding-top:0">
+    <div class="seg"><button class="${EV==='today'?'on':''}" data-ev="today">${L('இன்று','Today')}</button><button class="${EV==='week'?'on':''}" data-ev="week">${L('இந்த வாரம்','Last 7 days')}</button></div>
+    <div class="hero2"><small>${L('நிகர வருமானம்','Net earnings')}</small><b>${inr(sum('net'))}</b><span>${list.length} ${L('பயணங்கள்','rides')} · ${list.reduce((a,x)=>a+x.km,0).toFixed(1)} ${L('கி.மீ','km')}</span></div>
+    <div class="stats"><div><b>${inr(sum('fare'))}</b><small>${L('மொத்த கட்டணம்','Total fares')}</small></div><div><b>−${inr(sum('comm'))}</b><small>Commission</small></div><div><b>${inr(cash)}</b><small>${L('கையில் cash','Cash in hand')}</small></div></div>
+    ${EV==='week'?`<div class="chart" role="img" aria-label="${L('7 நாள் வருமானம்','Earnings for the last 7 days')}">
+      <div class="yax"><span>${inr(nice)}</span><span>${inr(nice/2)}</span><span>₹0</span></div>
+      <div class="bars">${days.map((d,i)=>`<button class="bcol ${i===6?'today':''}" data-v="${inr(per[i])}" data-d="${d.toLocaleDateString(S.lang==='ta'?'ta-IN':'en-IN',{weekday:'long',day:'numeric',month:'short'})}"><span class="bar" style="height:${(per[i]/nice*100).toFixed(1)}%">${i===6||per[i]===Math.max(...per)?`<em>${inr(per[i])}</em>`:''}</span><small>${d.toLocaleDateString(S.lang==='ta'?'ta-IN':'en-IN',{weekday:'narrow'})}</small></button>`).join('')}</div>
+      <div class="ctip" id="ctip" hidden></div></div>`:''}
+    <div class="sec"><h3>${L('பயணங்கள்','Rides')}</h3>${anySample?`<span class="sample">${L('முந்தைய நாட்கள் sample','Older days are sample')}</span>`:''}</div>
+    ${list.length?`<div class="recent">${list.slice(0,40).map(x=>`<div class="row"><span class="ic"><em class="pm ${x.pay}">${payName(x.pay)}</em></span><div><b>${x.to[S.lang]}</b><small>${new Date(x.date).toLocaleString(S.lang==='ta'?'ta-IN':'en-IN',{day:'numeric',month:'short',hour:'numeric',minute:'2-digit'})} · ${x.km} ${L('கி.மீ','km')}</small></div><div class="tamt"><b>${inr(x.net)}</b><small>${inr(x.fare)} − ${inr(x.comm)}</small></div></div>`).join('')}</div>`
+      :`<div class="empty"><h3>${L('இன்னும் ride இல்லை','No rides yet')}</h3><p class="muted">${L('Online போனா ride request வரும்.','Go online to get ride requests.')}</p></div>`}
+  </div>`),()=>{
+    bindNav();app.querySelectorAll('[data-ev]').forEach(b=>b.onclick=()=>{EV=b.dataset.ev;earnTab()});
+    const tip=document.getElementById('ctip');
+    app.querySelectorAll('.bcol').forEach(b=>{const show=()=>{tip.hidden=false;tip.textContent=`${b.dataset.d}: ${b.dataset.v}`;app.querySelectorAll('.bcol').forEach(x=>x.classList.toggle('hl',x===b))};b.onmouseenter=show;b.onclick=show;b.onfocus=show});
+  });
+}
+
+/* ---------- wallet ---------- */
+function walletTab(){
+  go(shell(`<div class="head pad"><h2>Wallet</h2></div><div class="body pad" style="padding-top:4px">
+    <div class="walcard"><small>${L('Wallet இருப்பு','Wallet balance')}</small><b>${inr(DS.wallet)}</b>
+      <span>${L(`ஒவ்வொரு ride-க்கும் ${COMM}% commission இதுல இருந்து கழியும். Online போக குறைந்தது ${inr(MINBAL)}.`,`${COMM}% commission per ride is taken from here. Minimum ${inr(MINBAL)} to go online.`)}</span>
+      <button class="btn yellow" id="rc">+ ${L('Recharge பண்ணு','Recharge')}</button></div>
+    ${DS.pending.length?`<div class="sec"><h3>${L('Approval-க்கு காத்திருக்கு','Waiting for approval')}</h3></div><div class="recent">${DS.pending.map((p,i)=>`<div class="row"><span class="ic in">+</span><div><b>${inr(p.amt)} · UTR ${esc(p.utr)}</b><small>${L('Owner பார்த்து approve பண்ணுவாங்க','Your owner will verify and approve')}</small></div>${CL?'':`<button class="demo sm" data-ap="${i}">${L('Demo: approve','Demo: approve')}</button>`}</div>`).join('')}</div>`:''}
+    <div class="sec"><h3>${L('பரிவர்த்தனைகள்','Transactions')}</h3></div>
+    <div class="recent">${DS.tx.slice(0,40).map(x=>`<div class="row"><span class="ic ${x.amt>0?'in':'out'}">${x.amt>0?'+':'−'}</span><div><b>${esc(x[S.lang])}</b><small>${new Date(x.date).toLocaleString(S.lang==='ta'?'ta-IN':'en-IN',{day:'numeric',month:'short',hour:'numeric',minute:'2-digit'})}</small></div><b class="${x.amt>0?'pos':''}" style="flex:none">${x.amt>0?'+':'−'}${inr(Math.abs(x.amt))}</b></div>`).join('')}</div>
+  </div>`),()=>{
+    bindNav();document.getElementById('rc').onclick=recharge;
+    app.querySelectorAll('[data-ap]').forEach(b=>b.onclick=()=>{const p=DS.pending.splice(+b.dataset.ap,1)[0];DS.wallet+=p.amt;DS.tx.unshift({amt:p.amt,ta:'Recharge (Owner approve)',en:'Recharge (approved by owner)',date:Date.now()});saveDS();walletTab();toast(L(`${inr(p.amt)} wallet-ல சேர்ந்தது`,`${inr(p.amt)} added to wallet`))});
+  });
+}
+function recharge(){
+  let amt=500;
+  modal(`<h3>${L('Wallet recharge','Recharge wallet')}</h3>
+    <div class="steps"><div><i>1</i>${L('கீழே உள்ள amount-ஐ Owner UPI-க்கு அனுப்புங்க','Send the amount to the owner’s UPI')}</div><div><i>2</i>${L('UPI app-ல வர்ற 12 இலக்க UTR / Transaction ID-ஐ போடுங்க','Enter the 12-digit UTR / transaction ID from your UPI app')}</div><div><i>3</i>${L('Owner சரிபார்த்ததும் wallet-ல சேரும்','It is added once the owner verifies it')}</div></div>
+    ${CFGD&&CFGD.upi?`<div class="note" style="font-size:15px">UPI ID: <b>${esc(CFGD.upi)}</b></div>`:`<div class="note">${L('Owner UPI ID, Owner app-ல set பண்ணதும் இங்கே காட்டும்.','The owner’s UPI ID shows here once set in the Owner app.')}</div>`}
+    <div class="tags" style="justify-content:flex-start">${[200,500,1000,2000].map(a=>`<button class="chip ${a===500?'sel':''}" data-a="${a}">₹${a}</button>`).join('')}</div>
+    <div class="field" style="height:52px"><span class="cc">UTR</span><input id="utr" inputmode="numeric" maxlength="12" placeholder="123456789012"></div>
+    <div class="err" id="re"></div><button class="btn" id="rs">${L('Approval-க்கு அனுப்பு','Send for approval')}</button>`,(m,close)=>{
+    m.querySelectorAll('[data-a]').forEach(b=>b.onclick=()=>{amt=+b.dataset.a;m.querySelectorAll('[data-a]').forEach(x=>x.classList.toggle('sel',x===b))});
+    const u=m.querySelector('#utr');u.oninput=()=>{u.value=u.value.replace(/\D/g,'').slice(0,12)};
+    m.querySelector('#rs').onclick=()=>{if(u.value.length!==12){m.querySelector('#re').textContent=L('12 இலக்க UTR எண் போடுங்க','Enter the 12-digit UTR');return}
+      if(CL)cloudRecharge(amt,u.value);DS.pending.unshift({amt,utr:u.value,date:Date.now()});saveDS();close();S.tab='wallet';walletTab();toast(L('அனுப்பியாச்சு. Owner approve பண்ணணும்','Sent. Waiting for owner approval'))};
+  });
+}
+
+/* ---------- profile ---------- */
+function profileTab(){
+  const d=me(),v=VEH.find(x=>x.id===d.veh),all=DS.trips.length;
+  const docs=[['ஓட்டுநர் உரிமம் (DL)','Driving licence',400],['RC','RC book',900],['Insurance','Insurance',18],['Permit','Permit',210],['FC (Fitness)','Fitness certificate',95]];
+  if(DME&&DME.docs)['dl','rc','ins','permit','fc'].forEach((k,i)=>{if(DME.docs[k])docs[i][2]=Math.round((DME.docs[k]-Date.now())/864e5)});
+  go(shell(`<div class="head pad"><h2>${L('நான்','Profile')}</h2></div><div class="body pad" style="padding-top:4px">
+    <div class="prof"><span class="avatar">${d.en[0]}</span><div style="flex:1;min-width:0"><h3>${d[S.lang]}</h3><span class="muted">+91 ${S.phone} · ★ ${d.rating}</span></div></div>
+    <div class="vcard"><span class="vi">${I[d.veh]}</span><div><b>${v[S.lang]} · ${d.model}</b><small>${L('Owner வண்டி','Owner’s vehicle')} · ${all} ${L('பயணங்கள்','rides')}</small></div><span class="plate">${d.plate}</span></div>
+    <div class="sec"><h3>${L('ஆவணங்கள்','Documents')}</h3>${CL?'':`<span class="sample">${L('Sample தேதிகள்','Sample dates')}</span>`}</div>
+    <div class="recent">${docs.map(([ta,en,dl])=>{const ex=new Date(Date.now()+dl*864e5);return `<div class="row"><span class="ic">${I.shield}</span><div><b>${S.lang==='ta'?ta:en}</b><small>${L('முடியும் தேதி','Expires')} ${ex.toLocaleDateString(S.lang==='ta'?'ta-IN':'en-IN',{day:'numeric',month:'short',year:'numeric'})}</small></div><em class="st ${dl<30?'warnst':'okst'}">${dl<0?L('காலாவதி','Expired'):dl<30?L(`${dl} நாள்ல முடியும்`,`${dl} days left`):L('சரி','Valid')}</em></div>`}).join('')}</div>
+    <div class="sec"><h3>${L('அமைப்புகள்','Settings')}</h3></div>
+    <div class="recent"><button class="row" id="lg"><span class="ic">அ</span><div><b>${L('மொழி','Language')}</b><small>${S.lang==='ta'?'தமிழ்':'English'}</small></div></button>
+      <button class="row" id="th"><span class="ic">☾</span><div><b>Dark mode</b><small>${document.documentElement.dataset.theme==='dark'?'On':'Off'}</small></div></button>
+      ${CL?'':`<button class="row" id="sw"><span class="ic">${I.navHome}</span><div><b>${L('வேற வண்டி (demo)','Switch vehicle (demo)')}</b><small>${L('Owner assign பண்றது','Assigned by owner')}</small></div></button>`}
+      <button class="row" id="lo"><span class="ic" style="color:var(--danger)">⏻</span><div><b style="color:var(--danger)">Logout</b><small>+91 ${S.phone}</small></div></button>
+      ${CL?`<button class="row" id="delacc"><span class="ic" style="color:var(--danger)">🗑</span><div><b style="color:var(--danger)">${L('Account நீக்க கோரிக்கை','Request account deletion')}</b><small>${L('Office wallet பணத்தை settle பண்ணிட்டு நீக்கும்','The office settles your wallet, then deletes it')}</small></div></button>`:''}</div>
+    <p class="fine muted"><a href="../privacy/#drivers" target="_blank" rel="noopener" style="color:inherit">${L('தனியுரிமை & விதிமுறைகள்','Privacy & Terms')}</a> · Vellore Taxi · Driver app v0.1</p></div>`),()=>{
+    bindNav();
+    document.getElementById('lg').onclick=()=>{S.lang=S.lang==='ta'?'en':'ta';save();profileTab()};
+    document.getElementById('th').onclick=()=>{const r=document.documentElement;r.dataset.theme=r.dataset.theme==='dark'?'light':'dark';profileTab()};
+    const sw=document.getElementById('sw');if(sw)sw.onclick=()=>{setOnline(false);pickProfile()};
+    document.getElementById('lo').onclick=()=>{setOnline(false);if(CL){stopAllD();DME=null;CL.logout()}S.logged=false;S.pid=null;save();login()};
+    const da=document.getElementById('delacc');if(da)da.onclick=()=>modal(`<h3>${L('Account நீக்க கோரிக்கை அனுப்பவா?','Send an account deletion request?')}</h3>
+      <p style="margin:0;line-height:1.55">${L('Office உங்க wallet பணம், நிலுவை எல்லாத்தையும் settle பண்ணிட்டு 7 நாளுக்குள்ள உங்க account, documents-ஐ நீக்கும். அதுவரை ride எடுக்க முடியாது.','The office settles your wallet and dues, then deletes your account and documents within 7 days. You cannot take rides after this.')}</p>
+      <button class="btn" id="dno">${L('வேண்டாம்','Cancel')}</button><button class="btn ghost" id="dyes" style="color:var(--danger)">${L('ஆமா, கோரிக்கை அனுப்பு','Yes, send request')}</button>`,(m,close)=>{
+      m.querySelector('#dno').onclick=close;
+      m.querySelector('#dyes').onclick=async()=>{const b=m.querySelector('#dyes');if(b.disabled)return;b.disabled=true;
+        try{const r=await CL.call('deleteMyAccount',{});close();setOnline(false);toast(r&&r.queued?L('கோரிக்கை office-க்கு போயிடுச்சு. அவங்க உங்களை அழைப்பாங்க','Request sent. The office will call you'):L('முடிஞ்சது','Done'))}
+        catch(e){b.disabled=false;toast(L('இப்போ முடியல. மறுபடி முயற்சி பண்ணுங்க','Could not send now. Try again'))}}});
+  });
+}
+
+
+/* ================= CLOUD: Firebase (live on GitHub Pages; demo everywhere else) ================= */
+let RATE=0,CL=null,DME=null,UNS=[],REQUNSUB=null,JOBUNSUB=null,GEO=null,LASTLIVE=0,SHOWING=null,REQS=[],RCH=[];
+const MISS=new Map(),ROUNDMS=60e3,MAXMISS=3; // per booking: how often this driver let it pass; re-offered each new round (1 min) or when the tip goes up, max 3 times
+function roundOf(b){const o=offerAt(b);if(!isFinite(o))return 0;const base=Math.max(o,(!b.kind||b.kind==='ride')?(+b.when||0):0);return Math.floor((VCTCLK.now()-base)/ROUNDMS)+1}
+function missReq(b){if(!b||!b.id&&!b._id)return;const id=b.id||b._id,m=MISS.get(id)||{n:0};m.n++;m.r=roundOf(b);m.tip=+b.tip||0;MISS.set(id,m)}
+function canOffer(b){const m=MISS.get(b.id);if(!m)return true;if(m.n>=MAXMISS)return false;return roundOf(b)>m.r||(+b.tip||0)>m.tip}
+const CFGD={upi:'',office:''};
+const ON_PAGES=!/^(localhost|127\.0\.0\.1|)$/.test(location.hostname);
+const cloudP=(window.CLOUD_READY||Promise.resolve(null)).then(c=>{CL=c||null;return CL}).catch(()=>null);
+const F=()=>CL.fs;
+const ts=()=>F().serverTimestamp();
+const ON_PAGES_D=()=>!/^(localhost|127\.0\.0\.1|)$/.test(location.hostname);
+function offlineD(){go(`<section class="screen"><div class="hero pad"><span class="mini">DRIVER APP</span><h1>${L('Internet இல்லை','You are offline')}</h1><p>${L('Connection-ஐ பார்த்துட்டு மறுபடி முயற்சி பண்ணுங்க.','Check your connection and try again.')}</p></div><div class="body pad"><div style="flex:1"></div><button class="btn" id="rl">${L('மறுபடி முயற்சி','Try again')}</button></div></section>`,()=>document.getElementById('rl').onclick=()=>location.reload())}
+function notDriver(){
+  F().getDoc(F().doc(CL.db,'staff',CL.phone)).then(st=>{if(st.exists())ownerD();else if(ON_PAGES_D())location.replace('join/');else notDriver2()}).catch(()=>{if(ON_PAGES_D())location.replace('join/');else notDriver2()});
+}
+function ownerD(){
+  go(`<section class="screen"><div class="hero pad"><span class="mini">VCT DRIVER</span><h1>${L('வணக்கம் Owner!','Hello, owner!')}</h1><p>${L('உங்க நம்பர் office நம்பர். Driver-கள் இந்த app-ஐ எப்படி பார்ப்பாங்கன்னு demo-வில பார்க்கலாம். Demo-வில எதுவும் உண்மையா சேமிக்கப்படாது.','Your number is an office number. You can try the driver app in demo mode — nothing is saved for real.')}</p></div>
+   <div class="body pad"><button class="btn yellow" id="dm">${L('Driver app demo பார்','Open the driver app demo')}</button><a class="btn ghost" href="../office/" style="display:flex;align-items:center;justify-content:center;text-decoration:none">${L('Office panel-க்கு போ','Go to the office panel')}</a><div style="flex:1"></div>
+   <button class="btn ghost" id="lo2" style="border:0">${L('வேற நம்பர்ல login','Log in with another number')}</button></div></section>`,()=>{
+    document.getElementById('dm').onclick=()=>{try{sessionStorage.setItem('vct_drv_demo','1')}catch(e){}location.reload()};
+    document.getElementById('lo2').onclick=()=>{CL.logout().then(login)}});
+}
+function notDriver2(){
+  go(`<section class="screen"><div class="hero pad"><span class="mini">DRIVER APP</span><h1>${L('இந்த நம்பர் driver-ஆ சேர்க்கப்படல','This number is not registered as a driver')}</h1>
+    <p>${esc(CL.phone||'')} · ${L('Owner-கிட்ட உங்க நம்பரை Office panel-ல சேர்க்க சொல்லுங்க.','Ask the owner to add your number in the office panel.')}</p></div>
+   <div class="body pad"><div class="note">${L('புது driver-ஆ சேரணுமா? உங்க விவரம், documents upload பண்ணி office-க்கு அனுப்புங்க.','New here? Send your details and documents to our office.')}</div><a class="btn yellow" href="../join/" style="display:flex;align-items:center;justify-content:center;text-decoration:none">${L('Driver-ஆ சேர விண்ணப்பி','Apply to drive with us')}</a><div style="flex:1"></div><button class="btn ghost" id="lo2">${L('வேற நம்பர்ல login','Log in with another number')}</button></div></section>`,()=>document.getElementById('lo2').onclick=()=>{CL.logout().then(login)});
+}
+const DEMO_D=()=>{try{if(/[?&]demo=1/.test(location.search)){sessionStorage.setItem('vct_drv_demo','1');history.replaceState(null,'',location.pathname)}return sessionStorage.getItem('vct_drv_demo')==='1'}catch(e){return false}};
+function demoBar(){if(document.getElementById('demobar'))return;const d=document.createElement('div');d.id='demobar';
+  d.style.cssText='position:fixed;left:50%;transform:translateX(-50%);top:6px;z-index:9999;background:#121212;color:#FFC21A;font:700 12px system-ui;padding:6px 10px;border-radius:999px;display:flex;gap:10px;align-items:center;box-shadow:0 2px 8px rgba(0,0,0,.3)';
+  d.innerHTML=`DEMO · ${L('Owner பார்வை','Owner preview')} <button style="background:#FFC21A;color:#121212;border:0;border-radius:999px;padding:3px 10px;font:700 12px system-ui">${L('வெளியேறு','Exit')}</button>`;
+  d.querySelector('button').onclick=()=>{try{sessionStorage.removeItem('vct_drv_demo')}catch(e){}try{localStorage.removeItem('vctd')}catch(e){}location.reload()};document.body.appendChild(d)}
+async function cloudBootD(){
+  const c=await cloudP;
+  if(DEMO_D()){CL=null;demoBar();if(!S.logged||!S.pid||S.pid==='cloud'){S.phone='9999999999';S.logged=true;S.pid=null;save();pickProfile();return true}return false}
+  if(!c){if(ON_PAGES){offlineD();return true}return false}
+  const u=await CL.waitUser();
+  if(!u||!u.phoneNumber){login();return true}
+  if(await loadMe())home();
+  return true;
+}
+async function loadMe(){
+  let s=null;try{s=await F().getDoc(F().doc(CL.db,'drivers',CL.phone))}catch(e){}
+  if(!s||!s.exists()){notDriver();return false}
+  applyMe(s.data());S.phone=(CL.phone||'').replace('+91','');S.logged=true;S.pid='cloud';save();
+  DS={wallet:DS.wallet,tx:[],trips:[],pending:[],onMs:0,onDay:new Date().toDateString()};
+  watchMe();watchCfgD();watchMine();watchRch();
+  VCTCLK.sync(F(),F().doc(CL.db,'live',CL.phone)); // learn the server time once
+  return true;
+}
+
+/* document expiry: warn 15 days ahead, block going online once anything has expired */
+const DOCNM={dl:['ஓட்டுநர் உரிமம்','Driving licence'],rc:['RC','RC'],ins:['Insurance','Insurance'],permit:['Permit','Permit'],fc:['FC','FC']};
+function docState(){const out={expired:[],soon:[]};if(!DME||!DME.docs)return out;const now=Date.now();
+  Object.entries(DME.docs).forEach(([k,t])=>{if(!t||!DOCNM[k])return;const nm=DOCNM[k][S.lang==='ta'?0:1],d=Math.ceil((t-now)/864e5);if(t<now)out.expired.push(nm);else if(d<=15)out.soon.push(`${nm} (${d} ${L('நாள்','days')})`)});return out}
+function applyMe(d){const pv=DME&&DME.veh;if(REQUNSUB&&pv&&d.veh&&pv!==d.veh){REQUNSUB();REQUNSUB=null;setTimeout(()=>{if(S.online)listenReq()},0)}DME={id:CL.phone,ta:d.name||'Driver',en:d.name||'Driver',plate:d.plate||'',model:d.model||'',veh:d.veh||'auto',rating:RATE||d.rating||5,docs:d.docs||null,blocked:!!d.blocked,upi:d.upi||'',svc:d.svc||null,prio:d.prio||'auto',year:+d.year||+((String(d.model||'').match(/\b(19|20)\d\d\b/)||[''])[0])||0,consent:d.consent||null};DS.wallet=+d.wallet||0}
+function watchMe(){UNS.push(F().onSnapshot(F().doc(CL.db,'drivers',CL.phone),s=>{if(!s.exists())return;const before=DS.wallet;applyMe(s.data());
+  if(DME.blocked&&S.online){setOnline(false);toast(L('உங்க account நிறுத்தி வைக்கப்பட்டிருக்கு','Your account is on hold'))}
+  if(S.online&&!J&&docState().expired.length){setOnline(false);toast(L('ஒரு document காலாவதி ஆயிடுச்சு. Offline ஆக்கப்பட்டீங்க','A document has expired. You have been taken offline'))}
+  if(!J&&!document.querySelector('.modal')){if(S.tab==='wallet'&&before!==DS.wallet)walletTab();else if(S.tab==='home'&&(document.getElementById('ons')||(document.getElementById('ons')||document.getElementById('offs'))))home()}},()=>{}))}
+function watchCfgD(){UNS.push(F().onSnapshot(F().doc(CL.db,'config','app'),s=>{if(!s.exists())return;const d=s.data();
+  if(d.comm!=null)COMM=+d.comm;if(d.minbal!=null)MINBAL=+d.minbal;CFGD.upi=d.upi||'';CFGD.office=d.office||'';CFGD.serverComm=!!d.serverComm;CFGD.serverPin=!!d.serverPin;CFGD.reqConsent=!!d.reqConsent;CFGD.extNav=!!d.extNav;CFGD.wait=d.wait||null;CFGD.push=d.push||null;
+  {const na=Array.isArray(d.announce)?d.announce:[],top=na[0];const fresh=top&&(!ANN[0]||ANN[0].id!==top.id)&&top.t>seenAt();ANN=na;
+   if(fresh&&ANN.length&&!J&&!document.querySelector('.modal')){beep();toast('📢 '+(top.title||L('Office அறிவிப்பு','Office notice')));if(S.tab==='home'&&document.getElementById('menu'))home()}}if(d.dispatch)Object.assign(DISP,d.dispatch);
+  if(d.fares)VEH.forEach(v=>{const f=d.fares[v.id];if(f){if(f.base!=null)v.base=+f.base;if(f.per!=null)v.per=+f.per}})},()=>{}))}
+/* this driver's trips: newest 300 only (needs the index in firestore.indexes.json; without it, falls back to all trips) */
+function watchMine(full){const q=full?F().query(F().collection(CL.db,'bookings'),F().where('driverPhone','==',CL.phone))
+    :F().query(F().collection(CL.db,'bookings'),F().where('driverPhone','==',CL.phone),F().orderBy('createdAt','desc'),F().limit(300));
+  UNS.push(F().onSnapshot(q,snap=>{
+  const all=snap.docs.map(d=>({id:d.id,...d.data()}));
+  {const rs=all.filter(b=>b.status==='done'&&+b.rating>0);RATE=rs.length?+(rs.reduce((a,b)=>a+(+b.rating),0)/rs.length).toFixed(1):0;if(DME&&RATE)DME.rating=RATE}
+  DS.trips=all.filter(b=>b.status==='done').map(b=>{const f=FARE.billOf(b),c=b.comm!=null?+b.comm:FARE.comm(FARE.tripOf(b),COMM);return{id:b.id,date:CL.toMs(b.doneAt)||b.when||Date.now(),fare:f,comm:c,net:f-c+(+b.tip||0),pay:b.pay||'cash',km:+b.km||0,from:{ta:b.from.ta,en:b.from.en},to:{ta:b.to.ta,en:b.to.en},cust:{ta:b.custName||'',en:b.custName||''}}}).sort((a,b)=>b.date-a.date);
+  rebuildTx();
+  {const wk=Date.now()-7*864e5;DS.cx7=all.filter(b=>b.status==='cancelled'&&/^driver/.test(b.cancelReason||'')&&(CL.toMs(b.updatedAt)||b.when||0)>=wk).length}
+  const upk=UPC.map(u=>u.id).join();UPC=all.filter(b=>b.status==='assigned'&&isFutB(b)&&!b.arrivedAt&&!GONOW.has(b.id)).sort((a,b)=>a.when-b.when);
+  const act=all.find(b=>b.status==='ontrip'||(b.status==='assigned'&&!UPC.some(u=>u.id===b.id)));
+  if(act&&!J)adoptJob(act);
+  else if(!J&&upk!==UPC.map(u=>u.id).join()&&!document.querySelector('.modal')&&S.tab==='home'&&(document.getElementById('ons')||document.getElementById('offs')))home();
+  if(!J&&!document.querySelector('.modal')&&S.tab==='earn')earnTab();
+},e=>{console.warn(e);if(!full&&e&&e.code==='failed-precondition')watchMine(true)}))}
+function watchRch(){UNS.push(F().onSnapshot(F().query(F().collection(CL.db,'recharges'),F().where('driverPhone','==',CL.phone)),snap=>{
+  RCH=snap.docs.map(d=>({id:d.id,...d.data()}));
+  DS.pending=RCH.filter(r=>r.status==='pending').sort((a,b)=>(b.date||0)-(a.date||0)).map(r=>({amt:r.amt,utr:r.utr,date:r.date}));
+  rebuildTx();
+  if(!J&&!document.querySelector('.modal')&&S.tab==='wallet')walletTab();
+},()=>{}))}
+function rebuildTx(){
+  DS.tx=[...RCH.filter(r=>r.status==='approved').map(r=>({amt:+r.amt,ta:'Recharge (Owner approve)',en:'Recharge (approved)',date:CL.toMs(r.approvedAt)||r.date||0})),
+    ...RCH.filter(r=>r.status==='rejected').map(r=>({amt:0,ta:`Recharge நிராகரிப்பு · UTR ${r.utr}`,en:`Recharge rejected · UTR ${r.utr}`,date:CL.toMs(r.approvedAt)||r.date||0})),
+    ...DS.trips.map(t=>({amt:-t.comm,ta:`Commission: ${t.to.ta}`,en:`Commission: ${t.to.en}`,date:t.date}))].sort((a,b)=>b.date-a.date);
+}
+function stopAllD(){UNS.forEach(u=>{try{u()}catch(e){}});UNS=[];if(REQUNSUB){REQUNSUB();REQUNSUB=null}stopJob();stopGeo()}
+
+/* going online: GPS + live position + ride requests */
+/* push: "new ride" alerts when the phone is locked (works once the owner adds the web-push key in Settings
+   and the Cloud Functions are deployed). The token is saved on the driver's own record. */
+const pushReady=()=>!!(CL&&CFGD.push&&CFGD.push.vapid&&'Notification' in window&&'serviceWorker' in navigator);
+async function enablePush(ask){if(!pushReady())return false;
+  if(Notification.permission!=='granted'){if(!ask)return false;if(await Notification.requestPermission()!=='granted'){toast(L('Notification அனுமதி கொடுக்கல','Notifications not allowed'));return false}}
+  const t=await CL.pushToken(CFGD.push.vapid,'./fcm-sw.js','./fcm/');if(!t){if(ask)toast(L('இந்த phone-ல push வேலை செய்யாது','Push is not supported on this phone'));return false}
+  if(t!==localStorage.getItem('vct_fcm')){await F().updateDoc(F().doc(CL.db,'drivers',CL.phone),{fcm:t,fcmAt:ts()}).catch(()=>{});try{localStorage.setItem('vct_fcm',t)}catch(e){}}
+  if(ask){toast(L('சரி! Phone lock-லயும் ride alert வரும்','Done! Ride alerts will come even when locked'));home()}return true}
+function goLive(on){
+  F().updateDoc(F().doc(CL.db,'drivers',CL.phone),{online:on,updatedAt:ts()}).catch(()=>{});
+  pushLive(true);
+  if(on){startGeo();listenReq();enablePush(false)}else{stopGeo();if(REQUNSUB){REQUNSUB();REQUNSUB=null}REQS=[]}
+}
+function pushLive(force){
+  if(!CL||!CL.phone)return;if(S.online&&!GOTFIX)return;const now=Date.now();if(!force&&now-LASTLIVE<8000)return;LASTLIVE=now;
+  F().setDoc(F().doc(CL.db,'live',CL.phone),{lat:POS.lat,lon:POS.lon,gh:VGEO.gh(POS.lat,POS.lon),online:!!S.online,busy:!!(J&&J.id),veh:me().veh,updatedAt:ts()}).catch(()=>{});
+}
+setInterval(()=>{if(CL&&S.online)pushLive(true)},20000);
+let GOTFIX=false,GPSERR=0,LASTFIX=0,POSACC=0; // real GPS received? (never publish the default Vellore point)
+function trackKm(){if(!J||!J.id||!J.b||J.b.status!=='ontrip')return;const last=J.gpsLast;J.gpsLast={lat:POS.lat,lon:POS.lon};if(!last)return;
+  const d=hav(last,POS);if(d<0.02){J.gpsLast=last;return}if(d>3)return; // ignore GPS jumps
+  J.gpsKm=(J.gpsKm||0)+d;try{localStorage.setItem('vct_km_'+J.id,String(J.gpsKm))}catch(e){}}
+function startGeo(){
+  if(GEO!=null||!navigator.geolocation)return;
+  GEO=navigator.geolocation.watchPosition(p=>{POS={lat:p.coords.latitude,lon:p.coords.longitude};LASTFIX=Date.now();POSACC=p.coords.accuracy||0;trackKm();const first=!GOTFIX;GOTFIX=true;GPSERR=0;pushLive(first);if(first&&S.tab==='home'&&!J&&document.getElementById('gpsw'))home()},
+    e=>{GPSERR=e&&e.code||0;if(S.tab==='home'&&!J&&!GOTFIX&&S.online&&document.getElementById('gpsw')&&e.code===1)home();toast(L('Location அனுமதி கொடுங்க. இல்லைனா customer-க்கு உங்க வண்டி தெரியாது','Allow location so customers can see your vehicle'))},{enableHighAccuracy:true,maximumAge:0,timeout:20000});
+}
+function stopGeo(){if(GEO!=null){navigator.geolocation.clearWatch(GEO);GEO=null}}
+/* ride request ringtone: plays until Accept / decline / timeout */
+let RQAC=null,RQT=null;
+function rqUnlock(){try{if(!RQAC)RQAC=new (window.AudioContext||window.webkitAudioContext)();if(RQAC.state==='suspended')RQAC.resume()}catch(e){}}
+['click','touchstart','keydown'].forEach(ev=>document.addEventListener(ev,rqUnlock,{passive:true}));
+function rqTone(){rqUnlock();if(!RQAC||RQAC.state!=='running')return;const t0=RQAC.currentTime+.02;
+  [880,1108.7,1318.5,1760,1318.5,1760].forEach((f,i)=>{const t=t0+i*.13+(i>2?.12:0);[1,2].forEach(h=>{const o=RQAC.createOscillator(),g=RQAC.createGain();o.type=h===1?'square':'sine';o.frequency.value=f*h;
+    g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(h===1?.16:.12,t+.01);g.gain.exponentialRampToValueAtTime(.0001,t+.3);o.connect(g);g.connect(RQAC.destination);o.start(t);o.stop(t+.32)})})}
+function ringReq(){stopReq();const go1=()=>{if(!document.getElementById('acc')){stopReq();return}rqTone();try{navigator.vibrate&&navigator.vibrate([400,150,400,150,400])}catch(e){}};go1();RQT=setInterval(go1,2400)}
+function stopReq(){clearInterval(RQT);RQT=null;try{navigator.vibrate&&navigator.vibrate(0)}catch(e){}}
+/* driver's own UPI QR (customer pays the driver directly) */
+function loadQrD(){return new Promise((res,rej)=>{if(window.QRCode)return res();const sc=document.createElement('script');sc.src='https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';sc.onload=res;sc.onerror=rej;document.head.appendChild(sc)})}
+function drvQr(el,amt){const u=me().upi;if(!u||!el)return;const link=`upi://pay?pa=${encodeURIComponent(u)}&pn=${encodeURIComponent(me().en||'Driver')}&am=${amt}&cu=INR&tn=${encodeURIComponent('Vellore Taxi ride')}`;
+  loadQrD().then(()=>{el.innerHTML='';new window.QRCode(el,{text:link,width:120,height:120,correctLevel:window.QRCode.CorrectLevel.M})}).catch(()=>{el.innerHTML=`<small>${esc(u)}</small>`})}
+function beep(){try{const a=new (window.AudioContext||window.webkitAudioContext)();[0,.35,.7].forEach(t=>{const o=a.createOscillator(),g=a.createGain();o.frequency.value=880;o.connect(g);g.connect(a.destination);g.gain.setValueAtTime(.25,a.currentTime+t);g.gain.exponentialRampToValueAtTime(.001,a.currentTime+t+.3);o.start(a.currentTime+t);o.stop(a.currentTime+t+.3)})}catch(e){}try{navigator.vibrate&&navigator.vibrate([300,150,300])}catch(e){}}
+function listenReq(){
+  if(REQUNSUB)return;
+  REQUNSUB=F().onSnapshot(F().query(F().collection(CL.db,'bookings'),F().where('status','==','searching'),F().where('veh','==',me().veh)),snap=>{
+    REQS=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(a.when||0)-(b.when||0));
+    {const cur=REQS.find(x=>x.id===SHOWING),rf=document.getElementById('rqf');if(cur&&J&&J.id===SHOWING&&rf&&(+cur.tip||0)!==(J.tip||0)){J.tip=+cur.tip||0;J.b=cur;rf.innerHTML=reqFareHtml();beep()}}
+    if(SHOWING&&SHOWING!==ACCEPTING&&!REQS.some(b=>b.id===SHOWING)&&document.getElementById('acc')){SHOWING=null;J=null;home();toast(L('இந்த ride-ஐ வேற driver எடுத்துட்டாங்க, அல்லது ரத்து ஆயிடுச்சு','Another driver took this ride, or it was cancelled'));return}
+    if(document.getElementById('offs'))maybeShowReq();
+  },e=>console.warn(e));
+}
+function maybeShowReq(){
+  if(!CL||!S.online||J||SHOWING||document.querySelector('.modal'))return;
+  const now=VCTCLK.now(),b=REQS.find(x=>offerAt(x)<=now&&canOffer(x));if(!b)return;
+  SHOWING=b.id;incoming(buildJ(b,b.id));
+}
+function buildJ(b,id){
+  P.pick={ta:b.from.ta,en:b.from.en,lat:b.from.lat,lon:b.from.lon,ic:'pin'};
+  const tl=b.to&&b.to.lat!=null?b.to:b.from;
+  P.drop={ta:b.to.ta,en:b.to.en,lat:tl.lat,lon:tl.lon,ic:'pin'};
+  const trip=(b.path&&b.path.length>1)?b.path:[{lat:P.pick.lat,lon:P.pick.lon},{lat:P.drop.lat,lon:P.drop.lon}];
+  const fare=+b.fare||0;
+  let gk=0,adj=null;try{gk=+localStorage.getItem('vct_km_'+id)||0;adj=JSON.parse(localStorage.getItem('vct_adj_'+id)||'null')}catch(e){}
+  return{id,gpsKm:gk,adj,from:'pick',to:'drop',km:+b.km||hav(P.pick,P.drop)*1.3,fare,tip:+b.tip||0,comm:Math.round(fare*COMM/100),pay:b.pay||'cash',
+    cust:b.rider&&b.rider.name?{ta:esc(b.rider.name)+' (பயணி)',en:esc(b.rider.name)+' (rider)',rating:'—'}:{ta:esc(b.custName||'Customer'),en:esc(b.custName||'Customer'),rating:'—'},pin:null,app:!!b.customerUid,away:hav(POS,P.pick)*1.3,
+    approach:[{...POS},{lat:POS.lat,lon:P.pick.lon},{lat:P.pick.lat,lon:P.pick.lon}],trip,b};
+}
+let ACCEPTING=null;
+async function acceptCloud(){
+  const id=J.id,d=me();ACCEPTING=id;
+  try{
+    await F().runTransaction(CL.db,async tx=>{const ref=F().doc(CL.db,'bookings',id);const s=await tx.get(ref);
+      if(!s.exists()||s.data().status!=='searching')throw new Error('taken');
+      tx.update(ref,{status:'assigned',driverPhone:CL.phone,driverName:d.en,plate:d.plate,vehModel:d.model,assignedAt:ts(),updatedAt:ts()})});
+    SHOWING=null;
+    if(J.b&&isFutB(J.b)){const w=J.b.when;J=null;clearInterval(TK);home();toast(L(`Trip உறுதி: ${whenTxt(w)}. நேரம் வந்ததும் "Pickup-க்கு கிளம்பு" அழுத்துங்க`,`Trip confirmed for ${whenTxt(w)}. Tap "Leave for pickup" when it is time`));return}
+    watchJob(id);pushLive(true);toPickup();
+  }catch(e){SHOWING=null;MISS.set(id,{n:99});J=null;home();toast(e&&e.message==='taken'?L('இந்த ride-ஐ வேற driver எடுத்துட்டாங்க','Another driver took this ride'):CL.errText(e,S.lang==='ta'))}
+}
+function adoptJob(b){
+  J=buildJ(b,b.id);watchJob(b.id);beep();if(CL&&!S.online)setOnline(true); // a driver in a trip is on duty (also after reopening the app)
+  toast(L('உங்களுக்கு ஒரு ride இருக்கு','You have a ride'));
+  if(b.status==='ontrip')onTrip();else if(b.arrivedAt)atPickup();else toPickup();
+}
+function watchJob(id){
+  if(JOBUNSUB)JOBUNSUB();
+  JOBUNSUB=F().onSnapshot(F().doc(CL.db,'bookings',id),s=>{
+    if(!J||J.id!==id||!s.exists())return;const b=s.data();J.b=b;if(b.status!=='done')J.tip=+b.tip||0;
+    if(b.status==='cancelled'||(b.driverPhone&&b.driverPhone!==CL.phone)){stopJob();J=null;pushLive(true);home();toast(L('இந்த ride ரத்து / மாற்றப்பட்டது','This ride was cancelled or reassigned'));return}
+    if(b.status==='ontrip'&&(document.getElementById('pinb')||document.getElementById('arr')||document.getElementById('st'))){clearTimeout(J.waitPin);onTrip();toast(L('PIN சரி! Trip ஆரம்பம்','PIN verified. Trip started'))}
+  },()=>{});
+}
+function stopJob(){chatStop();if(JOBUNSUB){JOBUNSUB();JOBUNSUB=null}if(J)clearTimeout(J.waitPin)}
+function cUpd(o){if(!J||!J.id)return Promise.resolve();return F().updateDoc(F().doc(CL.db,'bookings',J.id),{...o,updatedAt:ts()}).catch(e=>toast(CL.errText(e,S.lang==='ta')))}
+/* start the trip from the driver side; older security rules only accept {status} */
+function startTrip(pinOk){const ref=F().doc(CL.db,'bookings',J.id);J.startAt=Date.now();clearTimeout(J.waitPin);
+  F().updateDoc(ref,{status:'ontrip',startedAt:ts(),pinOk:!!pinOk,updatedAt:ts()})
+    .catch(e=>{if(e&&e.code==='permission-denied')return F().updateDoc(ref,{status:'ontrip',updatedAt:ts()});throw e}).catch(e=>toast(CL.errText(e,S.lang==='ta')));
+  if(J.b)J.b.status='ontrip';onTrip();if(pinOk)toast(L('PIN சரி! Trip ஆரம்பம்','PIN verified. Trip started'))}
+function cloudStart(ins){
+  const pe=document.getElementById('pe');
+  const reset=()=>{const sl=document.getElementById('st');if(!sl)return;sl.classList.remove('done');const k=sl.querySelector('.knob');k.style.transform='';sl.style.setProperty('--p',0);bindSlide('st',()=>cloudStart(ins))};
+  if(!J.app){startTrip(false);return}
+  const pin=ins.map(x=>x.value).join('');
+  if(pin.length!==4){pe.textContent=L('4 இலக்க PIN போடுங்க','Enter the 4-digit PIN');reset();return}
+  if(CFGD.serverPin&&CL&&CL.call){ // checked by the server (5 wrong tries lock it); the PIN never reaches this phone
+    pe.style.color='var(--muted)';pe.textContent=L('PIN சரிபார்க்குது…','Checking the PIN…');const id=J.id;
+    CL.call('verifyPin',{bookingId:id,pin}).then(r=>{if(!J||J.id!==id)return;
+      if(r&&r.ok){clearTimeout(J.waitPin);J.startAt=J.startAt||Date.now();if(J.b)J.b.status='ontrip';
+        if(document.getElementById('pinb')){onTrip();toast(L('PIN சரி! Trip ஆரம்பம்','PIN verified. Trip started'))}return}
+      pe.style.color='';pe.textContent=L('PIN தப்பு. Customer-கிட்ட மறுபடி கேளுங்க','Wrong PIN. Ask the customer again');ins.forEach(x=>x.value='');ins[0].focus();reset()})
+    .catch(e=>{const c=String(e&&e.code||'');pe.style.color='';
+      pe.textContent=c.includes('resource-exhausted')?L('5 தடவை தப்பான PIN. Office-ஐ அழைங்க','5 wrong PINs. Please call the office')
+        :c.includes('permission-denied')?L('இந்த ride உங்களுக்கு இல்ல','This ride is not yours')
+        :L('Server-ஐ அடைய முடியல. Signal பார்த்து மறுபடி முயற்சி பண்ணுங்க, இல்லைன்னா Office-ஐ அழைங்க','Could not reach the server. Check the signal and try again, or call the office');reset()});
+    return}
+  if(J.b&&J.b.pinHash){ // checked on this phone: works even when the customer's phone is offline
+    pe.style.color='var(--muted)';pe.textContent=L('PIN சரிபார்க்குது…','Checking the PIN…');
+    VCTPIN.check(J.b,pin).then(ok=>{if(!J)return;if(ok){startTrip(true);return}
+      pe.style.color='';pe.textContent=L('PIN தப்பு. Customer-கிட்ட மறுபடி கேளுங்க','Wrong PIN. Ask the customer again');ins.forEach(x=>x.value='');ins[0].focus();reset()})
+      .catch(()=>{pe.textContent=L('PIN check பண்ண முடியல. Office-ஐ அழைங்க','Could not check the PIN. Call the office');reset()});return}
+  pe.style.color='var(--muted)';pe.textContent=L('Customer app PIN-ஐ சரிபார்க்குது…','The customer app is checking the PIN…');
+  cUpd({pinTry:pin});
+  clearTimeout(J.waitPin);
+  J.waitPin=setTimeout(()=>{if(J&&J.b&&J.b.status!=='ontrip'){pe.style.color='';pe.textContent=L('PIN தப்பு, அல்லது customer app offline. Customer-கிட்ட மறுபடி கேளுங்க / office-ஐ அழைங்க','Wrong PIN, or the customer app is offline. Ask again or call the office');ins.forEach(x=>x.value='');ins[0].focus();reset()}},12000);
+}
+function cloudDone(pm){
+  const f=J.fin||finNow(),a=tripActual(),srv=!!CFGD.serverComm;
+  const ref=F().doc(CL.db,'bookings',J.id),basic={status:'done',pay:pm,doneAt:ts(),paidAt:ts(),updatedAt:ts()};
+  F().updateDoc(ref,{...basic,fareFinal:f.total,comm:J.comm,commLocal:!srv,
+    fx:{trip:f.trip,pass:f.pass,lines:f.lines,km:a.km,mins:a.mins,toll:a.toll||0,parking:a.parking||0,permit:a.permit||0,gpsKm:+(J.gpsKm||0).toFixed(1)}})
+    // older security rules (before rules v2 is published) only accept the basic fields: still close the trip
+    .catch(e=>{if(e&&e.code==='permission-denied')return F().updateDoc(ref,basic);throw e}).catch(e=>toast(CL.errText(e,S.lang==='ta')));
+  try{localStorage.removeItem('vct_km_'+J.id);localStorage.removeItem('vct_adj_'+J.id)}catch(e){}
+  if(!srv&&J.comm>0)F().updateDoc(F().doc(CL.db,'drivers',CL.phone),{wallet:F().increment(-J.comm),updatedAt:ts()}).catch(e=>console.warn(e));
+  setTimeout(()=>pushLive(true),500);
+}
+function cloudRecharge(amt,utr){
+  F().addDoc(F().collection(CL.db,'recharges'),{driverPhone:CL.phone,driverName:me().en,amt,utr,status:'pending',date:Date.now(),createdAt:ts()}).catch(e=>toast(CL.errText(e,S.lang==='ta')));
+}
+function driverSos(){
+  F().addDoc(F().collection(CL.db,'tickets'),{uid:CL.user.uid,type:'sos',title:{ta:'Driver SOS',en:'Driver SOS'},cust:'Driver · '+me().en,phone:S.phone,
+    trip:J&&J.id?J.id.slice(0,6).toUpperCase():'',lat:POS.lat,lon:POS.lon,status:'open',date:Date.now(),createdAt:ts()}).catch(()=>{});
+}
+
+/* ---------- Service Manager · outstation priority · upcoming trips ---------- */
+const DISP={win:60,gap:60,fall:true};
+const LOCAL_R1=3,LOCAL_R2=4,LOCAL_WAVE=25; // local: 0–3 km first; 3–4 km after 25 s (at once if the customer added a tip)
+let UPC=[];const GONOW=new Set();
+const isFutB=b=>b&&b.when&&b.when>Date.now()+45*60e3;
+const whenTxt=ts=>{const d=new Date(ts),n=new Date(),tm=d.toLocaleTimeString(S.lang==='ta'?'ta-IN':'en-IN',{hour:'numeric',minute:'2-digit'});
+  const dd=Math.round((new Date(d).setHours(0,0,0,0)-new Date(n).setHours(0,0,0,0))/864e5);
+  return (dd===0?L('இன்று','Today'):dd===1?L('நாளை','Tomorrow'):d.toLocaleDateString(S.lang==='ta'?'ta-IN':'en-IN',{day:'numeric',month:'short'}))+', '+tm};
+const SVCS=[{k:'local',ic:'🚕',ta:'லோக்கல் · Economy',en:'Local · Economy',sta:'நகரத்துக்குள் ride',sen:'City rides'},
+  {k:'rental',ic:'⏱️',ta:'Rental Package',en:'Rental packages',sta:'மணி நேர வாடகை',sen:'Hourly bookings'},
+  {k:'out',ic:'🛣️',ta:'Outstation',en:'Outstation',sta:'வெளியூர் பயணம் · அதிக வருமானம்',sen:'Intercity trips · higher earnings'}];
+let SVCON={local:true,rental:true,out:true};try{Object.assign(SVCON,JSON.parse(localStorage.getItem('vct_svc')||'{}'))}catch(e){}
+const svcAllowed=k=>{if(!CL)return true;const s=DME&&DME.svc;if(k==='local')return !(s&&s.local===false);return !!(s&&s[k])};
+const SHOW_SMGR=false; // Service Manager card hidden for now (owner's call); office permissions still apply
+const svcActive=k=>svcAllowed(k)&&(!SHOW_SMGR||SVCON[k]!==false);
+const TIERN={1:['🏆 Top driver','🏆 Top driver'],2:['🆕 புது வண்டி','🆕 New vehicle'],3:['⭐ சாதாரணம்','⭐ Standard']};
+function S_TIER(){const d=DME||{};if(d.prio==='top')return 1;if(d.prio==='low')return 3;
+  const wk=DS.trips.filter(t=>t.date>Date.now()-7*864e5).length;
+  if((+d.rating||5)>=4.5&&wk>=35)return 1;if(d.year&&new Date().getFullYear()-d.year<=5)return 2;return 3}
+function offerAt(b){
+  if(CL&&Array.isArray(b.exclude)&&b.exclude.includes(CL.phone))return Infinity; // this driver already cancelled it
+  const k=b.kind==='outstation'?'out':b.kind==='rental'?'rental':'local';
+  if(k==='local'){if(!svcActive('local'))return Infinity;if(b.when&&VCTCLK.now()-b.when>15*60e3)return Infinity; // stale test/abandoned bookings never ring
+    if(!b.from||b.from.lat==null)return 0;
+    const d=hav(POS,b.from);if(d<=LOCAL_R1)return 0;if(d<=LOCAL_R2)return (+b.tip>0)?0:(+b.when||0)+LOCAL_WAVE*1000;return Infinity}
+  const dp=b.dispatch||{};if(dp.review&&!dp.reviewUntil)return Infinity;const open=dp.review?dp.reviewUntil:(dp.openAt||0),gap=(dp.gap||DISP.gap)*1000,fall=dp.fall!==undefined?dp.fall:DISP.fall;
+  if(svcActive(k))return k==='out'?open+(S_TIER()-1)*gap:open;
+  if(svcAllowed(k))return Infinity; // driver switched this service off
+  return fall?open+(k==='out'?3:1)*gap:Infinity;
+}
+setInterval(()=>{if(CL&&S.online&&document.getElementById('offs'))maybeShowReq();
+  if(CL&&!J&&UPC.length&&!isFutB(UPC[0])&&!document.querySelector('.modal')){const b=UPC.shift();GONOW.add(b.id);adoptJob(b)}},3000);
+function smgrHtml(){
+  const t=S_TIER(),wk=DS.trips.filter(x=>x.date>Date.now()-7*864e5).length,d=DME||{};
+  return `<div class="smgr" id="smgr"><div class="sh"><b>Service Manager</b><em>PREMIUM</em></div>
+    ${SVCS.map(x=>{const al=svcAllowed(x.k),on=al&&SVCON[x.k]!==false;return `<button class="sv ${on?'on':''} ${al?'':'lock'}" data-sv="${x.k}" ${al?'':'aria-disabled="true"'}><span class="ico">${x.ic}</span><div><b>${S.lang==='ta'?x.ta:x.en}</b><small>${al?(on?L('ON · requests வரும்','On · you get requests'):L('OFF · requests வராது','Off · no requests')):(S.lang==='ta'?x.sta:x.sen)}</small></div>${al?'<i class="sw"></i>':`<span class="lk">🔒 ${L('Office அனுமதி தேவை','Needs office approval')}</span>`}</button>`}).join('')}
+    <div class="tier"><span style="font-size:22px">${['','🏆','🆕','⭐'][t]}</span><div><b>${TIERN[t][S.lang==='ta'?0:1]}</b>${L(`Outstation முன்னுரிமை · ★${d.rating||5} · 7 நாள்ல ${wk} trips${d.year?' · வண்டி '+d.year:''}`,`Outstation priority · ★${d.rating||5} · ${wk} trips in 7 days${d.year?' · vehicle '+d.year:''}`)}<br>${t===1?L('நீங்க தான் முதல்ல Outstation request பெறுவீங்க.','You get outstation requests first.'):L('★4.5+ & வாரம் 35+ trips ஓட்டினா Top driver ஆகலாம்.','Reach ★4.5+ and 35+ trips a week to become a top driver.')}</div></div></div>`;
+}
+function bindSmgr(){app.querySelectorAll('[data-sv]').forEach(b=>b.onclick=()=>{const k=b.dataset.sv;
+  if(!svcAllowed(k)){toast(L('இந்த service-க்கு office அனுமதி தேவை. Office-ஐ தொடர்பு கொள்ளுங்க','This service needs office approval. Please contact the office'));return}
+  SVCON[k]=SVCON[k]===false;try{localStorage.setItem('vct_svc',JSON.stringify(SVCON))}catch(e){}
+  toast(SVCS.find(x=>x.k===k)[S.lang==='ta'?'ta':'en']+(SVCON[k]?' ON':' OFF'));home()});
+  app.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>{const x=UPC.find(u=>u.id===b.dataset.go);if(!x)return;
+    const go2=()=>{UPC=UPC.filter(u=>u.id!==x.id);GONOW.add(x.id);adoptJob(x)};
+    if(x.when>Date.now()+3*36e5)modal(`<h3>${L('இப்போவே கிளம்பணுமா?','Leave now?')}</h3><p class="muted" style="margin:0">${L('Pickup நேரம்','Pickup time')}: ${whenTxt(x.when)}</p><button class="btn" id="y">${L('ஆமா, கிளம்புறேன்','Yes, leave now')}</button><button class="btn ghost" id="n">${L('வேண்டாம்','Not yet')}</button>`,(m,close)=>{m.querySelector('#n').onclick=close;m.querySelector('#y').onclick=()=>{close();go2()}});
+    else go2()})}
+function upcHtml(){if(!UPC.length)return '';
+  return `<div class="sec"><h3>${L('வரவிருக்கும் பயணங்கள்','Upcoming trips')}</h3><span class="sample">${UPC.length}</span></div>`+UPC.slice(0,3).map(b=>`<div class="upc"><span style="font-size:22px">${b.kind==='outstation'?'🛣️':b.kind==='rental'?'⏱️':'🕒'}</span><div><b>${whenTxt(b.when)}</b><small>${esc((b.from||{})[S.lang]||'')} → ${esc((b.to||{})[S.lang]||'')} · ${inr(+b.fare||0)}</small></div><button class="btn sm" data-go="${b.id}">${L('Pickup-க்கு கிளம்பு','Leave for pickup')}</button></div>`).join('')}
+
+/* ================= Driver menu (☰): profile card + useful pages ================= */
+let ANN=[];
+const drvId=()=>'VCT-'+String(S.phone||'').slice(-5);
+const seenAt=()=>{try{return +localStorage.getItem('vct_drv_seen')||0}catch(e){return 0}};
+function notes(){
+  const out=[],now=Date.now();
+  ANN.forEach(a=>out.push({t:a.t||0,k:'office',ic:'📢',title:a.title||'',msg:a.msg||''}));
+  if(DS.wallet<MINBAL)out.push({t:now,k:'acct',ic:'👛',title:L('Wallet குறைவு','Low wallet'),msg:L(`Wallet-ல ${inr(DS.wallet)} தான் இருக்கு. Online போக குறைந்தது ${inr(MINBAL)} வேணும். Recharge பண்ணுங்க.`,`Only ${inr(DS.wallet)} in your wallet. You need ${inr(MINBAL)} to go online. Please recharge.`),go:'wallet'});
+  const ds=docState();ds.expired.forEach(n=>out.push({t:now,k:'acct',ic:'⛔',title:L('Document காலாவதி','Document expired'),msg:L(`${n} காலாவதி ஆயிடுச்சு. புது copy-ஐ office-க்கு அனுப்புங்க.`,`${n} has expired. Send the renewed copy to the office.`),go:'docs'}));
+  ds.soon.forEach(n=>out.push({t:now-1,k:'acct',ic:'⚠️',title:L('சீக்கிரம் காலாவதி','Expiring soon'),msg:n,go:'docs'}));
+  UPC.forEach(b=>out.push({t:CL&&b.assignedAt?CL.toMs(b.assignedAt):now-2,k:'trip',ic:b.kind==='outstation'?'🛣️':'⏱️',title:L('வரவிருக்கும் பயணம்','Upcoming trip'),msg:`${whenTxt(b.when)} · ${(b.from||{})[S.lang]||''} → ${(b.to||{})[S.lang]||''} · ${inr(+b.fare||0)}`}));
+  RCH.slice().sort((a,b)=>(b.date||0)-(a.date||0)).slice(0,5).forEach(r=>out.push({t:CL&&r.approvedAt?CL.toMs(r.approvedAt):r.date||0,k:'acct',ic:r.status==='approved'?'✅':r.status==='rejected'?'❌':'⏳',
+    title:r.status==='approved'?L('Recharge ஏத்துக்கிட்டாங்க','Recharge approved'):r.status==='rejected'?L('Recharge நிராகரிப்பு','Recharge rejected'):L('Recharge காத்திருக்கு','Recharge pending'),msg:`${inr(+r.amt||0)} · UTR ${r.utr||''}`,go:'wallet'}));
+  DS.trips.slice(0,5).forEach(x=>out.push({t:x.date,k:'trip',ic:'🏁',title:L('Trip முடிஞ்சது','Trip completed'),msg:`${x.from[S.lang]} → ${x.to[S.lang]} · ${L('உங்க வருமானம்','You earned')} ${inr(x.net)}`}));
+  return out.sort((a,b)=>b.t-a.t);
+}
+const unread=()=>{const s=seenAt();return notes().filter(n=>n.t>s&&n.k!=='trip').length};
+function drawer(){
+  const d=me(),v=VEH.find(x=>x.id===d.veh)||{},t=S_TIER(),u=unread(),tn=TIERN[t][S.lang==='ta'?0:1];
+  const items=[['home','🏠',L('Home','Home')],['earn','💰',L('வருமானம்','Earnings'),inr(DS.trips.filter(x=>isToday(x.date)).reduce((a,x)=>a+x.net,0))],['wallet','👛','Wallet',inr(DS.wallet)],
+    ['notes','🔔',L('அறிவிப்புகள்','Notifications'),u?`<em class="nb">${u}</em>`:''],['perf','📈',L('என் Performance','My performance'),tn],['docs','📄',L('என் Documents','My documents'),docState().expired.length?'<em class="nb">!</em>':''],
+    ...(UPC.length?[['upc','🗓️',L('வரவிருக்கும் பயணங்கள்','Upcoming trips'),`<em class="nb g">${UPC.length}</em>`]]:[]),
+    ['qr','📲',L('Customer app QR','Customer app QR'),L('புது customer சேருங்க','Bring new customers')],['faq','❓',L('உதவி & கேள்விகள்','Help & FAQs')],
+    ...(CFGD.office?[['call','📞',L('Office-ஐ அழை','Call the office'),'+91 '+CFGD.office]]:[]),['set','⚙️',L('அமைப்புகள்','Settings')],['out','⏻','Logout']];
+  const el=document.createElement('div');el.className='drw';el.innerHTML=`<div class="drwp">
+    <div class="dhead"><span class="avatar lg">${esc((d.en||'D')[0])}</span><div><b>${esc(d[S.lang]||'')}</b><small>+91 ${S.phone} · ★ ${d.rating||5}</small><em class="tierb">${['','🏆','🆕','⭐'][t]} ${tn}</em></div></div>
+    <div class="dgrid3"><div><small>${L('வண்டி எண்','Vehicle no.')}</small><b>${esc(d.plate||'—')}</b></div><div><small>Driver ID</small><b>${drvId()}</b></div><div><small>${L('வகை','Type')}</small><b>${esc(v[S.lang]||'')}</b></div></div>
+    <div class="dlist">${items.map(([k,ic,l,x])=>`<button data-dm="${k}" class="${k==='out'?'out':''}"><span>${ic}</span><b>${l}</b>${x?`<small>${x}</small>`:''}</button>`).join('')}</div>
+    <p class="fine muted" style="margin:10px 4px 0">Vellore Taxi · Driver · ${typeof APPV!=='undefined'?APPV:''}</p></div>`;
+  app.appendChild(el);requestAnimationFrame(()=>el.classList.add('on'));
+  const close=()=>{el.classList.remove('on');setTimeout(()=>el.remove(),220)};
+  el.onclick=e=>{if(e.target===el)close()};
+  el.querySelectorAll('[data-dm]').forEach(b=>b.onclick=()=>{close();const k=b.dataset.dm;setTimeout(()=>({home,earn:()=>{S.tab='earn';earnTab()},wallet:()=>{S.tab='wallet';walletTab()},notes:notesScreen,perf:perfScreen,docs:docsScreen,
+    upc:()=>{S.tab='home';home();setTimeout(()=>{const x=document.querySelector('.upc');if(x)x.scrollIntoView({behavior:'smooth',block:'center'})},300)},qr:qrScreen,faq:faqScreen,call:()=>{location.href='tel:+91'+CFGD.office},set:()=>{S.tab='me';profileTab()},
+    out:()=>modal(`<h3>${L('Logout பண்ணவா?','Log out?')}</h3><button class="btn" id="n">${L('வேண்டாம்','No')}</button><button class="btn ghost" id="y" style="color:var(--danger)">Logout</button>`,(m,c)=>{m.querySelector('#n').onclick=c;m.querySelector('#y').onclick=()=>{c();setOnline(false);if(CL){stopAllD();DME=null;CL.logout()}S.logged=false;S.pid=null;save();login()}})})[k](),230)});
+}
+const subHead=(t)=>`<div class="head pad"><button class="back" id="bk" aria-label="Back">${I.back}</button><h2>${t}</h2></div>`;
+const backHome=()=>{const b=document.getElementById('bk');if(b)b.onclick=()=>{S.tab='home';home()}};
+function notesScreen(){let tab='all';
+  const draw=()=>{const all=notes(),s=seenAt(),list=all.filter(n=>tab==='all'||n.k===tab);
+    go(`<section class="screen">${subHead(L('அறிவிப்புகள்','Notifications'))}<div class="body pad" style="padding-top:0">
+      <div class="seg3">${[['all',L('எல்லாம்','All')],['office',L('Office','Office')],['trip',L('பயணம்','Trips')],['acct',L('கணக்கு','Account')]].map(([k,l])=>`<button class="${tab===k?'on':''}" data-nt="${k}">${l}</button>`).join('')}</div>
+      ${list.length?`<div class="nlist">${list.map(n=>`<button class="nitem ${n.t>s&&n.k!=='trip'?'new':''}" ${n.go?`data-ng="${n.go}"`:''}><span class="nic">${n.ic}</span><div><b>${esc(n.title)}</b><small>${esc(n.msg)}</small></div><em>${n.t?whenTxt(n.t).replace(/, .*/,'')+'':''}</em></button>`).join('')}</div>`
+        :`<div class="empty2">🔕<b>${L('இப்போ அறிவிப்பு இல்லை','No notifications right now')}</b></div>`}</div></section>`,()=>{
+      backHome();app.querySelectorAll('[data-nt]').forEach(b=>b.onclick=()=>{tab=b.dataset.nt;draw()});
+      app.querySelectorAll('[data-ng]').forEach(b=>b.onclick=()=>({wallet:()=>{S.tab='wallet';walletTab()},docs:docsScreen})[b.dataset.ng]());
+      try{localStorage.setItem('vct_drv_seen',String(Date.now()))}catch(e){}});};
+  draw();
+}
+function perfScreen(){
+  const d=me(),t=S_TIER(),wk=Date.now()-7*864e5,d7=DS.trips.filter(x=>x.date>=wk),td=DS.trips.filter(x=>isToday(x.date));
+  const cx=DS.cx7||0,rate=(d7.length+cx)?Math.round(cx*100/(d7.length+cx)):0,need=Math.max(0,35-d7.length);
+  go(`<section class="screen">${subHead(L('என் Performance','My performance'))}<div class="body pad" style="padding-top:0">
+    <div class="perfhero t${t}"><span>${['','🏆','🆕','⭐'][t]}</span><div><b>${TIERN[t][S.lang==='ta'?0:1]}</b><small>${t===1?L('நீங்க தான் முதல்ல Outstation request பெறுவீங்க. சூப்பர்!','You get outstation requests first. Great work!'):L(`Top driver ஆக: ★4.5+ rating & வாரத்துக்கு 35 trips. இன்னும் ${need} trips தான்!`,`To become a top driver: ★4.5+ and 35 trips a week. Just ${need} more trips!`)}</small></div></div>
+    <div class="pgrid"><div><small>Rating</small><b>★ ${d.rating||5}</b></div><div><small>${L('இன்று trips','Trips today')}</small><b>${td.length}</b></div><div><small>${L('7 நாள் trips','Trips · 7 days')}</small><b>${d7.length}</b></div>
+      <div><small>${L('7 நாள் வருமானம்','Earned · 7 days')}</small><b>${inr(d7.reduce((a,x)=>a+x.net,0))}</b></div><div class="${rate>20?'bad':''}"><small>${L('ரத்து (7 நாள்)','Cancels · 7 days')}</small><b>${cx} <span>${rate}%</span></b></div><div><small>${L('Online நேரம் இன்று','Online today')}</small><b>${Math.floor(onMinutes()/60)}:${String(onMinutes()%60).padStart(2,'0')}</b></div></div>
+    <div class="sec"><h3>${L('வாரத்து இலக்கு','Weekly goal')}</h3><span class="sample">${d7.length}/35</span></div><div class="pbar"><i style="width:${Math.min(100,d7.length/35*100)}%"></i></div>
+    <div class="tips"><b>💡 ${L('அதிக ride கிடைக்க','Get more rides')}</b><ul>
+      <li>${L('காலை 7–10, மாலை 5–9 மணி busy நேரம். அந்த நேரம் ON DUTY-ல இருங்க.','7–10 am and 5–9 pm are busy. Stay on duty then.')}</li>
+      <li>${L('Katpadi station, CMC, VIT, பேருந்து நிலையம் பக்கத்துல நின்னா request சீக்கிரம் வரும்.','Wait near Katpadi station, CMC, VIT or the bus stands to get requests faster.')}</li>
+      <li>${L('ரத்து பண்ணாம இருந்தா rating-உம் priority-உம் ஏறும்.','Fewer cancellations raise your rating and priority.')}</li>
+      <li>${L('வண்டி சுத்தமா, AC சரியா இருந்தா customer ★5 கொடுப்பாங்க.','A clean car and working AC earn ★5 from customers.')}</li></ul></div>
+  </div></section>`,backHome);
+}
+function docsScreen(){
+  const D=(DME&&DME.docs)||{},now=Date.now();
+  const rows=[['dl',L('ஓட்டுநர் உரிமம் (DL)','Driving licence')],['rc','RC'],['ins','Insurance'],['permit','Permit'],['fc',L('FC (Fitness)','Fitness certificate')]];
+  go(`<section class="screen">${subHead(L('என் Documents','My documents'))}<div class="body pad" style="padding-top:0">
+    <div class="recent">${rows.map(([k,n])=>{const t=D[k],dd=t?Math.ceil((t-now)/864e5):null,cl=dd==null?'':dd<0?'bad':dd<=15?'warn2':'ok';
+      return `<div class="row"><span class="ic">${dd==null?'📄':dd<0?'⛔':dd<=15?'⚠️':'✅'}</span><div><b>${n}</b><small>${t?L('முடியும் தேதி ','Expires ')+new Date(t).toLocaleDateString(S.lang==='ta'?'ta-IN':'en-IN',{day:'numeric',month:'short',year:'numeric'}):L('தேதி பதிவு இல்லை','No date on record')}</small></div><em class="dst2 ${cl}">${dd==null?'—':dd<0?L('காலாவதி','Expired'):dd<=15?dd+' '+L('நாள்','days'):L('சரி','Valid')}</em></div>`}).join('')}</div>
+    <div class="note">${L('Document புதுப்பிச்சா புது copy-ஐ office-க்கு WhatsApp-ல அனுப்புங்க. Office தேதியை மாத்தினதும் இங்க தானா மாறும்.','When you renew a document, WhatsApp the new copy to the office. Dates here update as soon as the office changes them.')}</div>
+    ${CFGD.office?`<a class="btn" href="https://wa.me/91${CFGD.office}?text=${encodeURIComponent('Vellore Taxi driver '+drvId()+' · '+(me().plate||'')+': புது document அனுப்புறேன்')}" target="_blank" rel="noopener">💬 ${L('Office-க்கு WhatsApp பண்ணு','WhatsApp the office')}</a>`:''}
+  </div></section>`,backHome);
+}
+function qrScreen(){
+  const link=new URL('../',location.href).href;
+  go(`<section class="screen">${subHead(L('Customer app QR','Customer app QR'))}<div class="body pad" style="padding-top:0;align-items:center;text-align:center">
+    <p class="muted" style="margin:0">${L('இந்த QR-ஐ customer-க்கு காட்டுங்க. Scan பண்ணா Vellore Taxi app திறக்கும். அடுத்த தடவை அவங்க நேரா app-ல book பண்ணுவாங்க — உங்களுக்கு அதிக ride!','Show this QR to customers. Scanning opens the Vellore Taxi app, so next time they book in the app — more rides for you!')}</p>
+    <div id="cqr" class="qrbox"></div><b style="font-size:13px;word-break:break-all">${link}</b>
+    <a class="btn" target="_blank" rel="noopener" href="https://wa.me/?text=${encodeURIComponent('🚖 Vellore Taxi — வேலூர்ல Auto, Car, Rental, Outstation ஒரே app-ல book பண்ணுங்க: '+link)}">💬 ${L('WhatsApp-ல share பண்ணு','Share on WhatsApp')}</a>
+  </div></section>`,()=>{backHome();loadQrD().then(()=>{const el=document.getElementById('cqr');if(el){el.innerHTML='';new window.QRCode(el,{text:link,width:220,height:220,correctLevel:window.QRCode.CorrectLevel.M})}}).catch(()=>{})});
+}
+const FAQD=[
+ ['Online போக முடியலையே, ஏன்?','Why can’t I go online?','Wallet-ல குறைந்தபட்ச தொகை இல்லாம இருக்கலாம், ஒரு document காலாவதி ஆகியிருக்கலாம், அல்லது office account-ஐ நிறுத்தி வச்சிருக்கலாம். ☰ → அறிவிப்புகள்-ல காரணம் தெரியும்.','Your wallet may be below the minimum, a document may have expired, or the office may have paused your account. ☰ → Notifications shows the reason.'],
+ ['Commission எப்படி கழிக்கப்படுது?','How is commission taken?','ஒவ்வொரு trip முடிஞ்சதும் கட்டணத்துல இருந்து commission உங்க wallet-ல இருந்து தானா கழியும். Customer கொடுக்கிற tip முழுசா உங்களுக்கே.','After each trip the commission is taken from your wallet automatically. Customer tips are all yours.'],
+ ['Wallet recharge எப்படி?','How do I recharge my wallet?','Wallet → Recharge. Office UPI-க்கு பணம் அனுப்பி UTR எண்ணை போடுங்க. Office approve பண்ணினதும் wallet-ல சேரும்.','Wallet → Recharge. Pay the office UPI and enter the UTR number. It is added once the office approves it.'],
+ ['Customer UPI-ல பணம் எப்படி தர்றாங்க?','How do customers pay by UPI?','Trip முடிஞ்சதும் UPI தேர்வு பண்ணா உங்க phone-ல உங்க UPI QR வரும். Customer scan பண்ணி நேரா உங்களுக்கு அனுப்புவாங்க. UPI ID இல்லைன்னா office-கிட்ட சேர்க்க சொல்லுங்க.','When the trip ends, choose UPI and your own UPI QR appears. The customer pays you directly. If your UPI ID is missing, ask the office to add it.'],
+ ['Customer வரலைன்னா?','What if the customer doesn’t come?','Pickup-ல "வந்தாச்சு" அழுத்தி காத்திருங்க, customer-ஐ call பண்ணுங்க. வரலைன்னா ரத்து செய்யும்போது "Customer வரல" தேர்வு பண்ணுங்க. அது உங்க கணக்குல ரத்து-ஆ சேராது.','Tap Arrived, wait and call the customer. If they don’t come, cancel with "Customer did not show up" — it won’t count against you.'],
+ ['Outstation request எப்படி வரும்?','How do I get outstation requests?','Office உங்களுக்கு Outstation அனுமதி கொடுக்கணும். நல்ல rating, அதிக trips இருந்தா முதல்ல உங்களுக்கே வரும் (☰ → என் Performance).','The office has to enable outstation for you. Good ratings and more trips put you first in line (☰ → My performance).'],
+ ['Phone lock ஆனா request வருமா?','Do requests come when my phone is locked?','இப்போ app screen-ல திறந்திருந்தா தான் சத்தம் வரும். ON DUTY-ல இருக்கும்போது app-ஐ திறந்தே வச்சிருங்க, charger-ல போட்டு வைங்க.','For now, requests ring only while the app is open. Keep it open on duty and keep the phone charging.']];
+function faqScreen(){
+  go(`<section class="screen">${subHead(L('உதவி & கேள்விகள்','Help & FAQs'))}<div class="body pad" style="padding-top:0">
+    ${FAQD.map(([qt,qe,at,ae],i)=>`<details class="faq"${i===0?' open':''}><summary>${S.lang==='ta'?qt:qe}</summary><p>${S.lang==='ta'?at:ae}</p></details>`).join('')}
+    ${CFGD.office?`<a class="btn" href="tel:+91${CFGD.office}">📞 ${L('இன்னும் சந்தேகமா? Office-ஐ அழைங்க','Still stuck? Call the office')}</a>`:''}
+  </div></section>`,backHome);
+}
+
+splash();
+
+</script>
+
+</body>
+</html>

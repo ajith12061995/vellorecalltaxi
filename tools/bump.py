@@ -11,3 +11,5 @@ for p in ['index.html','driver/index.html','driver/join/index.html','office/inde
     open(f,'w').write(s)
 json.dump({'v':v},open(os.path.join(root,'version.json'),'w'))
 print('version',v)
+# keep the TEST copy (velloretaxi.app/staging/) identical to the live code
+import subprocess;subprocess.run([sys.executable,os.path.join(root,'tools','staging.py')],check=True)

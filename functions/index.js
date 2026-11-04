@@ -27,6 +27,10 @@ const REGION = process.env.FN_REGION || 'asia-south1';
 const SITE = (process.env.APP_URL || 'https://velloretaxi.app/').replace(/\/?$/, '/');
 setGlobalOptions({ region: REGION, maxInstances: 10 });
 const BACKUP_BUCKET = defineString('BACKUP_BUCKET', { default: '' });
+// App Check for the callable functions: OFF until the owner has watched the App Check metrics for 2–3 days and
+// set APPCHECK_ENFORCE=true in functions/.env.<project>. Until then calls without a token are only counted (log).
+const AC_ENFORCE = process.env.APPCHECK_ENFORCE === 'true';
+const acLog = (fn, req) => { if (!req.app) logger.info('appcheck missing', { fn }); };
 
 const cfg = async () => (await db.doc('config/app').get()).data() || {};
 
@@ -126,7 +130,8 @@ exports.onBookingCust = onDocumentUpdated('bookings/{id}', async ev => {
 // Account deletion (Play Store / App Store rule). Customers: deleted at once — profile, login, contact details
 // and chats go; trip and money records stay for accounts/tax but without the name or phone number.
 // Drivers: a request for the office (wallet money and documents need a person to settle first).
-exports.deleteMyAccount = onCall(async req => {
+exports.deleteMyAccount = onCall({ enforceAppCheck: AC_ENFORCE }, async req => {
+  acLog('deleteMyAccount', req);
   const uid = req.auth && req.auth.uid, ph = req.auth && req.auth.token.phone_number;
   if (!uid) throw new HttpsError('unauthenticated', 'login first');
   if (ph && (await db.doc(`drivers/${ph}`).get()).exists) {
@@ -156,7 +161,8 @@ exports.deleteMyAccount = onCall(async req => {
 // application, live position, trips they drove with chats, ledger, recharges, their own tickets, login).
 // Before anything is deleted every document is copied to purgeBackups/{run}/items (no app can read it; the
 // housekeeping job removes copies older than 30 days). Refused while the driver is on a ride; wallet money must be confirmed (force) first.
-exports.purgeDriver = onCall({ timeoutSeconds: 300 }, async req => {
+exports.purgeDriver = onCall({ timeoutSeconds: 300, enforceAppCheck: AC_ENFORCE }, async req => {
+  acLog('purgeDriver', req);
   const me = req.auth && req.auth.token.phone_number, { phone, confirm, force } = req.data || {};
   if (!me) throw new HttpsError('unauthenticated', 'login first');
   const st = (await db.doc(`staff/${me}`).get()).data();
@@ -195,7 +201,8 @@ exports.purgeDriver = onCall({ timeoutSeconds: 300 }, async req => {
   return out;
 });
 
-exports.verifyPin = onCall(async req => {
+exports.verifyPin = onCall({ enforceAppCheck: AC_ENFORCE }, async req => {
+  acLog('verifyPin', req);
   const ph = req.auth && req.auth.token.phone_number, { bookingId, pin } = req.data || {};
   if (!ph || !bookingId || !/^\d{4}$/.test(String(pin))) throw new HttpsError('invalid-argument', 'bad request');
   const ref = db.doc(`bookings/${bookingId}`);
