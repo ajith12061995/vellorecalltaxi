@@ -238,3 +238,9 @@ test('attack: chats of a ride are closed to other customers and other drivers', 
   await assertFails(getDoc(doc(as.drv2(), 'bookings', 'b2', 'chat', 'm1')));
   await assertFails(addDoc(collection(as.other(), 'bookings', 'b2', 'chat'), { from: 'c', text: 'spam' }));
 });
+test('attack: an applicant can upload only the join-form document slots, each under 1 MB', async () => {
+  await assertSucceeds(setDoc(doc(as.cust(), 'driverApps', CPH, 'files', 'dlF'), { data: 'data:image/jpeg;base64,xx' }));
+  await assertFails(setDoc(doc(as.cust(), 'driverApps', CPH, 'files', 'junk1'), { data: 'x' }));
+  await assertFails(setDoc(doc(as.cust(), 'driverApps', CPH, 'files', 'photo'), { data: 'x'.repeat(1000001) }));
+  await assertFails(setDoc(doc(as.other(), 'driverApps', CPH, 'files', 'photo'), { data: 'x' }));
+});

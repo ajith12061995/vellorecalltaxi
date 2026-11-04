@@ -161,7 +161,9 @@ service cloud.firestore {
       allow delete: if isOwner();
       match /files/{kind} {
         allow read: if isStaff() || (signedIn() && phone() == ph);
+        // only the document slots of the join form (stops anyone filling the database with unlimited photos)
         allow create, update: if signedIn() && phone() == ph
+          && kind in ['photo', 'aadhaarF', 'aadhaarB', 'panF', 'dlF', 'dlB', 'rcF', 'rcB', 'ins', 'permit', 'fc', 'vehF', 'vehIn', 'pcc', 'agreeDoc', 'dl', 'rc']
           && newData().data is string && newData().data.size() < 1000000;
         allow delete: if isOwner();
       }
