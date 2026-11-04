@@ -139,7 +139,8 @@ exports.dailyBackup = onSchedule({ schedule: '30 2 * * *', timeZone: 'Asia/Kolka
   const { v1 } = require('@google-cloud/firestore');
   const client = new v1.FirestoreAdminClient();
   const project = process.env.GCLOUD_PROJECT || process.env.GCP_PROJECT;
-  const day = new Date().toISOString().slice(0, 10);
+  // folder named by the Indian date and time (UTC would put the 02:30 IST run under yesterday's date)
+  const day = L.istStamp(Date.now());
   const [op] = await client.exportDocuments({ name: client.databasePath(project, '(default)'), outputUriPrefix: `gs://${bucket}/firestore/${day}`, collectionIds: [] });
   logger.info('backup started', { op: op.name, to: `gs://${bucket}/firestore/${day}` });
 });

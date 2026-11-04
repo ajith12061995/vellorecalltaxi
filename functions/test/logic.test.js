@@ -101,3 +101,8 @@ test('commission never below the booked fare (a lowered final bill from a modifi
   assert.equal(L.commissionFor({ fare: 300, fx: { trip: 350 } }, 10).comm, 35);
   assert.equal(L.settle({ fare: 300, fareFinal: 120 }, 10, true).walletDelta, -30);
 });
+
+test('backup folder name uses the Indian date and time (02:30 IST is still today)', () => {
+  assert.equal(L.istStamp(Date.UTC(2026, 10, 3, 21, 0)), '2026-11-04_0230');
+  assert.equal(L.istStamp(Date.UTC(2026, 10, 4, 6, 15)), '2026-11-04_1145');
+});

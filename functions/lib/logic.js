@@ -100,4 +100,7 @@ function bookingLimit(lim, openNow, now) {
   return { ok: true, hr, n: cnt + 1 };
 }
 
-module.exports = { commissionFor, settle, housekeeping, fareLooksWrong, liveStale, custPush, fareCheck, bookingLimit, nightPct, withNight, crowKm, LIMIT_OPEN, LIMIT_HOUR };
+// '2026-11-04_0230' — Indian date and time, for backup folder names
+const istStamp = ms => new Date(ms + 19800000).toISOString().slice(0, 16).replace('T', '_').replace(':', '');
+
+module.exports = { istStamp, commissionFor, settle, housekeeping, fareLooksWrong, liveStale, custPush, fareCheck, bookingLimit, nightPct, withNight, crowKm, LIMIT_OPEN, LIMIT_HOUR };
