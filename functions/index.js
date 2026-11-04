@@ -15,12 +15,16 @@ const { onSchedule } = require('firebase-functions/v2/scheduler');
 const { onCall, HttpsError } = require('firebase-functions/v2/https');
 const { setGlobalOptions, logger } = require('firebase-functions/v2');
 const { defineString } = require('firebase-functions/params');
-const admin = require('firebase-admin');
+// firebase-admin modular API (works on v12–v14; the old admin.firestore() namespace was removed in v14)
+const { initializeApp } = require('firebase-admin/app');
+const { getFirestore, FieldValue: FV } = require('firebase-admin/firestore');
+const { getAuth } = require('firebase-admin/auth');
+const { getMessaging } = require('firebase-admin/messaging');
 const L = require('./lib/logic');
 
-admin.initializeApp();
-const db = admin.firestore();
-const { FieldValue: FV } = require('firebase-admin/firestore'); // (admin.firestore.FieldValue is undefined in firebase-admin 12)
+initializeApp();
+const db = getFirestore();
+const admin = { auth: getAuth, messaging: getMessaging };
 // Firestore triggers must run in the database's region; tools/cloudshell-deploy.sh writes FN_REGION into functions/.env.<project>
 const REGION = process.env.FN_REGION || 'asia-south1';
 // Public address of the apps (notification taps open it). Deploy functions only after the domain is live.
