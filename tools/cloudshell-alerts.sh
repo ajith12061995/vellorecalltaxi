@@ -19,7 +19,7 @@ say "1/4 Turn on Monitoring + Logging"
 gcloud services enable monitoring.googleapis.com logging.googleapis.com >/dev/null
 
 say "2/4 E-mail channel"
-CH="$(gcloud beta monitoring channels list --filter="type=\"email\" AND labels.email_address=\"$EMAIL\"" --format='value(name)' --quiet | head -1)"
+CH="$(gcloud beta monitoring channels list --format='value(name,labels.email_address)' --quiet | awk -v e="$EMAIL" '$2==e{print $1; exit}')"
 if [ -z "$CH" ]; then
   CH="$(gcloud beta monitoring channels create --display-name="VCT owner e-mail" --type=email \
         --channel-labels=email_address="$EMAIL" --format='value(name)' --quiet)"
@@ -40,7 +40,7 @@ cat > /tmp/vct-alert.json <<JSON
   "enabled": true
 }
 JSON
-OLD="$(gcloud alpha monitoring policies list --filter='displayName="VCT server error"' --format='value(name)' --quiet | head -1)"
+OLD="$(gcloud alpha monitoring policies list --format='value(name,displayName)' --quiet | awk -F'\t' '$2=="VCT server error"{print $1; exit}')"
 if [ -n "$OLD" ]; then
   gcloud alpha monitoring policies update "$OLD" --policy-from-file=/tmp/vct-alert.json --quiet >/dev/null
   echo "updated: $OLD"
