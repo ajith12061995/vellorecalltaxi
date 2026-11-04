@@ -653,14 +653,14 @@ a.btn{text-decoration:none}
 <script>
 /* shared with the customer app: icons, places, fares, map engine */
 const I = {
-  bike:`<img class="vsvg vimg" src="/vellorecalltaxi/vehicles/bike.jpg?v=1" width="58" height="36" alt="" loading="lazy" decoding="async">`,
-  auto:`<img class="vsvg vimg" src="/vellorecalltaxi/vehicles/auto.jpg?v=1" width="58" height="36" alt="" loading="lazy" decoding="async">`,
-  car:`<img class="vsvg vimg" src="/vellorecalltaxi/vehicles/sedan.jpg?v=1" width="58" height="36" alt="" loading="lazy" decoding="async">`,
-  mini:`<img class="vsvg vimg" src="/vellorecalltaxi/vehicles/mini.jpg?v=1" width="58" height="36" alt="" loading="lazy" decoding="async">`,
-  suv:`<img class="vsvg vimg" src="/vellorecalltaxi/vehicles/suv.jpg?v=1" width="58" height="36" alt="" loading="lazy" decoding="async">`,
-  psuv:`<img class="vsvg vimg" src="/vellorecalltaxi/vehicles/psuv.jpg?v=1" width="58" height="36" alt="" loading="lazy" decoding="async">`,
-  trav:`<img class="vsvg vimg" src="/vellorecalltaxi/vehicles/trav.jpg?v=1" width="58" height="36" alt="" loading="lazy" decoding="async">`,
-  bus:`<img class="vsvg vimg" src="/vellorecalltaxi/vehicles/bus.jpg?v=1" width="58" height="36" alt="" loading="lazy" decoding="async">`,
+  bike:`<img class="vsvg vimg" src="../vehicles/bike.jpg?v=1" width="58" height="36" alt="" loading="lazy" decoding="async">`,
+  auto:`<img class="vsvg vimg" src="../vehicles/auto.jpg?v=1" width="58" height="36" alt="" loading="lazy" decoding="async">`,
+  car:`<img class="vsvg vimg" src="../vehicles/sedan.jpg?v=1" width="58" height="36" alt="" loading="lazy" decoding="async">`,
+  mini:`<img class="vsvg vimg" src="../vehicles/mini.jpg?v=1" width="58" height="36" alt="" loading="lazy" decoding="async">`,
+  suv:`<img class="vsvg vimg" src="../vehicles/suv.jpg?v=1" width="58" height="36" alt="" loading="lazy" decoding="async">`,
+  psuv:`<img class="vsvg vimg" src="../vehicles/psuv.jpg?v=1" width="58" height="36" alt="" loading="lazy" decoding="async">`,
+  trav:`<img class="vsvg vimg" src="../vehicles/trav.jpg?v=1" width="58" height="36" alt="" loading="lazy" decoding="async">`,
+  bus:`<img class="vsvg vimg" src="../vehicles/bus.jpg?v=1" width="58" height="36" alt="" loading="lazy" decoding="async">`,
   search:`<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0B4A36" stroke-width="2.5" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>`,
   mic:`<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0B4A36" stroke-width="2.4" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0014 0M12 18v3"/></svg>`,
   back:`<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>`,
@@ -892,7 +892,7 @@ function splash(){
   setTimeout(async()=>{if(await cloudBootD())return;S.logged&&S.pid?home():login()},1500);
 }
 function login(){
-  go(`<section class="screen"><div class="hero pad"><img src="https://ajith12061995.github.io/vellorecalltaxi/driver/icon-192.png" alt="" style="width:84px;height:84px;border-radius:20px;display:block;margin-bottom:12px;box-shadow:0 4px 14px rgba(0,0,0,.15)" onerror="this.remove()"><span class="mini">VCT DRIVER</span><h1>${L('வணக்கம் Driver!','Welcome, driver!')}</h1>
+  go(`<section class="screen"><div class="hero pad"><img src="./icon-192.png" alt="" style="width:84px;height:84px;border-radius:20px;display:block;margin-bottom:12px;box-shadow:0 4px 14px rgba(0,0,0,.15)" onerror="this.remove()"><span class="mini">VCT DRIVER</span><h1>${L('வணக்கம் Driver!','Welcome, driver!')}</h1>
     <p>${L('உங்க நம்பர்ல login பண்ணுங்க. புது driver-னா சேர்வதற்கான form வரும்','Log in with your number. New drivers will see the sign-up form')}</p>
     <div class="lang2"><button data-l="ta" class="${S.lang==='ta'?'on':''}">தமிழ்</button><button data-l="en" class="${S.lang==='en'?'on':''}">English</button></div></div>
    <div class="body pad"><label class="muted" for="ph" style="font-weight:600">${L('மொபைல் நம்பர்','Mobile number')}</label>
@@ -1253,7 +1253,7 @@ function profileTab(){
       <button class="row" id="th"><span class="ic">☾</span><div><b>Dark mode</b><small>${document.documentElement.dataset.theme==='dark'?'On':'Off'}</small></div></button>
       ${CL?'':`<button class="row" id="sw"><span class="ic">${I.navHome}</span><div><b>${L('வேற வண்டி (demo)','Switch vehicle (demo)')}</b><small>${L('Owner assign பண்றது','Assigned by owner')}</small></div></button>`}
       <button class="row" id="lo"><span class="ic" style="color:var(--danger)">⏻</span><div><b style="color:var(--danger)">Logout</b><small>+91 ${S.phone}</small></div></button></div>
-    <p class="fine muted"><a href="https://ajith12061995.github.io/vellorecalltaxi/privacy/#drivers" target="_blank" rel="noopener" style="color:inherit">${L('தனியுரிமை & விதிமுறைகள்','Privacy & Terms')}</a> · Vellore Taxi · Driver app v0.1</p></div>`),()=>{
+    <p class="fine muted"><a href="../privacy/#drivers" target="_blank" rel="noopener" style="color:inherit">${L('தனியுரிமை & விதிமுறைகள்','Privacy & Terms')}</a> · Vellore Taxi · Driver app v0.1</p></div>`),()=>{
     bindNav();
     document.getElementById('lg').onclick=()=>{S.lang=S.lang==='ta'?'en':'ta';save();profileTab()};
     document.getElementById('th').onclick=()=>{const r=document.documentElement;r.dataset.theme=r.dataset.theme==='dark'?'light':'dark';profileTab()};
@@ -1627,7 +1627,7 @@ function docsScreen(){
   </div></section>`,backHome);
 }
 function qrScreen(){
-  const link='https://ajith12061995.github.io/vellorecalltaxi/';
+  const link=new URL('../',location.href).href;
   go(`<section class="screen">${subHead(L('Customer app QR','Customer app QR'))}<div class="body pad" style="padding-top:0;align-items:center;text-align:center">
     <p class="muted" style="margin:0">${L('இந்த QR-ஐ customer-க்கு காட்டுங்க. Scan பண்ணா Vellore Taxi app திறக்கும். அடுத்த தடவை அவங்க நேரா app-ல book பண்ணுவாங்க — உங்களுக்கு அதிக ride!','Show this QR to customers. Scanning opens the Vellore Taxi app, so next time they book in the app — more rides for you!')}</p>
     <div id="cqr" class="qrbox"></div><b style="font-size:13px;word-break:break-all">${link}</b>

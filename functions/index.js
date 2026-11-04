@@ -22,6 +22,8 @@ const db = admin.firestore();
 const { FieldValue: FV } = require('firebase-admin/firestore'); // (admin.firestore.FieldValue is undefined in firebase-admin 12)
 // Firestore triggers must run in the database's region; tools/cloudshell-deploy.sh writes FN_REGION into functions/.env.<project>
 const REGION = process.env.FN_REGION || 'asia-south1';
+// Public address of the apps (notification taps open it). Deploy functions only after the domain is live.
+const SITE = (process.env.APP_URL || 'https://velloretaxi.app/').replace(/\/?$/, '/');
 setGlobalOptions({ region: REGION, maxInstances: 10 });
 const BACKUP_BUCKET = defineString('BACKUP_BUCKET', { default: '' });
 
@@ -88,7 +90,7 @@ exports.onBookingCreated = onDocumentCreated('bookings/{id}', async ev => {
   const from = (b.from && (b.from.ta || b.from.en)) || '';
   const r = await admin.messaging().sendEachForMulticast({ tokens,
     webpush: { notification: { title: '🚕 புது Ride / New ride', body: `${from} · ₹${b.fare}${b.tip ? ' + ₹' + b.tip : ''}`, requireInteraction: true, tag: id },
-               fcmOptions: { link: 'https://ajith12061995.github.io/vellorecalltaxi/driver/' } },
+               fcmOptions: { link: SITE + 'driver/' } },
     data: { bookingId: id } });
   logger.info('push', { sent: r.successCount, failed: r.failureCount });
 });
@@ -106,8 +108,8 @@ exports.onBookingCust = onDocumentUpdated('bookings/{id}', async ev => {
   const msg = L.custPush(before, after, u.lang === 'en' ? 'en' : 'ta');
   try {
     await admin.messaging().send({ token: u.fcm,
-      webpush: { notification: { title: msg.title, body: msg.body, tag: `${ev.params.id}-${msg.kind}`, icon: 'https://ajith12061995.github.io/vellorecalltaxi/icon-192.png' },
-                 fcmOptions: { link: 'https://ajith12061995.github.io/vellorecalltaxi/' } },
+      webpush: { notification: { title: msg.title, body: msg.body, tag: `${ev.params.id}-${msg.kind}`, icon: SITE + 'icon-192.png' },
+                 fcmOptions: { link: SITE } },
       data: { bookingId: ev.params.id, kind: msg.kind } });
     logger.info('cust push', { id: ev.params.id, kind: msg.kind });
   } catch (e) {

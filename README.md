@@ -8,7 +8,7 @@ Three web apps for a call-taxi business in Vellore, sharing one Firebase project
 | Driver | `/driver/` | Drivers added by the owner: go online, accept rides, PIN check, collect fare, wallet recharge |
 | Office | `/office/` | Owner and staff: live fleet map, phone bookings, assign drivers, approvals, support, reports, settings |
 
-Live site: https://ajith12061995.github.io/vellorecalltaxi/
+Live site: https://velloretaxi.app/ (old address https://ajith12061995.github.io/vellorecalltaxi/ redirects)
 
 ## How it fits together
 

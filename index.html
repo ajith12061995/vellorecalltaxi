@@ -546,14 +546,14 @@ details.faq p{margin:0;padding:0 14px 14px;color:var(--muted);font-size:14px;lin
 <script>
 /* ---------- icons ---------- */
 const I = {
-  bike:`<img class="vsvg vimg" src="/vellorecalltaxi/vehicles/bike.jpg?v=1" width="58" height="36" alt="" loading="lazy" decoding="async">`,
-  auto:`<img class="vsvg vimg" src="/vellorecalltaxi/vehicles/auto.jpg?v=1" width="58" height="36" alt="" loading="lazy" decoding="async">`,
-  car:`<img class="vsvg vimg" src="/vellorecalltaxi/vehicles/sedan.jpg?v=1" width="58" height="36" alt="" loading="lazy" decoding="async">`,
-  mini:`<img class="vsvg vimg" src="/vellorecalltaxi/vehicles/mini.jpg?v=1" width="58" height="36" alt="" loading="lazy" decoding="async">`,
-  suv:`<img class="vsvg vimg" src="/vellorecalltaxi/vehicles/suv.jpg?v=1" width="58" height="36" alt="" loading="lazy" decoding="async">`,
-  psuv:`<img class="vsvg vimg" src="/vellorecalltaxi/vehicles/psuv.jpg?v=1" width="58" height="36" alt="" loading="lazy" decoding="async">`,
-  trav:`<img class="vsvg vimg" src="/vellorecalltaxi/vehicles/trav.jpg?v=1" width="58" height="36" alt="" loading="lazy" decoding="async">`,
-  bus:`<img class="vsvg vimg" src="/vellorecalltaxi/vehicles/bus.jpg?v=1" width="58" height="36" alt="" loading="lazy" decoding="async">`,
+  bike:`<img class="vsvg vimg" src="./vehicles/bike.jpg?v=1" width="58" height="36" alt="" loading="lazy" decoding="async">`,
+  auto:`<img class="vsvg vimg" src="./vehicles/auto.jpg?v=1" width="58" height="36" alt="" loading="lazy" decoding="async">`,
+  car:`<img class="vsvg vimg" src="./vehicles/sedan.jpg?v=1" width="58" height="36" alt="" loading="lazy" decoding="async">`,
+  mini:`<img class="vsvg vimg" src="./vehicles/mini.jpg?v=1" width="58" height="36" alt="" loading="lazy" decoding="async">`,
+  suv:`<img class="vsvg vimg" src="./vehicles/suv.jpg?v=1" width="58" height="36" alt="" loading="lazy" decoding="async">`,
+  psuv:`<img class="vsvg vimg" src="./vehicles/psuv.jpg?v=1" width="58" height="36" alt="" loading="lazy" decoding="async">`,
+  trav:`<img class="vsvg vimg" src="./vehicles/trav.jpg?v=1" width="58" height="36" alt="" loading="lazy" decoding="async">`,
+  bus:`<img class="vsvg vimg" src="./vehicles/bus.jpg?v=1" width="58" height="36" alt="" loading="lazy" decoding="async">`,
   search:`<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0B4A36" stroke-width="2.5" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>`,
   mic:`<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0B4A36" stroke-width="2.4" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0014 0M12 18v3"/></svg>`,
   back:`<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>`,
@@ -673,7 +673,7 @@ function login(){
   <div class="body pad"><label class="muted" for="ph" style="font-weight:600">${t('phone')}</label>
    <div class="field"><span class="cc">+91</span><input id="ph" inputmode="numeric" maxlength="10" autocomplete="tel" value="${S.phone}" placeholder="98765 43210"></div>
    <div class="err" id="e"></div><div style="flex:1"></div>
-   <button class="btn" id="go" ${S.phone.length===10?'':'disabled'}>${t('getOtp')}</button>${CL?`<div class="ordiv"><span>${L('அல்லது','or')}</span></div><button class="btn gbtn" id="gg"><svg width="20" height="20" viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34.1 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34.1 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>${L('Google மூலம் login (OTP தேவையில்லை)','Continue with Google (no OTP)')}</button>`:''}<p class="fine muted"><a href="https://ajith12061995.github.io/vellorecalltaxi/privacy/" target="_blank" rel="noopener" style="color:inherit">${t('terms')}</a></p></div></section>`,()=>{
+   <button class="btn" id="go" ${S.phone.length===10?'':'disabled'}>${t('getOtp')}</button>${CL?`<div class="ordiv"><span>${L('அல்லது','or')}</span></div><button class="btn gbtn" id="gg"><svg width="20" height="20" viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34.1 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34.1 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>${L('Google மூலம் login (OTP தேவையில்லை)','Continue with Google (no OTP)')}</button>`:''}<p class="fine muted"><a href="./privacy/" target="_blank" rel="noopener" style="color:inherit">${t('terms')}</a></p></div></section>`,()=>{
     const ph=document.getElementById('ph'),b=document.getElementById('go');
     ph.oninput=()=>{ph.value=ph.value.replace(/\D/g,'').slice(0,10);b.disabled=ph.value.length!==10;document.getElementById('e').textContent=''};
     b.onclick=()=>{if(!/^[6-9]\d{9}$/.test(ph.value)){document.getElementById('e').textContent=t('phoneErr');return}S.phone=ph.value;save();
@@ -956,7 +956,7 @@ function profile(){
     <button class="row" id="th"><span class="ic">${dark?'☾':'☀'}</span><div><b>${t('theme')}</b><small>${dark?'On':'Off'}</small></div></button>
     <button class="row" id="rq"><span class="ic">${I.chat}</span><div><b>${L('என் requests & உதவி','My requests & help')}</b><small>${TIX.length} ${L('requests','requests')}</small></div></button>
     <button class="row" id="lo"><span class="ic" style="color:var(--danger)">⏻</span><div><b style="color:var(--danger)">${t('logout')}</b><small>+91 ${S.phone}</small></div></button></div>
-    <p class="fine muted"><a href="https://ajith12061995.github.io/vellorecalltaxi/privacy/" target="_blank" rel="noopener" style="color:inherit">${L('தனியுரிமை & விதிமுறைகள்','Privacy & Terms')}</a> · Vellore Taxi · Customer app v0.5</p></div>`),()=>{
+    <p class="fine muted"><a href="./privacy/" target="_blank" rel="noopener" style="color:inherit">${L('தனியுரிமை & விதிமுறைகள்','Privacy & Terms')}</a> · Vellore Taxi · Customer app v0.5</p></div>`),()=>{
     bindNav();
     document.getElementById('lg').onclick=()=>{S.lang=S.lang==='ta'?'en':'ta';save();profile()};
     document.getElementById('th').onclick=()=>{document.documentElement.dataset.theme=dark?'light':'dark';profile()};
@@ -1681,7 +1681,7 @@ function applyVoice(p){
 
 
 /* ================= STEP 5: help, call-me-back, complaints, emergency contacts, trip link ================= */
-const APP_URL='https://ajith12061995.github.io/vellorecalltaxi/';
+const APP_URL=new URL('./',location.href).href; // works on any address (custom domain or github.io)
 const esc=v=>String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
 let TIX=[],EC=[];
 try{TIX=JSON.parse(localStorage.getItem('vct_tix')||'[]')}catch(e){}
