@@ -1,0 +1,23 @@
+{
+  "appId": "app.velloretaxi",
+  "appName": "Vellore Taxi",
+  "webDir": "www",
+  "server": {
+    "url": "https://velloretaxi.app/",
+    "cleartext": false,
+    "androidScheme": "https",
+    "allowNavigation": [
+      "velloretaxi.app",
+      "www.velloretaxi.app",
+      "*.google.com",
+      "*.gstatic.com",
+      "*.googleapis.com",
+      "*.firebaseapp.com",
+      "unpkg.com"
+    ]
+  },
+  "android": {
+    "allowMixedContent": false,
+    "webContentsDebuggingEnabled": false
+  }
+}

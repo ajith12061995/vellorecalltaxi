@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Vellore Taxi Driver</string>
+    <string name="title_activity_main">Vellore Taxi Driver</string>
+    <string name="package_name">app.velloretaxi.driver</string>
+    <string name="custom_url_scheme">app.velloretaxi.driver</string>
+</resources>

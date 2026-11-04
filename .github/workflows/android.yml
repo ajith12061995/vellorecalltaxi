@@ -1,0 +1,45 @@
+name: android
+# Builds the Play Store apps (customer + driver). Runs on the android-build branch and by hand.
+# Signing: add repository secrets VCT_UPLOAD_KEYSTORE_B64, VCT_KEYSTORE_PASSWORD, VCT_KEY_ALIAS, VCT_KEY_PASSWORD
+# (the upload key never goes into the repository). Without them the release bundle is unsigned.
+on:
+  push:
+    branches: [android-build]
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      matrix:
+        app: [customer, driver]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: '21' }
+      - uses: actions/setup-node@v4
+        with: { node-version: '22' }
+      - name: Install + sync Capacitor
+        working-directory: mobile/${{ matrix.app }}
+        run: npm ci --no-audit --no-fund && npx cap sync android
+      - name: Upload key (from secrets, if present)
+        env:
+          KS: ${{ secrets.VCT_UPLOAD_KEYSTORE_B64 }}
+        run: |
+          if [ -n "$KS" ]; then echo "$KS" | base64 -d > "$RUNNER_TEMP/upload.jks"; echo "VCT_KEYSTORE=$RUNNER_TEMP/upload.jks" >> $GITHUB_ENV; fi
+      - name: Build debug APK + release bundle
+        working-directory: mobile/${{ matrix.app }}/android
+        env:
+          VCT_VERSION_CODE: ${{ github.run_number }}
+          VCT_VERSION_NAME: 1.0.${{ github.run_number }}
+          VCT_KEYSTORE_PASSWORD: ${{ secrets.VCT_KEYSTORE_PASSWORD }}
+          VCT_KEY_ALIAS: ${{ secrets.VCT_KEY_ALIAS }}
+          VCT_KEY_PASSWORD: ${{ secrets.VCT_KEY_PASSWORD }}
+        run: chmod +x gradlew && ./gradlew --no-daemon assembleDebug bundleRelease
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vct-${{ matrix.app }}-${{ github.run_number }}
+          path: |
+            mobile/${{ matrix.app }}/android/app/build/outputs/apk/debug/*.apk
+            mobile/${{ matrix.app }}/android/app/build/outputs/bundle/release/*.aab
+          retention-days: 30
