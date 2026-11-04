@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="ta">
-<head>
+<head><script>/* anti-clickjacking: the apps never run inside another site's frame (tests on localhost excepted) */if(window.top!==window.self&&!/^(localhost|127\.0\.0\.1)$/.test(location.hostname)){document.documentElement.style.display="none";try{window.top.location=window.self.location.href}catch(e){}}</script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0B4A36">
@@ -57,7 +57,7 @@ a{color:inherit}
 .agr{margin:0;padding-left:20px;max-height:260px;overflow:auto;border:1.5px solid var(--line,#e5e5e5);border-radius:12px;padding:10px 10px 10px 30px;font-size:13.5px;line-height:1.55}.agr li{margin:0 0 6px}
 </style>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV=window.VCT_V='2026-11-04-61',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV=window.VCT_V='2026-11-04-62',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('../../version.json',location.href)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -71,8 +71,8 @@ setTimeout(chk,3000);setInterval(chk,5*60*1000);document.addEventListener('visib
 </div></header>
 <main class="wrap" id="app"></main>
 <footer><a href="../../privacy/#drivers" target="_blank" rel="noopener" id="plink"></a> · Vellore Taxi</footer>
-<script src="../../core/report.js?v=2026-11-04-61"></script>
-<script src="../../core/driverchecks.js?v=2026-11-04-61"></script>
+<script src="../../core/report.js?v=2026-11-04-62"></script>
+<script src="../../core/driverchecks.js?v=2026-11-04-62"></script>
 <script>
 const S={lang:'ta',phone:'',veh:'auto',files:{},data:{}};
 try{const s=JSON.parse(localStorage.getItem('vctj')||'{}');if(s.lang)S.lang=s.lang}catch(e){}
