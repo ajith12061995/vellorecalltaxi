@@ -36,6 +36,13 @@ jobs:
           VCT_KEY_ALIAS: ${{ secrets.VCT_KEY_ALIAS }}
           VCT_KEY_PASSWORD: ${{ secrets.VCT_KEY_PASSWORD }}
         run: chmod +x gradlew && ./gradlew --no-daemon assembleDebug bundleRelease
+      - name: Check what was built (package, version, SDK, permissions)
+        working-directory: mobile/${{ matrix.app }}/android/app/build/outputs
+        run: |
+          AAPT=$(ls -d $ANDROID_HOME/build-tools/*/ | sort -V | tail -1)aapt2
+          $AAPT dump badging apk/debug/app-debug.apk | grep -E "^package:|sdkVersion|targetSdkVersion|uses-permission|application-label:" 
+          ls -la bundle/release/
+          jarsigner -verify bundle/release/app-release.aab | tail -2 || true
       - uses: actions/upload-artifact@v4
         with:
           name: vct-${{ matrix.app }}-${{ github.run_number }}
