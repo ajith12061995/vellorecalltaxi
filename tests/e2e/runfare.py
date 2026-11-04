@@ -83,7 +83,7 @@ async def main():
         # reports use the real bill
         await of.evaluate("S.sec='rep';show()");await pg.wait_for_timeout(1500)
         print('ERR',errs[:5])
-        check('no page errors',not errs)
+        check('no page errors',not errs,errs[:3])
         await b.close()
     print('RESULT','PASS' if all(x[1] for x in res) else 'FAIL',f"{sum(x[1] for x in res)}/{len(res)}")
 asyncio.run(main())
