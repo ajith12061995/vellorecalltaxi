@@ -198,3 +198,43 @@ test('signed-out users read nothing', async () => {
   await assertFails(getDoc(doc(as.anon(), 'config', 'app')));
   await assertFails(getDoc(doc(as.anon(), 'bookings', 'b1')));
 });
+
+// ---- attack attempts (security audit 4 Nov): privilege escalation and reading other people's data
+test('attack: nobody can make themselves office staff or owner', async () => {
+  await assertFails(setDoc(doc(as.cust(), 'staff', CPH), { role: 'owner' }));
+  await assertFails(setDoc(doc(as.drv(), 'staff', DRV), { role: 'staff' }));
+  await assertFails(updateDoc(doc(as.staff(), 'staff', STAFF), { role: 'owner' }));
+  await assertFails(setDoc(doc(as.google(), 'staff', '+919000000077'), { role: 'owner' }));
+});
+test('attack: a customer cannot register as a driver or approve their own application', async () => {
+  await assertFails(setDoc(doc(as.cust(), 'drivers', CPH), { name: 'Me', veh: 'sedan', wallet: 99999 }));
+  await assertSucceeds(setDoc(doc(as.cust(), 'driverApps', CPH), { status: 'pending', name: 'Me' }));
+  await assertFails(updateDoc(doc(as.cust(), 'driverApps', CPH), { status: 'approved' }));
+  await assertFails(setDoc(doc(as.other(), 'driverApps', CPH), { status: 'pending' }), 'cannot write another number\'s application');
+});
+test('attack: customers cannot change prices / settings or read other customers', async () => {
+  await assertFails(setDoc(doc(as.cust(), 'config', 'app'), { comm: 0 }, { merge: true }));
+  await assertFails(setDoc(doc(as.drv(), 'config', 'app'), { comm: 0 }, { merge: true }));
+  await seed(async db => setDoc(doc(db, 'users', 'u-other'), { name: 'Other', phone: '+919888888888' }));
+  await assertFails(getDoc(doc(as.cust(), 'users', 'u-other')));
+  await assertFails(setDoc(doc(as.cust(), 'users', 'u-other'), { name: 'hacked' }));
+});
+test('attack: a driver cannot read another driver record or someone else\'s recharge', async () => {
+  await assertFails(getDoc(doc(as.drv2(), 'recharges', 'r1')));
+  await assertFails(updateDoc(doc(as.drv(), 'recharges', 'r1'), { status: 'approved' }));
+  await assertFails(updateDoc(doc(as.drv(), 'drivers', DRV2), { online: true }));
+});
+test('attack: server-only records (removal backups, deletion audit, limits) are closed to every app user, even the owner', async () => {
+  for (const who of ['owner', 'staff', 'drv', 'cust']) {
+    await assertFails(getDoc(doc(as[who](), 'purgeBackups', 'x')), who);
+    await assertFails(setDoc(doc(as[who](), 'purgeBackups', 'x'), { a: 1 }), who);
+    await assertFails(setDoc(doc(as[who](), 'deletions', 'x'), { a: 1 }), who);
+    await assertFails(setDoc(doc(as[who](), 'deletionRequests', '+919111111111'), { status: 'done' }), who);
+  }
+});
+test('attack: chats of a ride are closed to other customers and other drivers', async () => {
+  await seed(async db => setDoc(doc(db, 'bookings', 'b2', 'chat', 'm1'), { from: 'c', text: 'hi' }));
+  await assertFails(getDoc(doc(as.other(), 'bookings', 'b2', 'chat', 'm1')));
+  await assertFails(getDoc(doc(as.drv2(), 'bookings', 'b2', 'chat', 'm1')));
+  await assertFails(addDoc(collection(as.other(), 'bookings', 'b2', 'chat'), { from: 'c', text: 'spam' }));
+});
