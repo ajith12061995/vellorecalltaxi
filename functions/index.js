@@ -188,7 +188,7 @@ exports.purgeDriver = onCall({ timeoutSeconds: 300 }, async req => {
   for (let i = 0; i < order.length; i += 400) { const batch = db.batch(); order.slice(i, i + 400).forEach(r => batch.delete(r)); await batch.commit(); }
   if (uid) await admin.auth().deleteUser(uid).catch(e => logger.warn('auth delete', { code: e.code }));
   const count = k => snaps.filter(s => s.ref.parent.id === k && s.ref.path.split('/').length === 2).length;
-  const out = { ok: true, trips: count('bookings'), ledger: count('ledger'), recharges: count('recharges'), tickets: count('tickets'), docs: count('files'), total: snaps.length, backup: run.id };
+  const out = { ok: true, trips: count('bookings'), ledger: count('ledger'), recharges: count('recharges'), tickets: count('tickets'), docs: snaps.filter(s => s.ref.parent.id === 'files').length, total: snaps.length, backup: run.id };
   await db.collection('deletions').add({ kind: 'driver-purge', last4: phone.slice(-4), by: me, ...out, at: FV.serverTimestamp() });
   logger.info('driver purged', out);
   return out;
