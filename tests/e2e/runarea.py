@@ -19,7 +19,9 @@ async def main():
         # inside the local area: no question, auto at the Government fare
         await cf.evaluate("S.mode='';S.dest='cmc';S.veh='auto';fareScreen();0");await pg.wait_for_timeout(1000)
         q=await cf.evaluate("({modal:!!document.querySelector('#aout'),km:route(S.from,S.dest).km,auto:[...document.querySelectorAll('.veh')].find(x=>x.dataset.v==='auto').querySelector('.price').textContent,note:getComputedStyle(document.getElementById('autonote')).display,txt:document.getElementById('autonote').textContent})")
-        want=round(50+25*max(0,q['km']-1.8))
+        # Govt night charge (22:00–05:00, +50%) applies when the suite runs at night
+        npct=await cf.evaluate("nightV({id:'auto'})")
+        base=round(50+25*max(0,q['km']-1.8));want=round(base*(1+npct/100)) if npct else base
         check('local trip: no outstation question',not q['modal'])
         check('auto price = Govt ₹50 + ₹25/km after 1.8 km',q['auto']=='₹%d'%want,(q['auto'],want,q['km']))
         check('customer sees "Tamil Nadu Government 2026" auto note',q['note']!='none' and '2026' in q['txt'] and ('அரசு' in q['txt'] or 'Government' in q['txt']),q['txt'][:80])
@@ -37,7 +39,7 @@ async def main():
         await cf.evaluate("S.pay='cash';cloudBook();0");await pg.wait_for_timeout(3000)
         bid=await cf.evaluate("R&&R.id");bk=await pg.evaluate(f"MOCK.dump()['bookings/{bid}']") if bid else None
         km=bk and bk['km']
-        check('auto booking saved with Govt fare + waiting ₹1/min',bk and bk['veh']=='auto' and bk['tariff']['wait']==1 and bk['fare']==round(50+25*max(0,km-1.8)),bk and (bk['fare'],bk['km'],bk['tariff']))
+        check('auto booking saved with Govt fare + waiting ₹1/min',bk and bk['veh']=='auto' and bk['tariff']['wait']==1 and bk['fare']==(round(round(50+25*max(0,km-1.8))*1.5) if npct else round(50+25*max(0,km-1.8))) and (bk['tariff'].get('night',0)==50 if npct else True),bk and (bk['fare'],bk['km'],bk['tariff']))
         await cf.evaluate("(async()=>{try{await cancelRide&&cancelRide('test')}catch(e){}})();0")
         # Continue with Outstation
         await cf.evaluate("forgetRide&&forgetRide();R=null;S.mode='';S.autoFor='';fareScreen();0");await pg.wait_for_timeout(600)
