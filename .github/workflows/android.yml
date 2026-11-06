@@ -33,8 +33,15 @@ jobs:
       - name: Upload key (from secrets, if present)
         env:
           KS: ${{ secrets.VCT_UPLOAD_KEYSTORE_B64 }}
+          VCT_KEYSTORE_PASSWORD: ${{ secrets.VCT_KEYSTORE_PASSWORD }}
+          VCT_KEY_ALIAS: ${{ secrets.VCT_KEY_ALIAS }}
         run: |
-          if [ -n "$KS" ]; then echo "$KS" | base64 -d > "$RUNNER_TEMP/upload.jks"; echo "VCT_KEYSTORE=$RUNNER_TEMP/upload.jks" >> $GITHUB_ENV; fi
+          if [ -n "$KS" ]; then
+            printf '%s' "$KS" | tr -cd 'A-Za-z0-9+/=' | base64 -d > "$RUNNER_TEMP/upload.jks" || { echo "::error::VCT_UPLOAD_KEYSTORE_B64 is not valid base64 (copy again from 'base64 -w0 vct-upload.jks')"; exit 1; }
+            echo "keystore bytes: $(stat -c %s "$RUNNER_TEMP/upload.jks")"
+            keytool -list -keystore "$RUNNER_TEMP/upload.jks" -storepass "$VCT_KEYSTORE_PASSWORD" -alias "$VCT_KEY_ALIAS" | grep -E "Alias|Entry type|SHA-?256|SHA-?1" || { echo "::error::keystore, password or alias is wrong"; exit 1; }
+            echo "VCT_KEYSTORE=$RUNNER_TEMP/upload.jks" >> $GITHUB_ENV
+          fi
       - name: Build debug APK + release bundle
         working-directory: mobile/${{ matrix.app }}/android
         env:
