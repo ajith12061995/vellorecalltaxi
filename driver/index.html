@@ -46,7 +46,7 @@
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('../vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV=window.VCT_V='68',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV=window.VCT_V='69',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('../version.json',location.href)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -641,15 +641,15 @@ a.btn{text-decoration:none}
 <div class="app" id="app"></div>
 <div class="toast" id="toast"></div>
 
-<script src="../core/report.js?v=68"></script>
-<script src="../core/geo.js?v=68"></script>
-<script src="../core/fare.js?v=68"></script>
-<script src="../core/pin.js?v=68"></script>
-<script src="../core/clock.js?v=68"></script>
-<script src="../core/map.js?v=68"></script>
-<script src="../core/chat.js?v=68"></script>
-<script src="../core/driverchecks.js?v=68"></script>
-<script src="../core/nav.js?v=68"></script>
+<script src="../core/report.js?v=69"></script>
+<script src="../core/geo.js?v=69"></script>
+<script src="../core/fare.js?v=69"></script>
+<script src="../core/pin.js?v=69"></script>
+<script src="../core/clock.js?v=69"></script>
+<script src="../core/map.js?v=69"></script>
+<script src="../core/chat.js?v=69"></script>
+<script src="../core/driverchecks.js?v=69"></script>
+<script src="../core/nav.js?v=69"></script>
 <script>
 /* shared with the customer app: icons, places, fares, map engine */
 const I = {
@@ -984,7 +984,7 @@ function incoming(pre){
      approach:[{...POS},{lat:POS.lat,lon:pk.lon},{lat:pk.lat,lon:pk.lon}],trip:r.path.map(k=>({lat:P[k].lat,lon:P[k].lon}))};
   J.away=away;renderReq(J);
 }
-const reqFareHtml=()=>`<small>${L('கட்டணம்','Fare')}</small><b>${inr(J.fare)}${J.tip?`<em class="tipadd"> + ${inr(J.tip)}</em>`:''}</b><span>${J.tip?L('Customer tip சேர்த்திருக்காங்க · ','Customer added a tip · '):''}${L('உங்களுக்கு','You get')} ${inr(J.fare-J.comm+(J.tip||0))} · <em class="pm ${J.pay}">${payName(J.pay)}</em></span>`;
+const reqFareHtml=()=>`<small>${L('கட்டணம்','Fare')}</small><b>${inr(J.fare)}${J.tip?`<em class="tipadd"> + ${inr(J.tip)}</em>`:''}</b><span>${J.tip?L('Customer tip சேர்த்திருக்காங்க · ','Customer added a tip · '):''}<em class="pm ${J.pay}">${payName(J.pay)}</em></span>`;
 function renderReq(j){
   J=j;const from=J.from,to=J.to,pk=P[from],away=J.away;
   const SEC=20;
@@ -1152,8 +1152,7 @@ function collect(){
       <div class="qr" id="pmtxt" style="margin-top:10px"></div>
       <button class="btn" id="got" style="margin-top:12px"></button></div>
     <div id="sum" hidden style="display:flex;flex-direction:column;gap:14px">
-      <div class="earncard"><div><small>${L('உங்க வருமானம்','Your earnings')}</small><b>${inr((fin?fin.total:J.fare)-J.comm+(J.tip||0))}</b></div>
-        <div class="ec2"><span>${L('Commission','Commission')} ${COMM}%</span><b>−${inr(J.comm)}</b><small>${L('Wallet-ல இருந்து கழிக்கப்பட்டது','Taken from your wallet')}</small></div></div>
+      <div class="earncard"><div><small>${L('இந்த ride கட்டணம்','This ride')}</small><b>${inr((fin?fin.total:J.fare)+(J.tip||0))}</b></div></div>
       <span class="kind" style="text-align:center">${L(`${J.cust.ta} எப்படி?`,`Rate ${J.cust.en}`)}</span>
       <div class="stars">${[1,2,3,4,5].map(n=>`<button data-s="${n}" aria-label="${n} stars">★</button>`).join('')}</div>
       <button class="btn yellow" id="next">${L('அடுத்த ride-க்கு Online','Back online for the next ride')}</button>
@@ -1178,7 +1177,7 @@ function collect(){
       paid=true;
       if(J.id){cloudDone(pm);const aj=document.getElementById('adj');if(aj)aj.hidden=true;document.getElementById('pay').hidden=true;const sm=document.getElementById('sum');sm.hidden=false;sm.style.display='flex';return}
       DS.trips.unshift({id:Date.now().toString(36),date:Date.now(),fare:J.fare,comm:J.comm,net:J.fare-J.comm+(J.tip||0),pay:pm,km:+J.km.toFixed(1),from:{ta:P[J.from].ta,en:P[J.from].en},to:{ta:P[J.to].ta,en:P[J.to].en},cust:J.cust});
-      DS.wallet-=J.comm;DS.tx.unshift({amt:-J.comm,ta:`Commission: ${P[J.to].ta}`,en:`Commission: ${P[J.to].en}`,date:Date.now()});saveDS();
+      DS.wallet-=J.comm;saveDS();
       document.getElementById('pay').hidden=true;const sm=document.getElementById('sum');sm.hidden=false;sm.style.display='flex'};
     app.querySelectorAll('[data-s]').forEach(b=>b.onclick=()=>{stars=+b.dataset.s;if(J&&J.id)cUpd({custRating:stars});app.querySelectorAll('[data-s]').forEach(x=>x.classList.toggle('on',+x.dataset.s<=stars))});
     document.getElementById('next').onclick=()=>{stopJob();J=null;if(DS.wallet<MINBAL){setOnline(false);home();toast(L('Wallet குறைவு. Recharge பண்ணிட்டு Online போங்க','Wallet is low. Recharge to go online'));return}home()};
@@ -1193,18 +1192,18 @@ function earnTab(){
   const inDay=(x,d)=>new Date(x.date).toDateString()===d.toDateString();
   const list=EV==='today'?DS.trips.filter(x=>isToday(x.date)):DS.trips.filter(x=>x.date>=days[0].getTime());
   const sum=k=>list.reduce((a,x)=>a+x[k],0),cash=list.filter(x=>x.pay==='cash').reduce((a,x)=>a+x.fare,0);
-  const per=days.map(d=>DS.trips.filter(x=>inDay(x,d)).reduce((a,x)=>a+x.net,0)),mx=Math.max(100,...per);
+  const gross=x=>x.net+x.comm,per=days.map(d=>DS.trips.filter(x=>inDay(x,d)).reduce((a,x)=>a+gross(x),0)),mx=Math.max(100,...per);
   const nice=Math.ceil(mx/500)*500;const anySample=list.some(x=>x.sample);
   go(shell(`<div class="head pad"><h2>${L('வருமானம்','Earnings')}</h2></div><div class="body pad" style="padding-top:0">
     <div class="seg"><button class="${EV==='today'?'on':''}" data-ev="today">${L('இன்று','Today')}</button><button class="${EV==='week'?'on':''}" data-ev="week">${L('இந்த வாரம்','Last 7 days')}</button></div>
-    <div class="hero2"><small>${L('நிகர வருமானம்','Net earnings')}</small><b>${inr(sum('net'))}</b><span>${list.length} ${L('பயணங்கள்','rides')} · ${list.reduce((a,x)=>a+x.km,0).toFixed(1)} ${L('கி.மீ','km')}</span></div>
-    <div class="stats"><div><b>${inr(sum('fare'))}</b><small>${L('மொத்த கட்டணம்','Total fares')}</small></div><div><b>−${inr(sum('comm'))}</b><small>Commission</small></div><div><b>${inr(cash)}</b><small>${L('கையில் cash','Cash in hand')}</small></div></div>
+    <div class="hero2"><small>${L('மொத்த கட்டணம்','Total fares')}</small><b>${inr(list.reduce((a,x)=>a+gross(x),0))}</b><span>${list.length} ${L('பயணங்கள்','rides')} · ${list.reduce((a,x)=>a+x.km,0).toFixed(1)} ${L('கி.மீ','km')}</span></div>
+    <div class="stats"><div><b>${list.length}</b><small>${L('பயணங்கள்','Rides')}</small></div><div><b>${inr(list.reduce((a,x)=>a+x.net-x.fare+x.comm,0))}</b><small>Tip</small></div><div><b>${inr(cash)}</b><small>${L('கையில் cash','Cash in hand')}</small></div></div>
     ${EV==='week'?`<div class="chart" role="img" aria-label="${L('7 நாள் வருமானம்','Earnings for the last 7 days')}">
       <div class="yax"><span>${inr(nice)}</span><span>${inr(nice/2)}</span><span>₹0</span></div>
       <div class="bars">${days.map((d,i)=>`<button class="bcol ${i===6?'today':''}" data-v="${inr(per[i])}" data-d="${d.toLocaleDateString(S.lang==='ta'?'ta-IN':'en-IN',{weekday:'long',day:'numeric',month:'short'})}"><span class="bar" style="height:${(per[i]/nice*100).toFixed(1)}%">${i===6||per[i]===Math.max(...per)?`<em>${inr(per[i])}</em>`:''}</span><small>${d.toLocaleDateString(S.lang==='ta'?'ta-IN':'en-IN',{weekday:'narrow'})}</small></button>`).join('')}</div>
       <div class="ctip" id="ctip" hidden></div></div>`:''}
     <div class="sec"><h3>${L('பயணங்கள்','Rides')}</h3>${anySample?`<span class="sample">${L('முந்தைய நாட்கள் sample','Older days are sample')}</span>`:''}</div>
-    ${list.length?`<div class="recent">${list.slice(0,40).map(x=>`<div class="row"><span class="ic"><em class="pm ${x.pay}">${payName(x.pay)}</em></span><div><b>${x.to[S.lang]}</b><small>${new Date(x.date).toLocaleString(S.lang==='ta'?'ta-IN':'en-IN',{day:'numeric',month:'short',hour:'numeric',minute:'2-digit'})} · ${x.km} ${L('கி.மீ','km')}</small></div><div class="tamt"><b>${inr(x.net)}</b><small>${inr(x.fare)} − ${inr(x.comm)}</small></div></div>`).join('')}</div>`
+    ${list.length?`<div class="recent">${list.slice(0,40).map(x=>`<div class="row"><span class="ic"><em class="pm ${x.pay}">${payName(x.pay)}</em></span><div><b>${x.to[S.lang]}</b><small>${new Date(x.date).toLocaleString(S.lang==='ta'?'ta-IN':'en-IN',{day:'numeric',month:'short',hour:'numeric',minute:'2-digit'})} · ${x.km} ${L('கி.மீ','km')}</small></div><div class="tamt"><b>${inr(gross(x))}</b></div></div>`).join('')}</div>`
       :`<div class="empty"><h3>${L('இன்னும் ride இல்லை','No rides yet')}</h3><p class="muted">${L('Online போனா ride request வரும்.','Go online to get ride requests.')}</p></div>`}
   </div>`),()=>{
     bindNav();app.querySelectorAll('[data-ev]').forEach(b=>b.onclick=()=>{EV=b.dataset.ev;earnTab()});
@@ -1217,7 +1216,7 @@ function earnTab(){
 function walletTab(){
   go(shell(`<div class="head pad"><h2>Wallet</h2></div><div class="body pad" style="padding-top:4px">
     <div class="walcard"><small>${L('Wallet இருப்பு','Wallet balance')}</small><b>${inr(DS.wallet)}</b>
-      <span>${L(`ஒவ்வொரு ride-க்கும் ${COMM}% commission இதுல இருந்து கழியும். Online போக குறைந்தது ${inr(MINBAL)}.`,`${COMM}% commission per ride is taken from here. Minimum ${inr(MINBAL)} to go online.`)}</span>
+      <span>${L(`Online போக குறைந்தது ${inr(MINBAL)} இருக்கணும்.`,`Keep at least ${inr(MINBAL)} to go online.`)}</span>
       <button class="btn yellow" id="rc">+ ${L('Recharge பண்ணு','Recharge')}</button></div>
     ${DS.pending.length?`<div class="sec"><h3>${L('Approval-க்கு காத்திருக்கு','Waiting for approval')}</h3></div><div class="recent">${DS.pending.map((p,i)=>`<div class="row"><span class="ic in">+</span><div><b>${inr(p.amt)} · UTR ${esc(p.utr)}</b><small>${L('Owner பார்த்து approve பண்ணுவாங்க','Your owner will verify and approve')}</small></div>${CL?'':`<button class="demo sm" data-ap="${i}">${L('Demo: approve','Demo: approve')}</button>`}</div>`).join('')}</div>`:''}
     <div class="sec"><h3>${L('பரிவர்த்தனைகள்','Transactions')}</h3></div>
@@ -1364,8 +1363,7 @@ function watchRch(){UNS.push(F().onSnapshot(F().query(F().collection(CL.db,'rech
 },()=>{}))}
 function rebuildTx(){
   DS.tx=[...RCH.filter(r=>r.status==='approved').map(r=>({amt:+r.amt,ta:'Recharge (Owner approve)',en:'Recharge (approved)',date:CL.toMs(r.approvedAt)||r.date||0})),
-    ...RCH.filter(r=>r.status==='rejected').map(r=>({amt:0,ta:`Recharge நிராகரிப்பு · UTR ${r.utr}`,en:`Recharge rejected · UTR ${r.utr}`,date:CL.toMs(r.approvedAt)||r.date||0})),
-    ...DS.trips.map(t=>({amt:-t.comm,ta:`Commission: ${t.to.ta}`,en:`Commission: ${t.to.en}`,date:t.date}))].sort((a,b)=>b.date-a.date);
+    ...RCH.filter(r=>r.status==='rejected').map(r=>({amt:0,ta:`Recharge நிராகரிப்பு · UTR ${r.utr}`,en:`Recharge rejected · UTR ${r.utr}`,date:CL.toMs(r.approvedAt)||r.date||0}))].sort((a,b)=>b.date-a.date);
 }
 function stopAllD(){UNS.forEach(u=>{try{u()}catch(e){}});UNS=[];if(REQUNSUB){REQUNSUB();REQUNSUB=null}stopJob();stopGeo()}
 
@@ -1667,7 +1665,6 @@ function qrScreen(){
 }
 const FAQD=[
  ['Online போக முடியலையே, ஏன்?','Why can’t I go online?','Wallet-ல குறைந்தபட்ச தொகை இல்லாம இருக்கலாம், ஒரு document காலாவதி ஆகியிருக்கலாம், அல்லது office account-ஐ நிறுத்தி வச்சிருக்கலாம். ☰ → அறிவிப்புகள்-ல காரணம் தெரியும்.','Your wallet may be below the minimum, a document may have expired, or the office may have paused your account. ☰ → Notifications shows the reason.'],
- ['Commission எப்படி கழிக்கப்படுது?','How is commission taken?','ஒவ்வொரு trip முடிஞ்சதும் கட்டணத்துல இருந்து commission உங்க wallet-ல இருந்து தானா கழியும். Customer கொடுக்கிற tip முழுசா உங்களுக்கே.','After each trip the commission is taken from your wallet automatically. Customer tips are all yours.'],
  ['Wallet recharge எப்படி?','How do I recharge my wallet?','Wallet → Recharge. Office UPI-க்கு பணம் அனுப்பி UTR எண்ணை போடுங்க. Office approve பண்ணினதும் wallet-ல சேரும்.','Wallet → Recharge. Pay the office UPI and enter the UTR number. It is added once the office approves it.'],
  ['Customer UPI-ல பணம் எப்படி தர்றாங்க?','How do customers pay by UPI?','Trip முடிஞ்சதும் UPI தேர்வு பண்ணா உங்க phone-ல உங்க UPI QR வரும். Customer scan பண்ணி நேரா உங்களுக்கு அனுப்புவாங்க. UPI ID இல்லைன்னா office-கிட்ட சேர்க்க சொல்லுங்க.','When the trip ends, choose UPI and your own UPI QR appears. The customer pays you directly. If your UPI ID is missing, ask the office to add it.'],
  ['Customer வரலைன்னா?','What if the customer doesn’t come?','Pickup-ல "வந்தாச்சு" அழுத்தி காத்திருங்க, customer-ஐ call பண்ணுங்க. வரலைன்னா ரத்து செய்யும்போது "Customer வரல" தேர்வு பண்ணுங்க. அது உங்க கணக்குல ரத்து-ஆ சேராது.','Tap Arrived, wait and call the customer. If they don’t come, cancel with "Customer did not show up" — it won’t count against you.'],
