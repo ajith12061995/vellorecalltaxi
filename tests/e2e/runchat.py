@@ -16,7 +16,7 @@ async def main():
         for i,d in enumerate('123456'):await C.locator(f'#o{i}').fill(d)
         await pg.wait_for_timeout(800);await C.locator('#nm').fill('Priya');await C.locator('#go').click();await pg.wait_for_timeout(2000)
         print('cust from',await cf.evaluate("S.from+' '+JSON.stringify(P[S.from])"))
-        await cf.evaluate("P.maa={ta:'Chennai Airport',en:'Chennai Airport',sub:'Meenambakkam',lat:12.9900,lon:80.1693,km:0};P.tbm={ta:'Tambaram',en:'Tambaram',sub:'',lat:12.9249,lon:80.1000,km:0};S.from='maa';S.dest='tbm';S.veh='sedan';S.pay='cash';fareScreen()");await pg.wait_for_timeout(2500)
+        await cf.evaluate("CFG.area={lat:12.99,lon:80.17};P.maa={ta:'Chennai Airport',en:'Chennai Airport',sub:'Meenambakkam',lat:12.9900,lon:80.1693,km:0};P.tbm={ta:'Tambaram',en:'Tambaram',sub:'',lat:12.9249,lon:80.1000,km:0};S.from='maa';S.dest='tbm';S.veh='sedan';S.pay='cash';fareScreen()");await pg.wait_for_timeout(2500)
         print('NEAR',await cf.evaluate("JSON.stringify(NEAR)"))
         print('book',await cf.evaluate("document.getElementById('bookb').disabled"),await cf.evaluate("document.getElementById('bookb').textContent"))
         await pg.screenshot(path='shots/che1.png',clip={'x':0,'y':0,'width':400,'height':860})
