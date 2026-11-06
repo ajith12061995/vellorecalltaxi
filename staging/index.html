@@ -39,7 +39,7 @@
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('./vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV=window.VCT_V='64',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV=window.VCT_V='65',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('./version.json',location.href)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -536,13 +536,13 @@ details.faq p{margin:0;padding:0 14px 14px;color:var(--muted);font-size:14px;lin
 <div class="app" id="app"></div>
 <div class="toast" id="toast"></div>
 
-<script src="./core/report.js?v=64"></script>
-<script src="./core/geo.js?v=64"></script>
-<script src="./core/fare.js?v=64"></script>
-<script src="./core/pin.js?v=64"></script>
-<script src="./core/clock.js?v=64"></script>
-<script src="./core/map.js?v=64"></script>
-<script src="./core/chat.js?v=64"></script>
+<script src="./core/report.js?v=65"></script>
+<script src="./core/geo.js?v=65"></script>
+<script src="./core/fare.js?v=65"></script>
+<script src="./core/pin.js?v=65"></script>
+<script src="./core/clock.js?v=65"></script>
+<script src="./core/map.js?v=65"></script>
+<script src="./core/chat.js?v=65"></script>
 <script>
 /* ---------- icons ---------- */
 const I = {
@@ -744,7 +744,7 @@ function describe(lat,lon,lang=S.lang){
 }
 function setCustom(key,c){
   const ta=describe(c.lat,c.lon,'ta'),en=describe(c.lat,c.lon,'en');
-  P[key]={ta:ta.title,en:en.title,sub:(S.lang==='ta'?ta:en).sub.split(' · ').pop(),lat:c.lat,lon:c.lon,ic:'pin'};
+  P[key]={ta:ta.title,en:en.title,sub:(S.lang==='ta'?ta:en).sub.replace(/\s*·?\s*-?\d+\.\d+, -?\d+\.\d+$/,''),lat:c.lat,lon:c.lon,ic:'pin'};
   ROADS=ROADS.filter(r=>!r.includes(key));
   let n=null,nd=1e9;Object.keys(P).forEach(k=>{if(CUSTOM.includes(k))return;const d=hav(c,P[k]);if(d<nd){nd=d;n=k}});
   ROADS.push([key,n]);
@@ -861,8 +861,8 @@ function picker(mode){
      <button class="btn ${isPick?'':'yellow'}" id="ok">${t(isPick?'confirmPick':'confirmDrop')}</button></div></section>`,()=>{
     const pin=document.getElementById('pin'),addr=document.getElementById('addr'),ok=document.getElementById('ok'),hint=document.getElementById('hint');
     let cur=null,touches=0;
-    const show=c=>{const d=describe(c.lat,c.lon);document.getElementById('at').textContent=d.title;document.getElementById('as').textContent=d.sub;addr.classList.remove('loading');cur=c;ok.disabled=false;
-      if(REALMAP)revGeo(c.lat,c.lon).then(g=>{if(!g||cur!==c||!document.getElementById('at'))return;c.g=g;document.getElementById('at').textContent=g[S.lang];document.getElementById('as').textContent=g.sub||(c.lat.toFixed(5)+', '+c.lon.toFixed(5))})};
+    const show=c=>{const d=describe(c.lat,c.lon);document.getElementById('at').textContent=d.title;document.getElementById('as').textContent=d.sub.replace(/\s*·?\s*-?\d+\.\d+, -?\d+\.\d+$/,'');addr.classList.remove('loading');cur=c;ok.disabled=false;
+      if(REALMAP)revGeo(c.lat,c.lon).then(g=>{if(!g||cur!==c||!document.getElementById('at'))return;c.g=g;document.getElementById('at').textContent=g[S.lang];document.getElementById('as').textContent=g.addr||g.sub||d.sub.replace(/\s*·?\s*-?\d+\.\d+, -?\d+\.\d+$/,'')})};
     const m=makeMap(document.getElementById('map'),{scale:true,hide:CUSTOM.filter(k=>!(isPick&&k==='drop'&&S.dest==='drop')),
       onStart(){pin.classList.add('lift');addr.classList.add('loading');ok.disabled=true;if(++touches>1)hint.classList.add('gone')},
       onEnd(c){pin.classList.remove('lift');show(c)}});
@@ -870,10 +870,10 @@ function picker(mode){
     setTimeout(()=>hint.classList.add('gone'),4500);
     bindZoom(m);
     document.getElementById('bk').onclick=search;
-    ok.onclick=()=>{if(!cur)return;
-      if(isPick){setCustom('pick',cur);geoName('pick',cur);S.from='pick';S.dest&&P[S.dest]||S.mode==='rent'&&RS.atFare?fareScreen():search();return}
-      if(hav(cur,P[S.from])<.08){toast(t('tooClose'));return}
-      setCustom('drop',cur);geoName('drop',cur);S.dest='drop';fareScreen()};
+    ok.onclick=async()=>{if(!cur)return;ok.disabled=true;
+      if(isPick){setCustom('pick',cur);await geoConfirm('pick',cur);S.from='pick';S.dest&&P[S.dest]||S.mode==='rent'&&RS.atFare?fareScreen():search();return}
+      if(hav(cur,P[S.from])<.08){toast(t('tooClose'));ok.disabled=false;return}
+      setCustom('drop',cur);await geoConfirm('drop',cur);S.dest='drop';fareScreen()};
   });
 }
 
@@ -1848,7 +1848,7 @@ const CFG={upi:'',office:'',comm:10};
 const ON_PAGES=!/^(localhost|127\.0\.0\.1|)$/.test(location.hostname);
 const cloudP=(window.CLOUD_READY||Promise.resolve(null)).then(c=>{CL=c||null;return CL}).catch(()=>null);
 const F=()=>CL.fs;
-const placeOf=k=>({key:CUSTOM.includes(k)?null:k,ta:P[k].ta,en:P[k].en,lat:P[k].lat,lon:P[k].lon});
+const placeOf=k=>({key:CUSTOM.includes(k)?null:k,ta:P[k].ta,en:P[k].en,lat:P[k].lat,lon:P[k].lon,addr:String(P[k].addr||'').slice(0,240)});
 function offlineScreen(){
   go(`<section class="screen"><div class="hero pad"><span class="mini">VCT · VELLORE TAXI</span><h1>${L('Internet இல்லை','You are offline')}</h1><p>${L('Connection-ஐ பார்த்துட்டு மறுபடி முயற்சி பண்ணுங்க.','Check your connection and try again.')}</p></div>
    <div class="body pad"><div style="flex:1"></div><button class="btn" id="rl">${L('மறுபடி முயற்சி','Try again')}</button></div></section>`,()=>document.getElementById('rl').onclick=()=>location.reload());
@@ -2163,7 +2163,7 @@ function locateMe(force,cb){
   let best=null,done=false,first=true;
   const finish=()=>{if(done)return;done=true;LOCATING=false;clearTimeout(tmo);if(GEOWATCH!=null){navigator.geolocation.clearWatch(GEOWATCH);GEOWATCH=null}
     if(!best){if(force)toast(L('Location கிடைக்கல. GPS on பண்ணுங்க, அல்லது map-ல pin பண்ணுங்க','Could not get your location. Turn on GPS, or pin your pickup on the map'));return}
-    revGeo(best.lat,best.lon).then(g=>{if(g){P.home.ta=g.ta;P.home.en=g.en;P.home.sub=g.sub}if(document.getElementById('wh'))home()})};
+    revGeo(best.lat,best.lon).then(g=>{if(g){P.home.ta=g.ta;P.home.en=g.en;P.home.sub=g.sub;P.home.addr=g.addr||''}if(document.getElementById('wh'))home()})};
   const tmo=setTimeout(finish,15000);
   GEOWATCH=navigator.geolocation.watchPosition(p=>{
       const c={lat:p.coords.latitude,lon:p.coords.longitude,acc:Math.round(p.coords.accuracy||0)};
@@ -2172,7 +2172,12 @@ function locateMe(force,cb){
       if(c.acc&&c.acc<=15)finish()},
     ()=>{if(!best)finish()},{enableHighAccuracy:true,timeout:15000,maximumAge:0});
 }
-function geoName(k,c){if(c&&c.g){P[k].ta=c.g.ta;P[k].en=c.g.en;P[k].sub=c.g.sub}}
+function geoName(k,c){if(c&&c.g){P[k].ta=c.g.ta;P[k].en=c.g.en;P[k].sub=c.g.sub;P[k].addr=c.g.addr||''}}
+/* name+address must be ready before it is saved: wait a little, else fill it in later (coordinates are never touched) */
+async function geoConfirm(k,c){
+  if(!REALMAP)return;if(!c.g){const g=await revGeoWait(c.lat,c.lon,4000);if(g)c.g=g}
+  if(c.g&&P[k]&&P[k].lat===c.lat&&P[k].lon===c.lon){geoName(k,c);return}
+  revGeo(c.lat,c.lon).then(g=>{if(g&&P[k]&&P[k].lat===c.lat&&P[k].lon===c.lon){c.g=g;geoName(k,c)}})}
 function liveSearch(q){
   clearTimeout(SRT);q=(q||'').trim();const old=document.getElementById('osr');if(q.length<3){if(old)old.remove();return}
   SRT=setTimeout(async()=>{
@@ -2187,7 +2192,7 @@ function liveSearch(q){
     let box=document.getElementById('osr');if(!box){box=document.createElement('div');box.id='osr';ls.insertBefore(box,ls.children[1]||null)}
     box.innerHTML=rows.length?`<div class="tagline">${L('வரைபடத்தில் கிடைத்தவை','Places on the map')}</div>`+rows.map((x,i)=>`<button class="row" data-g="${i}"><span class="ic">${I.pin}</span><div><b>${esc(x.name)}</b><small>${esc(x.sub)}${x.lat!=null?' · '+(hav(P[S.from],x)*1.35).toFixed(1)+' '+t('km'):''}</small></div></button>`).join('')+`<p class="fine muted" style="margin:4px 0 0;text-align:left">${src}</p>`:'';
     box.querySelectorAll('[data-g]').forEach(b=>b.onclick=()=>{const x=rows[+b.dataset.g];
-      const go2=c=>{setCustom('drop',c);P.drop.ta=P.drop.en=x.name;P.drop.sub=x.sub;S.dest='drop';fareScreen()};
+      const go2=c=>{setCustom('drop',c);P.drop.ta=P.drop.en=x.name;P.drop.sub=x.sub;P.drop.addr=[x.name,x.sub].filter(Boolean).join(', ');S.dest='drop';fareScreen()};
       if(x.pred)gPick(x).then(go2).catch(()=>toast(L('இந்த இடத்தை எடுக்க முடியல. Map-ல pin பண்ணுங்க','Could not open that place. Pin it on the map')));else go2({lat:x.lat,lon:x.lon})});
   },400);
 }

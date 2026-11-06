@@ -46,7 +46,7 @@
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('../vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV=window.VCT_V='64',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV=window.VCT_V='65',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('../version.json',location.href)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -641,15 +641,15 @@ a.btn{text-decoration:none}
 <div class="app" id="app"></div>
 <div class="toast" id="toast"></div>
 
-<script src="../core/report.js?v=64"></script>
-<script src="../core/geo.js?v=64"></script>
-<script src="../core/fare.js?v=64"></script>
-<script src="../core/pin.js?v=64"></script>
-<script src="../core/clock.js?v=64"></script>
-<script src="../core/map.js?v=64"></script>
-<script src="../core/chat.js?v=64"></script>
-<script src="../core/driverchecks.js?v=64"></script>
-<script src="../core/nav.js?v=64"></script>
+<script src="../core/report.js?v=65"></script>
+<script src="../core/geo.js?v=65"></script>
+<script src="../core/fare.js?v=65"></script>
+<script src="../core/pin.js?v=65"></script>
+<script src="../core/clock.js?v=65"></script>
+<script src="../core/map.js?v=65"></script>
+<script src="../core/chat.js?v=65"></script>
+<script src="../core/driverchecks.js?v=65"></script>
+<script src="../core/nav.js?v=65"></script>
 <script>
 /* shared with the customer app: icons, places, fares, map engine */
 const I = {
@@ -738,7 +738,7 @@ try{Object.assign(S,JSON.parse(localStorage.getItem('vctd')||'{}'),{online:false
 const save=()=>{try{localStorage.setItem('vctd',JSON.stringify({lang:S.lang,phone:S.phone,logged:S.logged,pid:S.pid}))}catch(e){}};
 const L=(ta,en)=>S.lang==='ta'?ta:en;
 const pn=k=>esc(P[k][S.lang]);
-const padr=k=>{const a=P[k]&&P[k].addr;return a&&a!==P[k][S.lang]?`<small class="muted" style="display:block;font-weight:500">${esc(a)}</small>`:''}; // full address (when the booking has one) // place names may come from customers: always escaped
+const padr=k=>{const a=P[k]&&P[k].addr;return a&&a!==P[k][S.lang]?`<small class="muted" style="display:block;font-weight:500;text-transform:none;letter-spacing:0;font-size:12px">${esc(a)}</small>`:''}; // full address (when the booking has one) // place names may come from customers: always escaped
 const inr=n=>'₹'+Math.round(n).toLocaleString('en-IN');
 const esc=v=>String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
 let COMM=10,MINBAL=100;
