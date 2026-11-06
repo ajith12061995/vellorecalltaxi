@@ -21,6 +21,7 @@ ok('live address → live project; /staging/, localhost → never the live proje
     const c = cfgFor(h); assert.strictEqual(c.VCT_ENV, 'staging', h);
     assert.ok(!c.firebaseConfig || c.firebaseConfig.projectId !== 'vellore-taxi23', h + ' must not use live data');
     assert.strictEqual(c.APPCHECK_SITE_KEY, '', h + ' app check off on test');
+    assert.strictEqual(c.firebaseConfig.projectId, 'vellore-taxi-staging', h + ' uses the TEST project');
   }
 });
 console.log(`RESULT PASS ${n}/${n}`);

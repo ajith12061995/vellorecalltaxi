@@ -14,7 +14,14 @@ const PRODUCTION = {
   appId: "1:764188040315:web:54bf2a9b3c806b71a696de",
   measurementId: "G-X9WBCXVGQ2"
 };
-const STAGING = null; // e.g. { apiKey: "...", authDomain: "vellore-taxi-staging.firebaseapp.com", projectId: "vellore-taxi-staging", ... }
+const STAGING = {   // TEST project — separate database and logins; never real customers
+  apiKey: "AIzaSyDH06OwcP5Ff751Plw0_U-ZzClKQ-4IKJE",
+  authDomain: "vellore-taxi-staging.firebaseapp.com",
+  projectId: "vellore-taxi-staging",
+  storageBucket: "vellore-taxi-staging.firebasestorage.app",
+  messagingSenderId: "677405356793",
+  appId: "1:677405356793:web:eecc84d14464c08e46e828"
+};
 
 const isStaging = /staging/i.test(location.href) || /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
 export const VCT_ENV = isStaging ? 'staging' : 'production';
