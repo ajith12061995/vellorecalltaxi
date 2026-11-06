@@ -46,7 +46,7 @@
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('../vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV=window.VCT_V='70',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV=window.VCT_V='71',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('../version.json',location.href)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -647,15 +647,15 @@ a.btn{text-decoration:none}
 <div class="app" id="app"></div>
 <div class="toast" id="toast"></div>
 
-<script src="../core/report.js?v=70"></script>
-<script src="../core/geo.js?v=70"></script>
-<script src="../core/fare.js?v=70"></script>
-<script src="../core/pin.js?v=70"></script>
-<script src="../core/clock.js?v=70"></script>
-<script src="../core/map.js?v=70"></script>
-<script src="../core/chat.js?v=70"></script>
-<script src="../core/driverchecks.js?v=70"></script>
-<script src="../core/nav.js?v=70"></script>
+<script src="../core/report.js?v=71"></script>
+<script src="../core/geo.js?v=71"></script>
+<script src="../core/fare.js?v=71"></script>
+<script src="../core/pin.js?v=71"></script>
+<script src="../core/clock.js?v=71"></script>
+<script src="../core/map.js?v=71"></script>
+<script src="../core/chat.js?v=71"></script>
+<script src="../core/driverchecks.js?v=71"></script>
+<script src="../core/nav.js?v=71"></script>
 <script>
 /* shared with the customer app: icons, places, fares, map engine */
 const I = {
@@ -1428,16 +1428,25 @@ function trackKm(){if(!J||!J.id||!J.b||J.b.status!=='ontrip')return;const last=J
 let BGW=null,BGP=null;
 function geoFix(lat,lon,acc){POS={lat,lon};LASTFIX=Date.now();POSACC=acc||0;trackKm();const first=!GOTFIX;GOTFIX=true;GPSERR=0;pushLive(first);if(first&&S.tab==='home'&&!J&&document.getElementById('gpsw'))home()}
 /* Android app: location keeps coming (foreground service + notification) while the screen is off or another app is open */
+/* The Android apps load this page from velloretaxi.app, so @capacitor/core (and Capacitor.registerPlugin) is not
+   there — only the native bridge (nativePromise / nativeCallback / addListener). capPlugin() works with either. */
+function capPlugin(name){const C=window.Capacitor;if(!C)return null;
+  if(typeof C.registerPlugin==='function')return C.registerPlugin(name);
+  if(typeof C.nativePromise!=='function')return null;
+  return new Proxy({},{get:(_,m)=>{if(m==='then')return undefined;
+    if(m==='addWatcher')return (o,cb)=>Promise.resolve(C.nativeCallback(name,'addWatcher',o||{},cb));
+    if(m==='addListener')return (ev,cb)=>Promise.resolve(C.addListener(name,ev,cb));
+    return o=>C.nativePromise(name,String(m),o||{})}})}
 /* BGST: what the background location is doing — shown in Me → Settings so a driver/office can check it */
 let BGST='',BGTRY=0;
 const bgText=()=>({on:L('ON — screen off ஆனாலும் location போகும் ✅','ON — keeps working with the screen off ✅'),off:L('OFF (Offline)','OFF (offline)'),starting:L('தொடங்குது…','Starting…'),retry:L('தொடங்குது… (மறுமுயற்சி)','Starting… (retrying)'),
   'notif-denied':L('Notification அனுமதி இல்லை — Settings → Apps → Notifications ON பண்ணுங்க','Notifications are blocked — turn them on in Settings → Apps'),'no-plugin':L('இந்த app version-ல இல்லை','Not in this app version')})[BGST]||(BGST?L('பிரச்சனை: ','Problem: ')+BGST:L('Online போனதும் தெரியும்','Shown after you go online'));
 async function notifPerm(){ // Android 13+: the "Online" notification of the location service is hidden without this permission
-  try{const P=Capacitor.Plugins&&Capacitor.Plugins.PushNotifications;if(!P)return 'na';let r=await P.checkPermissions();
+  try{const P=capPlugin('PushNotifications');if(!P)return 'na';let r=await P.checkPermissions();
     if(r.receive==='prompt'||r.receive==='prompt-with-rationale')r=await P.requestPermissions();return r.receive}catch(e){return 'err'}}
 function startNativeGeo(){
   if(BGW||BGP)return true;if(!NATIVE())return false;
-  try{BGP=Capacitor.registerPlugin('BackgroundGeolocation')}catch(e){BGST='no-plugin';return false}
+  try{BGP=capPlugin('BackgroundGeolocation')}catch(e){BGP=null}if(!BGP){BGST='no-plugin';return false}
   BGST='starting';const bgp=BGP;
   // location permission FIRST: the plugin starts its foreground notification right away, and Android 14+ refuses
   // a location service started before the permission exists (no notification, stops with the screen off)

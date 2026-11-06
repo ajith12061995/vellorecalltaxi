@@ -68,7 +68,9 @@ const api = {
   async nativePushToken() {
     if (!api.nativePush()) return null;
     try {
-      const PN = window.Capacitor.registerPlugin('PushNotifications');
+      // the page comes from velloretaxi.app: no @capacitor/core here, so registerPlugin may be missing → native bridge calls
+      const C = window.Capacitor, PN = typeof C.registerPlugin === 'function' ? C.registerPlugin('PushNotifications') : new Proxy({}, { get: (_, m) => m === 'then' ? undefined
+        : m === 'addListener' ? (ev, cb) => Promise.resolve(C.addListener('PushNotifications', ev, cb)) : (o) => C.nativePromise('PushNotifications', String(m), o || {}) });
       let p = await PN.checkPermissions();
       if (p.receive !== 'granted') { p = await PN.requestPermissions(); if (p.receive !== 'granted') return null; }
       try { await PN.createChannel({ id: 'rides', name: 'Ride alerts', description: 'Ride and trip alerts', importance: 5, visibility: 1, vibration: true, lights: true }); } catch (e) { /* older Android */ }

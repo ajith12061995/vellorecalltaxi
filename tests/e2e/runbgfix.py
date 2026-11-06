@@ -10,7 +10,7 @@ res=[]
 def check(n,c,i=''):res.append(bool(c));print(('PASS ' if c else 'FAIL ')+n,i)
 FAKE="""(()=>{window.__log=[];window.__n=0;window.__bg=null;
  window.Capacitor={isNativePlatform:()=>true,Plugins:{PushNotifications:{checkPermissions:async()=>({receive:'prompt'}),requestPermissions:async()=>{__log.push('notif');return{receive:'granted'}}}},
-  registerPlugin:(n)=>({checkPermissions:async()=>({location:window.__locGranted?'granted':'prompt'}),requestPermissions:async()=>{__log.push('locperm');window.__locGranted=true;return{location:'granted'}},
+  registerPlugin:(n)=>n==='PushNotifications'?window.Capacitor.Plugins.PushNotifications:({checkPermissions:async()=>({location:window.__locGranted?'granted':'prompt'}),requestPermissions:async()=>{__log.push('locperm');window.__locGranted=true;return{location:'granted'}},
    addWatcher:(o,cb)=>{__log.push('add'+(window.__locGranted?'+perm':'-noperm'));window.__n++;
      if(window.__n===1){setTimeout(()=>cb(null,{message:'Service not running.'}),10);return Promise.resolve('w1')}
      window.__bg={o,cb};return Promise.resolve('w'+window.__n)},removeWatcher:()=>Promise.resolve(),openSettings:()=>{}})};})()"""
