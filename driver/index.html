@@ -46,7 +46,7 @@
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('../vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV=window.VCT_V='2026-11-04-63',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV=window.VCT_V='64',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('../version.json',location.href)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -641,15 +641,15 @@ a.btn{text-decoration:none}
 <div class="app" id="app"></div>
 <div class="toast" id="toast"></div>
 
-<script src="../core/report.js?v=2026-11-04-63"></script>
-<script src="../core/geo.js?v=2026-11-04-63"></script>
-<script src="../core/fare.js?v=2026-11-04-63"></script>
-<script src="../core/pin.js?v=2026-11-04-63"></script>
-<script src="../core/clock.js?v=2026-11-04-63"></script>
-<script src="../core/map.js?v=2026-11-04-63"></script>
-<script src="../core/chat.js?v=2026-11-04-63"></script>
-<script src="../core/driverchecks.js?v=2026-11-04-63"></script>
-<script src="../core/nav.js?v=2026-11-04-63"></script>
+<script src="../core/report.js?v=64"></script>
+<script src="../core/geo.js?v=64"></script>
+<script src="../core/fare.js?v=64"></script>
+<script src="../core/pin.js?v=64"></script>
+<script src="../core/clock.js?v=64"></script>
+<script src="../core/map.js?v=64"></script>
+<script src="../core/chat.js?v=64"></script>
+<script src="../core/driverchecks.js?v=64"></script>
+<script src="../core/nav.js?v=64"></script>
 <script>
 /* shared with the customer app: icons, places, fares, map engine */
 const I = {
@@ -946,7 +946,7 @@ function home(){
         ${dutyBtn(true)}
         ${CL?'':`<button class="demo" id="dreq">${L('Demo: ride request கொண்டு வா','Demo: send a ride request')}</button>`}`
       :`${signCard()}${dutyBtn(false)}`}
-     ${pushReady()&&Notification.permission==='default'?`<button class="warn" id="pushon" style="text-align:left;border:0;width:100%">🔔 ${L('Phone lock ஆனாலும் ride alert வரணுமா? இங்கே தொட்டு Allow கொடுங்க','Get ride alerts even when the phone is locked: tap and Allow')}</button>`:''}
+     ${pushReady()&&(CL.nativePush&&CL.nativePush()?!lsGet('vct_fcm'):Notification.permission==='default')?`<button class="warn" id="pushon" style="text-align:left;border:0;width:100%">🔔 ${L('Phone lock ஆனாலும் ride alert வரணுமா? இங்கே தொட்டு Allow கொடுங்க','Get ride alerts even when the phone is locked: tap and Allow')}</button>`:''}
      ${upcHtml()}
      ${SHOW_SMGR?smgrHtml():''}
      <div class="sec"><h3>${L('இன்று','Today')}</h3><span class="sample">${new Date().toLocaleDateString(S.lang==='ta'?'ta-IN':'en-IN',{day:'numeric',month:'short'})}</span></div>
@@ -1368,10 +1368,13 @@ function stopAllD(){UNS.forEach(u=>{try{u()}catch(e){}});UNS=[];if(REQUNSUB){REQ
 /* going online: GPS + live position + ride requests */
 /* push: "new ride" alerts when the phone is locked (works once the owner adds the web-push key in Settings
    and the Cloud Functions are deployed). The token is saved on the driver's own record. */
-const pushReady=()=>!!(CL&&CFGD.push&&CFGD.push.vapid&&'Notification' in window&&'serviceWorker' in navigator);
+const lsGet=k=>{try{return localStorage.getItem(k)}catch(e){return null}};
+const NATIVE=()=>!!(window.Capacitor&&Capacitor.isNativePlatform&&Capacitor.isNativePlatform());
+const pushReady=()=>!!(CL&&CFGD.push&&CFGD.push.vapid&&((CL.nativePush&&CL.nativePush())||('Notification' in window&&'serviceWorker' in navigator)));
 async function enablePush(ask){if(!pushReady())return false;
-  if(Notification.permission!=='granted'){if(!ask)return false;if(await Notification.requestPermission()!=='granted'){toast(L('Notification அனுமதி கொடுக்கல','Notifications not allowed'));return false}}
-  const t=await CL.pushToken(CFGD.push.vapid,'./fcm-sw.js','./fcm/');if(!t){if(ask)toast(L('இந்த phone-ல push வேலை செய்யாது','Push is not supported on this phone'));return false}
+  const NAT=CL.nativePush&&CL.nativePush();
+  if(!NAT&&Notification.permission!=='granted'){if(!ask)return false;if(await Notification.requestPermission()!=='granted'){toast(L('Notification அனுமதி கொடுக்கல','Notifications not allowed'));return false}}
+  const t=NAT?await CL.nativePushToken():await CL.pushToken(CFGD.push.vapid,'./fcm-sw.js','./fcm/');if(!t){if(ask)toast(L('இந்த phone-ல push வேலை செய்யாது','Push is not supported on this phone'));return false}
   if(t!==localStorage.getItem('vct_fcm')){await F().updateDoc(F().doc(CL.db,'drivers',CL.phone),{fcm:t,fcmAt:ts()}).catch(()=>{});try{localStorage.setItem('vct_fcm',t)}catch(e){}}
   if(ask){toast(L('சரி! Phone lock-லயும் ride alert வரும்','Done! Ride alerts will come even when locked'));home()}return true}
 function goLive(on){
@@ -1388,12 +1391,24 @@ let GOTFIX=false,GPSERR=0,LASTFIX=0,POSACC=0; // real GPS received? (never publi
 function trackKm(){if(!J||!J.id||!J.b||J.b.status!=='ontrip')return;const last=J.gpsLast;J.gpsLast={lat:POS.lat,lon:POS.lon};if(!last)return;
   const d=hav(last,POS);if(d<0.02){J.gpsLast=last;return}if(d>3)return; // ignore GPS jumps
   J.gpsKm=(J.gpsKm||0)+d;try{localStorage.setItem('vct_km_'+J.id,String(J.gpsKm))}catch(e){}}
+let BGW=null,BGP=null;
+function geoFix(lat,lon,acc){POS={lat,lon};LASTFIX=Date.now();POSACC=acc||0;trackKm();const first=!GOTFIX;GOTFIX=true;GPSERR=0;pushLive(first);if(first&&S.tab==='home'&&!J&&document.getElementById('gpsw'))home()}
+/* Android app: location keeps coming (foreground service + notification) while the screen is off or another app is open */
+function startNativeGeo(){
+  if(BGW||BGP)return true;if(!NATIVE())return false;
+  try{BGP=Capacitor.registerPlugin('BackgroundGeolocation')}catch(e){return false}
+  BGP.addWatcher({backgroundTitle:L('Vellore Taxi · Online','Vellore Taxi · Online'),backgroundMessage:L('Customer-க்கு உங்க வண்டி தெரியுது. Offline போனா நிற்கும்.','Customers can see your vehicle. Stops when you go offline.'),requestPermissions:true,stale:false,distanceFilter:10},
+    (loc,err)=>{if(err){GPSERR=err.code==='NOT_AUTHORIZED'?1:2;if(err.code==='NOT_AUTHORIZED'){toast(L('Location அனுமதி கொடுங்க. இல்லைனா customer-க்கு உங்க வண்டி தெரியாது','Allow location so customers can see your vehicle'));try{BGP.openSettings()}catch(e){}}return}
+      if(loc)geoFix(loc.latitude,loc.longitude,loc.accuracy)}).then(id=>{BGW=id}).catch(()=>{BGP=null;BGW=null;if(S.online&&GEO==null)startGeo()});
+  return true}
+function stopNativeGeo(){if(BGP&&BGW!=null){try{BGP.removeWatcher({id:BGW})}catch(e){}}BGW=null;BGP=null}
 function startGeo(){
-  if(GEO!=null||!navigator.geolocation)return;
-  GEO=navigator.geolocation.watchPosition(p=>{POS={lat:p.coords.latitude,lon:p.coords.longitude};LASTFIX=Date.now();POSACC=p.coords.accuracy||0;trackKm();const first=!GOTFIX;GOTFIX=true;GPSERR=0;pushLive(first);if(first&&S.tab==='home'&&!J&&document.getElementById('gpsw'))home()},
+  if(GEO!=null||BGW||BGP||!navigator.geolocation)return;
+  if(startNativeGeo())return;
+  GEO=navigator.geolocation.watchPosition(p=>{geoFix(p.coords.latitude,p.coords.longitude,p.coords.accuracy)},
     e=>{GPSERR=e&&e.code||0;if(S.tab==='home'&&!J&&!GOTFIX&&S.online&&document.getElementById('gpsw')&&e.code===1)home();toast(L('Location அனுமதி கொடுங்க. இல்லைனா customer-க்கு உங்க வண்டி தெரியாது','Allow location so customers can see your vehicle'))},{enableHighAccuracy:true,maximumAge:0,timeout:20000});
 }
-function stopGeo(){if(GEO!=null){navigator.geolocation.clearWatch(GEO);GEO=null}}
+function stopGeo(){stopNativeGeo();if(GEO!=null){navigator.geolocation.clearWatch(GEO);GEO=null}}
 /* ride request ringtone: plays until Accept / decline / timeout */
 let RQAC=null,RQT=null;
 function rqUnlock(){try{if(!RQAC)RQAC=new (window.AudioContext||window.webkitAudioContext)();if(RQAC.state==='suspended')RQAC.resume()}catch(e){}}

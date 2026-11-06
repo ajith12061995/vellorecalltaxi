@@ -39,7 +39,7 @@
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('./vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV=window.VCT_V='2026-11-04-63',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV=window.VCT_V='64',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('./version.json',location.href)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -536,13 +536,13 @@ details.faq p{margin:0;padding:0 14px 14px;color:var(--muted);font-size:14px;lin
 <div class="app" id="app"></div>
 <div class="toast" id="toast"></div>
 
-<script src="./core/report.js?v=2026-11-04-63"></script>
-<script src="./core/geo.js?v=2026-11-04-63"></script>
-<script src="./core/fare.js?v=2026-11-04-63"></script>
-<script src="./core/pin.js?v=2026-11-04-63"></script>
-<script src="./core/clock.js?v=2026-11-04-63"></script>
-<script src="./core/map.js?v=2026-11-04-63"></script>
-<script src="./core/chat.js?v=2026-11-04-63"></script>
+<script src="./core/report.js?v=64"></script>
+<script src="./core/geo.js?v=64"></script>
+<script src="./core/fare.js?v=64"></script>
+<script src="./core/pin.js?v=64"></script>
+<script src="./core/clock.js?v=64"></script>
+<script src="./core/map.js?v=64"></script>
+<script src="./core/chat.js?v=64"></script>
 <script>
 /* ---------- icons ---------- */
 const I = {
@@ -1978,15 +1978,18 @@ const LROUND=60,LROUNDS=3,TIPMAX=200;let NODRV=null; // local search: 3 rounds o
 const tipNowTxt=()=>R&&R.boost?L(`இப்போ tip: <b>₹${R.boost}</b> · இன்னும் கூட்டலாம்`,`Tip now: <b>₹${R.boost}</b> · you can add more`):L('இன்னும் யாரும் எடுக்கல. Tip முழுசா driver-க்கே போகும்.','No one has accepted yet. The whole tip goes to the driver.');
 /* push: "driver found / arrived / trip started / done" alerts even when the app is closed. Works once the owner
    adds the web-push key in Office → Settings and the Cloud Functions are deployed. Token saved on users/{uid}. */
-const pushReadyC=()=>!!(CL&&CFG.push&&CFG.push.vapid&&'Notification' in window&&'serviceWorker' in navigator);
+const lsGet=k=>{try{return localStorage.getItem(k)}catch(e){return null}};
+const pushReadyC=()=>!!(CL&&CFG.push&&CFG.push.vapid&&((CL.nativePush&&CL.nativePush())||('Notification' in window&&'serviceWorker' in navigator)));
 async function enablePushC(ask){if(!pushReadyC()||!CUID)return false;
-  if(Notification.permission!=='granted'){if(!ask)return false;if(await Notification.requestPermission()!=='granted'){toast(L('Notification அனுமதி கொடுக்கல','Notifications not allowed'));return false}}
-  const t=await CL.pushToken(CFG.push.vapid,'./fcm-sw.js','./fcm/');if(!t){if(ask)toast(L('இந்த phone-ல notification வேலை செய்யாது','Notifications are not supported on this phone'));return false}
+  const NAT=CL.nativePush&&CL.nativePush();
+  if(!NAT&&Notification.permission!=='granted'){if(!ask)return false;if(await Notification.requestPermission()!=='granted'){toast(L('Notification அனுமதி கொடுக்கல','Notifications not allowed'));return false}}
+  if(NAT&&!ask)return false;
+  const t=NAT?await CL.nativePushToken():await CL.pushToken(CFG.push.vapid,'./fcm-sw.js','./fcm/');if(!t){if(ask)toast(L('இந்த phone-ல notification வேலை செய்யாது','Notifications are not supported on this phone'));return false}
   let old='',ol='';try{old=localStorage.getItem('vct_cfcm')||'';ol=localStorage.getItem('vct_cfcml')||''}catch(e){}
   if(t!==old||S.lang!==ol){await F().setDoc(F().doc(CL.db,'users',CUID),{fcm:t,lang:S.lang==='en'?'en':'ta',fcmAt:F().serverTimestamp()},{merge:true}).catch(()=>{});try{localStorage.setItem('vct_cfcm',t);localStorage.setItem('vct_cfcml',S.lang)}catch(e){}}
   if(ask)toast(L('சரி! Driver வந்ததும் phone-க்கு alert வரும்','Done! You will get an alert when the driver comes'));return true}
-const pushAskHtml=()=>pushReadyC()&&Notification.permission==='default'?`<div class="pushask" id="pushask"><span>🔔 ${L('Driver கிடைச்சதும், வந்ததும் phone-க்கு alert வேணுமா?','Get an alert when the driver is found and arrives?')}</span><button class="chip" id="pushon">${L('ஆமா','Yes')}</button></div>`:'';
-function bindPushAsk(){const b=document.getElementById('pushon');if(b)b.onclick=async()=>{const ok=await enablePushC(true);const w=document.getElementById('pushask');if(w&&(ok||Notification.permission!=='default'))w.remove()}}
+const pushAskHtml=()=>pushReadyC()&&(CL.nativePush&&CL.nativePush()?!lsGet('vct_cfcm'):Notification.permission==='default')?`<div class="pushask" id="pushask"><span>🔔 ${L('Driver கிடைச்சதும், வந்ததும் phone-க்கு alert வேணுமா?','Get an alert when the driver is found and arrives?')}</span><button class="chip" id="pushon">${L('ஆமா','Yes')}</button></div>`:'';
+function bindPushAsk(){const b=document.getElementById('pushon');if(b)b.onclick=async()=>{const ok=await enablePushC(true);const w=document.getElementById('pushask');if(w&&(ok||(CL.nativePush&&CL.nativePush())||Notification.permission!=='default'))w.remove()}}
 function searchingCloud(){
   R.phase='search';const pu={lat:R.b.from.lat,lon:R.b.from.lon};
   go(`<section class="screen"><div class="mapwrap"><canvas class="map" id="map"></canvas><div class="radar"><i></i><i></i><i></i></div>

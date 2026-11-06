@@ -19,5 +19,6 @@
   "android": {
     "allowMixedContent": false,
     "webContentsDebuggingEnabled": false
-  }
+  },
+  "appendUserAgent": "VCTApp"
 }

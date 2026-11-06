@@ -63,6 +63,23 @@ const api = {
       return await m.getToken(m.getMessaging(app), { vapidKey, serviceWorkerRegistration: reg });
     } catch (e) { console.warn('push', e); return null; }
   },
+  // native Android app (Capacitor wrapper built with Firebase config): FCM token through the native plugin
+  nativePush() { const C = window.Capacitor; return !!(C && C.isNativePlatform && C.isNativePlatform() && /VCTPush/.test(navigator.userAgent)); },
+  async nativePushToken() {
+    if (!api.nativePush()) return null;
+    try {
+      const PN = window.Capacitor.registerPlugin('PushNotifications');
+      let p = await PN.checkPermissions();
+      if (p.receive !== 'granted') { p = await PN.requestPermissions(); if (p.receive !== 'granted') return null; }
+      try { await PN.createChannel({ id: 'rides', name: 'Ride alerts', description: 'Ride and trip alerts', importance: 5, visibility: 1, vibration: true, lights: true }); } catch (e) { /* older Android */ }
+      return await new Promise(res => {
+        const tm = setTimeout(() => res(null), 15000);
+        PN.addListener('registration', x => { clearTimeout(tm); res(x && x.value || null); });
+        PN.addListener('registrationError', () => { clearTimeout(tm); res(null); });
+        PN.register().catch(() => { clearTimeout(tm); res(null); });
+      });
+    } catch (e) { console.warn('native push', e); return null; }
+  },
   // Cloud Functions callable (loaded only when used), e.g. call('verifyPin', {bookingId, pin}) → the function's result
   async call(name, data, region = 'asia-south1') {
     const m = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-functions.js');

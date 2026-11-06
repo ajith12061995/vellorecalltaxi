@@ -100,6 +100,7 @@ exports.onBookingCreated = onDocumentCreated('bookings/{id}', async ev => {
   const r = await admin.messaging().sendEachForMulticast({ tokens,
     webpush: { notification: { title: '🚕 புது Ride / New ride', body: `${from} · ₹${b.fare}${b.tip ? ' + ₹' + b.tip : ''}`, requireInteraction: true, tag: id },
                fcmOptions: { link: SITE + 'driver/' } },
+    android: { priority: 'high', ttl: 60000, notification: { title: '🚕 புது Ride / New ride', body: `${from} · ₹${b.fare}${b.tip ? ' + ₹' + b.tip : ''}`, channelId: 'rides', tag: id, sound: 'default', defaultVibrateTimings: true } },
     data: { bookingId: id } });
   logger.info('push', { sent: r.successCount, failed: r.failureCount });
 });
@@ -119,6 +120,7 @@ exports.onBookingCust = onDocumentUpdated('bookings/{id}', async ev => {
     await admin.messaging().send({ token: u.fcm,
       webpush: { notification: { title: msg.title, body: msg.body, tag: `${ev.params.id}-${msg.kind}`, icon: SITE + 'icon-192.png' },
                  fcmOptions: { link: SITE } },
+      android: { priority: 'high', notification: { title: msg.title, body: msg.body, channelId: 'rides', tag: `${ev.params.id}-${msg.kind}`, sound: 'default' } },
       data: { bookingId: ev.params.id, kind: msg.kind } });
     logger.info('cust push', { id: ev.params.id, kind: msg.kind });
   } catch (e) {

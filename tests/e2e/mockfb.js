@@ -57,6 +57,22 @@
       async googleLogin(){user={uid:'g123',phoneNumber:null,email:'priya@gmail.com',displayName:'Priya G'};cbs.forEach(c=>c(user));return user},
       async logout(){user=null},errText:(e)=>'ERR '+(e&&e.code||e),
       // web push: no real Firebase here; returns a fake device token and records which service worker was asked for
+      nativePush() { const C = window.Capacitor; return !!(C && C.isNativePlatform && C.isNativePlatform() && /VCTPush/.test(navigator.userAgent)); },
+        async nativePushToken() {
+          if (!this.nativePush()) return null;
+          try {
+            const PN = window.Capacitor.registerPlugin('PushNotifications');
+            let p = await PN.checkPermissions();
+            if (p.receive !== 'granted') { p = await PN.requestPermissions(); if (p.receive !== 'granted') return null; }
+            try { await PN.createChannel({ id: 'rides', name: 'Ride alerts', description: 'Ride and trip alerts', importance: 5, visibility: 1, vibration: true, lights: true }); } catch (e) { /* older Android */ }
+            return await new Promise(res => {
+              const tm = setTimeout(() => res(null), 15000);
+              PN.addListener('registration', x => { clearTimeout(tm); res(x && x.value || null); });
+              PN.addListener('registrationError', () => { clearTimeout(tm); res(null); });
+              PN.register().catch(() => { clearTimeout(tm); res(null); });
+            });
+          } catch (e) { console.warn('native push', e); return null; }
+        },
       async pushToken(v,sw,sc){if(!v)return null;(window.__pushReg=window.__pushReg||[]).push(sw+'|'+sc);return 'tok-'+(user&&user.uid||'x')},
       // same decisions as functions/index.js verifyPin
       async call(name,data){if(window.MOCK&&MOCK.down)throw{code:'functions/unavailable'};if(window.MOCK&&MOCK.fnDown)throw{code:'functions/internal'};
