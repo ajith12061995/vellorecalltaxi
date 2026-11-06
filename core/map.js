@@ -227,17 +227,31 @@ async function fetchRoute(a,b,k){
   document.dispatchEvent(new CustomEvent('route-ready',{detail:k}));
 }
 
-/* address for a point (Nominatim, max 1 request per second, cached) */
-const GEOC={};let GEOLAST=0;
+/* name + full address for a point. Chain: Google (nearby place name + geocoder) -> Nominatim (1 request/second) -> null.
+   Each step has a time limit; only good answers are cached; failures are reported (errors collection) so the cause is visible.
+   Returns {ta,en,sub,addr}: name, short area, full address. The caller always keeps the exact lat/lon itself. */
+const GEOC={};let GEOLAST=0,GEOFAIL={};
+function geoWithin(p,ms){return Promise.race([p,new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),ms))])}
+function geoLog(step,e){const m='revGeo '+step+': '+String((e&&(e.code||e.message))||e).slice(0,120);if(GEOFAIL[m])return;GEOFAIL[m]=1;
+  try{window.dispatchEvent(new ErrorEvent('error',{message:m,filename:'core/map.js',lineno:0}))}catch(_){}}
 async function revGeo(lat,lon){
-  const k=lat.toFixed(4)+','+lon.toFixed(4)+S.lang;if(GEOC[k])return GEOC[k];
-  if(GMAP()){try{const g=await gRevGeo(lat,lon);if(g){GEOC[k]=g;return g}}catch(e){}}
-  const wait=Math.max(0,1100-(Date.now()-GEOLAST));if(wait)await new Promise(r=>setTimeout(r,wait));GEOLAST=Date.now();
-  try{const r=await fetch(`${MAPCFG.reverse}?format=jsonv2&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1&accept-language=${S.lang==='ta'?'ta,en':'en'}`);const j=await r.json();
-    const a=j.address||{};const main=j.name||a.amenity||a.shop||a.building||a.house_number&&a.road&&(a.house_number+', '+a.road)||a.road||a.neighbourhood||a.suburb||'';
-    const area=[a.road&&a.road!==main?a.road:'',a.suburb||a.neighbourhood||a.village||a.hamlet||'',a.city||a.town||a.county||''].filter(Boolean).slice(0,2).join(', ');
-    const g={ta:main||area||'',en:main||area||'',sub:area};if(!g.ta)return null;GEOC[k]=g;return g}catch(e){return null}
+  const k=lat.toFixed(5)+','+lon.toFixed(5)+S.lang;if(GEOC[k])return GEOC[k];
+  if(GMAP()){try{const g=await geoWithin(gRevGeo(lat,lon),7000);if(g&&g.ta){GEOC[k]=g;return g}}catch(e){geoLog('google',e)}}
+  for(let i=0;i<2;i++){
+    const wait=Math.max(0,1100-(Date.now()-GEOLAST));if(wait)await new Promise(r=>setTimeout(r,wait));GEOLAST=Date.now();
+    try{const ac=new AbortController(),t=setTimeout(()=>ac.abort(),7000);
+      const r=await fetch(`${MAPCFG.reverse}?format=jsonv2&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1&accept-language=${S.lang==='ta'?'ta,en':'en'}`,{signal:ac.signal});clearTimeout(t);
+      if(!r.ok)throw new Error('http '+r.status);const j=await r.json();
+      const a=j.address||{};const main=j.name||a.amenity||a.shop||a.building||a.house_number&&a.road&&(a.house_number+', '+a.road)||a.road||a.neighbourhood||a.suburb||'';
+      const area=[a.road&&a.road!==main?a.road:'',a.suburb||a.neighbourhood||a.village||a.hamlet||'',a.city||a.town||a.county||''].filter(Boolean).slice(0,2).join(', ');
+      const addr=(j.display_name||'').split(',').map(x=>x.trim()).filter(Boolean).slice(0,6).join(', ')||[main,area].filter(Boolean).join(', ');
+      const g={ta:main||area||'',en:main||area||'',sub:area,addr};if(!g.ta)return null;GEOC[k]=g;return g}
+    catch(e){geoLog('osm',e)}
+  }
+  return null;
 }
+/* resolve with a time limit (used when the customer taps Confirm) */
+function revGeoWait(lat,lon,ms){return Promise.race([revGeo(lat,lon),new Promise(r=>setTimeout(()=>r(null),ms||4000))])}
 
 
 /* ---------- Google Maps (used when a key is set in maps-config.js); OpenStreetMap stays as fallback ---------- */
@@ -322,15 +336,23 @@ async function navRoute(a,b,traffic){
   return null;
 }
 const PLUSCODE=/^[23456789CFGHJMPQRVWX]{4,8}\+[23456789CFGHJMPQRVWX]{2,3}/;
+async function gNearName(lat,lon){
+  try{const {Place}=await google.maps.importLibrary('places');
+    const {places}=await Place.searchNearby({fields:['displayName','formattedAddress'],locationRestriction:{center:{lat,lng:lon},radius:40},maxResultCount:1,rankPreference:'DISTANCE',language:S.lang==='ta'?'ta':'en',
+      excludedPrimaryTypes:['locality','sublocality','route','political']});
+    const p=places&&places[0];return p&&p.displayName?{name:p.displayName,addr:p.formattedAddress||''}:null}catch(e){geoLog('google-places',e);return null}
+}
 async function gRevGeo(lat,lon){
-  const r=await new google.maps.Geocoder().geocode({location:{lat,lng:lon},language:S.lang==='ta'?'ta':'en'});
-  const res=(r&&r.results)||[];if(!res.length)return null;
+  const [r,near]=await Promise.all([new google.maps.Geocoder().geocode({location:{lat,lng:lon},language:S.lang==='ta'?'ta':'en'}),gNearName(lat,lon)]);
+  const res=(r&&r.results)||[];if(!res.length&&!near)return null;
   const best=res.find(x=>x.types.some(t=>['point_of_interest','establishment','premise','street_address','subpremise'].includes(t)))||res[0];
-  const comp=t=>{const c=best.address_components.find(a=>a.types.includes(t));return c?c.long_name:''};
-  const parts=best.formatted_address.split(',').map(s=>s.trim()).filter(p=>p&&!PLUSCODE.test(p));
-  const main=parts[0]||comp('route')||comp('sublocality')||'';
-  const area=[comp('sublocality_level_1')||comp('sublocality')||comp('neighborhood'),comp('locality')].filter(x=>x&&x!==main).join(', ');
-  return main?{ta:main,en:main,sub:area}:null;
+  let main='',area='',addr='';
+  if(best){const comp=t=>{const c=best.address_components.find(a=>a.types.includes(t));return c?c.long_name:''};
+    const parts=best.formatted_address.split(',').map(s=>s.trim()).filter(p=>p&&!PLUSCODE.test(p));
+    main=parts[0]||comp('route')||comp('sublocality')||'';addr=parts.join(', ');
+    area=[comp('sublocality_level_1')||comp('sublocality')||comp('neighborhood'),comp('locality')].filter(x=>x&&x!==main).join(', ')}
+  if(near){main=near.name;if(near.addr)addr=near.addr.split(',').map(s=>s.trim()).filter(p=>p&&!PLUSCODE.test(p)).join(', ')}
+  return main?{ta:main,en:main,sub:area,addr:addr||[main,area].filter(Boolean).join(', ')}:null;
 }
 let GSESS=null;
 async function gSuggest(q,near,rad){

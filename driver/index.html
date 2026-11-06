@@ -737,7 +737,8 @@ const S={lang:'ta',phone:'',logged:false,pid:null,tab:'home',online:false,onSinc
 try{Object.assign(S,JSON.parse(localStorage.getItem('vctd')||'{}'),{online:false,tab:'home'})}catch(e){}
 const save=()=>{try{localStorage.setItem('vctd',JSON.stringify({lang:S.lang,phone:S.phone,logged:S.logged,pid:S.pid}))}catch(e){}};
 const L=(ta,en)=>S.lang==='ta'?ta:en;
-const pn=k=>esc(P[k][S.lang]); // place names may come from customers: always escaped
+const pn=k=>esc(P[k][S.lang]);
+const padr=k=>{const a=P[k]&&P[k].addr;return a&&a!==P[k][S.lang]?`<small class="muted" style="display:block;font-weight:500">${esc(a)}</small>`:''}; // full address (when the booking has one) // place names may come from customers: always escaped
 const inr=n=>'₹'+Math.round(n).toLocaleString('en-IN');
 const esc=v=>String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
 let COMM=10,MINBAL=100;
@@ -994,7 +995,7 @@ function renderReq(j){
      ${J.id&&MISS.get(J.id)?`<div class="kband rpt">🔁 ${L(`மறுபடி வந்திருக்கு (${MISS.get(J.id).n+1}/${MAXMISS})`,`Offered again (${MISS.get(J.id).n+1}/${MAXMISS})`)}${(J.tip||0)>(MISS.get(J.id).tip||0)?' · 💰 '+L('Tip கூடியிருக்கு','Tip increased'):''}</div>`:''}
      <div class="reqdist"><div><b>${away.toFixed(1)} <em>${L('கி.மீ','km')}</em></b><small>📍 ${L('Pickup வரை','to pickup')}</small></div><i>→</i><div><b>${J.km.toFixed(1)} <em>${L('கி.மீ','km')}</em></b><small>🏁 ${L('பயணம்','trip')}</small></div></div>
      <div class="tripcard"><div class="rail"><i class="a"></i><i class="l"></i><i class="b"></i></div>
-       <div class="stops"><div><small>${t2('pickup')} · ${away.toFixed(1)} ${L('கி.மீ தூரம்','km away')}</small><b>${pn(from)}</b></div><div><small>Drop · ${J.km.toFixed(1)} ${L('கி.மீ பயணம்','km trip')}</small><b>${pn(to)}</b></div></div></div>
+       <div class="stops"><div><small>${t2('pickup')} · ${away.toFixed(1)} ${L('கி.மீ தூரம்','km away')}</small><b>${pn(from)}</b>${padr(from)}</div><div><small>Drop · ${J.km.toFixed(1)} ${L('கி.மீ பயணம்','km trip')}</small><b>${pn(to)}</b>${padr(to)}</div></div></div>
      <div class="custrow"><span class="avatar sm">${J.cust.en[0]}</span><b>${J.cust[S.lang]}</b><small>★ ${J.cust.rating}</small></div>
      <div class="reqact"><button class="decl" id="dec" aria-label="${L('வேண்டாம்','Decline')}"><svg viewBox="0 0 44 44" width="64" height="64"><circle cx="22" cy="22" r="19" fill="none" stroke="var(--line)" stroke-width="3"/><circle id="rg2" cx="22" cy="22" r="19" fill="none" stroke="#C23B3B" stroke-width="3" stroke-linecap="round" stroke-dasharray="119.4" transform="rotate(-90 22 22)"/></svg><i>−</i></button>
        <button class="accbtn" id="acc">${L('ஏற்கிறேன் · Accept','Accept')}</button></div>
@@ -1052,7 +1053,7 @@ function runAlong(o,pts,ms,onEnd,label){
 function toPickup(){
   const pk=P[J.from];
   go(jobShell([L('Pickup-க்கு போங்க','Head to pickup'),pn(J.from)],`${custCard()}
-     <div class="addr"><span class="ic" style="background:rgba(30,138,90,.14);color:var(--ok)">${I.pin}</span><div><small class="kind">Pickup</small><b>${pn(J.from)}</b></div></div>
+     <div class="addr"><span class="ic" style="background:rgba(30,138,90,.14);color:var(--ok)">${I.pin}</span><div><small class="kind">Pickup</small><b>${pn(J.from)}</b>${padr(J.from)}</div></div>
      <div class="two">${navLink(pk,L('Navigate','Navigate'))}<button class="btn yellow" id="arr">${L('வந்துட்டேன்','I have arrived')}</button></div>
      <button class="linkbtn" id="jcx" style="align-self:center;color:var(--danger)">${L('Ride-ஐ ரத்து செய்','Cancel ride')}</button>`,{ff:!J.id}),()=>{
     const o={driver:()=>POS,line:()=>{if(J&&J.id)return[POS,pk];const p=along(J.approach,J.f);return[p,...J.approach.slice(p.idx+1)]},pins:[{...pk,col:'#1E8A5A'}],hide:CUSTOM};
@@ -1099,7 +1100,7 @@ function atPickup(){
 function onTrip(){
   const dp=P[J.to],mins=Math.round(J.km/22*60)+3;
   go(jobShell([L('பயணத்தில்','On trip'),pn(J.to)],`${custCard()}
-     <div class="addr"><span class="ic" style="background:rgba(194,59,59,.12);color:var(--danger)">${I.pin}</span><div><small class="kind">Drop</small><b>${pn(J.to)}</b></div><span class="pill">${J.km.toFixed(1)} ${L('கி.மீ','km')}</span></div>
+     <div class="addr"><span class="ic" style="background:rgba(194,59,59,.12);color:var(--danger)">${I.pin}</span><div><small class="kind">Drop</small><b>${pn(J.to)}</b>${padr(J.to)}</div><span class="pill">${J.km.toFixed(1)} ${L('கி.மீ','km')}</span></div>
      ${navLink(dp,L('Drop-க்கு Navigate','Navigate to drop'))}
      ${slider('end',L('Trip முடிக்க இழுங்க','Slide to end trip'),'red')}`,{ff:!J.id}),()=>{
     const o={driver:()=>POS,line:()=>{if(J&&J.id)return[POS,dp];const p=along(J.trip,J.f);return[p,...J.trip.slice(p.idx+1)]},pins:[{...dp,col:'#121212'}],hide:CUSTOM};
@@ -1438,9 +1439,9 @@ function maybeShowReq(){
   SHOWING=b.id;incoming(buildJ(b,b.id));
 }
 function buildJ(b,id){
-  P.pick={ta:b.from.ta,en:b.from.en,lat:b.from.lat,lon:b.from.lon,ic:'pin'};
+  P.pick={ta:b.from.ta,en:b.from.en,addr:String(b.from.addr||''),lat:b.from.lat,lon:b.from.lon,ic:'pin'};
   const tl=b.to&&b.to.lat!=null?b.to:b.from;
-  P.drop={ta:b.to.ta,en:b.to.en,lat:tl.lat,lon:tl.lon,ic:'pin'};
+  P.drop={ta:b.to.ta,en:b.to.en,addr:String(b.to.addr||''),lat:tl.lat,lon:tl.lon,ic:'pin'};
   const trip=(b.path&&b.path.length>1)?b.path:[{lat:P.pick.lat,lon:P.pick.lon},{lat:P.drop.lat,lon:P.drop.lon}];
   const fare=+b.fare||0;
   let gk=0,adj=null;try{gk=+localStorage.getItem('vct_km_'+id)||0;adj=JSON.parse(localStorage.getItem('vct_adj_'+id)||'null')}catch(e){}
