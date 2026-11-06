@@ -46,7 +46,7 @@
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('../vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV=window.VCT_V='69',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV=window.VCT_V='70',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('../version.json',location.href)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -647,15 +647,15 @@ a.btn{text-decoration:none}
 <div class="app" id="app"></div>
 <div class="toast" id="toast"></div>
 
-<script src="../core/report.js?v=69"></script>
-<script src="../core/geo.js?v=69"></script>
-<script src="../core/fare.js?v=69"></script>
-<script src="../core/pin.js?v=69"></script>
-<script src="../core/clock.js?v=69"></script>
-<script src="../core/map.js?v=69"></script>
-<script src="../core/chat.js?v=69"></script>
-<script src="../core/driverchecks.js?v=69"></script>
-<script src="../core/nav.js?v=69"></script>
+<script src="../core/report.js?v=70"></script>
+<script src="../core/geo.js?v=70"></script>
+<script src="../core/fare.js?v=70"></script>
+<script src="../core/pin.js?v=70"></script>
+<script src="../core/clock.js?v=70"></script>
+<script src="../core/map.js?v=70"></script>
+<script src="../core/chat.js?v=70"></script>
+<script src="../core/driverchecks.js?v=70"></script>
+<script src="../core/nav.js?v=70"></script>
 <script>
 /* shared with the customer app: icons, places, fares, map engine */
 const I = {
@@ -1275,6 +1275,7 @@ function profileTab(){
     <div class="recent">${docs.map(([ta,en,dl])=>{const ex=new Date(Date.now()+dl*864e5);return `<div class="row"><span class="ic">${I.shield}</span><div><b>${S.lang==='ta'?ta:en}</b><small>${L('முடியும் தேதி','Expires')} ${ex.toLocaleDateString(S.lang==='ta'?'ta-IN':'en-IN',{day:'numeric',month:'short',year:'numeric'})}</small></div><em class="st ${dl<30?'warnst':'okst'}">${dl<0?L('காலாவதி','Expired'):dl<30?L(`${dl} நாள்ல முடியும்`,`${dl} days left`):L('சரி','Valid')}</em></div>`}).join('')}</div>
     <div class="sec"><h3>${L('அமைப்புகள்','Settings')}</h3></div>
     <div class="recent"><button class="row" id="lg"><span class="ic">அ</span><div><b>${L('மொழி','Language')}</b><small>${S.lang==='ta'?'தமிழ்':'English'}</small></div></button>
+      ${NATIVE()?`<div class="row" id="bgst"><span class="ic">📍</span><div><b>${L('Background location','Background location')}</b><small>${bgText()}</small></div></div>`:''}
       <button class="row" id="th"><span class="ic">☾</span><div><b>Dark mode</b><small>${document.documentElement.dataset.theme==='dark'?'On':'Off'}</small></div></button>
       ${CL?'':`<button class="row" id="sw"><span class="ic">${I.navHome}</span><div><b>${L('வேற வண்டி (demo)','Switch vehicle (demo)')}</b><small>${L('Owner assign பண்றது','Assigned by owner')}</small></div></button>`}
       <button class="row" id="lo"><span class="ic" style="color:var(--danger)">⏻</span><div><b style="color:var(--danger)">Logout</b><small>+91 ${S.phone}</small></div></button>
@@ -1398,7 +1399,8 @@ function stopAllD(){UNS.forEach(u=>{try{u()}catch(e){}});UNS=[];if(REQUNSUB){REQ
    and the Cloud Functions are deployed). The token is saved on the driver's own record. */
 const lsGet=k=>{try{return localStorage.getItem(k)}catch(e){return null}};
 const NATIVE=()=>!!(window.Capacitor&&Capacitor.isNativePlatform&&Capacitor.isNativePlatform());
-const pushReady=()=>!!(CL&&CFGD.push&&CFGD.push.vapid&&((CL.nativePush&&CL.nativePush())||('Notification' in window&&'serviceWorker' in navigator)));
+/* Android app: push only through the native FCM build (VCTPush marker); web push never works inside the app's WebView */
+const pushReady=()=>!!(CL&&CFGD.push&&CFGD.push.vapid&&(NATIVE()?(CL.nativePush&&CL.nativePush()):('Notification' in window&&'serviceWorker' in navigator)));
 async function enablePush(ask){if(!pushReady())return false;
   const NAT=CL.nativePush&&CL.nativePush();
   if(!NAT&&Notification.permission!=='granted'){if(!ask)return false;if(await Notification.requestPermission()!=='granted'){toast(L('Notification அனுமதி கொடுக்கல','Notifications not allowed'));return false}}
@@ -1426,14 +1428,34 @@ function trackKm(){if(!J||!J.id||!J.b||J.b.status!=='ontrip')return;const last=J
 let BGW=null,BGP=null;
 function geoFix(lat,lon,acc){POS={lat,lon};LASTFIX=Date.now();POSACC=acc||0;trackKm();const first=!GOTFIX;GOTFIX=true;GPSERR=0;pushLive(first);if(first&&S.tab==='home'&&!J&&document.getElementById('gpsw'))home()}
 /* Android app: location keeps coming (foreground service + notification) while the screen is off or another app is open */
+/* BGST: what the background location is doing — shown in Me → Settings so a driver/office can check it */
+let BGST='',BGTRY=0;
+const bgText=()=>({on:L('ON — screen off ஆனாலும் location போகும் ✅','ON — keeps working with the screen off ✅'),off:L('OFF (Offline)','OFF (offline)'),starting:L('தொடங்குது…','Starting…'),retry:L('தொடங்குது… (மறுமுயற்சி)','Starting… (retrying)'),
+  'notif-denied':L('Notification அனுமதி இல்லை — Settings → Apps → Notifications ON பண்ணுங்க','Notifications are blocked — turn them on in Settings → Apps'),'no-plugin':L('இந்த app version-ல இல்லை','Not in this app version')})[BGST]||(BGST?L('பிரச்சனை: ','Problem: ')+BGST:L('Online போனதும் தெரியும்','Shown after you go online'));
+async function notifPerm(){ // Android 13+: the "Online" notification of the location service is hidden without this permission
+  try{const P=Capacitor.Plugins&&Capacitor.Plugins.PushNotifications;if(!P)return 'na';let r=await P.checkPermissions();
+    if(r.receive==='prompt'||r.receive==='prompt-with-rationale')r=await P.requestPermissions();return r.receive}catch(e){return 'err'}}
 function startNativeGeo(){
   if(BGW||BGP)return true;if(!NATIVE())return false;
-  try{BGP=Capacitor.registerPlugin('BackgroundGeolocation')}catch(e){return false}
-  BGP.addWatcher({backgroundTitle:L('Vellore Taxi · Online','Vellore Taxi · Online'),backgroundMessage:L('Customer-க்கு உங்க வண்டி தெரியுது. Offline போனா நிற்கும்.','Customers can see your vehicle. Stops when you go offline.'),requestPermissions:true,stale:false,distanceFilter:10},
-    (loc,err)=>{if(err){GPSERR=err.code==='NOT_AUTHORIZED'?1:2;if(err.code==='NOT_AUTHORIZED'){toast(L('Location அனுமதி கொடுங்க. இல்லைனா customer-க்கு உங்க வண்டி தெரியாது','Allow location so customers can see your vehicle'));try{BGP.openSettings()}catch(e){}}return}
-      if(loc)geoFix(loc.latitude,loc.longitude,loc.accuracy)}).then(id=>{BGW=id}).catch(()=>{BGP=null;BGW=null;if(S.online&&GEO==null)startGeo()});
+  try{BGP=Capacitor.registerPlugin('BackgroundGeolocation')}catch(e){BGST='no-plugin';return false}
+  BGST='starting';const bgp=BGP;
+  // location permission FIRST: the plugin starts its foreground notification right away, and Android 14+ refuses
+  // a location service started before the permission exists (no notification, stops with the screen off)
+  (async()=>{try{const st=await bgp.checkPermissions();if(st&&st.location&&st.location!=='granted')await bgp.requestPermissions({permissions:['location']})}catch(e){}
+    const n=await notifPerm();if(BGP!==bgp)return;
+  bgp.addWatcher({backgroundTitle:L('Vellore Taxi · Online','Vellore Taxi · Online'),backgroundMessage:L('Customer-க்கு உங்க வண்டி தெரியுது. Offline போனா நிற்கும்.','Customers can see your vehicle. Stops when you go offline.'),requestPermissions:true,stale:false,distanceFilter:10},
+    (loc,err)=>{if(err){
+        // the plugin's service binds a moment after the app starts: "Service not running." → try again (web GPS meanwhile)
+        if(/service not running/i.test(err.message||'')&&BGTRY<8){BGST='retry';BGTRY++;BGP=null;BGW=null;webGeo();setTimeout(()=>{if(S.online&&!BGP){stopWebGeo();startNativeGeo()}},1500);return}
+        BGST='err:'+(err.code||err.message||'?');GPSERR=err.code==='NOT_AUTHORIZED'?1:2;
+        if(err.code==='NOT_AUTHORIZED'){toast(L('Location அனுமதி கொடுங்க. இல்லைனா customer-க்கு உங்க வண்டி தெரியாது','Allow location so customers can see your vehicle'));try{BGP.openSettings()}catch(e){}}return}
+      if(loc){if(BGST!=='on'&&BGST!=='notif-denied'){BGST='on';BGTRY=0;stopWebGeo()}geoFix(loc.latitude,loc.longitude,loc.accuracy)}}).then(id=>{if(BGP===bgp)BGW=id}).catch(e=>{BGP=null;BGW=null;if(S.online)webGeo();
+        if(/service not running/i.test((e&&e.message)||'')&&BGTRY<8){BGST='retry';BGTRY++;setTimeout(()=>{if(S.online&&!BGP){stopWebGeo();startNativeGeo()}},1500)}else BGST='err:'+((e&&e.message)||'?')});
+    if(n==='denied')BGST='notif-denied';})();
   return true}
-function stopNativeGeo(){if(BGP&&BGW!=null){try{BGP.removeWatcher({id:BGW})}catch(e){}}BGW=null;BGP=null}
+function webGeo(){if(GEO!=null||!navigator.geolocation)return;GEO=navigator.geolocation.watchPosition(p=>geoFix(p.coords.latitude,p.coords.longitude,p.coords.accuracy),()=>{},{enableHighAccuracy:true,maximumAge:0,timeout:20000})}
+function stopWebGeo(){if(GEO!=null){navigator.geolocation.clearWatch(GEO);GEO=null}}
+function stopNativeGeo(){if(BGP&&BGW!=null){try{BGP.removeWatcher({id:BGW})}catch(e){}}BGW=null;BGP=null;BGTRY=0;if(NATIVE())BGST='off'}
 function startGeo(){
   if(GEO!=null||BGW||BGP||!navigator.geolocation)return;
   if(startNativeGeo())return;
