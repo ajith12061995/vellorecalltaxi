@@ -46,7 +46,7 @@
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('../vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV=window.VCT_V='67',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV=window.VCT_V='68',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('../version.json',location.href)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -641,15 +641,15 @@ a.btn{text-decoration:none}
 <div class="app" id="app"></div>
 <div class="toast" id="toast"></div>
 
-<script src="../core/report.js?v=67"></script>
-<script src="../core/geo.js?v=67"></script>
-<script src="../core/fare.js?v=67"></script>
-<script src="../core/pin.js?v=67"></script>
-<script src="../core/clock.js?v=67"></script>
-<script src="../core/map.js?v=67"></script>
-<script src="../core/chat.js?v=67"></script>
-<script src="../core/driverchecks.js?v=67"></script>
-<script src="../core/nav.js?v=67"></script>
+<script src="../core/report.js?v=68"></script>
+<script src="../core/geo.js?v=68"></script>
+<script src="../core/fare.js?v=68"></script>
+<script src="../core/pin.js?v=68"></script>
+<script src="../core/clock.js?v=68"></script>
+<script src="../core/map.js?v=68"></script>
+<script src="../core/chat.js?v=68"></script>
+<script src="../core/driverchecks.js?v=68"></script>
+<script src="../core/nav.js?v=68"></script>
 <script>
 /* shared with the customer app: icons, places, fares, map engine */
 const I = {
@@ -1388,7 +1388,11 @@ function goLive(on){
 }
 function pushLive(force){
   if(!CL||!CL.phone)return;if(S.online&&!GOTFIX)return;const now=Date.now();if(!force&&now-LASTLIVE<8000)return;LASTLIVE=now;
-  F().setDoc(F().doc(CL.db,'live',CL.phone),{lat:POS.lat,lon:POS.lon,gh:VGEO.gh(POS.lat,POS.lon),online:!!S.online,busy:!!(J&&J.id),veh:me().veh,updatedAt:ts()}).catch(()=>{});
+  const busy=!!(J&&J.id),gh=VGEO.gh(POS.lat,POS.lon),veh=me().veh;
+  // live/{phone}: exact position, read only by the office, this driver and the customer of the ride in bk
+  F().setDoc(F().doc(CL.db,'live',CL.phone),{lat:POS.lat,lon:POS.lon,gh,online:!!S.online,busy,bk:busy?String(J.id):'',veh,updatedAt:ts()}).catch(()=>{});
+  // cars/{login id}: what every customer's "nearby" map sees — no phone number, position rounded to ~110 m
+  if(CL.user&&CL.user.uid)F().setDoc(F().doc(CL.db,'cars',CL.user.uid),{lat:Math.round(POS.lat*1e3)/1e3,lon:Math.round(POS.lon*1e3)/1e3,gh,online:!!S.online,busy,veh:String(veh||''),updatedAt:ts()}).catch(()=>{});
 }
 setInterval(()=>{if(CL&&S.online)pushLive(true)},20000);
 let GOTFIX=false,GPSERR=0,LASTFIX=0,POSACC=0; // real GPS received? (never publish the default Vellore point)
