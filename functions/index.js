@@ -56,6 +56,8 @@ exports.housekeeping = onSchedule({ schedule: 'every 2 minutes', timeZone: 'Asia
   open.forEach(d => { const ch = L.housekeeping(d.data(), now); if (ch) { batch.update(d.ref, { ...ch, updatedAt: FV.serverTimestamp() }); n++; } });
   const live = await db.collection('live').where('online', '==', true).get();
   live.forEach(d => { if (L.liveStale(d.data(), now)) { batch.update(d.ref, { online: false }); n++; } });
+  const cars = await db.collection('cars').where('online', '==', true).get();
+  cars.forEach(d => { if (L.liveStale(d.data(), now)) { batch.update(d.ref, { online: false }); n++; } });
   if (n) await batch.commit();
   // driver-removal backup copies are kept 30 days
   const old = await db.collection('purgeBackups').where('at', '<', new Date(now - 30 * 864e5)).limit(5).get();
@@ -179,6 +181,7 @@ exports.purgeDriver = onCall({ timeoutSeconds: 300, enforceAppCheck: AC_ENFORCE 
   if (bks.docs.some(d => ['assigned', 'arrived', 'ontrip'].includes(d.data().status))) return { ok: false, why: 'active' };
   let uid = null; try { uid = (await admin.auth().getUserByPhoneNumber(phone)).uid; } catch (e) { /* never logged in */ }
   const refs = [dref, db.doc(`live/${phone}`), db.doc(`driverApps/${phone}`), db.doc(`deletionRequests/${phone}`)];
+  if (uid) refs.push(db.doc(`cars/${uid}`));
   refs.push(...(await db.collection(`driverApps/${phone}/files`).get()).docs.map(d => d.ref));
   for (const b of bks.docs) {
     refs.push(b.ref);

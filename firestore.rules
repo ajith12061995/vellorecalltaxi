@@ -62,13 +62,32 @@ service cloud.firestore {
             && (!('online' in changes()) || newData().online == false || resource.data.get('blocked', false) != true));
     }
 
-    // Live driver position (customers see nearby cars on the map)
+    // Exact driver position, keyed by phone number. Readable only by the office, the driver,
+    // and the customer of the ride the driver is on (bk = that booking id, written by the driver's app).
+    function riderOf(ph) {
+      return signedIn() && resource.data.get('bk', '') is string && resource.data.get('bk', '') != ''
+        && get(/databases/$(database)/documents/bookings/$(resource.data.bk)).data.customerUid == request.auth.uid
+        && get(/databases/$(database)/documents/bookings/$(resource.data.bk)).data.driverPhone == ph;
+    }
     match /live/{ph} {
-      allow read: if signedIn();
+      allow read: if isStaff() || (signedIn() && phone() == ph) || riderOf(ph);
       allow write: if isDriver() && phone() == ph
-        && newData().keys().hasOnly(['lat', 'lon', 'gh', 'online', 'busy', 'veh', 'updatedAt', 'clock', 'name', 'plate'])
+        && newData().keys().hasOnly(['lat', 'lon', 'gh', 'online', 'busy', 'bk', 'veh', 'updatedAt', 'clock', 'name', 'plate'])
+        && (!('bk' in newData()) || (newData().bk is string && newData().bk.size() <= 40))
         && (!('lat' in newData()) || num(newData().lat, -90, 90))
         && (!('lon' in newData()) || num(newData().lon, -180, 180));
+    }
+
+    // Nearby cars for the customer map: keyed by the driver's login id (not the phone number), no name/plate
+    match /cars/{uid} {
+      allow read: if signedIn();
+      allow create, update: if isDriver() && request.auth.uid == uid
+        && newData().keys().hasOnly(['lat', 'lon', 'gh', 'online', 'busy', 'veh', 'updatedAt'])
+        && num(newData().lat, -90, 90) && num(newData().lon, -180, 180)
+        && newData().gh is string && newData().gh.size() <= 12
+        && newData().online is bool && newData().busy is bool
+        && newData().veh is string && newData().veh.size() <= 12;
+      allow delete: if isDriver() && request.auth.uid == uid;
     }
 
     // Rides

@@ -1,6 +1,6 @@
 // Firestore security rules tests (v2). Run: cd tests/rules && npm i && npm test   (needs Java for the emulator)
 import { initializeTestEnvironment, assertFails, assertSucceeds } from '@firebase/rules-unit-testing';
-import { doc, getDoc, setDoc, updateDoc, deleteDoc, addDoc, collection, serverTimestamp, increment } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, deleteDoc, addDoc, collection, serverTimestamp, increment, getDocs, query, where } from 'firebase/firestore';
 import { readFileSync } from 'node:fs';
 import { test, before, after, beforeEach } from 'node:test';
 
@@ -133,6 +133,45 @@ test('driver live position: own doc, known fields only', async () => {
   await assertSucceeds(setDoc(doc(as.drv(), 'live', DRV), { lat: 12.9, lon: 79.1, gh: 'tf3k', online: true, busy: false, veh: 'sedan', updatedAt: serverTimestamp() }));
   await assertFails(setDoc(doc(as.drv(), 'live', DRV2), { lat: 12.9, lon: 79.1 }));
   await assertFails(setDoc(doc(as.drv(), 'live', DRV), { lat: 12.9, lon: 79.1, wallet: 9999 }));
+});
+test('live position is private: office, the driver and only the customer of the current ride', async () => {
+  await seed(async db => {
+    await setDoc(doc(db, 'live', DRV), { lat: 12.9, lon: 79.1, gh: 'tf3k', online: true, busy: true, bk: 'b2', veh: 'sedan' });
+    await setDoc(doc(db, 'live', DRV2), { lat: 12.9, lon: 79.1, gh: 'tf3k', online: true, busy: false, bk: '', veh: 'sedan' });
+    await setDoc(doc(db, 'live', '+919999900007'), { lat: 12.9, lon: 79.1, busy: true, bk: 'b2' }); // bk pointing at a ride of another driver
+  });
+  await assertSucceeds(getDoc(doc(as.staff(), 'live', DRV)));
+  await assertSucceeds(getDoc(doc(as.drv(), 'live', DRV)));
+  await assertSucceeds(getDoc(doc(as.cust(), 'live', DRV)));           // b2 is this customer's ride with DRV
+  await assertFails(getDoc(doc(as.other(), 'live', DRV)));             // another customer
+  await assertFails(getDoc(doc(as.google(), 'live', DRV)));
+  await assertFails(getDoc(doc(as.cust(), 'live', DRV2)));             // not on a ride with this customer
+  await assertFails(getDoc(doc(as.cust(), 'live', '+919999900007')));  // bk of someone else's ride
+  await assertFails(getDoc(doc(as.drv2(), 'live', DRV)));              // other drivers
+  await assertFails(getDocs(collection(as.cust(), 'live')));            // no listing of every driver
+  await assertFails(getDocs(query(collection(as.cust(), 'live'), where('gh', '>=', 'tf3'), where('gh', '<', 'tf3~'))));
+  await assertFails(getDoc(doc(as.anon(), 'live', DRV)));
+  await assertSucceeds(getDocs(collection(as.staff(), 'live')));
+});
+test('driver writes bk (string, short) on live', async () => {
+  await assertSucceeds(setDoc(doc(as.drv(), 'live', DRV), { lat: 12.9, lon: 79.1, gh: 'tf3k', online: true, busy: true, bk: 'b2', veh: 'sedan', updatedAt: serverTimestamp() }));
+  await assertFails(setDoc(doc(as.drv(), 'live', DRV), { lat: 12.9, lon: 79.1, bk: 5 }));
+  await assertFails(setDoc(doc(as.drv(), 'live', DRV), { lat: 12.9, lon: 79.1, bk: 'x'.repeat(41) }));
+});
+test('nearby cars: any logged-in user reads; only the driver writes own login id, no phone/name', async () => {
+  const car = { lat: 12.917, lon: 79.133, gh: 'tf3k', online: true, busy: false, veh: 'sedan', updatedAt: serverTimestamp() };
+  await assertSucceeds(setDoc(doc(as.drv(), 'cars', 'u-drv'), car));
+  await assertFails(setDoc(doc(as.drv(), 'cars', 'u-drv2'), car));                      // someone else's id
+  await assertFails(setDoc(doc(as.cust(), 'cars', CUST), car));                         // customers cannot add cars
+  await assertFails(setDoc(doc(as.drv(), 'cars', 'u-drv'), { ...car, phone: DRV }));    // no extra fields
+  await assertFails(setDoc(doc(as.drv(), 'cars', 'u-drv'), { ...car, name: 'Ravi' }));
+  await assertFails(setDoc(doc(as.drv(), 'cars', 'u-drv'), { ...car, lat: 200 }));
+  await assertFails(setDoc(doc(as.drv(), 'cars', 'u-drv'), { ...car, online: 'yes' }));
+  await assertSucceeds(getDocs(query(collection(as.cust(), 'cars'), where('gh', '>=', 'tf3'), where('gh', '<', 'tf3~'))));
+  await assertSucceeds(getDocs(collection(as.google(), 'cars')));
+  await assertFails(getDocs(collection(as.anon(), 'cars')));
+  await assertFails(deleteDoc(doc(as.drv2(), 'cars', 'u-drv')));
+  await assertSucceeds(deleteDoc(doc(as.drv(), 'cars', 'u-drv')));
 });
 test('driver cannot read the PIN', async () => {
   await seed(db => setDoc(doc(db, 'bookings', 'b2', 'private', 'pin'), { pin: '1234' }));
