@@ -610,6 +610,12 @@ a.btn{text-decoration:none}
 .sheet .addr small.kind{display:block}
 .sheet .addr .pill{margin-left:auto;flex:none}
 .bigic{width:56px;height:56px;border-radius:16px;background:var(--yellow);color:#0B4A36;display:flex;align-items:center;justify-content:center;flex:none}
+.brk{display:flex;flex-direction:column;border:1px solid var(--line,#E3E8E6);border-radius:16px;padding:4px 14px;margin-top:12px}
+.brow{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--line,#E3E8E6);font-size:15px}.brow:last-child{border:0}
+.brow b{font-variant-numeric:tabular-nums}.brow.tot b,.brow.tot span{font-weight:800}
+.bigamt{text-align:center;font-family:var(--display);font-size:38px;color:#1E9E5A;font-variant-numeric:tabular-nums}.bigamt small{display:block;font-family:inherit;font-size:13px;color:var(--muted)}
+.twobox{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}.twobox div{border:1px solid var(--line,#E3E8E6);border-radius:14px;padding:12px;text-align:center}
+.twobox b{display:block;font-size:19px;font-variant-numeric:tabular-nums}.twobox small{color:var(--muted);font-size:12.5px}
 .earncard{display:flex;justify-content:space-between;gap:12px;padding:16px;border-radius:20px;background:#0B4A36;color:#fff}
 .earncard small{opacity:.75;font-size:12.5px}
 .earncard b{display:block;font-family:var(--display);font-size:34px;color:#FFC21A;font-variant-numeric:tabular-nums}
@@ -984,7 +990,7 @@ function incoming(pre){
      approach:[{...POS},{lat:POS.lat,lon:pk.lon},{lat:pk.lat,lon:pk.lon}],trip:r.path.map(k=>({lat:P[k].lat,lon:P[k].lon}))};
   J.away=away;renderReq(J);
 }
-const reqFareHtml=()=>`<small>${L('கட்டணம்','Fare')}</small><b>${inr(J.fare)}${J.tip?`<em class="tipadd"> + ${inr(J.tip)}</em>`:''}</b><span>${J.tip?L('Customer tip சேர்த்திருக்காங்க · ','Customer added a tip · '):''}<em class="pm ${J.pay}">${payName(J.pay)}</em></span>`;
+const reqFareHtml=()=>`<small>${L('கட்டணம்','Fare')}</small><b>${inr(J.fare)}${J.tip?`<em class="tipadd"> + ${inr(J.tip)}</em>`:''}</b><span>${J.tip?L('Customer tip சேர்த்திருக்காங்க · ','Customer added a tip · '):''}${FEE()?`${L('உங்களுக்கு','You get')} ${inr(J.fare-J.comm+(J.tip||0))} · `:''}<em class="pm ${J.pay}">${payName(J.pay)}</em></span>`;
 function renderReq(j){
   J=j;const from=J.from,to=J.to,pk=P[from],away=J.away;
   const SEC=20;
@@ -1152,7 +1158,9 @@ function collect(){
       <div class="qr" id="pmtxt" style="margin-top:10px"></div>
       <button class="btn" id="got" style="margin-top:12px"></button></div>
     <div id="sum" hidden style="display:flex;flex-direction:column;gap:14px">
-      <div class="earncard"><div><small>${L('இந்த ride கட்டணம்','This ride')}</small><b>${inr((fin?fin.total:J.fare)+(J.tip||0))}</b></div></div>
+      ${FEE()?`<div class="earncard"><div><small>${L('உங்க வருமானம்','Your earnings')}</small><b>${inr((fin?fin.total:J.fare)-J.comm+(J.tip||0))}</b></div>
+        <div class="ec2"><span>${FEEN()}</span><b>−${inr(J.comm)}</b><small>${L('Wallet-ல இருந்து','From your wallet')}</small></div></div>`
+        :`<div class="earncard"><div><small>${L('இந்த ride கட்டணம்','This ride')}</small><b>${inr((fin?fin.total:J.fare)+(J.tip||0))}</b></div></div>`}
       <span class="kind" style="text-align:center">${L(`${J.cust.ta} எப்படி?`,`Rate ${J.cust.en}`)}</span>
       <div class="stars">${[1,2,3,4,5].map(n=>`<button data-s="${n}" aria-label="${n} stars">★</button>`).join('')}</div>
       <button class="btn yellow" id="next">${L('அடுத்த ride-க்கு Online','Back online for the next ride')}</button>
@@ -1196,20 +1204,34 @@ function earnTab(){
   const nice=Math.ceil(mx/500)*500;const anySample=list.some(x=>x.sample);
   go(shell(`<div class="head pad"><h2>${L('வருமானம்','Earnings')}</h2></div><div class="body pad" style="padding-top:0">
     <div class="seg"><button class="${EV==='today'?'on':''}" data-ev="today">${L('இன்று','Today')}</button><button class="${EV==='week'?'on':''}" data-ev="week">${L('இந்த வாரம்','Last 7 days')}</button></div>
-    <div class="hero2"><small>${L('மொத்த கட்டணம்','Total fares')}</small><b>${inr(list.reduce((a,x)=>a+gross(x),0))}</b><span>${list.length} ${L('பயணங்கள்','rides')} · ${list.reduce((a,x)=>a+x.km,0).toFixed(1)} ${L('கி.மீ','km')}</span></div>
-    <div class="stats"><div><b>${list.length}</b><small>${L('பயணங்கள்','Rides')}</small></div><div><b>${inr(list.reduce((a,x)=>a+x.net-x.fare+x.comm,0))}</b><small>Tip</small></div><div><b>${inr(cash)}</b><small>${L('கையில் cash','Cash in hand')}</small></div></div>
+    <div class="hero2">${FEE()?`<small>${L('உங்க வருமானம்','Your earnings')}</small><b>${inr(sum('net'))}</b>`:`<small>${L('மொத்த கட்டணம்','Total fares')}</small><b>${inr(list.reduce((a,x)=>a+gross(x),0))}</b>`}<span>${list.length} ${L('பயணங்கள்','rides')} · ${list.reduce((a,x)=>a+x.km,0).toFixed(1)} ${L('கி.மீ','km')}</span></div>
+    <div class="stats">${FEE()?`<div><b>${inr(list.reduce((a,x)=>a+gross(x),0))}</b><small>${L('மொத்த கட்டணம்','Total fares')}</small></div><div><b>−${inr(sum('comm'))}</b><small>${FEEN()}</small></div>`
+      :`<div><b>${list.length}</b><small>${L('பயணங்கள்','Rides')}</small></div><div><b>${inr(list.reduce((a,x)=>a+x.net-x.fare+x.comm,0))}</b><small>Tip</small></div>`}<div><b>${inr(cash)}</b><small>${L('கையில் cash','Cash in hand')}</small></div></div>
     ${EV==='week'?`<div class="chart" role="img" aria-label="${L('7 நாள் வருமானம்','Earnings for the last 7 days')}">
       <div class="yax"><span>${inr(nice)}</span><span>${inr(nice/2)}</span><span>₹0</span></div>
       <div class="bars">${days.map((d,i)=>`<button class="bcol ${i===6?'today':''}" data-v="${inr(per[i])}" data-d="${d.toLocaleDateString(S.lang==='ta'?'ta-IN':'en-IN',{weekday:'long',day:'numeric',month:'short'})}"><span class="bar" style="height:${(per[i]/nice*100).toFixed(1)}%">${i===6||per[i]===Math.max(...per)?`<em>${inr(per[i])}</em>`:''}</span><small>${d.toLocaleDateString(S.lang==='ta'?'ta-IN':'en-IN',{weekday:'narrow'})}</small></button>`).join('')}</div>
       <div class="ctip" id="ctip" hidden></div></div>`:''}
     <div class="sec"><h3>${L('பயணங்கள்','Rides')}</h3>${anySample?`<span class="sample">${L('முந்தைய நாட்கள் sample','Older days are sample')}</span>`:''}</div>
-    ${list.length?`<div class="recent">${list.slice(0,40).map(x=>`<div class="row"><span class="ic"><em class="pm ${x.pay}">${payName(x.pay)}</em></span><div><b>${x.to[S.lang]}</b><small>${new Date(x.date).toLocaleString(S.lang==='ta'?'ta-IN':'en-IN',{day:'numeric',month:'short',hour:'numeric',minute:'2-digit'})} · ${x.km} ${L('கி.மீ','km')}</small></div><div class="tamt"><b>${inr(gross(x))}</b></div></div>`).join('')}</div>`
+    ${list.length?`<div class="recent">${list.slice(0,40).map((x,i)=>`<div class="row" ${FEE()?`data-trip="${i}" role="button" tabindex="0"`:''}><span class="ic"><em class="pm ${x.pay}">${payName(x.pay)}</em></span><div><b>${x.to[S.lang]}</b><small>${new Date(x.date).toLocaleString(S.lang==='ta'?'ta-IN':'en-IN',{day:'numeric',month:'short',hour:'numeric',minute:'2-digit'})} · ${x.km} ${L('கி.மீ','km')}</small></div><div class="tamt"><b>${inr(FEE()?x.net:gross(x))}</b>${FEE()?`<small>${L('விவரம்','Details')} ›</small>`:''}</div></div>`).join('')}</div>`
       :`<div class="empty"><h3>${L('இன்னும் ride இல்லை','No rides yet')}</h3><p class="muted">${L('Online போனா ride request வரும்.','Go online to get ride requests.')}</p></div>`}
   </div>`),()=>{
     bindNav();app.querySelectorAll('[data-ev]').forEach(b=>b.onclick=()=>{EV=b.dataset.ev;earnTab()});
+    app.querySelectorAll('[data-trip]').forEach(r=>r.onclick=()=>tripSheet(list[+r.dataset.trip]));
     const tip=document.getElementById('ctip');
     app.querySelectorAll('.bcol').forEach(b=>{const show=()=>{tip.hidden=false;tip.textContent=`${b.dataset.d}: ${b.dataset.v}`;app.querySelectorAll('.bcol').forEach(x=>x.classList.toggle('hl',x===b))};b.onmouseenter=show;b.onclick=show;b.onfocus=show});
   });
+}
+
+/* ride breakup (only when the office turns the VCT fee display on) */
+function tripSheet(x){if(!x)return;const g=x.net+x.comm,tip=g-x.fare,cash=x.pay==='cash';
+  const row=(k,v,cl='')=>`<div class="brow ${cl}"><span>${k}</span><b>${v}</b></div>`;
+  modal(`<h3 style="margin:0 0 2px">${L('பயண விவரம்','Ride details')}</h3>
+    <p class="muted" style="margin:0 0 10px">${new Date(x.date).toLocaleString(S.lang==='ta'?'ta-IN':'en-IN',{day:'numeric',month:'short',hour:'numeric',minute:'2-digit'})} · ${x.km} ${L('கி.மீ','km')} · ${payName(x.pay)}</p>
+    <div class="bigamt">${inr(x.net)}<small>${L('உங்க வருமானம்','Your earnings')}</small></div>
+    <div class="brk">${row(L('மொத்த கட்டணம்','Total fare'),inr(x.fare))}${tip>0?row('Tip','+'+inr(tip)):''}${row(FEEN(),'−'+inr(x.comm))}${row(L('உங்க வருமானம்','Your earnings'),inr(x.net),'tot')}</div>
+    <div class="twobox"><div><b>${inr(g)}</b><small>${L('Customer கொடுத்தது','Paid by customer')}</small></div><div><b>${inr(x.comm)}</b><small>${L('Wallet-ல கழிந்தது','From wallet')}</small></div></div>
+    <p class="muted" style="margin:10px 0 0;font-size:12.5px">${x.from[S.lang]} → ${x.to[S.lang]}</p>
+    <button class="btn" id="tsx" style="margin-top:12px">${L('சரி','OK')}</button>`,(m,close)=>{m.querySelector('#tsx').onclick=close});
 }
 
 /* ---------- wallet ---------- */
@@ -1281,6 +1303,9 @@ function roundOf(b){const o=offerAt(b);if(!isFinite(o))return 0;const base=Math.
 function missReq(b){if(!b||!b.id&&!b._id)return;const id=b.id||b._id,m=MISS.get(id)||{n:0};m.n++;m.r=roundOf(b);m.tip=+b.tip||0;MISS.set(id,m)}
 function canOffer(b){const m=MISS.get(b.id);if(!m)return true;if(m.n>=MAXMISS)return false;return roundOf(b)>m.r||(+b.tip||0)>m.tip}
 const CFGD={upi:'',office:''};
+/* office switch (config/app.showFee): show the VCT fee as an amount (never a %). OFF = the fee is not shown anywhere */
+const FEE=()=>!!CFGD.showFee;
+const FEEN=()=>L('VCT கட்டணம்','VCT fee');
 const ON_PAGES=!/^(localhost|127\.0\.0\.1|)$/.test(location.hostname);
 const cloudP=(window.CLOUD_READY||Promise.resolve(null)).then(c=>{CL=c||null;return CL}).catch(()=>null);
 const F=()=>CL.fs;
@@ -1336,7 +1361,7 @@ function watchMe(){UNS.push(F().onSnapshot(F().doc(CL.db,'drivers',CL.phone),s=>
   if(S.online&&!J&&docState().expired.length){setOnline(false);toast(L('ஒரு document காலாவதி ஆயிடுச்சு. Offline ஆக்கப்பட்டீங்க','A document has expired. You have been taken offline'))}
   if(!J&&!document.querySelector('.modal')){if(S.tab==='wallet'&&before!==DS.wallet)walletTab();else if(S.tab==='home'&&(document.getElementById('ons')||(document.getElementById('ons')||document.getElementById('offs'))))home()}},()=>{}))}
 function watchCfgD(){UNS.push(F().onSnapshot(F().doc(CL.db,'config','app'),s=>{if(!s.exists())return;const d=s.data();
-  if(d.comm!=null)COMM=+d.comm;if(d.minbal!=null)MINBAL=+d.minbal;CFGD.upi=d.upi||'';CFGD.office=d.office||'';CFGD.serverComm=!!d.serverComm;CFGD.serverPin=!!d.serverPin;CFGD.reqConsent=!!d.reqConsent;CFGD.extNav=!!d.extNav;CFGD.wait=d.wait||null;CFGD.push=d.push||null;
+  if(d.comm!=null)COMM=+d.comm;if(d.minbal!=null)MINBAL=+d.minbal;CFGD.upi=d.upi||'';CFGD.office=d.office||'';CFGD.serverComm=!!d.serverComm;CFGD.serverPin=!!d.serverPin;CFGD.reqConsent=!!d.reqConsent;CFGD.extNav=!!d.extNav;CFGD.showFee=!!d.showFee;CFGD.wait=d.wait||null;CFGD.push=d.push||null;
   {const na=Array.isArray(d.announce)?d.announce:[],top=na[0];const fresh=top&&(!ANN[0]||ANN[0].id!==top.id)&&top.t>seenAt();ANN=na;
    if(fresh&&ANN.length&&!J&&!document.querySelector('.modal')){beep();toast('📢 '+(top.title||L('Office அறிவிப்பு','Office notice')));if(S.tab==='home'&&document.getElementById('menu'))home()}}if(d.dispatch)Object.assign(DISP,d.dispatch);
   if(d.fares)VEH.forEach(v=>{const f=d.fares[v.id];if(f&&v.id!=='auto'){if(f.base!=null)v.base=+f.base;if(f.per!=null)v.per=+f.per}})},()=>{}))}
@@ -1363,7 +1388,8 @@ function watchRch(){UNS.push(F().onSnapshot(F().query(F().collection(CL.db,'rech
 },()=>{}))}
 function rebuildTx(){
   DS.tx=[...RCH.filter(r=>r.status==='approved').map(r=>({amt:+r.amt,ta:'Recharge (Owner approve)',en:'Recharge (approved)',date:CL.toMs(r.approvedAt)||r.date||0})),
-    ...RCH.filter(r=>r.status==='rejected').map(r=>({amt:0,ta:`Recharge நிராகரிப்பு · UTR ${r.utr}`,en:`Recharge rejected · UTR ${r.utr}`,date:CL.toMs(r.approvedAt)||r.date||0}))].sort((a,b)=>b.date-a.date);
+    ...RCH.filter(r=>r.status==='rejected').map(r=>({amt:0,ta:`Recharge நிராகரிப்பு · UTR ${r.utr}`,en:`Recharge rejected · UTR ${r.utr}`,date:CL.toMs(r.approvedAt)||r.date||0})),
+    ...(FEE()?DS.trips.filter(t=>t.comm>0).map(t=>({amt:-t.comm,ta:`VCT கட்டணம்: ${t.to.ta}`,en:`VCT fee: ${t.to.en}`,date:t.date})):[])].sort((a,b)=>b.date-a.date);
 }
 function stopAllD(){UNS.forEach(u=>{try{u()}catch(e){}});UNS=[];if(REQUNSUB){REQUNSUB();REQUNSUB=null}stopJob();stopGeo()}
 

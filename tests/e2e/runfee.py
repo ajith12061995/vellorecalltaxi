@@ -1,12 +1,14 @@
-# Owner decision 6 Nov: the driver app does not show the commission anywhere (request card, end of ride,
-# earnings, wallet card, wallet history, help). It is still taken from the wallet and stored on the booking;
-# the driver agreement still states it. Wallet card shows only the minimum balance to go online.
+# Owner decision 6 Nov: the driver app never shows the commission %. Office switch config/app.showFee:
+#  OFF (default): no fee anywhere (request card, end of ride, earnings, wallet card/history, help).
+#  ON: Red-Taxi style amounts only — "VCT fee" on the end card, earnings, a per-ride breakup sheet and wallet history.
+# Either way the fee is taken from the wallet and stored on the booking; the driver agreement still states it.
 import asyncio,re
 from playwright.async_api import async_playwright
 B='http://localhost:8765/tests/e2e/out/'
 res=[]
 def check(n,c,i=''):res.append(bool(c));print(('PASS ' if c else 'FAIL ')+n,i)
 BAD=re.compile(r'commission|கமிஷன்|கழி|You get|உங்களுக்கு ₹|நிகர',re.I)
+PCT=re.compile(r'commission|கமிஷன்|\d\s?%',re.I)
 async def main():
     async with async_playwright() as p:
         b=await p.chromium.launch();ctx=await b.new_context(viewport={'width':1900,'height':880},geolocation={'latitude':12.955,'longitude':79.139},permissions=['geolocation'])
@@ -46,6 +48,31 @@ async def main():
         check('wallet card says minimum ₹100 to go online',('குறைந்தது ₹100' in t) or ('at least ₹100' in t),'')
         faq=await df.evaluate("JSON.stringify(FAQD)")
         check('help: no commission question',not re.search(r'commission',faq,re.I))
+        # office turns the fee display ON (Settings switch)
+        O=pg.frame_locator('#o');of=pg.frame(url=B+'o2.html')
+        await O.locator('#ph').fill('8220201462');await O.locator('#lgn').click();await pg.wait_for_timeout(300)
+        await O.locator('#otp').fill('123456');await pg.wait_for_timeout(1500)
+        await of.evaluate("S.sec='set';save();show()");await pg.wait_for_timeout(800)
+        check('office switch is OFF by default',not await O.locator('#sfee').is_checked())
+        await O.locator('#sfee').check();await O.locator('#sv').click();await pg.wait_for_timeout(1500)
+        cfg=await pg.evaluate("MOCK.store.get('config/app')")
+        check('office saves showFee',cfg.get('showFee') is True,cfg.get('showFee'))
+        await df.evaluate("S.tab='earn';earnTab()");await pg.wait_for_timeout(1200)
+        t=await txt();net=int(bk['fareFinal'])+int(bk.get('tip') or 0)-int(bk['comm'])
+        check('ON: earnings show "VCT கட்டணம்" and net earnings',('VCT கட்டணம்' in t or 'VCT fee' in t) and str(net) in t.replace(',',''),'')
+        check('ON: still no % or the word commission',not PCT.search(t),PCT.findall(t))
+        await D.locator('[data-trip="0"]').click();await pg.wait_for_timeout(700)
+        await pg.locator('#d').screenshot(path='shots/fee_sheet.png')
+        sh=await df.evaluate("(document.querySelector('.modal')||{}).innerText||''")
+        check('ON: ride breakup: total, VCT fee, your earnings, paid by customer, from wallet',all(k in sh for k in ['VCT கட்டணம்',str(int(bk['comm'])),str(net),'Customer கொடுத்தது','Wallet-ல கழிந்தது']),sh.replace('\n',' | ')[:220])
+        check('ON: breakup has no %',not PCT.search(sh),PCT.findall(sh))
+        await df.evaluate("document.querySelectorAll('.modal').forEach(m=>m.remove());S.tab='wallet';rebuildTx();walletTab()");await pg.wait_for_timeout(1000)
+        t=await txt()
+        check('ON: wallet history shows the VCT fee line',('VCT கட்டணம்: ' in t or 'VCT fee: ' in t) and ('−₹'+str(int(bk['comm']))) in t.replace(',',''),'')
+        check('ON: wallet card still only the ₹100 minimum, no %',('குறைந்தது ₹100' in t or 'at least ₹100' in t) and not PCT.search(t),PCT.findall(t))
+        await O.locator('#sfee').uncheck();await O.locator('#sv').click();await pg.wait_for_timeout(1500)
+        await df.evaluate("S.tab='earn';earnTab()");await pg.wait_for_timeout(1000)
+        t=await txt();check('OFF again: fee hidden',not BAD.search(t) and 'VCT கட்டணம்' not in t,BAD.findall(t))
         ag=open('../../core/driverchecks.js',encoding='utf-8').read()
         check('driver agreement still states the commission',"commission for each trip is taken from my wallet" in ag)
         check('no page errors',not errs,errs)
