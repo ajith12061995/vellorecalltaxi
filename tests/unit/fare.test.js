@@ -44,4 +44,7 @@ ok('auto night 1.5× 22:00–05:00 even when office night is off',()=>{assert.eq
 ok('cars keep the office night setting',()=>{assert.equal(F.nightFor('sedan',null,IST(23,0)),0);assert.equal(F.nightFor('sedan',{on:true,from:'22:00',to:'05:00',pct:25},IST(23,0)),25)});
 ok('client and server use the same Government auto fare + area',()=>{assert.deepStrictEqual(F.AUTO_GOVT,SL.AUTO_GOVT);assert.deepStrictEqual(F.AREA,SL.AREA);for(const km of [0,1,1.8,2,3.3,7.7,18,25])assert.equal(F.cityFare({id:'auto'},km),SL.autoFare(km))});
 ok('local area: Katpadi/VIT inside 18 km, Arcot/Gudiyatham outside',()=>{assert.ok(F.fromCentre({lat:12.9690,lon:79.1440})<18);assert.ok(F.fromCentre({lat:12.9692,lon:79.1559})<18);assert.ok(F.fromCentre({lat:12.9063,lon:79.3189})>18);assert.ok(F.fromCentre({lat:12.9450,lon:78.8720})>18)});
+ok('outstation categories: A ≤100, B ≤150, C beyond; owner limits; same as server',()=>{assert.equal(F.outCat(40),'A');assert.equal(F.outCat(100),'A');assert.equal(F.outCat(101),'B');assert.equal(F.outCat(151),'C');assert.equal(F.outCat(90,{a:80,b:120}),'B');
+  for(const km of [19,80,99,100,101,150,151,400])for(const cat of [null,{a:80,b:120},{a:120,b:100}])assert.equal(F.outCat(km,cat),SL.outCat(km,cat));
+  assert.equal(F.catBata({A:{mini:450}},'A','mini',300),450);assert.equal(F.catBata({A:{mini:0}},'A','mini',300),300);assert.equal(SL.catBata({B:{sedan:500}},'B','sedan',300),500)});
 console.log(n,'fare tests passed');

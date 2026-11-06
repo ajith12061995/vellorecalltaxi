@@ -182,3 +182,17 @@ test('local area: rides outside 18 km (autos 25 km) are flagged, outstation neve
   assert.equal(L.outsideArea(ride({ to: arcot, src: 'phone' }), null), false);
   assert.equal(L.outsideArea(ride({ to: arcot }), { local: 30 }), false, 'owner can widen the area');
 });
+test('outstation category A: round trip only, up + down km, no per-day minimum, category allowance', () => {
+  const kanchi = { lat: 12.8342, lon: 79.7036 }, A0 = { lat: 12.9165, lon: 79.1325 };
+  const leave = Date.UTC(2026, 10, 10, 3, 30);
+  const c = { out: { rate: { sedan: 12 }, bata: { sedan: 300 }, rate1: { sedan: 12 }, bata1: { sedan: 300 }, cat: { a: 100, b: 150 }, cb: { A: { sedan: 450 } } } };
+  const ok = { src: 'app', kind: 'outstation', veh: 'sedan', from: A0, to: kanchi, when: leave, retAt: leave + 8 * 3600e3, km: 140,
+    tariff: { t: 'out', otype: 'round', km: 70, days: 1, rate: 12, bata: 450, min1: 80, mind: 0, cat: 'A', daykm: 400, longKm: 400, longPct: 0 } };
+  ok.fare = Math.round((140 * 12 + 450) / 10) * 10;                                  // 2130
+  assert.equal(L.outCheck(ok, c), null, 'honest A round trip is not changed');
+  const oneWay = { ...ok, otype: 'one', fare: Math.round((80 * 12 + 300) / 10) * 10, tariff: { ...ok.tariff, otype: 'one', bata: 300, mind: 250 } };
+  const r = L.outCheck(oneWay, c);
+  assert.equal(r.tariff.otype, 'round'); assert.equal(r.tariff.mind, 0); assert.equal(r.tariff.bata, 450); assert.equal(r.fare, ok.fare);
+  const B = L.outCheck({ ...ok, to: { lat: 13.6288, lon: 79.4192 }, otype: 'one', fare: 1, tariff: { t: 'out', otype: 'one', km: 115 } }, { out: { ...c.out, cb: { B: { sedan: 500 } } } });
+  assert.equal(B.tariff.otype, 'one'); assert.equal(B.tariff.cat, 'B'); assert.equal(B.tariff.bata, 500);
+});

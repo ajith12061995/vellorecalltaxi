@@ -116,6 +116,11 @@ const RENT0 = { auto: [199, 379, null, null, null], mini: [299, 549, 999, 1799, 
 const XKM0 = { auto: 14, mini: 12, sedan: 13, suv: 17, psuv: 21, trav: 24 }, XHR0 = { auto: 120, mini: 150, sedan: 170, suv: 230, psuv: 290, trav: 350 };
 const ORATE0 = { mini: 11, sedan: 12, suv: 16, psuv: 20, trav: 22 }, OBATA0 = { mini: 300, sedan: 300, suv: 350, psuv: 400, trav: 500 };
 const OUT0 = { min1: 80, mind: 250, daykm: 400, longKm: 400, longPct: 0 };
+// Outstation categories (= core/fare.js OUTCAT/outCat/catBata): A up to cat.a km = round trip only, billed up + down km
+// with no per-day minimum; B up to cat.b km; C beyond. cb[cat][veh] = allowance per day for that category (0 = normal).
+const OUTCAT = { a: 100, b: 150 };
+const outCat = (km, cat) => { const c = cat || {}, a = +c.a > 0 ? +c.a : OUTCAT.a, b = Math.max(+c.b > 0 ? +c.b : OUTCAT.b, a); return n(km) <= a ? 'A' : n(km) <= b ? 'B' : 'C'; };
+const catBata = (cb, cat, id, dflt) => { const x = cb && cb[cat] && +cb[cat][id]; return x > 0 ? x : n(dflt); };
 function tariffs(c) {            // = applyTariff() in the customer app
   const RENT = JSON.parse(JSON.stringify(RENT0)), XKM = { ...XKM0 }, XHR = { ...XHR0 };
   const R1 = { ...ORATE0 }, B1 = { ...OBATA0 }, R = { ...ORATE0 }, B = { ...OBATA0 }, O = { ...OUT0 };
@@ -161,24 +166,28 @@ function rentCheck(b, c) {
   return { fare, km: h * 10, was: n(b.fare), wasKm: n(b.km), tariff: { ...t, t: 'rent', h, km: h * 10, price: Math.max(n(t.price), want), xkm, xhr } };
 }
 function outCheck(b, c) {
-  const t = b.tariff || {}, T = tariffs(c), id = b.veh, one = (t.otype || b.otype) !== 'round';
-  const rate = (one ? T.R1 : T.R)[id], bata = (one ? T.B1 : T.B)[id];
-  if (!(rate > 0) || bata == null) return null;
+  const t = b.tariff || {}, T = tariffs(c), id = b.veh, o = (c && c.out) || {};
   const O = T.O, crow = crowKm(b.from, b.to);
   const km = Math.round(Math.max(n(t.km), crow * 1.1));        // one-way road km; highways run only ~1.12 × the straight line
   if (!km) return null;
+  const cat = outCat(km, o.cat), A = cat === 'A';
+  const one = !A && (t.otype || b.otype) !== 'round';          // category A: round trip only, whatever the app sent
+  const rate = (one ? T.R1 : T.R)[id], bata0 = (one ? T.B1 : T.B)[id];
+  if (!(rate > 0) || bata0 == null) return null;
+  const bata = catBata(o.cb, cat, id, bata0), mind = A ? 0 : O.mind;
   let days;
   if (one) days = Math.max(1, Math.ceil(km / O.daykm));
   else {
     const leave = n(b.when), back = n(b.retAt) || leave;
     days = Math.max((leave ? istDay(back) - istDay(leave) + 1 : 1), Math.ceil(2 * km / O.daykm), 1);
   }
-  const billed = one ? Math.max(km, O.min1) : Math.max(km * 2, O.mind * days);
+  const billed = one ? Math.max(km, O.min1) : Math.max(km * 2, mind * days);
   const extra = one && O.longPct > 0 && km > O.longKm ? Math.round((km - O.longKm) * rate * O.longPct / 100) : 0;
   const want = Math.round((billed * rate + bata * days + extra) / 10) * 10;
-  const tar = { ...t, t: 'out', otype: one ? 'one' : 'round', km, days, rate, bata, min1: O.min1, mind: O.mind, daykm: O.daykm, longKm: O.longKm, longPct: O.longPct };
+  const tar = { ...t, t: 'out', otype: one ? 'one' : 'round', km, days, rate, bata, min1: O.min1, mind, cat, daykm: O.daykm, longKm: O.longKm, longPct: O.longPct };
   const low = n(b.fare) < want - 10;
-  const tlow = n(t.km) < km || n(t.days) < days || n(t.rate) < rate || n(t.bata) < bata || n(t.min1) < O.min1 || n(t.mind) < O.mind
+  const tlow = n(t.km) < km || n(t.days) < days || n(t.rate) < rate || n(t.bata) < bata || n(t.min1) < O.min1 || n(t.mind) < mind
+    || (A && t.otype !== 'round')
     || (t.daykm != null && n(t.daykm) > O.daykm) || n(t.longPct) < O.longPct;
   if (!low && !tlow) return null;
   return { fare: low ? want : n(b.fare), km: low ? billed : n(b.km), was: n(b.fare), wasKm: n(b.km), tariff: tar };
@@ -197,4 +206,4 @@ function bookingLimit(lim, openNow, now) {
 // '2026-11-04_0230' — Indian date and time, for backup folder names
 const istStamp = ms => new Date(ms + 19800000).toISOString().slice(0, 16).replace('T', '_').replace(':', '');
 
-module.exports = { AUTO_GOVT, AREA, autoFare, outsideArea, rentCheck, outCheck, tariffs, rentPrice, istStamp, commissionFor, settle, housekeeping, fareLooksWrong, liveStale, custPush, fareCheck, bookingLimit, nightPct, withNight, crowKm, LIMIT_OPEN, LIMIT_HOUR };
+module.exports = { OUTCAT, outCat, catBata, AUTO_GOVT, AREA, autoFare, outsideArea, rentCheck, outCheck, tariffs, rentPrice, istStamp, commissionFor, settle, housekeeping, fareLooksWrong, liveStale, custPush, fareCheck, bookingLimit, nightPct, withNight, crowKm, LIMIT_OPEN, LIMIT_HOUR };

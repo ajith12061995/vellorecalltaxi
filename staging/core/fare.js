@@ -69,6 +69,13 @@ const FARE = (() => {
   // km from the town centre (area = config/app.area when the owner sets one, else AREA)
   const fromCentre = (p, area) => { const a = area && +area.lat && +area.lon ? area : AREA; return p && isFinite(+p.lat) && isFinite(+p.lon) ? crow({ lat: +a.lat, lon: +a.lon }, { lat: +p.lat, lon: +p.lon }) : 0; };
   const areaKm = (area, k) => { const a = area || {}; return +a[k] > 0 ? +a[k] : AREA[k]; };
+  // Outstation categories by one-way trip km (owner sets the limits in office Settings; customers never see the letters):
+  //   A: up to `a` km  → round trip only, billed = up + down km (no per-day minimum)
+  //   B: up to `b` km, C: beyond → one way or round trip as before. Each category may have its own driver allowance.
+  const OUTCAT = { a: 100, b: 150 };
+  const outCat = (km, cat) => { const c = cat || {}, a = +c.a > 0 ? +c.a : OUTCAT.a, b = Math.max(+c.b > 0 ? +c.b : OUTCAT.b, a); return n(km) <= a ? 'A' : n(km) <= b ? 'B' : 'C'; };
+  // driver allowance per day for a category (0 / blank in Settings = the normal outstation allowance)
+  const catBata = (cb, cat, id, dflt) => { const x = cb && cb[cat] && +cb[cat][id]; return x > 0 ? x : n(dflt); };
   // city fare before the night charge. v = {id, base, per}
   const cityFare = (v, km) => v && v.id === 'auto' ? Math.round(AUTO_GOVT.base + AUTO_GOVT.per * Math.max(0, n(km) - AUTO_GOVT.incl))
     : Math.round((n(v && v.base) + n(v && v.per) * Math.max(0, n(km) - 1.5)) / 5) * 5;
@@ -79,6 +86,6 @@ const FARE = (() => {
   // the amount a finished booking really cost (old bookings have no fareFinal)
   const billOf = b => b && b.fareFinal != null ? +b.fareFinal : +(b && b.fare) || 0;
   const tripOf = b => b && b.fx && b.fx.trip != null ? +b.fx.trip : billOf(b);
-  return { final, comm, billOf, tripOf, r10, nightPct, withNight, hm, AUTO_GOVT, AREA, crow, fromCentre, areaKm, cityFare, nightFor, withNightV };
+  return { final, comm, billOf, tripOf, r10, nightPct, withNight, hm, AUTO_GOVT, AREA, crow, fromCentre, areaKm, cityFare, nightFor, withNightV, OUTCAT, outCat, catBata };
 })();
 if (typeof module !== 'undefined') module.exports = FARE;
