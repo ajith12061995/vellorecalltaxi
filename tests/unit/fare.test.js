@@ -34,4 +34,14 @@ ok('server copy of the night rule matches the apps (every 7 min over 2 days, sev
   const cs=[NC,{on:true,from:'05:00',to:'09:30',pct:10},{on:true,from:'23:45',to:'00:15',pct:40},{on:false,from:'22:00',to:'05:00',pct:25}];
   for(const c of cs)for(let t=IST(0,0);t<IST(0,0)+2*864e5;t+=7*6e4)assert.equal(S.nightPct(c,t),F.nightPct(c,t));
   for(const f of [0,95,190,333,1000])for(const p of [0,10,25,33])assert.equal(S.withNight(f,p),F.withNight(f,p))});
+
+// ---- Auto: Tamil Nadu Government fare (G.O. Ms. No. 366, 27 Oct 2026) + local area; must match the server copy
+const SL=require('../../functions/lib/logic.js');
+ok('auto govt fare: ₹50 up to 1.8 km, ₹25/km after',()=>{const a={id:'auto'};assert.equal(F.cityFare(a,0.5),50);assert.equal(F.cityFare(a,1.8),50);assert.equal(F.cityFare(a,2.8),75);assert.equal(F.cityFare(a,10),255);assert.equal(F.cityFare(a,3.3),Math.round(50+25*1.5))});
+ok('auto ignores office base/per',()=>{assert.equal(F.cityFare({id:'auto',base:40,per:16},5),130)});
+ok('cars unchanged (₹5 rounding, 1.5 km)',()=>{assert.equal(F.cityFare({id:'sedan',base:130,per:19},5),Math.round((130+19*3.5)/5)*5)});
+ok('auto night 1.5× 22:00–05:00 even when office night is off',()=>{assert.equal(F.nightFor('auto',null,IST(23,0)),50);assert.equal(F.nightFor('auto',null,IST(4,0)),50);assert.equal(F.nightFor('auto',null,IST(5,0)),0);assert.equal(F.nightFor('auto',null,IST(12,0)),0);assert.equal(F.withNightV('auto',130,50),195)});
+ok('cars keep the office night setting',()=>{assert.equal(F.nightFor('sedan',null,IST(23,0)),0);assert.equal(F.nightFor('sedan',{on:true,from:'22:00',to:'05:00',pct:25},IST(23,0)),25)});
+ok('client and server use the same Government auto fare + area',()=>{assert.deepStrictEqual(F.AUTO_GOVT,SL.AUTO_GOVT);assert.deepStrictEqual(F.AREA,SL.AREA);for(const km of [0,1,1.8,2,3.3,7.7,18,25])assert.equal(F.cityFare({id:'auto'},km),SL.autoFare(km))});
+ok('local area: Katpadi/VIT inside 18 km, Arcot/Gudiyatham outside',()=>{assert.ok(F.fromCentre({lat:12.9690,lon:79.1440})<18);assert.ok(F.fromCentre({lat:12.9692,lon:79.1559})<18);assert.ok(F.fromCentre({lat:12.9063,lon:79.3189})>18);assert.ok(F.fromCentre({lat:12.9450,lon:78.8720})>18)});
 console.log(n,'fare tests passed');

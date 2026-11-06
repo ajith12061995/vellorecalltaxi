@@ -59,10 +59,26 @@ const FARE = (() => {
     return (f < t ? m >= f && m < t : m >= f || m < t) ? pct : 0;
   }
   const withNight = (f, pct) => pct ? Math.round(n(f) * (1 + pct / 100) / 5) * 5 : n(f);
+  // Auto-rickshaw: Tamil Nadu Government fare, G.O. (Ms.) No. 366, 27 Oct 2026. Fixed by law, so the office
+  // Settings can't change it: ₹50 for the first 1.8 km, ₹25 per km after, night (22:00–05:00) 1.5×, waiting ₹1/min.
+  const AUTO_GOVT = { base: 50, incl: 1.8, per: 25, wait: 1, night: { on: true, from: '22:00', to: '05:00', pct: 50 } };
+  // Local (city) area: a circle around Vellore town centre. Outside it a ride is an outstation trip; autos may go a bit further.
+  const AREA = { lat: 12.9165, lon: 79.1325, local: 18, auto: 25 };
+  const crow = (a, b) => { const R = 6371, r = x => x * Math.PI / 180, dLa = r(b.lat - a.lat), dLo = r(b.lon - a.lon);
+    const h = Math.sin(dLa / 2) ** 2 + Math.cos(r(a.lat)) * Math.cos(r(b.lat)) * Math.sin(dLo / 2) ** 2; return 2 * R * Math.asin(Math.sqrt(h)); };
+  // km from the town centre (area = config/app.area when the owner sets one, else AREA)
+  const fromCentre = (p, area) => { const a = area && +area.lat && +area.lon ? area : AREA; return p && isFinite(+p.lat) && isFinite(+p.lon) ? crow({ lat: +a.lat, lon: +a.lon }, { lat: +p.lat, lon: +p.lon }) : 0; };
+  const areaKm = (area, k) => { const a = area || {}; return +a[k] > 0 ? +a[k] : AREA[k]; };
+  // city fare before the night charge. v = {id, base, per}
+  const cityFare = (v, km) => v && v.id === 'auto' ? Math.round(AUTO_GOVT.base + AUTO_GOVT.per * Math.max(0, n(km) - AUTO_GOVT.incl))
+    : Math.round((n(v && v.base) + n(v && v.per) * Math.max(0, n(km) - 1.5)) / 5) * 5;
+  // night % for this vehicle (auto: Government night window, whatever the office night switch says)
+  const nightFor = (vid, cfg, at) => nightPct(vid === 'auto' ? AUTO_GOVT.night : cfg, at);
+  const withNightV = (vid, f, pct) => vid === 'auto' ? (pct ? Math.round(n(f) * (1 + pct / 100)) : n(f)) : withNight(f, pct);
   const comm = (trip, pct) => Math.round(n(trip) * n(pct) / 100);
   // the amount a finished booking really cost (old bookings have no fareFinal)
   const billOf = b => b && b.fareFinal != null ? +b.fareFinal : +(b && b.fare) || 0;
   const tripOf = b => b && b.fx && b.fx.trip != null ? +b.fx.trip : billOf(b);
-  return { final, comm, billOf, tripOf, r10, nightPct, withNight, hm };
+  return { final, comm, billOf, tripOf, r10, nightPct, withNight, hm, AUTO_GOVT, AREA, crow, fromCentre, areaKm, cityFare, nightFor, withNightV };
 })();
 if (typeof module !== 'undefined') module.exports = FARE;

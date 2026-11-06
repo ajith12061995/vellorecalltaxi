@@ -92,6 +92,8 @@ exports.onBookingCreated = onDocumentCreated('bookings/{id}', async ev => {
     b.fare = fx.fare;
     logger.warn('fare corrected', { id, was: fx.was, now: fx.fare, km: fx.km, wasKm: fx.wasKm });
   } else if (L.fareLooksWrong(b, c.fares)) await ref.update({ fareFlag: 'below-price-list' });
+  // 3) a city ride outside the local area (should have been outstation): flag it for the office, don't block
+  if (L.outsideArea(b, c.area)) { await ref.update({ areaFlag: 'outside-local' }); logger.warn('outside local area', { id, veh: b.veh }); }
   if (b.status !== 'searching' || !c.push || !c.push.vapid) return;
   const ds = await db.collection('drivers').where('veh', '==', b.veh).where('online', '==', true).get();
   const tokens = ds.docs.map(d => d.data().fcm).filter(Boolean).slice(0, 500);

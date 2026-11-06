@@ -46,7 +46,7 @@
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('../vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV=window.VCT_V='65',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV=window.VCT_V='66',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('../version.json',location.href)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -641,15 +641,15 @@ a.btn{text-decoration:none}
 <div class="app" id="app"></div>
 <div class="toast" id="toast"></div>
 
-<script src="../core/report.js?v=65"></script>
-<script src="../core/geo.js?v=65"></script>
-<script src="../core/fare.js?v=65"></script>
-<script src="../core/pin.js?v=65"></script>
-<script src="../core/clock.js?v=65"></script>
-<script src="../core/map.js?v=65"></script>
-<script src="../core/chat.js?v=65"></script>
-<script src="../core/driverchecks.js?v=65"></script>
-<script src="../core/nav.js?v=65"></script>
+<script src="../core/report.js?v=66"></script>
+<script src="../core/geo.js?v=66"></script>
+<script src="../core/fare.js?v=66"></script>
+<script src="../core/pin.js?v=66"></script>
+<script src="../core/clock.js?v=66"></script>
+<script src="../core/map.js?v=66"></script>
+<script src="../core/chat.js?v=66"></script>
+<script src="../core/driverchecks.js?v=66"></script>
+<script src="../core/nav.js?v=66"></script>
 <script>
 /* shared with the customer app: icons, places, fares, map engine */
 const I = {
@@ -701,14 +701,16 @@ let ROADS=[['home','katpadi'],['home','vit'],['katpadi','vit'],['home','newbus']
 I.sedan=I.car;
 const VEH=[
   {id:'bike',en:'Bike',ta:'பைக்',seats:1,base:25,per:7,eta:2},
-  {id:'auto',en:'Auto',ta:'ஆட்டோ',seats:3,base:40,per:16,eta:3},
+  {id:'auto',en:'Auto',ta:'ஆட்டோ',seats:3,base:50,per:25,eta:3}, // Government fare (core/fare.js AUTO_GOVT)
   {id:'mini',en:'Mini',ta:'Mini கார்',seats:4,base:100,per:16,eta:4,models:'Swift · Wagon R'},
   {id:'sedan',en:'Sedan',ta:'Sedan கார்',seats:4,base:130,per:19,eta:5,models:'Dzire · Aura · Etios'},
   {id:'suv',en:'MPV',ta:'MPV',seats:6,base:180,per:22,eta:6,models:'Ertiga · Rumion',tag:'7-seater'},
   {id:'psuv',en:'Premium MPV',ta:'Premium MPV',seats:7,base:250,per:26,eta:8,models:'Innova Crysta · Hycross',tag:'Premium'},
   {id:'trav',en:'Tempo Traveller / Maxi Cab',ta:'Tempo Traveller / Maxi Cab',seats:12,base:600,per:28,eta:25,models:'Tempo Traveller · Maxi Cab',tag:'12-seater'}
 ];
-const fare=(v,km)=>Math.round((v.base+v.per*Math.max(0,km-1.5))/5)*5;
+const fare=(v,km)=>FARE.cityFare(v,km);
+const myVeh=()=>{try{return DME&&DME.veh}catch(e){return null}};
+const autoNoteD=(sm)=>`<div class="kband" style="background:rgba(30,138,90,.1);color:var(--ok);text-align:left;line-height:1.45${sm?';font-size:12.5px':''}">🛺 ${L('<b>தமிழ்நாடு அரசு 2026 புதிய ஆட்டோ கட்டணம்</b>: முதல் 1.8 கி.மீ ₹50, பிறகு ₹25/கி.மீ · இரவு 10–5 1.5 மடங்கு · காத்திருப்பு ₹1/நிமி','<b>Tamil Nadu Government 2026 revised auto fare</b>: ₹50 for the first 1.8 km, then ₹25/km · night 10 pm–5 am 1.5× · waiting ₹1/min')}</div>`;
 
 
 Object.assign(I,{
@@ -944,7 +946,7 @@ function home(){
      ${(()=>{const ds=docState();return ds.expired.length?`<div class="warn">⛔ ${L('காலாவதி ஆன document: ','Expired: ')}${ds.expired.join(', ')}. ${L('புதுப்பிக்கும் வரை Online போக முடியாது. புது copy-ஐ office-க்கு அனுப்புங்க.','You can’t go online until it is renewed. Send the new copy to the office.')}</div>`:ds.soon.length?`<div class="warn">⚠️ ${L('சீக்கிரம் காலாவதி: ','Expiring soon: ')}${ds.soon.join(', ')}</div>`:''})()}
      ${low?`<div class="warn">${L(`Wallet-ல ${inr(DS.wallet)} தான் இருக்கு. Online போக குறைந்தது ${inr(MINBAL)} வேணும்.`,`Only ${inr(DS.wallet)} in wallet. You need at least ${inr(MINBAL)} to go online.`)} <button class="linkbtn" id="rc">${L('Recharge பண்ணு','Recharge')}</button></div>`:''}
      ${S.online?`${CL&&!GOTFIX?`<div class="warn gpsw" id="gpsw"><b>📍 ${L('உங்க location இன்னும் கிடைக்கல','Your location is not available yet')}</b><br>${GPSERR===1?L('Location அனுமதி மறுக்கப்பட்டிருக்கு. Browser settings → Site settings → Location → Allow கொடுங்க.','Location permission is blocked. Allow it in browser site settings.'):L('Phone-ல Location / GPS on பண்ணுங்க. கிடைக்கும் வரை customer-க்கு உங்க வண்டி தெரியாது, request-உம் வராது.','Turn on Location/GPS. Until then customers cannot see you and no requests will come.')} <button class="linkbtn" id="gpsr">${L('மறுபடி முயற்சி','Retry')}</button></div>`:`<div class="liveCard"><span class="pulse"></span><div><b>${L('Online-ல இருக்கீங்க','You are online')}</b><small>${L('புது ride request-க்கு காத்திருக்கு…','Waiting for ride requests…')}</small></div></div>`}
-        ${dutyBtn(true)}
+        ${myVeh()==='auto'?autoNoteD(true):''}${dutyBtn(true)}
         ${CL?'':`<button class="demo" id="dreq">${L('Demo: ride request கொண்டு வா','Demo: send a ride request')}</button>`}`
       :`${signCard()}${dutyBtn(false)}`}
      ${pushReady()&&(CL.nativePush&&CL.nativePush()?!lsGet('vct_fcm'):Notification.permission==='default')?`<button class="warn" id="pushon" style="text-align:left;border:0;width:100%">🔔 ${L('Phone lock ஆனாலும் ride alert வரணுமா? இங்கே தொட்டு Allow கொடுங்க','Get ride alerts even when the phone is locked: tap and Allow')}</button>`:''}
@@ -993,6 +995,7 @@ function renderReq(j){
        <div class="reqfare" id="rqf">${reqFareHtml()}</div></div>
      ${J.b&&J.b.kind&&J.b.kind!=='ride'?`<div class="kband">${J.b.kind==='outstation'?'🛣️ Outstation':'⏱️ Rental'} · ${whenTxt(J.b.when||Date.now())}${J.b.kind==='outstation'&&S_TIER()?` · ${TIERN[S_TIER()][S.lang==='ta'?0:1]}`:''}</div>`:''}
      ${J.id&&MISS.get(J.id)?`<div class="kband rpt">🔁 ${L(`மறுபடி வந்திருக்கு (${MISS.get(J.id).n+1}/${MAXMISS})`,`Offered again (${MISS.get(J.id).n+1}/${MAXMISS})`)}${(J.tip||0)>(MISS.get(J.id).tip||0)?' · 💰 '+L('Tip கூடியிருக்கு','Tip increased'):''}</div>`:''}
+     ${(J.b&&J.b.veh||myVeh())==='auto'?autoNoteD(true):''}
      <div class="reqdist"><div><b>${away.toFixed(1)} <em>${L('கி.மீ','km')}</em></b><small>📍 ${L('Pickup வரை','to pickup')}</small></div><i>→</i><div><b>${J.km.toFixed(1)} <em>${L('கி.மீ','km')}</em></b><small>🏁 ${L('பயணம்','trip')}</small></div></div>
      <div class="tripcard"><div class="rail"><i class="a"></i><i class="l"></i><i class="b"></i></div>
        <div class="stops"><div><small>${t2('pickup')} · ${away.toFixed(1)} ${L('கி.மீ தூரம்','km away')}</small><b>${pn(from)}</b>${padr(from)}</div><div><small>Drop · ${J.km.toFixed(1)} ${L('கி.மீ பயணம்','km trip')}</small><b>${pn(to)}</b>${padr(to)}</div></div></div>
@@ -1086,7 +1089,7 @@ function atPickup(){
     const pk=P[J.from];
     makeMap(document.getElementById('map'),{driver:()=>({...POS,nlat:POS.lat,nlon:POS.lon+.0001}),pins:[{...pk,col:'#1E8A5A'}],hide:CUSTOM}).setView(pk.lat,pk.lon,60000);
     const stB=document.getElementById('stB');
-    TK=setInterval(()=>{const s=Math.floor((Date.now()-t0)/1000),wf=(CFGD.wait&&CFGD.wait.free!=null?+CFGD.wait.free:3)*60,wr=CFGD.wait&&+CFGD.wait.rate||0;stB.textContent=`${Math.floor(s/60)}:${String(s%60).padStart(2,'0')} ${s<wf?L('· இலவச நேரம்','· free time'):wr?L(`· காத்திருப்பு ₹${wr}/நிமி`,`· waiting ₹${wr}/min`):L('· காத்திருக்கீங்க','· waiting')}`},1000);
+    TK=setInterval(()=>{const s=Math.floor((Date.now()-t0)/1000),wf=(CFGD.wait&&CFGD.wait.free!=null?+CFGD.wait.free:3)*60,wr=J&&J.b&&J.b.tariff&&J.b.tariff.wait!=null?+J.b.tariff.wait||0:CFGD.wait&&+CFGD.wait.rate||0;stB.textContent=`${Math.floor(s/60)}:${String(s%60).padStart(2,'0')} ${s<wf?L('· இலவச நேரம்','· free time'):wr?L(`· காத்திருப்பு ₹${wr}/நிமி`,`· waiting ₹${wr}/min`):L('· காத்திருக்கீங்க','· waiting')}`},1000);
     const ins=[...app.querySelectorAll('#pinb input')];
     ins.forEach((inp,i)=>{inp.oninput=()=>{inp.value=inp.value.replace(/\D/g,'').slice(-1);if(inp.value&&ins[i+1])ins[i+1].focus();document.getElementById('pe').textContent=''};
       inp.onkeydown=e=>{if(e.key==='Backspace'&&!inp.value&&ins[i-1])ins[i-1].focus()}});
@@ -1337,7 +1340,7 @@ function watchCfgD(){UNS.push(F().onSnapshot(F().doc(CL.db,'config','app'),s=>{i
   if(d.comm!=null)COMM=+d.comm;if(d.minbal!=null)MINBAL=+d.minbal;CFGD.upi=d.upi||'';CFGD.office=d.office||'';CFGD.serverComm=!!d.serverComm;CFGD.serverPin=!!d.serverPin;CFGD.reqConsent=!!d.reqConsent;CFGD.extNav=!!d.extNav;CFGD.wait=d.wait||null;CFGD.push=d.push||null;
   {const na=Array.isArray(d.announce)?d.announce:[],top=na[0];const fresh=top&&(!ANN[0]||ANN[0].id!==top.id)&&top.t>seenAt();ANN=na;
    if(fresh&&ANN.length&&!J&&!document.querySelector('.modal')){beep();toast('📢 '+(top.title||L('Office அறிவிப்பு','Office notice')));if(S.tab==='home'&&document.getElementById('menu'))home()}}if(d.dispatch)Object.assign(DISP,d.dispatch);
-  if(d.fares)VEH.forEach(v=>{const f=d.fares[v.id];if(f){if(f.base!=null)v.base=+f.base;if(f.per!=null)v.per=+f.per}})},()=>{}))}
+  if(d.fares)VEH.forEach(v=>{const f=d.fares[v.id];if(f&&v.id!=='auto'){if(f.base!=null)v.base=+f.base;if(f.per!=null)v.per=+f.per}})},()=>{}))}
 /* this driver's trips: newest 300 only (needs the index in firestore.indexes.json; without it, falls back to all trips) */
 function watchMine(full){const q=full?F().query(F().collection(CL.db,'bookings'),F().where('driverPhone','==',CL.phone))
     :F().query(F().collection(CL.db,'bookings'),F().where('driverPhone','==',CL.phone),F().orderBy('createdAt','desc'),F().limit(300));

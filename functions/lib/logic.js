@@ -37,7 +37,7 @@ function housekeeping(b, now) {
 // Expected local fare from office prices; flag bookings that look tampered (far below the price list)
 function fareLooksWrong(b, fares) {
   if (!b || b.src !== 'app' || (b.kind && b.kind !== 'ride' && b.kind !== 'schedule')) return false;
-  const f = fares && fares[b.veh]; if (!f) return false;
+  const f = b.veh === 'auto' ? AUTO_GOVT : fares && fares[b.veh]; if (!f) return false;
   const expected = n(f.base) + n(f.per) * Math.max(0, n(b.km) - (f.incl != null ? n(f.incl) : 1.5));
   return expected > 0 && n(b.fare) < expected * 0.6;
 }
@@ -73,6 +73,20 @@ const withNight = (f, pct) => pct ? r5(n(f) * (1 + pct / 100)) : n(f);
 const crowKm = (a, b) => { if (!a || !b || !isFinite(a.lat) || !isFinite(a.lon) || !isFinite(b.lat) || !isFinite(b.lon)) return 0;
   const R = 6371, r = Math.PI / 180, dl = (b.lat - a.lat) * r, dn = (b.lon - a.lon) * r;
   const x = Math.sin(dl / 2) ** 2 + Math.cos(a.lat * r) * Math.cos(b.lat * r) * Math.sin(dn / 2) ** 2; return 2 * R * Math.asin(Math.sqrt(x)); };
+// Auto-rickshaw: Tamil Nadu Government fare (G.O. Ms. No. 366, 27 Oct 2026) — same numbers as core/fare.js AUTO_GOVT.
+const AUTO_GOVT = { base: 50, incl: 1.8, per: 25, wait: 1, night: { on: true, from: '22:00', to: '05:00', pct: 50 } };
+// Local area: Vellore town centre + 18 km (autos 25 km) — same as core/fare.js AREA; config/app.area can override.
+const AREA = { lat: 12.9165, lon: 79.1325, local: 18, auto: 25 };
+const autoFare = km => Math.round(AUTO_GOVT.base + AUTO_GOVT.per * Math.max(0, n(km) - AUTO_GOVT.incl));
+// Is a city ride outside the local area? (pickup or drop further from the centre than allowed for this vehicle; 0.5 km slack)
+function outsideArea(b, area) {
+  if (!b || b.src !== 'app' || (b.kind && b.kind !== 'ride' && b.kind !== 'schedule')) return false;
+  if (b.tariff && b.tariff.t && b.tariff.t !== 'local') return false;
+  const a = area && +area.lat && +area.lon ? area : AREA, c = { lat: +a.lat, lon: +a.lon };
+  const lim = b.veh === 'auto' ? (+(area && area.auto) > 0 ? +area.auto : AREA.auto) : (+(area && area.local) > 0 ? +area.local : AREA.local);
+  const d = p => p && p.lat != null && p.lon != null ? crowKm(c, { lat: +p.lat, lon: +p.lon }) : 0;
+  return Math.max(d(b.from), d(b.to)) > lim + 0.5;
+}
 // Returns null when the fare is fine, else the corrected booking fields.
 //  - km can't be shorter than the straight line × 1.2 (the app's road km is always ≥ straight line × 1.25)
 //  - the night charge counts only when it applies now AND 15 minutes ago (a quote can be a few minutes old)
@@ -83,12 +97,13 @@ function fareCheck(b, c, now) {
   if (b.kind === 'outstation' || (b.tariff && b.tariff.t === 'out')) return outCheck(b, c);
   if (b.kind && b.kind !== 'ride' && b.kind !== 'schedule') return null;
   if (b.tariff && b.tariff.t && b.tariff.t !== 'local') return null;
-  const f = c && c.fares && c.fares[b.veh]; if (!f || !(n(f.base) > 0)) return null;
+  const isAuto = b.veh === 'auto';
+  const f = c && c.fares && c.fares[b.veh]; if (!isAuto && (!f || !(n(f.base) > 0))) return null;
   const minKm = crowKm(b.from, b.to) * 1.2, km = Math.max(n(b.km), minKm);
-  const base = r5(n(f.base) + n(f.per) * Math.max(0, km - 1.5));
-  const at = b.kind === 'schedule' && n(b.when) ? n(b.when) : now;
-  const np = Math.min(nightPct(c.night, at), nightPct(c.night, at - 15 * MIN));
-  const want = withNight(base, np);
+  const base = isAuto ? autoFare(km) : r5(n(f.base) + n(f.per) * Math.max(0, km - 1.5));
+  const at = b.kind === 'schedule' && n(b.when) ? n(b.when) : now, nc = isAuto ? AUTO_GOVT.night : c && c.night;
+  const np = Math.min(nightPct(nc, at), nightPct(nc, at - 15 * MIN));
+  const want = isAuto ? (np ? Math.round(base * (1 + np / 100)) : base) : withNight(base, np);
   if (n(b.fare) >= want - 5) return null;
   return { fare: want, km: Math.round(km * 10) / 10, was: n(b.fare), wasKm: n(b.km), night: np, nightAmt: want - base };
 }
@@ -182,4 +197,4 @@ function bookingLimit(lim, openNow, now) {
 // '2026-11-04_0230' — Indian date and time, for backup folder names
 const istStamp = ms => new Date(ms + 19800000).toISOString().slice(0, 16).replace('T', '_').replace(':', '');
 
-module.exports = { rentCheck, outCheck, tariffs, rentPrice, istStamp, commissionFor, settle, housekeeping, fareLooksWrong, liveStale, custPush, fareCheck, bookingLimit, nightPct, withNight, crowKm, LIMIT_OPEN, LIMIT_HOUR };
+module.exports = { AUTO_GOVT, AREA, autoFare, outsideArea, rentCheck, outCheck, tariffs, rentPrice, istStamp, commissionFor, settle, housekeeping, fareLooksWrong, liveStale, custPush, fareCheck, bookingLimit, nightPct, withNight, crowKm, LIMIT_OPEN, LIMIT_HOUR };

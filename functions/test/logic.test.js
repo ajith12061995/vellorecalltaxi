@@ -156,3 +156,29 @@ test('rental/outstation tables match the customer app (index.html)', () => {
   assert.deepEqual(grab(/const PKG=(\[[^\]]*\]);/).map(p => p.h), [1, 2, 3, 4, 5, 6, 8, 10, 12]);
   assert.match(src, /let OMIN1=80,OMIND=250,OLONGKM=400,OLONGPCT=0;/); assert.match(src, /let ODAYKM=400;/);
 });
+
+// ---- Auto: Tamil Nadu Government fare (G.O. Ms. No. 366, 27 Oct 2026) and the local area
+test('auto fare check uses the Government fare, not the office price list', () => {
+  const km = 9.5, gov = Math.round(50 + 25 * (km - 1.8));                                  // 243
+  assert.equal(L.fareCheck(ride({ veh: 'auto', km, fare: gov }), CFGF, day), null);
+  const old = Math.round((40 + 16 * (km - 1.5)) / 5) * 5;                                 // old office price 170
+  const r = L.fareCheck(ride({ veh: 'auto', km, fare: old }), CFGF, day);
+  assert.equal(r.fare, gov); assert.equal(r.was, old);
+  assert.equal(L.fareCheck(ride({ veh: 'auto', km, fare: gov }), { fares: {} }, day), null, 'works without office prices');
+});
+test('auto night: 1.5× from 22:00 to 05:00 even when the office night switch is off', () => {
+  const km = 9.5, gov = Math.round(50 + 25 * (km - 1.8)), at23 = Date.UTC(2026, 10, 4, 17, 30); // 23:00 IST
+  const r = L.fareCheck(ride({ veh: 'auto', km, fare: gov }), CFGF, at23);
+  assert.equal(r.fare, Math.round(gov * 1.5)); assert.equal(r.night, 50);
+  assert.equal(L.fareCheck(ride({ veh: 'auto', km, fare: Math.round(gov * 1.5) }), CFGF, at23), null);
+});
+test('local area: rides outside 18 km (autos 25 km) are flagged, outstation never', () => {
+  const katpadi = { lat: 12.9690, lon: 79.1440 }, arcot = { lat: 12.9063, lon: 79.3189 }, far = { lat: 12.79, lon: 79.37 };
+  assert.equal(L.outsideArea(ride({ to: katpadi }), null), false);
+  assert.equal(L.outsideArea(ride({ to: arcot }), null), true, 'sedan to Arcot (~20 km) is outside');
+  assert.equal(L.outsideArea(ride({ veh: 'auto', to: arcot }), null), false, 'auto to Arcot is allowed (≤25 km)');
+  assert.equal(L.outsideArea(ride({ veh: 'auto', to: far }), null), true);
+  assert.equal(L.outsideArea(ride({ to: arcot, kind: 'outstation', tariff: { t: 'out' } }), null), false);
+  assert.equal(L.outsideArea(ride({ to: arcot, src: 'phone' }), null), false);
+  assert.equal(L.outsideArea(ride({ to: arcot }), { local: 30 }), false, 'owner can widen the area');
+});
