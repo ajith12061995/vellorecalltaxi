@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+<defs>
+<radialGradient id="bg" cx="50%" cy="30%" r="85%"><stop offset="0" stop-color="#127050"/><stop offset="1" stop-color="#062F24"/></radialGradient>
+<linearGradient id="y" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFD84D"/><stop offset="1" stop-color="#F5AE00"/></linearGradient>
+<linearGradient id="car" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFFFFF"/><stop offset="1" stop-color="#E3EBE7"/></linearGradient>
+<linearGradient id="glass" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2F6E5A"/><stop offset="1" stop-color="#0B4A36"/></linearGradient>
+<clipPath id="cb"><path d="M200 640 Q206 596 262 586 L360 574 Q410 520 470 512 L600 508 Q660 510 704 560 L790 574 Q836 584 842 626 L844 652 Q844 668 826 668 L216 668 Q198 668 200 650 Z"/></clipPath><radialGradient id="glow"><stop offset="0" stop-color="#FFB52E" stop-opacity=".40"/><stop offset="1" stop-color="#FFB52E" stop-opacity="0"/></radialGradient><radialGradient id="sun" cx="42%" cy="38%"><stop offset="0" stop-color="#FFF4C2"/><stop offset=".55" stop-color="#FFC94A"/><stop offset="1" stop-color="#FF9A1F"/></radialGradient></defs>
+<rect width="1024" height="1024" fill="url(#bg)"/>
+<circle cx="696" cy="312" r="200" fill="url(#glow)"/><path d="M588 312 L546 312" stroke="#FFB52E" stroke-width="13" stroke-linecap="round"/><path d="M596 271 L557 255" stroke="#FFB52E" stroke-width="13" stroke-linecap="round"/><path d="M620 236 L590 206" stroke="#FFB52E" stroke-width="13" stroke-linecap="round"/><path d="M655 212 L639 173" stroke="#FFB52E" stroke-width="13" stroke-linecap="round"/><path d="M696 204 L696 162" stroke="#FFB52E" stroke-width="13" stroke-linecap="round"/><path d="M737 212 L753 173" stroke="#FFB52E" stroke-width="13" stroke-linecap="round"/><path d="M772 236 L802 206" stroke="#FFB52E" stroke-width="13" stroke-linecap="round"/><path d="M796 271 L835 255" stroke="#FFB52E" stroke-width="13" stroke-linecap="round"/><path d="M804 312 L846 312" stroke="#FFB52E" stroke-width="13" stroke-linecap="round"/><circle cx="696" cy="312" r="84" fill="url(#sun)"/>
+<g fill="url(#y)"><path d="M184 528 V440 H840 V528 Z"/><rect x="314" y="414" width="26" height="28" rx="3"/><rect x="358" y="414" width="26" height="28" rx="3"/><rect x="402" y="414" width="26" height="28" rx="3"/><rect x="596" y="414" width="26" height="28" rx="3"/><rect x="640" y="414" width="26" height="28" rx="3"/><rect x="684" y="414" width="26" height="28" rx="3"/><path d="M184.0 528 V392 Q184.0 372 200.0 372 H272.0 Q288.0 372 288.0 392 V528 Z"/><rect x="194" y="348" width="20" height="26" rx="3"/><rect x="226" y="348" width="20" height="26" rx="3"/><rect x="258" y="348" width="20" height="26" rx="3"/><path d="M453.0 528 V370 Q453.0 350 469.0 350 H555.0 Q571.0 350 571.0 370 V528 Z"/><rect x="470" y="326" width="20" height="26" rx="3"/><rect x="502" y="326" width="20" height="26" rx="3"/><rect x="534" y="326" width="20" height="26" rx="3"/><path d="M736.0 528 V392 Q736.0 372 752.0 372 H824.0 Q840.0 372 840.0 392 V528 Z"/><rect x="746" y="348" width="20" height="26" rx="3"/><rect x="778" y="348" width="20" height="26" rx="3"/><rect x="810" y="348" width="20" height="26" rx="3"/></g>
+<rect x="231" y="420" width="10" height="24" rx="5" fill="#0B4A36" opacity=".85"/><rect x="783" y="420" width="10" height="24" rx="5" fill="#0B4A36" opacity=".85"/><rect x="456" y="400" width="10" height="24" rx="5" fill="#0B4A36" opacity=".85"/><rect x="563" y="400" width="10" height="24" rx="5" fill="#0B4A36" opacity=".85"/>
+
+<!-- steering wheel in corner (driver app) -->
+<g transform="translate(200 200)">
+ <circle r="70" fill="none" stroke="url(#y)" stroke-width="18"/>
+ <path d="M-62 4 L-20 4 M20 4 L62 4 M0 26 L0 64" stroke="url(#y)" stroke-width="16" stroke-linecap="round"/>
+ <circle cy="4" r="24" fill="url(#y)"/><circle cy="4" r="9" fill="#0B4A36"/>
+</g>
+<g transform="translate(0 6)">
+ <path d="M200 640 Q206 596 262 586 L360 574 Q410 520 470 512 L600 508 Q660 510 704 560 L790 574 Q836 584 842 626 L844 652 Q844 668 826 668 L216 668 Q198 668 200 650 Z" fill="url(#car)" stroke="#0B4A36" stroke-width="8"/>
+ <path d="M392 572 Q430 532 476 528 L560 526 L560 572 Z" fill="url(#glass)"/>
+ <path d="M576 526 L612 526 Q650 530 680 572 L576 572 Z" fill="url(#glass)"/>
+ <path d="M404 566 Q436 540 470 536 L486 536 L440 566 Z" fill="#fff" opacity=".25"/>
+ <rect x="470" y="488" width="96" height="28" rx="8" fill="#0B4A36" stroke="#FFC21A" stroke-width="6"/>
+ <!-- commercial yellow stripe + light green pinstripe -->
+ <g clip-path="url(#cb)"><path d="M190 606 L860 606" stroke="#FFC21A" stroke-width="18"/>
+ <path d="M190 626 L860 626" stroke="#2E8B63" stroke-width="5" opacity=".75"/></g><path d="M200 640 Q206 596 262 586 L360 574 Q410 520 470 512 L600 508 Q660 510 704 560 L790 574 Q836 584 842 626 L844 652 Q844 668 826 668 L216 668 Q198 668 200 650 Z" fill="none" stroke="#0B4A36" stroke-width="8"/>
+ <rect x="802" y="588" width="24" height="12" rx="5" fill="#FFF3C4"/>
+ <rect x="218" y="594" width="16" height="11" rx="4" fill="#E85B4A"/>
+ <circle cx="322" cy="668" r="46" fill="#0B4A36"/><circle cx="322" cy="668" r="22" fill="#C9D3CF"/>
+ <circle cx="722" cy="668" r="46" fill="#0B4A36"/><circle cx="722" cy="668" r="22" fill="#C9D3CF"/>
+</g>
+<path d="M150 745 Q512 690 880 725 Q512 735 170 770 Z" fill="url(#y)"/>
+<text x="512" y="842" font-family="DejaVu Sans, Arial Black, sans-serif" font-weight="900" font-size="104" fill="#FFFFFF" text-anchor="middle" letter-spacing="6" font-style="italic">VELLORE</text>
+<text x="512" y="948" font-family="DejaVu Sans, Arial Black, sans-serif" font-weight="900" font-size="100" fill="url(#y)" text-anchor="middle" letter-spacing="8" font-style="italic">DRIVER</text>
+</svg>
