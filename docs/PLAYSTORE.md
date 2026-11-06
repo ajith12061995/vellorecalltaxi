@@ -75,3 +75,10 @@ Phone OTP மூலம் login. Account-ஐ எப்போது வேண்�
 ## Still to do before the first upload
 - Owner: identity approval (pending), phone verification, upload-key secrets in GitHub, register both Android apps in Firebase (package names above) for native push → `google-services.json` (public config file, fine to commit).
 - Claude: native push (web push does not work inside Android apps), screenshots (phone 1080×1920), feature graphic 1024×500, run on a real phone via internal testing.
+
+
+## Status 6 Nov (phase 2 code done)
+- Driver: native background location (foreground service + notification, no ACCESS_BACKGROUND_LOCATION). Play Console needs the *Foreground service (location)* declaration with a short demo video.
+- Push: native FCM client in both apps; server sends `android` payload (channel `rides`). Switches on only when `mobile/<app>/google-services.json` is committed (CI sets the `VCTPush` user-agent marker); until then push is OFF.
+- Store assets: `docs/playstore-assets/` (5 phone screenshots 1080x1920 from the test harness — maps are blank there, replace with real-phone screenshots from internal testing before production; feature graphic 1024x500).
+- Still manual: upload keystore + GitHub secrets, Firebase Android apps + google-services.json, Play Console forms, closed test (12 testers x 14 days), real-phone test.
