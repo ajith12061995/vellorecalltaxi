@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="ta">
+<head><script>/* anti-clickjacking (same guard as the apps) */if(window.top!==window.self&&!/^(localhost|127\.0\.0\.1)$/.test(location.hostname)){document.documentElement.style.display="none";try{window.top.location=window.self.location.href}catch(e){}}</script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Drivers Wanted · Vellore Taxi</title>
+<meta name="description" content="Vellore Taxi-ல் டிரைவராக சேருங்க — கமிஷன் 0% லாஞ்ச் ஆஃபர்.">
+<meta property="og:title" content="டிரைவர்கள் தேவை · Vellore Taxi">
+<meta property="og:description" content="கமிஷன் 0% லாஞ்ச் ஆஃபர். இப்போ சேருங்க: velloretaxi.app/driver/join">
+<meta property="og:image" content="https://velloretaxi.app/promo/drivers-wanted-1.jpg">
+<style>
+:root{--g:#0B4A36;--y:#FFC21A;--bg:#F4F7F5;--ink:#10241C}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans Tamil",sans-serif}
+header{background:var(--g);color:#fff;padding:18px 16px;text-align:center}
+header h1{margin:0;font-size:22px}header p{margin:6px 0 0;color:#CFE6DA;font-size:14px}
+main{max-width:1100px;margin:0 auto;padding:16px;display:grid;gap:20px;grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+figure{margin:0;background:#fff;border-radius:18px;overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,.08)}
+figure img{width:100%;display:block;aspect-ratio:1/1}
+.b{display:flex;gap:10px;padding:12px}
+.b a{flex:1;text-align:center;text-decoration:none;font-weight:700;padding:12px 10px;border-radius:12px;font-size:15px}
+.dl{background:var(--y);color:var(--g)}.wa{background:#1FA855;color:#fff}
+footer{text-align:center;padding:10px 16px 28px;font-size:14px}
+footer a{color:var(--g);font-weight:700}
+</style>
+</head>
+<body>
+<header><h1>டிரைவர்கள் தேவை · Drivers Wanted</h1><p>Poster-ஐ download செய்யுங்க அல்லது WhatsApp-ல் நேரா share பண்ணுங்க</p></header>
+<main>
+ <figure><img src="drivers-wanted-1.jpg" alt="Vellore Taxi — டிரைவர்களுக்கே முதலிடம்! கமிஷன் 0% லாஞ்ச் ஆஃபர்" loading="lazy">
+  <div class="b"><a class="dl" href="drivers-wanted-1.jpg" download>⬇ Download</a><a class="wa" data-share href="#">WhatsApp</a></div></figure>
+ <figure><img src="drivers-wanted-2.jpg" alt="Vellore Taxi — உங்க வண்டி. உங்க நேரம். உங்க வருமானம். கமிஷன் 0%" loading="lazy">
+  <div class="b"><a class="dl" href="drivers-wanted-2.jpg" download>⬇ Download</a><a class="wa" data-share href="#">WhatsApp</a></div></figure>
+</main>
+<footer>சேர: <a href="/driver/join/">velloretaxi.app/driver/join</a> · Call <a href="tel:+917200730416">72007 30416</a></footer>
+<script>
+const msg='Vellore Taxi-ல் டிரைவராக சேருங்க! கமிஷன் 0% (லாஞ்ச் ஆஃபர்). Join: https://velloretaxi.app/driver/join/ · Call 72007 30416';
+document.querySelectorAll('[data-share]').forEach(a=>a.addEventListener('click',async e=>{
+  e.preventDefault();const img=a.closest('figure').querySelector('img');
+  // phones that can share files send the poster itself; otherwise the message with the link
+  try{if(navigator.canShare){const r=await fetch(img.src);const f=new File([await r.blob()],img.src.split('/').pop(),{type:'image/jpeg'});
+    if(navigator.canShare({files:[f]})){await navigator.share({files:[f],text:msg});return}}}catch(err){if(err&&err.name==='AbortError')return}
+  location.href='https://wa.me/?text='+encodeURIComponent(msg);
+}));
+</script>
+</body>
+</html>
