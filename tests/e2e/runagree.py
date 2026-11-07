@@ -32,7 +32,7 @@ async def main():
         nm=await df.evaluate("DME.en")
         await D.locator('#agnm').fill(nm.lower());await D.locator('#agsv').click();await pg.wait_for_timeout(1200)
         c=(await pg.evaluate("MOCK.dump()['drivers/+919999900002']")).get('consent')
-        check('signature saved on the driver record',c and c.get('v')=='2026-11-03' and c.get('name')==nm.lower() and c.get('at'),str(c)[:120])
+        check('signature saved on the driver record',c and c.get('v')==await df.evaluate('VCTCHK.AGREEMENT.v') and c.get('name')==nm.lower() and c.get('at'),str(c)[:120])
         check('sign card gone',not await df.evaluate("!!document.getElementById('sgn')"))
         await D.locator('#ons').click();await pg.wait_for_timeout(1200)
         check('now goes online',await df.evaluate("S.online"))
