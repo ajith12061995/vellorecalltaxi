@@ -29,7 +29,7 @@
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('../vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV=window.VCT_V='72',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV=window.VCT_V='73',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('../version.json',location.href)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -701,11 +701,11 @@ details.faq p{margin:0;padding:0 14px 14px;color:var(--muted);font-size:14px;lin
 <div class="app" id="app"></div>
 <div class="toast" id="toast"></div>
 
-<script src="../core/report.js?v=72"></script>
-<script src="../core/geo.js?v=72"></script>
-<script src="../core/fare.js?v=72"></script>
-<script src="../core/driverchecks.js?v=72"></script>
-<script src="../core/map.js?v=72"></script>
+<script src="../core/report.js?v=73"></script>
+<script src="../core/geo.js?v=73"></script>
+<script src="../core/fare.js?v=73"></script>
+<script src="../core/driverchecks.js?v=73"></script>
+<script src="../core/map.js?v=73"></script>
 <script>
 /* shared with the customer app: icons, places, fares, map engine */
 const I = {
@@ -1791,7 +1791,11 @@ function settings(){
     if(i.classList.contains('ocfg'))c.out[i.id.slice(2)]=+i.value||0});
   app.querySelectorAll('.cell[data-f]').forEach(i=>i.oninput=()=>{i.value=i.value.replace(/\D/g,'').slice(0,5);const [v,k]=i.dataset.f.split('.');c.fares[v][k]=+i.value||0;app.querySelector(`[data-pv="${v}"]`).textContent=inr(fareO(v,5))});
   if(CL&&!CFGOK){['sv','ssv'].forEach(i=>{const b=document.getElementById(i);if(b){b.disabled=true;b.textContent=L('Settings ஏறுது…','Loading settings…')}})} // never save defaults over the real prices
-  document.getElementById('sv').onclick=()=>{if(CL&&!CFGOK)return;const cm=+document.getElementById('cm').value,mb=+document.getElementById('mb').value,of=document.getElementById('of').value.replace(/\D/g,''),up=document.getElementById('up').value.trim();
+  document.getElementById('sv').onclick=()=>{if(CL&&!CFGOK)return;
+    // a config update from Firebase while this screen is open swaps the fare objects underneath the inputs,
+    // so take every price from what is on screen right now, not from what was typed into the old objects
+    app.querySelectorAll('.cell[data-f],[data-o],[data-r],[data-cb],.ocfg').forEach(i=>{if(i.oninput)i.oninput()});
+    const cm=+document.getElementById('cm').value,mb=+document.getElementById('mb').value,of=document.getElementById('of').value.replace(/\D/g,''),up=document.getElementById('up').value.trim();
     if(!(cm>=0&&cm<=40)){toast(L('Commission 0 முதல் 40% வரை','Commission must be 0–40%'));return}
     if(up&&!/^[\w.\-]{2,}@[a-zA-Z]{2,}$/.test(up)){toast(L('UPI ID சரியா இல்லை (name@bank)','UPI ID looks wrong (name@bank)'));return}
     if(of&&!/^[6-9]\d{9}$/.test(of)){toast(L('Office நம்பர் 10 இலக்கம்','Office number must be 10 digits'));return}
