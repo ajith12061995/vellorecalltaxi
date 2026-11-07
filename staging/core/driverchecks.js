@@ -60,14 +60,14 @@ const VCTCHK = (() => {
   // The driver agreement (shown in the join form, signed by typing the full name; printable in the office).
   // Plain-language business terms; have a lawyer review before relying on it in a dispute.
   const AGREEMENT = {
-    v: '2026-11-03',
+    v: '2026-11-07',
     ta: [
       'நான் Vellore Taxi (VCT) app வழியா வரும் பயணங்களை என் சொந்த பொறுப்பில் ஓட்டும் தனி ஓட்டுநர் / வண்டி உரிமையாளர். VCT ஒரு booking தளம் மட்டுமே.',
       'என் ஓட்டுநர் உரிமம், RC, Insurance, Permit, FC எப்போதும் செல்லுபடியாக இருக்கும். காலாவதி ஆனால் புதுப்பிக்கும் வரை ride எடுக்க மாட்டேன்; புது copy-ஐ உடனே office-க்கு அனுப்புவேன்.',
       'மது / போதைப்பொருள் அருந்தி வண்டி ஓட்ட மாட்டேன். வேக வரம்பு, போக்குவரத்து விதிகள், seat belt, helmet விதிகளை பின்பற்றுவேன். ஓட்டும்போது phone பேச மாட்டேன்.',
       'பயணியிடம் (குறிப்பாக பெண்கள், குழந்தைகள், முதியோர்) மரியாதையாக நடப்பேன். தகாத பேச்சு, தொடுதல், மிரட்டல், கூடுதல் பணம் கேட்பது, வழி மாற்றுவது செய்ய மாட்டேன்.',
       'Customer-ன் phone நம்பர், முகவரி, பயண விவரங்களை அந்த பயணத்துக்கு மட்டுமே பயன்படுத்துவேன். பின்னர் அழைப்பது, message அனுப்புவது, பகிர்வது, நேரடி booking வாங்குவது செய்ய மாட்டேன்.',
-      'App காட்டும் கட்டணம், toll, parking மட்டுமே வாங்குவேன். ஒவ்வொரு trip-க்கும் VCT commission என் wallet-ல் இருந்து கழிக்கப்படுவதை ஏற்கிறேன்.',
+      'App காட்டும் கட்டணம், toll, parking மட்டுமே வாங்குவேன். ஒவ்வொரு trip-க்கும் VCT commission (சேவைக் கட்டணம்) என் wallet-ல் இருந்து கழிக்கப்படுவதை ஏற்கிறேன். இதன் அளவை VCT நிர்ணயிக்கும்; மாற்றம் இருந்தால் குறைந்தது 7 நாள் முன்பே app-ல் தெரிவிக்கப்படும். அறிமுகச் சலுகைகள் (எ.கா. 0% commission) அந்த அறிவிப்புடன் முடியலாம்.',
       'என் செயல்களால் ஏற்படும் விபத்து, சேதம், அபராதம், காவல் / நீதிமன்ற நடவடிக்கை, சட்டப்படியான பொறுப்பு எல்லாம் என்னுடையதும் / வண்டி உரிமையாளருடையதும் ஆகும். VCT-க்கு ஏற்படும் இழப்புக்கும் நான் பொறுப்பு.',
       'Police verification, document சரிபார்ப்பு, பின்னணி விசாரணைக்கு ஒப்புக்கொள்கிறேன். என் விவரங்களை சரிபார்ப்புக்காக VCT பயன்படுத்தலாம்.',
       'புகார், விதிமீறல், போலி document, தொடர் ரத்து இருந்தால் VCT என் account-ஐ எந்த நேரத்திலும் நிறுத்தலாம் / நீக்கலாம்.',
@@ -78,7 +78,7 @@ const VCTCHK = (() => {
       'I will never drive after drinking alcohol or taking drugs. I will follow speed limits, traffic rules, seat belt and helmet rules, and will not use the phone while driving.',
       'I will treat every passenger (especially women, children and the elderly) with respect. No abusive talk, touching, threats, asking for extra money or changing the route.',
       'I will use a customer\'s phone number, address and trip details only for that trip. I will not call, message, share them later or take direct bookings from them.',
-      'I will collect only the fare, toll and parking shown in the app. I accept that VCT\'s commission for each trip is taken from my wallet.',
+      'I will collect only the fare, toll and parking shown in the app. I accept that VCT\'s commission for each trip is taken from my wallet. VCT sets the rate; any change will be shown in the app at least 7 days in advance, and launch offers (for example 0% commission) may end with that notice.',
       'Accidents, damage, fines, police or court action and any legal liability caused by my actions are mine and/or the vehicle owner\'s. I am also responsible for any loss caused to VCT.',
       'I agree to police verification, document checks and background checks. VCT may use my details for these checks.',
       'VCT may suspend or remove my account at any time for complaints, rule breaking, false documents or repeated cancellations.',
