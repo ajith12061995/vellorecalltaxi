@@ -39,7 +39,7 @@
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('./vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV=window.VCT_V='74',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV=window.VCT_V='75',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('./version.json',location.href)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -536,13 +536,13 @@ details.faq p{margin:0;padding:0 14px 14px;color:var(--muted);font-size:14px;lin
 <div class="app" id="app"></div>
 <div class="toast" id="toast"></div>
 
-<script src="./core/report.js?v=74"></script>
-<script src="./core/geo.js?v=74"></script>
-<script src="./core/fare.js?v=74"></script>
-<script src="./core/pin.js?v=74"></script>
-<script src="./core/clock.js?v=74"></script>
-<script src="./core/map.js?v=74"></script>
-<script src="./core/chat.js?v=74"></script>
+<script src="./core/report.js?v=75"></script>
+<script src="./core/geo.js?v=75"></script>
+<script src="./core/fare.js?v=75"></script>
+<script src="./core/pin.js?v=75"></script>
+<script src="./core/clock.js?v=75"></script>
+<script src="./core/map.js?v=75"></script>
+<script src="./core/chat.js?v=75"></script>
 <script>
 /* ---------- icons ---------- */
 const I = {
