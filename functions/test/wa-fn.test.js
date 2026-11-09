@@ -76,17 +76,18 @@ test('number comes from the booking when there is no private contact; English cu
   assert.strictEqual(sent[0].body.template.components[0].parameters[2].text, 'Katpadi');
 });
 
-test('driver assigned → PIN from private/pin; a new driver after a cancel gets its own message', async () => {
+test('driver assigned → driver details (never the ride PIN); a new driver after a cancel gets its own message', async () => {
   reset(); store.set('waConfig/main', { on: true, phoneId: '1' });
   store.set('bookings/b3/private/contact', { custPhone: '+919944640416' }); store.set('bookings/b3/private/pin', { pin: '4821' });
   const a = { ...BK, status: 'assigned', driverPhone: '+919999900002', driverName: 'Suresh P', plate: 'TN 23 CA 2108', vehModel: 'Swift' };
   await F.waBooking(ev('b3', { ...BK, status: 'searching' }, a));
-  assert.strictEqual(sent[0].body.template.name, 'vct_driver_assigned_pin');
-  assert.deepStrictEqual(sent[0].body.template.components[0].parameters.map(p => p.text), ['Priya', 'Suresh P', 'Swift · TN 23 CA 2108', '4821', 'B3']);
+  assert.strictEqual(sent[0].body.template.name, 'vct_driver_assigned');
+  assert.deepStrictEqual(sent[0].body.template.components[0].parameters.map(p => p.text), ['Priya', 'Suresh P', 'Swift · TN 23 CA 2108', 'B3']);
+  assert.ok(!JSON.stringify(sent[0].body).includes('4821'));
   await F.waBooking(ev('b3', { ...BK, status: 'searching' }, a)); assert.strictEqual(sent.length, 1, 'retry: no second message');
   await F.waBooking(ev('b3', { ...BK, status: 'searching' }, { ...a, driverPhone: '+919999900077', driverName: 'Ravi' }));
   assert.strictEqual(sent.length, 2); assert.ok(store.has('waLog/b3_assigned_0002') && store.has('waLog/b3_assigned_0077'));
-  // office phone booking without PIN → template without PIN
+  // office phone booking made straight to a driver
   reset(); store.set('waConfig/main', { on: true, phoneId: '1' });
   await F.waBooking(ev('b4', null, { custName: 'Kumar', custPhone: '+919944640416', src: 'office', status: 'assigned', driverPhone: '+919999900002', driverName: 'Suresh', plate: 'TN23' }));
   assert.strictEqual(sent.length, 1); assert.strictEqual(sent[0].body.template.name, 'vct_driver_assigned');

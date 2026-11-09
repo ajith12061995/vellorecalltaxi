@@ -7,7 +7,6 @@ const crypto = require('crypto');
 // Template names (created and approved in WhatsApp Manager — same names in Tamil "ta" and English "en")
 const TPL = {
   confirmed: 'vct_booking_confirmed',      // 1 name · 2 vehicle · 3 pickup · 4 time · 5 fare · 6 booking no.
-  assignedPin: 'vct_driver_assigned_pin',  // 1 name · 2 driver · 3 car + number plate · 4 ride PIN · 5 booking no.
   assigned: 'vct_driver_assigned',         // 1 name · 2 driver · 3 car + number plate · 4 booking no.
   ontrip: 'vct_trip_started',              // 1 name · 2 number plate · 3 help phone
   done: 'vct_trip_completed',              // 1 name · 2 fare · 3 booking no.
@@ -63,7 +62,7 @@ const place = (p, ta) => p ? ((ta ? p.ta || p.en : p.en || p.ta) || p.name || ''
 const money = v => { const x = Math.round(+v || 0); return x > 0 ? x.toLocaleString('en-IN') : '-'; };
 
 /* The message body for Graph API POST /{phone-number-id}/messages.
-   b = booking, id = booking id, o = { to, lang, pin, help, office, now } */
+   b = booking, id = booking id, o = { to, lang, office, now } */
 function waMessage(kind, b, id, o) {
   const ta = o.lang !== 'en', name = clean(b.custName || (ta ? 'வாடிக்கையாளர்' : 'Customer'), 40), ref = ref6(id);
   const veh = clean(ta ? (b.vehTa || b.vehEn || b.veh) : (b.vehEn || b.vehTa || b.veh));
@@ -73,9 +72,9 @@ function waMessage(kind, b, id, o) {
     const when = b.status === 'scheduled' || OFFER.includes(b.kind) ? istTime(b.when || o.now) : (ta ? 'இப்போதே' : 'Now');
     tpl = TPL.confirmed; p = [name, veh, clean(place(b.from, ta)), when, money(b.fare), ref];
   } else if (kind === 'assigned') {
-    const pin = /^\d{4}$/.test(String(o.pin || '')) ? String(o.pin) : null;
-    tpl = pin ? TPL.assignedPin : TPL.assigned;
-    p = pin ? [name, clean(b.driverName, 40), car, pin, ref] : [name, clean(b.driverName, 40), car, ref];
+    // no ride PIN here: Meta classes a template with a PIN as an OTP/authentication message and rejects it.
+    // App customers see the PIN in the app; phone bookings have no PIN.
+    tpl = TPL.assigned; p = [name, clean(b.driverName, 40), car, ref];
   } else if (kind === 'ontrip') { tpl = TPL.ontrip; p = [name, clean(b.plate), clean(o.help || o.office)]; }
   else if (kind === 'done') { tpl = TPL.done; p = [name, money(b.fareFinal || b.fare), ref]; }
   else if (kind === 'cancelled') { tpl = TPL.cancelled; p = [name, ref, clean(o.office)]; }

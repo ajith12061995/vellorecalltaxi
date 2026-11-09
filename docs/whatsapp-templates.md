@@ -1,6 +1,6 @@
 # WhatsApp message templates (Meta → WhatsApp Manager → Message templates)
 
-Category: **Utility** for all. Each name is created twice: language **Tamil (ta)** and **English (en)**.
+Category: **Utility** for all. Submitted 9 Nov 2026 to WhatsApp account 979987628508850. Each name is created twice: language **Tamil (ta)** and **English (en)**.
 Variables are filled by `functions/lib/wa.js` (`waMessage`) in exactly this order. Meta rule: a template body must not
 start or end with a variable, so every body starts with "வணக்கம்" / "Hello" and ends with fixed text.
 
@@ -27,35 +27,15 @@ We will message you here when a driver is assigned.
 ```
 Samples: Priya · Mini · Katpadi · 10 Nov, 9:30 AM · 450 · AB12CD
 
-## vct_driver_assigned_pin — 1 name · 2 driver · 3 car + plate · 4 ride PIN · 5 booking no.
-**ta**
-```
-வணக்கம் {{1}}, உங்க ride-க்கு driver ரெடி.
-Driver: {{2}}
-வண்டி: {{3}}
-Ride PIN: {{4}}
-Booking எண்: {{5}}
-பயணம் ஆரம்பிக்கும்போது மட்டும் PIN-ஐ driver-கிட்ட சொல்லுங்க.
-```
-**en**
-```
-Hello {{1}}, your driver is on the way.
-Driver: {{2}}
-Vehicle: {{3}}
-Ride PIN: {{4}}
-Booking no.: {{5}}
-Tell the PIN to the driver only when the trip starts.
-```
-Samples: Priya · Suresh P · Swift · TN 23 CA 2108 · 4821 · AB12CD
-
-## vct_driver_assigned — same without the PIN (office phone bookings) — 1 name · 2 driver · 3 car + plate · 4 booking no.
+## vct_driver_assigned — 1 name · 2 driver · 3 car + plate · 4 booking no.
+(No ride PIN: Meta classes a template with "PIN" as an OTP/authentication message. App customers see the PIN in the app.)
 **ta**
 ```
 வணக்கம் {{1}}, உங்க ride-க்கு driver ரெடி.
 Driver: {{2}}
 வண்டி: {{3}}
 Booking எண்: {{4}}
-Driver சீக்கிரம் உங்களை அழைப்பார்.
+தேவைப்பட்டா driver உங்களை அழைப்பார்.
 ```
 **en**
 ```
@@ -63,7 +43,7 @@ Hello {{1}}, your driver is on the way.
 Driver: {{2}}
 Vehicle: {{3}}
 Booking no.: {{4}}
-The driver will call you shortly.
+The driver will call you if needed.
 ```
 
 ## vct_trip_started — 1 name · 2 number plate · 3 help phone

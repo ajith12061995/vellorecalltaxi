@@ -281,9 +281,7 @@ exports.waBooking = onDocumentWritten({ document: 'bookings/{id}', secrets: [WA_
     const lref = db.doc(`waLog/${key}`);
     try { await lref.create({ bookingId: id, kind, to, status: 'sending', at: FV.serverTimestamp() }); }
     catch (e) { if (e.code === 6 || /ALREADY_EXISTS/i.test(e.message || '')) continue; throw e; }
-    let pin = null;
-    if (kind === 'assigned') { const p = await ref.collection('private').doc('pin').get().catch(() => null); pin = p && p.exists ? p.data().pin : null; }
-    const msg = W.waMessage(kind, after, id, { to, lang, pin, office: c.office || '', now: Date.now() });
+    const msg = W.waMessage(kind, after, id, { to, lang, office: c.office || '', now: Date.now() });
     const r = await waSend(w, msg);
     await lref.update({ ...r, tpl: msg.template.name, lang, updatedAt: FV.serverTimestamp() });
     if (r.wamid) await db.doc(`waMsgs/${waKey(r.wamid)}`).set({ log: key, at: FV.serverTimestamp() });

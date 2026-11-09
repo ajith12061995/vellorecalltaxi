@@ -52,11 +52,9 @@ test('waMessage: templates and values', () => {
   m = W.waMessage('confirmed', { ...B, status: 'searching', kind: undefined, src: 'office' }, 'x1', { to: '1', lang: 'en', now: 0 });
   assert.strictEqual(m.template.language.code, 'en'); assert.deepStrictEqual(params(m).slice(1, 4), ['Mini', 'New Bus Stand', 'Now']);
   m = W.waMessage('assigned', B, 'abcdef', { to: '1', lang: 'ta', pin: '4821' });
-  assert.strictEqual(m.template.name, 'vct_driver_assigned_pin'); assert.deepStrictEqual(params(m), ['Priya', 'Suresh P', 'Swift · TN 23 CA 2108', '4821', 'ABCDEF']);
-  m = W.waMessage('assigned', B, 'abcdef', { to: '1', lang: 'ta', pin: null });
-  assert.strictEqual(m.template.name, 'vct_driver_assigned'); assert.deepStrictEqual(params(m), ['Priya', 'Suresh P', 'Swift · TN 23 CA 2108', 'ABCDEF']);
-  m = W.waMessage('assigned', B, 'abcdef', { to: '1', pin: '48a1' });
-  assert.strictEqual(m.template.name, 'vct_driver_assigned', 'a bad PIN is never sent');
+  assert.strictEqual(m.template.name, 'vct_driver_assigned', 'never a PIN template (Meta rejects PIN in utility templates)');
+  assert.deepStrictEqual(params(m), ['Priya', 'Suresh P', 'Swift · TN 23 CA 2108', 'ABCDEF']);
+  assert.ok(!JSON.stringify(m).includes('4821'), 'the ride PIN is never sent on WhatsApp');
   m = W.waMessage('ontrip', B, 'abcdef', { to: '1', office: '7200730416' });
   assert.deepStrictEqual(params(m), ['Priya', 'TN 23 CA 2108', '7200730416']);
   m = W.waMessage('done', { ...B, fare: 2280, fareFinal: 2410 }, 'abcdef', { to: '1' });
