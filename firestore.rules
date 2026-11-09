@@ -170,6 +170,36 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // Public website (velloretaxi.app/vellore/): anyone can read; only the owner changes it from Office → Settings.
+    //   public/site   = contact numbers, address, places (text); siteImg/{id} = one place photo (compressed JPEG, < 900 KB)
+    //   public/prices = a copy of the price fields of config/app (config/app itself also holds private data)
+    match /public/{doc} {
+      allow read: if true;
+      allow write: if isOwner() && (
+        (doc == 'site' && newData().keys().hasOnly(['phone', 'driverPhone', 'whatsapp', 'email', 'address', 'places', 'updatedAt'])
+          && (!('places' in newData()) || (newData().places is list && newData().places.size() <= 24)))
+        || (doc == 'prices' && newData().keys().hasOnly(['fares', 'out', 'rent', 'night', 'area', 'updatedAt'])));
+    }
+    match /siteImg/{id} {
+      allow read: if true;
+      allow create, update: if isOwner() && newData().keys().hasOnly(['data', 'at'])
+        && newData().data is string && newData().data.size() < 900000 && newData().data.matches('^data:image/(jpeg|webp);base64,[A-Za-z0-9+/=]+$');
+      allow delete: if isOwner();
+    }
+    // Website contact form: anyone may send one enquiry (checked fields only); the office reads and handles them
+    match /enquiries/{id} {
+      allow create: if newData().keys().hasOnly(['name', 'phone', 'kind', 'msg', 'status', 'src', 'createdAt'])
+        && newData().name is string && newData().name.size() >= 2 && newData().name.size() <= 60
+        && newData().phone is string && newData().phone.matches('^[6-9][0-9]{9}$')
+        && newData().kind in ['ride', 'outstation', 'rental', 'event', 'corporate', 'driver', 'other']
+        && newData().msg is string && newData().msg.size() <= 500
+        && newData().status == 'open' && newData().src == 'web' && newData().createdAt == request.time;
+      allow read: if isStaff();
+      allow update: if isStaff() && newData().diff(resource.data).affectedKeys().hasOnly(['status', 'note', 'handledBy', 'updatedAt'])
+        && newData().status in ['open', 'progress', 'closed'];
+      allow delete: if isOwner();
+    }
+
     // Driver applications from the "join" page — the applicant fills it, the owner approves
     match /driverApps/{ph} {
       allow read: if isStaff() || (signedIn() && phone() == ph);

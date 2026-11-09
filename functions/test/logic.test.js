@@ -196,3 +196,10 @@ test('outstation category A: round trip only, up + down km, no per-day minimum, 
   const B = L.outCheck({ ...ok, to: { lat: 13.6288, lon: 79.4192 }, otype: 'one', fare: 1, tariff: { t: 'out', otype: 'one', km: 115 } }, { out: { ...c.out, cb: { B: { sedan: 500 } } } });
   assert.equal(B.tariff.otype, 'one'); assert.equal(B.tariff.cat, 'B'); assert.equal(B.tariff.bata, 500);
 });
+
+test('enquiryFlood: more than 3 from one number or 40 in total per hour', () => {
+  assert.strictEqual(L.enquiryFlood(1, 1), null);
+  assert.strictEqual(L.enquiryFlood(3, 40), null);
+  assert.match(L.enquiryFlood(4, 4), /more than 3/);
+  assert.match(L.enquiryFlood(1, 41), /more than 40/);
+});

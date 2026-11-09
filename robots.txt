@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Disallow: /office/
+Disallow: /staging/
+Sitemap: https://velloretaxi.app/sitemap.xml
