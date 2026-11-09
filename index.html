@@ -1899,7 +1899,10 @@ function watchConfig(){
   if(CFGUNSUB)return;
   CFGUNSUB=F().onSnapshot(F().doc(CL.db,'config','app'),s=>{if(!s.exists())return;const d=s.data();
     if(d.fares)VEH.forEach(v=>{const f=d.fares[v.id];if(f&&v.id!=='auto'){if(f.base!=null)v.base=+f.base;if(f.per!=null)v.per=+f.per}});
-    CFG.area=d.area||null;CFG.upi=d.upi||'';CFG.office=d.office||'';CFG.push=d.push||null;CFG.night=d.night||null;if(CUID&&pushReadyC()&&Notification.permission==='granted')enablePushC(false);CFG.privPhone=!!d.privPhone;CFG.serverPin=!!d.serverPin;CFG.comm=d.comm!=null?+d.comm:10;CFG.wait=d.wait||null;CFG.blocked=Array.isArray(d.blocked)?d.blocked:[];{const had=VEH.includes(BIKE);setBike(!!d.showBike);if(had!==VEH.includes(BIKE)&&S.tab==='home'&&document.querySelector('.vrow')&&!document.querySelector('.modal'))home(S.mode||undefined)}if(d.dispatch)Object.assign(DISPC,d.dispatch);applyTariff(d)},()=>{});
+    CFG.area=d.area||null;CFG.upi=d.upi||'';CFG.office=d.office||'';CFG.push=d.push||null;CFG.night=d.night||null;CFG.privPhone=!!d.privPhone;CFG.serverPin=!!d.serverPin;CFG.comm=d.comm!=null?+d.comm:10;CFG.wait=d.wait||null;CFG.blocked=Array.isArray(d.blocked)?d.blocked:[];{const had=VEH.includes(BIKE);setBike(!!d.showBike);if(had!==VEH.includes(BIKE)&&S.tab==='home'&&document.querySelector('.vrow')&&!document.querySelector('.modal'))home(S.mode||undefined)}if(d.dispatch)Object.assign(DISPC,d.dispatch);applyTariff(d);
+    // refresh the browser push token last: Android WebView has no window.Notification (the app uses native push),
+    // and reading it there used to throw before the outstation prices and settings above were applied
+    try{if(CUID&&!NATIVEC()&&pushReadyC()&&typeof Notification!=='undefined'&&Notification.permission==='granted')enablePushC(false)}catch(e){}},()=>{});
   F().getDoc(F().doc(CL.db,'blocked','+91'+S.phone)).then(x=>{MEBLK=x.exists()}).catch(()=>{}); // only my own entry is readable
   if(CUID)VCTCLK.sync(F(),F().doc(CL.db,'users',CUID)); // learn the server time once
   watchMyB();
