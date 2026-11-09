@@ -170,6 +170,25 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // WhatsApp (Meta Cloud API): settings — owner only (test numbers and the phone id are not for every app user)
+    match /waConfig/{doc} {
+      allow read: if isStaff();
+      allow write: if isOwner() && doc == 'main'
+        && newData().keys().hasOnly(['on', 'phoneId', 'testTo', 'kinds', 'ver', 'updatedAt'])
+        && newData().on is bool
+        && (!('phoneId' in newData()) || (newData().phoneId is string && newData().phoneId.matches('^[0-9]{0,25}$')))
+        && (!('testTo' in newData()) || (newData().testTo is list && newData().testTo.size() <= 5))
+        && (!('kinds' in newData()) || (newData().kinds is list && newData().kinds.size() <= 5));
+    }
+    // message log and customer replies: written only by the server; the office reads them and marks replies seen
+    match /waLog/{id} {
+      allow read: if isStaff();
+    }
+    match /waInbox/{id} {
+      allow read: if isStaff();
+      allow update: if isStaff() && newData().diff(resource.data).affectedKeys().hasOnly(['seen']) && newData().seen is bool;
+    }
+
     // Driver applications from the "join" page — the applicant fills it, the owner approves
     match /driverApps/{ph} {
       allow read: if isStaff() || (signedIn() && phone() == ph);

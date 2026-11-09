@@ -283,3 +283,35 @@ test('attack: an applicant can upload only the join-form document slots, each un
   await assertFails(setDoc(doc(as.cust(), 'driverApps', CPH, 'files', 'photo'), { data: 'x'.repeat(1000001) }));
   await assertFails(setDoc(doc(as.other(), 'driverApps', CPH, 'files', 'photo'), { data: 'x' }));
 });
+
+// ---- WhatsApp settings / log / replies
+test('WhatsApp settings: owner writes, staff reads, drivers and customers cannot read the test numbers', async () => {
+  await assertSucceeds(setDoc(doc(as.owner(), 'waConfig', 'main'), { on: false, phoneId: '1234567890', testTo: ['9944640416'], kinds: ['done'], updatedAt: serverTimestamp() }));
+  await assertSucceeds(getDoc(doc(as.staff(), 'waConfig', 'main')));
+  await assertFails(setDoc(doc(as.staff(), 'waConfig', 'main'), { on: true }));
+  await assertFails(getDoc(doc(as.drv(), 'waConfig', 'main')));
+  await assertFails(getDoc(doc(as.cust(), 'waConfig', 'main')));
+  await assertFails(getDoc(doc(as.anon(), 'waConfig', 'main')));
+  await assertFails(setDoc(doc(as.owner(), 'waConfig', 'main'), { on: 'yes' }), 'on must be true/false');
+  await assertFails(setDoc(doc(as.owner(), 'waConfig', 'main'), { on: true, token: 'EAAG…' }), 'no tokens in the database');
+  await assertFails(setDoc(doc(as.owner(), 'waConfig', 'main'), { on: true, phoneId: 'abc' }));
+  await assertFails(setDoc(doc(as.owner(), 'waConfig', 'other'), { on: true }));
+  await assertFails(setDoc(doc(as.owner(), 'waConfig', 'main'), { on: true, testTo: ['1', '2', '3', '4', '5', '6'] }));
+});
+test('WhatsApp log and replies: server writes, office reads, office only marks replies seen', async () => {
+  await seed(async db => {
+    await setDoc(doc(db, 'waLog', 'b1_done'), { bookingId: 'b1', to: '919999900001', status: 'read' });
+    await setDoc(doc(db, 'waInbox', 'm1'), { from: '919999900001', text: 'hi', seen: false });
+  });
+  await assertSucceeds(getDoc(doc(as.staff(), 'waLog', 'b1_done')));
+  await assertFails(getDoc(doc(as.drv(), 'waLog', 'b1_done')));
+  await assertFails(getDoc(doc(as.cust(), 'waLog', 'b1_done')));
+  await assertFails(setDoc(doc(as.owner(), 'waLog', 'x'), { status: 'read' }));
+  await assertFails(updateDoc(doc(as.owner(), 'waLog', 'b1_done'), { status: 'failed' }));
+  await assertSucceeds(getDoc(doc(as.staff(), 'waInbox', 'm1')));
+  await assertFails(getDoc(doc(as.cust(), 'waInbox', 'm1')));
+  await assertSucceeds(updateDoc(doc(as.staff(), 'waInbox', 'm1'), { seen: true }));
+  await assertFails(updateDoc(doc(as.staff(), 'waInbox', 'm1'), { text: 'changed' }));
+  await assertFails(setDoc(doc(as.owner(), 'waInbox', 'm2'), { from: '1', text: 'fake' }));
+  await assertFails(getDoc(doc(as.owner(), 'waMsgs', 'k')));
+});

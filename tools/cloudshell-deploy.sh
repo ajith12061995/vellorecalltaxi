@@ -54,5 +54,11 @@ npx --yes firebase-tools@13 use "$PROJECT"
 
 say "6/6 Deploy security rules + functions"
 echo "If it asks to DELETE anything → answer N.  If it asks about a cleanup policy for images → press Enter (default)."
-npx --yes firebase-tools@13 deploy --only firestore:rules,functions --project "$PROJECT"
+# WhatsApp functions need their secrets in Secret Manager (tools/cloudshell-whatsapp.sh); without them deploy the rest only
+if gcloud secrets describe WA_TOKEN >/dev/null 2>&1 && gcloud secrets describe WA_APP_SECRET >/dev/null 2>&1 && gcloud secrets describe WA_VERIFY_TOKEN >/dev/null 2>&1; then
+  npx --yes firebase-tools@13 deploy --only firestore:rules,functions --project "$PROJECT"
+else
+  echo "(WhatsApp secrets not set yet — WhatsApp functions skipped)"
+  npx --yes firebase-tools@13 deploy --only firestore:rules,functions:onBookingDone,functions:housekeeping,functions:onBookingCreated,functions:onBookingCust,functions:deleteMyAccount,functions:purgeDriver,functions:verifyPin,functions:dailyBackup --project "$PROJECT"
+fi
 say "DONE. Send Claude a screenshot of the last 15 lines. Do NOT turn on the switches yet."

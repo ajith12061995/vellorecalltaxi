@@ -28,4 +28,6 @@ jobs:
         run: |
           (cd functions && npm install --no-audit --no-fund)
           printf 'FN_REGION=asia-south1\nBACKUP_BUCKET=emulator-none\n' > functions/.env.demo-vct
+          # dummy WhatsApp secrets for the emulator (real ones live only in Google Secret Manager)
+          printf 'WA_TOKEN=ci-dummy\nWA_APP_SECRET=ci-dummy\nWA_VERIFY_TOKEN=ci-dummy\n' > functions/.secret.local
           cd tests/fnint && npm install --no-audit --no-fund && npm test

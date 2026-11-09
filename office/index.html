@@ -1711,6 +1711,35 @@ async function reports(){
 
 /* ---------- settings ---------- */
 let CFGOK=false; // the saved settings (config/app) have arrived from Firebase
+/* WhatsApp (Meta Cloud API) — owner only. Settings in waConfig/main (the server sends; this screen only switches it
+   and shows what was sent). Test numbers: while the list has numbers, ONLY those numbers get messages. */
+const WAK=[['confirmed','Booking உறுதி','Booking confirmed'],['assigned','Driver ஒதுக்கீடு','Driver assigned'],['ontrip','பயணம் ஆரம்பம்','Trip started'],['done','பயணம் முடிவு','Trip completed'],['cancelled','Cancel','Cancelled']];
+const WAST={sending:['அனுப்புது','Sending'],accepted:['அனுப்பியாச்சு','Sent to Meta'],sent:['போச்சு ✓','Sent ✓'],delivered:['சேர்ந்தது ✓✓','Delivered ✓✓'],read:['படிச்சாங்க 🔵','Read 🔵'],failed:['தோல்வி ❌','Failed ❌']};
+function waPanel(){const el=document.getElementById('wab');if(!el||!CL)return;el.textContent='…';
+  F().getDoc(F().doc(CL.db,'waConfig','main')).then(s=>{const w=s.exists()?s.data():{},ks=Array.isArray(w.kinds)?w.kinds:WAK.map(k=>k[0]);
+    el.innerHTML=`<p class="muted" style="margin:0 0 8px">${L('Customer-க்கு booking தகவல் WhatsApp-ல போகும் (Meta Cloud API). Server-ல secrets வச்ச பிறகு மட்டும் ON பண்ணுங்க.','Booking updates go to customers on WhatsApp (Meta Cloud API). Turn on only after the server secrets are set.')}</p>
+    <label class="lrow2"><span>${L('WhatsApp மெசேஜ் அனுப்பு','Send WhatsApp messages')}</span><input type="checkbox" id="wao" ${w.on===true?'checked':''} style="width:22px;height:22px"></label>
+    <label class="lrow2"><span>Phone number ID (Meta)</span><input id="wapid" class="selbox" style="max-width:220px" inputmode="numeric" maxlength="25" value="${esc(w.phoneId||'')}"></label>
+    <label class="lrow2"><span>${L('Test நம்பர்கள் (இருந்தா இவங்களுக்கு மட்டும்; காலி = எல்லா customer-க்கும்)','Test numbers (if set, only these; empty = every customer)')}</span><input id="watt" class="selbox" style="max-width:260px" maxlength="80" placeholder="9944xxxxxx, 7200xxxxxx" value="${esc((w.testTo||[]).join(', '))}"></label>
+    <div style="display:flex;flex-wrap:wrap;gap:10px;margin:6px 0 10px">${WAK.map(k=>`<label style="display:flex;gap:6px;align-items:center"><input type="checkbox" data-wak="${k[0]}" ${ks.includes(k[0])?'checked':''}>${L(k[1],k[2])}</label>`).join('')}</div>
+    <button class="btn sm" id="wasv">${L('சேமி','Save')}</button>
+    <h4 style="margin:14px 0 4px">${L('கடைசி 30 மெசேஜ்','Last 30 messages')}</h4><div id="walog" class="muted">…</div>
+    <h4 style="margin:14px 0 4px">${L('Customer பதில்கள்','Customer replies')}</h4><div id="wain" class="muted">…</div>`;
+    document.getElementById('wasv').onclick=()=>{
+      const pid=document.getElementById('wapid').value.replace(/\D/g,''),on=document.getElementById('wao').checked;
+      const tt=document.getElementById('watt').value.split(/[,;]+/).map(x=>x.replace(/\D/g,'').replace(/^91(?=\d{10}$)/,'')).filter(Boolean);
+      if(tt.some(x=>!/^[6-9]\d{9}$/.test(x))){toast(L('Test நம்பர் 10 இலக்கமா இருக்கணும்','Test numbers must be 10-digit mobiles'));return}
+      if(tt.length>5){toast(L('Test நம்பர் 5 வரை மட்டும்','Up to 5 test numbers'));return}
+      if(on&&!pid){toast(L('ON பண்ண Phone number ID வேணும்','Phone number ID is needed to turn it on'));return}
+      const kinds=[...el.querySelectorAll('[data-wak]')].filter(x=>x.checked).map(x=>x.dataset.wak);
+      cw(F().setDoc(F().doc(CL.db,'waConfig','main'),{on,phoneId:pid,testTo:tt,kinds,updatedAt:ts()}).then(()=>toast(on?(tt.length?L('சேமிச்சாச்சு — test நம்பர்களுக்கு மட்டும்','Saved — test numbers only'):L('சேமிச்சாச்சு — எல்லா customer-க்கும் போகும்','Saved — goes to every customer')):L('சேமிச்சாச்சு — OFF','Saved — off'))))};
+    const lg=document.getElementById('walog'),inb=document.getElementById('wain'),t=x=>x&&x.toDate?x.toDate().toLocaleString('en-IN'):'';
+    F().getDocs(F().query(F().collection(CL.db,'waLog'),F().orderBy('at','desc'),F().limit(30))).then(q=>{const r=q.docs.map(d=>d.data());
+      lg.innerHTML=r.length?r.map(x=>{const k=WAK.find(y=>y[0]===x.kind),st=WAST[x.status]||[x.status,x.status];return `<div style="padding:5px 0;border-bottom:1px solid var(--line)"><b>${esc(k?L(k[1],k[2]):x.kind)}</b> · ${esc('+'+String(x.to||'').replace(/^91/,'91 '))} · ${esc(L(st[0],st[1]))} · ${esc(t(x.at))}<br><small>Booking ${esc(String(x.bookingId||'').slice(0,6).toUpperCase())}${x.error?` · <span style="color:var(--danger,#c00)">${esc(x.error)}</span>`:''}</small></div>`}).join(''):L('இன்னும் எதுவும் அனுப்பலை','Nothing sent yet')}).catch(e=>{lg.textContent=CL.errText(e,S.lang==='ta')});
+    F().getDocs(F().query(F().collection(CL.db,'waInbox'),F().orderBy('at','desc'),F().limit(20))).then(q=>{
+      inb.innerHTML=q.docs.length?q.docs.map(d=>{const x=d.data();return `<div style="padding:5px 0;border-bottom:1px solid var(--line);${x.seen?'':'font-weight:700'}">${esc(x.name||'')} · <a href="tel:+${esc(x.from)}">+${esc(x.from)}</a> · ${esc(t(x.at))}<br>${esc(x.text||('['+x.type+']'))} ${x.seen?'':`<button class="btn ghost sm" data-was="${esc(d.id)}">${L('பார்த்தாச்சு','Mark seen')}</button>`}</div>`}).join(''):L('பதில் எதுவும் இல்லை','No replies');
+      inb.querySelectorAll('[data-was]').forEach(b=>b.onclick=()=>cw(F().updateDoc(F().doc(CL.db,'waInbox',b.dataset.was),{seen:true}).then(()=>waPanel())))}).catch(e=>{inb.textContent=CL.errText(e,S.lang==='ta')});
+  }).catch(e=>{el.textContent=e&&e.code==='permission-denied'?L('புது rules publish ஆன பிறகு தான் தெரியும்','Visible after the new rules are published'):CL.errText(e,S.lang==='ta')})}
 function settings(){
   const c=DB.cfg;
   main().innerHTML=`${head('Settings',L('இங்கே மாத்தினது Customer, Driver app-ல Firebase connect ஆனதும் தெரியும்','Changes reach the customer and driver apps once Firebase is connected'),`<button class="btn yellow hd" id="sv">${L('சேமி','Save')}</button>`)}
@@ -1772,7 +1801,8 @@ function settings(){
     <label class="lrow2"><span>${L('Navigation: பழைய முறை — Google Maps app-ல திற (app-க்குள்ள navigation-ல பிரச்சனை வந்தா மட்டும்)','Navigation: old way — open the Google Maps app (only if in-app navigation has problems)')}</span><input type="checkbox" id="sxn" ${c.extNav?'checked':''} style="width:22px;height:22px"></label>
     <label class="lrow2"><span>${L('Push notification web key (VAPID)','Push notification web key (VAPID)')}</span><input id="svp" class="selbox" style="max-width:260px" maxlength="120" value="${esc((c.push&&c.push.vapid)||'')}" placeholder="B..."></label>
     <button class="btn sm" id="ssv">${L('சேமி','Save')}</button>
-    <div class="ph" style="margin-top:14px"><h3>🐞 ${L('App பிழைகள் (கடைசி 30)','App errors (last 30)')}</h3><button class="btn ghost sm" id="err">${L('பார்','Load')}</button></div><div id="errl" class="muted" style="font-size:12.5px"></div></section>`:''}
+    <div class="ph" style="margin-top:14px"><h3>🐞 ${L('App பிழைகள் (கடைசி 30)','App errors (last 30)')}</h3><button class="btn ghost sm" id="err">${L('பார்','Load')}</button></div><div id="errl" class="muted" style="font-size:12.5px"></div>
+    <div class="ph" style="margin-top:14px"><h3>💬 WhatsApp</h3><button class="btn ghost sm" id="wal">${L('பார்','Load')}</button></div><div id="wab" style="font-size:13px"></div></section>`:''}
    <section class="panel" style="margin-top:14px"><div class="ph"><h3>📢 ${L('Drivers-க்கு அறிவிப்பு','Notice to drivers')}</h3></div>
     <p class="muted" style="margin:0 0 8px;font-size:13px">${L('எல்லா drivers app-லயும் ☰ → அறிவிப்புகள்-ல வரும், ஒலியோட. உதா: "இன்று மாலை Katpadi-ல booking அதிகம்", "நாளை office லீவு".','Shows in every driver app under ☰ → Notifications, with a sound. e.g. "Busy at Katpadi this evening", "Office closed tomorrow".')}</p>
     <div class="field" style="height:50px"><input id="ant" maxlength="60" placeholder="${L('தலைப்பு','Title')}"></div>
@@ -1819,6 +1849,7 @@ function settings(){
   {const sv=document.getElementById('ssv');if(sv)sv.onclick=()=>{if(CL&&!CFGOK)return;const vp=document.getElementById('svp').value.trim();if(vp&&!/^[A-Za-z0-9_\-]{60,120}$/.test(vp)){toast(L('VAPID key சரியா இல்லை','The VAPID key looks wrong'));return}
       const o={serverComm:document.getElementById('ssc').checked,serverOps:document.getElementById('sso').checked,privPhone:document.getElementById('spp').checked,serverPin:document.getElementById('spn').checked,reqConsent:document.getElementById('srq').checked,extNav:document.getElementById('sxn').checked,push:{vapid:vp},updatedAt:ts()};
       cw(F().setDoc(F().doc(CL.db,'config','app'),o,{merge:true}).then(()=>{Object.assign(c,o);toast(L('சேமிச்சாச்சு','Saved'))}))}}
+  {const wb=document.getElementById('wal');if(wb)wb.onclick=()=>waPanel()}
   {const eb=document.getElementById('err');if(eb)eb.onclick=()=>{const el=document.getElementById('errl');el.textContent='…';
       F().getDocs(F().query(F().collection(CL.db,'errors'),F().orderBy('at','desc'),F().limit(30))).then(q=>{const rows=q.docs.map(d=>d.data());
         el.innerHTML=rows.length?rows.map(x=>`<div style="padding:6px 0;border-bottom:1px solid var(--line)"><b>${esc(x.app)}</b> · ${esc(x.v||'')} · ${new Date(+x.at||0).toLocaleString('en-IN')} · ${esc(x.who||'')}<br><code>${esc(x.msg)}</code><br><small>${esc(x.src||'')}:${+x.line||0} · ${esc((x.ua||'').slice(0,80))}</small></div>`).join(''):L('பிழை எதுவும் இல்லை','No errors')})
