@@ -296,6 +296,9 @@
     } finally { btn.disabled = false; }
   });
 
+  /* the round call / WhatsApp buttons step aside while the booking box is on screen (they would cover the fares) */
+  if ('IntersectionObserver' in window) new IntersectionObserver(es => es.forEach(e => $('.fab').classList.toggle('away', e.isIntersecting)), { threshold: 0.15 }).observe($('#book'));
+
   renderAll(); renderSugLabels();
   window.__vctSite = { B, PTS, setPoint, fromKey, state: () => ({ SITE, PRICES }) };   // for the page tests
 })();

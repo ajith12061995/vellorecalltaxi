@@ -127,6 +127,10 @@ async def main():
             await m.goto(U);await m.wait_for_timeout(700)
             await m.click('#chips [data-pt=katpadi]');await m.click('#chips [data-pt=maa]');await m.wait_for_timeout(900)
             check(f'{w}px: no sideways scroll with fares open',not await m.evaluate("document.documentElement.scrollWidth>innerWidth"))
+            await m.locator('#book').scroll_into_view_if_needed();await m.wait_for_timeout(500)
+            check(f'{w}px: call/WhatsApp buttons step aside over the booking box',await m.evaluate("document.querySelector('.fab').classList.contains('away')"))
+            await m.locator('#faq').scroll_into_view_if_needed();await m.wait_for_timeout(500)
+            check(f'{w}px: and come back further down',await m.evaluate("!document.querySelector('.fab').classList.contains('away')"))
             if w<900:
                 vis=await m.locator('#menu').is_visible();await m.click('#burger');await m.wait_for_timeout(400)
                 ok=await m.locator('#menu a[href="#contact"]').is_visible();await m.click('#menu a[href="#contact"]');await m.wait_for_timeout(600)
