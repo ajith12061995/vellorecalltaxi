@@ -19,7 +19,8 @@ function summary(j, now) {
   if (Math.abs(Date.parse(ts[i].time) - now) > 3 * 3600e3) return null;   // forecast too old / too far ahead
   const r1 = h.r, r3 = r1 + (ts[i + 1] ? hour(i + 1).r : 0) + (ts[i + 2] ? hour(i + 2).r : 0);
   const wet = /rain|sleet|thunder/.test(h.sym);
-  const kind = (r1 >= 0.3 || (wet && r1 > 0)) ? 'rain' : r3 >= 0.5 ? 'soon' : h.t >= 36 ? 'hot' : 'ok';
+  // "raining now" only for real rain in this hour; a drizzle forecast (under 0.3 mm) is shown as "rain likely"
+  const kind = r1 >= 0.3 ? 'rain' : (wet || r3 >= 0.5) ? 'soon' : h.t >= 36 ? 'hot' : 'ok';
   return { t: Math.round(h.t * 10) / 10, sym: h.sym.slice(0, 40), r1: Math.round(r1 * 10) / 10, r3: Math.round(r3 * 10) / 10, kind, heavy: kind === 'rain' && r1 >= 4 };
 }
 
