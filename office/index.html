@@ -707,6 +707,7 @@ details.faq p{margin:0;padding:0 14px 14px;color:var(--muted);font-size:14px;lin
 <script src="../core/driverchecks.js?v=79"></script>
 <script src="../core/map.js?v=79"></script>
 <script src="../core/otp.js?v=79"></script>
+<script src="../core/refer.js?v=79"></script>
 <script>
 /* shared with the customer app: icons, places, fares, map engine */
 const I = {
@@ -1422,6 +1423,12 @@ function bindApps(){
   app.querySelectorAll('[data-cpj]').forEach(b=>b.onclick=()=>navigator.clipboard.writeText(new URL('../driver/',location.href).href).then(()=>toast(L('Link copy ஆச்சு','Link copied'))).catch(()=>{}));
   app.querySelectorAll('[data-av]').forEach(b=>b.onclick=()=>reviewApp((DB.apps||[]).find(a=>a.id===b.dataset.av)));
 }
+/* driver referrals (core/refer.js): who brought an applicant, and who each driver brought. Any bonus is paid by the owner (no automatic money). */
+function refRow(ref){const p=VCTREF.clean(ref,'');if(!p)return '';const r=(RAWD||[]).find(x=>x._id===p);
+  return `<div><span>${L('சேர்த்து விட்டவர்','Referred by')}</span><b id="refby">${r?esc(r.name)+' · ':''}${esc(p)}${r?'':` <small class="muted">(${L('driver பட்டியலில் இல்லை','not in the driver list')})</small>`}</b></div>`}
+function refLine(id,raw){const got=(RAWD||[]).filter(x=>x.ref===id),by=VCTREF.clean(raw&&raw.ref,id),r=by&&(RAWD||[]).find(x=>x._id===by);
+  if(!got.length&&!by)return '';
+  return `<div class="lrow" id="refl"><div><b>🤝 ${L('சேர்த்த driver-கள்','Drivers referred')}: ${got.length}</b><small>${got.length?esc(got.map(x=>x.name).join(', ')):''}${by?(got.length?' · ':'')+L('இவரை சேர்த்தவர்: ','Referred by: ')+esc(r?r.name:by):''}</small></div></div>`}
 const appCheck=a=>VCTCHK.check(a,(RAWD||[]).map(d=>({id:d._id,name:d.name,plate:d.plate,dlNo:d.dlNo})),Date.now());
 const chkList=c=>`<div class="chklist">${c.items.filter(x=>x.level==='bad'||x.level==='warn').concat(c.items.filter(x=>x.level==='info'),c.items.filter(x=>x.level==='ok')).map(x=>`<div class="${x.level}"><i>${x.level==='ok'?'✅':x.level==='info'?'ℹ️':x.level==='warn'?'⚠️':'⛔'}</i><span>${esc(S.lang==='ta'?x.ta:x.en)}</span></div>`).join('')}</div>`;
 /* the signed agreement as a printable page (Print → Save as PDF keeps a copy) */
@@ -1440,7 +1447,7 @@ function reviewApp(a){if(!a)return;const ck=appCheck(a);
     <div class="chkbadge ${ck.bad?'bad':ck.warn?'warn':'ok'}">${ck.bad?`⛔ ${ck.bad} ${L('விஷயம் சரி பண்ணணும்','items must be fixed')}`:ck.warn?`⚠️ ${L('தானியங்கி சரிபார்ப்பு முடிந்தது','Automatic checks passed')} · ${ck.warn} ${L('கவனிக்க வேண்டியவை','things to note')}`:`✅ ${L('எல்லா ஆவணமும் சரிபார்க்கப்பட்டது — Approve பண்ணலாம்','All checks passed — ready to approve')}`}</div>
     ${chkList(ck)}
     <div class="two"><button class="btn ghost sm" id="agrv">📄 ${L('ஒப்பந்தம் பார் / Print','View / print agreement')}</button>${a.consent&&a.consent.at?`<small class="muted" style="align-self:center">✍ ${esc(a.consent.name)} · ${new Date(a.consent.at).toLocaleString('en-IN')}</small>`:''}</div>
-    <div class="bill"><div><span>${L('வண்டி','Vehicle')}</span><b>${vname(a.veh)} · ${esc(a.plate)}</b></div><div><span>UPI</span><b>${esc(a.upi||'—')}</b></div><div><span>${L('நிறுவனம் / Model / வருஷம்','Brand / model / year')}</span><b>${esc([a.brand,a.model,a.year].filter(Boolean).join(' · ')||'—')}</b></div>
+    <div class="bill"><div><span>${L('வண்டி','Vehicle')}</span><b>${vname(a.veh)} · ${esc(a.plate)}</b></div><div><span>UPI</span><b>${esc(a.upi||'—')}</b></div>${refRow(a.ref)}<div><span>${L('நிறுவனம் / Model / வருஷம்','Brand / model / year')}</span><b>${esc([a.brand,a.model,a.year].filter(Boolean).join(' · ')||'—')}</b></div>
      <div><span>${L('உரிம எண்','Licence no.')}</span><b>${esc(a.dlNo||'—')}</b></div>
      <div><span>${L('அனுபவம் / பகுதி','Experience / area')}</span><b>${a.years||0} ${L('வருடம்','yrs')} · ${esc(a.area||'—')}</b></div>
      <div><span>${L('அவசர தொடர்பு','Emergency contact')}</span><b>${esc(a.ecName||'—')} ${a.ecPhone?`· <a href="tel:${esc(a.ecPhone)}">${esc(a.ecPhone)}</a>`:''}</b></div><div><span>Police verification</span><b style="${okFiles(a.files).includes('pcc')?'':'color:var(--danger)'}">${okFiles(a.files).includes('pcc')?L('கொடுத்திருக்காங்க','Provided'):L('இல்லை — பின்னாடி வாங்குங்க','Not yet — collect later')}</b></div><div><span>${L('சொந்த வண்டியா','Own vehicle')}</span><b>${a.ownVehicle?L('ஆமா','Yes'):L('இல்லை','No')}</b></div>
@@ -1456,7 +1463,7 @@ function reviewApp(a){if(!a)return;const ck=appCheck(a);
       if(ck.bad&&!confirm(L(`${ck.bad} விஷயம் இன்னும் சரியில்லை. நேர்ல சரிபார்த்தீங்களா? இருந்தாலும் approve பண்ணவா?`,`${ck.bad} items are still not right. Did you check them in person? Approve anyway?`)))return;
       const D=365*864e5,n0=Date.now(),e=a.exp||{};const bt=F().writeBatch(CL.db);
       bt.set(F().doc(CL.db,'drivers',a.id),{name:a.name,veh:a.veh||'auto',plate:a.plate||'',model:[a.brand,a.model].filter(Boolean).join(' ')+(a.year?' ('+a.year+')':'')||vname(a.veh),brand:a.brand||'',year:a.year||null,wallet:0,rating:5,online:false,blocked:false,
-        docs:{dl:e.dl||null,ins:e.ins||null,permit:e.permit||null,fc:e.fc||null},dlNo:a.dlNo||'',upi:a.upi||'',ec:a.ecPhone?[{name:a.ecName||'',phone:a.ecPhone}]:[],pcc:okFiles(a.files).includes('pcc'),fromApp:true,consent:a.consent||null,checks:{bad:ck.bad,warn:ck.warn,by:CL.phone,at:Date.now()},createdAt:ts(),updatedAt:ts()});
+        docs:{dl:e.dl||null,ins:e.ins||null,permit:e.permit||null,fc:e.fc||null},dlNo:a.dlNo||'',upi:a.upi||'',ref:VCTREF.clean(a.ref,a.id),ec:a.ecPhone?[{name:a.ecName||'',phone:a.ecPhone}]:[],pcc:okFiles(a.files).includes('pcc'),fromApp:true,consent:a.consent||null,checks:{bad:ck.bad,warn:ck.warn,by:CL.phone,at:Date.now()},createdAt:ts(),updatedAt:ts()});
       bt.update(F().doc(CL.db,'driverApps',a.id),{status:'approved',note:'',decidedAt:ts(),decidedBy:CL.phone,updatedAt:ts()});
       cw(bt.commit().then(()=>{close();toast(L(`${a.name} driver-ஆ சேர்க்கப்பட்டார். அவர் app தானா driver screen-க்கு மாறும்`,`${a.name} is now a driver. Their app switches over by itself`))}))};
     if(no)no.onclick=()=>{const auto=ck.items.filter(x=>x.level==='bad').map(x=>S.lang==='ta'?x.ta:x.en).join('; ');const r=prompt(L('என்ன திருத்தணும்? (driver-க்கு தெரியும்)','What should they fix? (the driver will see this)'),auto||L('DL photo தெளிவா இல்லை','The licence photo is not clear'));if(r==null)return;
@@ -1635,6 +1642,7 @@ function driverDetail(d){
       <div class="kpis k4 sm"><div><small>${L('7 நாள் trips','Trips · 7 days')}</small><b>${st.d7.length}</b></div><div><small>${L('30 நாள் trips','Trips · 30 days')}</small><b>${st.done.length}</b></div><div><small>${L('7 நாள் வசூல்','Fares · 7 days')}</small><b>${inr(f7)}</b></div><div><small>${L('30 நாள் commission','Commission · 30 days')}</small><b>${inr(st.comm)}</b></div></div>
       <div class="kpis k4 sm"><div class="${st.cxRate>20?'hot':''}"><small>${L('Driver ரத்து','Driver cancels')}</small><b>${st.cx.length} <span>${st.cxRate}%</span></b></div><div class="${st.rated.length>=3&&st.avg<4?'hot':''}"><small>Rating</small><b>${st.avg?'★'+st.avg.toFixed(1):'—'} <span>${st.rated.length}</span></b></div><div class="${st.comp.length?'hot':''}"><small>${L('புகார்','Complaints')}</small><b>${st.comp.length}</b></div><div><small>Wallet</small><b>${inr(d.wallet)}</b></div></div>
       ${st.flags.length?`<div class="warn">⚠️ ${esc(st.flags.join(' · '))}</div>`:''}
+      ${refLine(d.id,raw)}
       <div class="lrow"><div><b>💳 UPI: ${raw.upi?esc(raw.upi):`<span class="neg">${L('சேர்க்கல','not added')}</span>`}</b><small>${L('Customer UPI-ல கொடுக்கிற பணம் இந்த ID-க்கு நேரா போகும்','Customers paying by UPI pay this ID directly')}</small></div><button class="btn sm ghost" id="dupi" style="width:auto;padding:0 12px">${raw.upi?L('மாத்து','Change'):L('சேர்','Add')}</button></div>
       <div class="lrow"><div><b>📍 ${live&&live.lat?(live.online?L('Online','Online'):L('Offline','Offline')):L('இடம் தெரியல','No location yet')}</b><small>${live&&live.updatedAt?L('கடைசி update: ','Last update: ')+dt(CL?CL.toMs(live.updatedAt):Date.now()):''}</small></div>${live&&live.lat?`<a class="btn sm ghost" target="_blank" rel="noopener" href="https://www.google.com/maps?q=${live.lat},${live.lon}">${L('Map-ல பார்','Open map')}</a>`:''}<a class="btn sm" href="tel:+91${d.phone}" style="width:auto;padding:0 14px">📞 ${L('அழை','Call')}</a></div>
       ${st.cx.length?`<span class="kind">${L('Driver ரத்து செய்தவை','Rides the driver cancelled')}</span><div class="mlist">${st.cx.slice(0,6).map(b=>`<div class="lrow"><div><b>${b.id} · ${pn(b.from)} → ${pn(b.to)}</b><small>${dt(b.created)} · ${esc(b.reason.replace(/^driver:?\s*/,''))||'—'}</small></div></div>`).join('')}</div>`:''}

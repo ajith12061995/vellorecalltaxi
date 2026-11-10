@@ -659,6 +659,7 @@ a.btn{text-decoration:none}
 <script src="../core/nav.js?v=79"></script>
 <script src="../core/otp.js?v=79"></script>
 <script src="../core/deskmode.js?v=79"></script>
+<script src="../core/refer.js?v=79"></script>
 <script src="../core/weather.js?v=79"></script>
 <script>
 /* shared with the customer app: icons, places, fares, map engine */
@@ -1670,7 +1671,7 @@ function drawer(){
   const items=[['home','🏠',L('Home','Home')],['earn','💰',L('வருமானம்','Earnings'),inr(DS.trips.filter(x=>isToday(x.date)).reduce((a,x)=>a+x.net,0))],['wallet','👛','Wallet',inr(DS.wallet)],
     ['notes','🔔',L('அறிவிப்புகள்','Notifications'),u?`<em class="nb">${u}</em>`:''],['perf','📈',L('என் Performance','My performance'),tn],['docs','📄',L('என் Documents','My documents'),docState().expired.length?'<em class="nb">!</em>':''],
     ...(UPC.length?[['upc','🗓️',L('வரவிருக்கும் பயணங்கள்','Upcoming trips'),`<em class="nb g">${UPC.length}</em>`]]:[]),
-    ['qr','📲',L('Customer app QR','Customer app QR'),L('புது customer சேருங்க','Bring new customers')],['faq','❓',L('உதவி & கேள்விகள்','Help & FAQs')],
+    ['qr','📲',L('Customer app QR','Customer app QR'),L('புது customer சேருங்க','Bring new customers')],...(CL?[['ref','🤝',L('Driver நண்பரை சேருங்க','Bring a driver friend')]]:[]),['faq','❓',L('உதவி & கேள்விகள்','Help & FAQs')],
     ...(CFGD.office?[['call','📞',L('Office-ஐ அழை','Call the office'),'+91 '+CFGD.office]]:[]),['set','⚙️',L('அமைப்புகள்','Settings')],['out','⏻','Logout']];
   const el=document.createElement('div');el.className='drw';el.innerHTML=`<div class="drwp">
     <div class="dhead"><span class="avatar lg">${esc((d.en||'D')[0])}</span><div><b>${esc(d[S.lang]||'')}</b><small>+91 ${S.phone} · ★ ${d.rating||5}</small><em class="tierb">${['','🏆','🆕','⭐'][t]} ${tn}</em></div></div>
@@ -1681,7 +1682,7 @@ function drawer(){
   const close=()=>{el.classList.remove('on');setTimeout(()=>el.remove(),220)};
   el.onclick=e=>{if(e.target===el)close()};
   el.querySelectorAll('[data-dm]').forEach(b=>b.onclick=()=>{close();const k=b.dataset.dm;setTimeout(()=>({home,earn:()=>{S.tab='earn';earnTab()},wallet:()=>{S.tab='wallet';walletTab()},notes:notesScreen,perf:perfScreen,docs:docsScreen,
-    upc:()=>{S.tab='home';home();setTimeout(()=>{const x=document.querySelector('.upc');if(x)x.scrollIntoView({behavior:'smooth',block:'center'})},300)},qr:qrScreen,faq:faqScreen,call:()=>{location.href='tel:+91'+CFGD.office},set:()=>{S.tab='me';profileTab()},
+    upc:()=>{S.tab='home';home();setTimeout(()=>{const x=document.querySelector('.upc');if(x)x.scrollIntoView({behavior:'smooth',block:'center'})},300)},qr:qrScreen,ref:refScreen,faq:faqScreen,call:()=>{location.href='tel:+91'+CFGD.office},set:()=>{S.tab='me';profileTab()},
     out:()=>modal(`<h3>${L('Logout பண்ணவா?','Log out?')}</h3><button class="btn" id="n">${L('வேண்டாம்','No')}</button><button class="btn ghost" id="y" style="color:var(--danger)">Logout</button>`,(m,c)=>{m.querySelector('#n').onclick=c;m.querySelector('#y').onclick=()=>{c();setOnline(false);if(CL){stopAllD();DME=null;CL.logout()}S.logged=false;S.pid=null;save();login()}})})[k](),230)});
 }
 const subHead=(t)=>`<div class="head pad"><button class="back" id="bk" aria-label="Back">${I.back}</button><h2>${t}</h2></div>`;
@@ -1721,6 +1722,19 @@ function docsScreen(){
     <div class="note">${L('Document புதுப்பிச்சா புது copy-ஐ office-க்கு WhatsApp-ல அனுப்புங்க. Office தேதியை மாத்தினதும் இங்க தானா மாறும்.','When you renew a document, WhatsApp the new copy to the office. Dates here update as soon as the office changes them.')}</div>
     ${CFGD.office?`<a class="btn" href="https://wa.me/91${CFGD.office}?text=${encodeURIComponent('Vellore Taxi driver '+drvId()+' · '+(me().plate||'')+': புது document அனுப்புறேன்')}" target="_blank" rel="noopener">💬 ${L('Office-க்கு WhatsApp பண்ணு','WhatsApp the office')}</a>`:''}
   </div></section>`,backHome);
+}
+/* Bring a driver friend: my own join link (core/refer.js). The office sees who referred each new driver. */
+function refScreen(){
+  const link=new URL('./join/?ref='+VCTREF.code(S.phone),location.href).href;
+  const msg='🚖 Vellore Taxi — Driver-கள் தேவை\nவேலூர், காட்பாடி பகுதியில சொந்த வண்டி உள்ளவங்க சேரலாம். Phone-லயே விண்ணப்பிக்கலாம்:\n'+link;
+  go(`<section class="screen">${subHead(L('Driver நண்பரை சேருங்க','Bring a driver friend'))}<div class="body pad" style="padding-top:0;align-items:center;text-align:center">
+    <p class="muted" style="margin:0">${L('உங்க driver நண்பர்களுக்கு இந்த link-ஐ அனுப்புங்க. அவங்க இதுல விண்ணப்பிச்சா, நீங்க சேர்த்து விட்டீங்கன்னு office-க்கு தெரியும்.','Send this link to your driver friends. When they apply through it, the office sees that you referred them.')}</p>
+    <div id="rqr" class="qrbox"></div><b id="rlink" style="font-size:13px;word-break:break-all">${esc(link)}</b>
+    <a class="btn" id="rwa" target="_blank" rel="noopener" href="https://wa.me/?text=${encodeURIComponent(msg)}">💬 ${L('WhatsApp-ல share பண்ணு','Share on WhatsApp')}</a>
+    <button class="btn ghost" id="rcp">${L('Link-ஐ copy பண்ணு','Copy the link')}</button>
+  </div></section>`,()=>{backHome();
+    document.getElementById('rcp').onclick=()=>{try{navigator.clipboard.writeText(link).then(()=>toast(L('Copy ஆயிடுச்சு','Copied')),()=>toast(link))}catch(e){toast(link)}};
+    loadQrD().then(()=>{const el=document.getElementById('rqr');if(el){el.innerHTML='';new window.QRCode(el,{text:link,width:220,height:220,correctLevel:window.QRCode.CorrectLevel.M})}}).catch(()=>{})});
 }
 function qrScreen(){
   const link=new URL('../',location.href).href;
