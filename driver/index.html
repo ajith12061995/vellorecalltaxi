@@ -46,7 +46,7 @@
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('../vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV=window.VCT_V='76',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV=window.VCT_V='77',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('../version.json',location.href)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -647,16 +647,15 @@ a.btn{text-decoration:none}
 <div class="app" id="app"></div>
 <div class="toast" id="toast"></div>
 
-<script src="../core/report.js?v=76"></script>
-<script src="../core/geo.js?v=76"></script>
-<script src="../core/fare.js?v=76"></script>
-<script src="../core/pin.js?v=76"></script>
-<script src="../core/clock.js?v=76"></script>
-<script src="../core/map.js?v=76"></script>
-<script src="../core/chat.js?v=76"></script>
-<script src="../core/driverchecks.js?v=76"></script>
-<script src="../core/nav.js?v=76"></script>
-<script src="../core/otp.js?v=76"></script>
+<script src="../core/report.js?v=77"></script>
+<script src="../core/geo.js?v=77"></script>
+<script src="../core/fare.js?v=77"></script>
+<script src="../core/pin.js?v=77"></script>
+<script src="../core/clock.js?v=77"></script>
+<script src="../core/map.js?v=77"></script>
+<script src="../core/chat.js?v=77"></script>
+<script src="../core/driverchecks.js?v=77"></script>
+<script src="../core/nav.js?v=77"></script>
 <script>
 /* shared with the customer app: icons, places, fares, map engine */
 const I = {
@@ -899,8 +898,7 @@ function navTick(){const n=NAV;if(!n)return;const el=document.getElementById('na
 function splash(){
   go(`<section class="screen" id="splash"><div class="roofsign"><b>TAXI</b><span>வேலூர் டாக்ஸி</span></div><span class="drvtag">DRIVER</span>
     <div class="road"></div><div class="tag">Vellore Taxi · Driver</div></section>`);
-  // the sign-in check already loads in the background; show the logo briefly (was a fixed 1.5 s)
-  setTimeout(async()=>{if(await cloudBootD())return;S.logged&&S.pid?home():login()},450);
+  setTimeout(async()=>{if(await cloudBootD())return;S.logged&&S.pid?home():login()},1500);
 }
 function login(){
   go(`<section class="screen"><div class="hero pad"><img src="./icon-192.png" alt="" style="width:84px;height:84px;border-radius:20px;display:block;margin-bottom:12px;box-shadow:0 4px 14px rgba(0,0,0,.15)" onerror="this.remove()"><span class="mini">VCT DRIVER</span><h1>${L('வணக்கம் Driver!','Welcome, driver!')}</h1>
@@ -915,16 +913,16 @@ function login(){
     app.querySelectorAll('[data-l]').forEach(b=>b.onclick=()=>{S.lang=b.dataset.l;save();login()});
     const ph=document.getElementById('ph'),b=document.getElementById('go'),e=document.getElementById('e'),ow=document.getElementById('ow');let stage=0;
     ph.oninput=()=>{ph.value=ph.value.replace(/\D/g,'').slice(0,10);if(!stage)b.disabled=ph.value.length!==10;e.textContent=''};b.disabled=ph.value.length!==10;
-    const ins=[...app.querySelectorAll('.otp input')];let nat=null;
-    const box=VCTOTP.bind(ins,CL?6:4,()=>{if(stage&&!b.disabled)b.click()},v=>{if(stage){b.disabled=v.length!==(CL?6:4);e.textContent=''}});
-    if(CL&&CL.prepOtp)CL.prepOtp();
+    const ins=[...app.querySelectorAll('.otp input')];
+    ins.forEach((inp,i)=>{inp.oninput=()=>{inp.value=inp.value.replace(/\D/g,'').slice(-1);if(inp.value&&ins[i+1])ins[i+1].focus();b.disabled=ins.map(x=>x.value).join('').length!==(CL?6:4)};
+      inp.onkeydown=ev=>{if(ev.key==='Backspace'&&!inp.value&&ins[i-1])ins[i-1].focus()}});
     b.onclick=()=>{
       if(!stage){if(!/^[6-9]\d{9}$/.test(ph.value)){e.textContent=L('10 இலக்க நம்பர் கொடுங்க','Enter a 10-digit number');return}
         S.phone=ph.value;save();
-        if(CL){b.disabled=true;b.textContent=L('OTP அனுப்புது…','Sending OTP…');nat=VCTOTP.native();if(nat)nat.then(c=>{if(c&&stage&&document.body.contains(ins[0])&&!box.val())VCTOTP.fill(ins,c)});CL.sendOtp(ph.value).then(()=>{stage=1;ow.hidden=false;ph.disabled=true;b.textContent=L('சரிபார்','Verify');b.disabled=true;ins[0].focus()}).catch(er=>{VCTOTP.stop();b.disabled=false;b.textContent=L('OTP அனுப்பு','Send OTP');e.textContent=CL.errText(er,S.lang==='ta')});return}
+        if(CL){b.disabled=true;b.textContent=L('OTP அனுப்புது…','Sending OTP…');CL.sendOtp(ph.value).then(()=>{stage=1;ow.hidden=false;ph.disabled=true;b.textContent=L('சரிபார்','Verify');b.disabled=true;ins[0].focus()}).catch(er=>{b.disabled=false;b.textContent=L('OTP அனுப்பு','Send OTP');e.textContent=CL.errText(er,S.lang==='ta')});return}
         stage=1;ow.hidden=false;ph.disabled=true;b.textContent=L('சரிபார்','Verify');b.disabled=true;ins[0].focus();return}
-      if(CL){b.disabled=true;CL.verifyOtp(box.val()).then(async()=>{if(await loadMe())home()}).catch(er=>{b.disabled=false;e.textContent=CL.errText(er,S.lang==='ta');box.reset();b.disabled=true});return}
-      if(box.val()!=='1234'){e.textContent=L('OTP தவறு','Wrong OTP');box.reset();b.disabled=true;return}
+      if(CL){b.disabled=true;CL.verifyOtp(ins.map(x=>x.value).join('')).then(async()=>{if(await loadMe())home()}).catch(er=>{b.disabled=false;e.textContent=CL.errText(er,S.lang==='ta');ins.forEach(x=>x.value='');ins[0].focus()});return}
+      if(ins.map(x=>x.value).join('')!=='1234'){e.textContent=L('OTP தவறு','Wrong OTP');ins.forEach(x=>x.value='');ins[0].focus();b.disabled=true;return}
       S.logged=true;save();pickProfile();
     };
   });

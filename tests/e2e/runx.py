@@ -14,8 +14,7 @@ async def main():
         await O.locator('#otp').fill('123456');await pg.wait_for_timeout(1200)
         await D.locator('#ph').fill('9999900002');await D.locator('#go').click();await pg.wait_for_timeout(300)
         for i,d in enumerate('123456'):await D.locator(f'#o{i}').fill(d)
-        # auto sign-in when the 6th digit is in
-        await pg.wait_for_timeout(1200)
+        await D.locator('#go').click();await pg.wait_for_timeout(1200)
         await D.locator('#ons').click();await pg.wait_for_timeout(800)
         await df.evaluate("1");await pg.wait_for_timeout(300)
         await pg.screenshot(path='x1_driver_locked.png',clip=DL)

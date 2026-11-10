@@ -14,8 +14,7 @@ async def main():
         C=pg.frame_locator('#c');D=pg.frame_locator('#d');cf=pg.frame(url=B+'c2.html');df=pg.frame(url=B+'d2.html')
         await D.locator('#ph').fill('9999900002');await D.locator('#go').click();await pg.wait_for_timeout(300)
         for i,d in enumerate('123456'):await D.locator(f'#o{i}').fill(d)
-        # auto sign-in when the 6th digit is in
-        await pg.wait_for_timeout(1200)
+        await D.locator('#go').click();await pg.wait_for_timeout(1200)
         await D.locator('#ons').click();await pg.wait_for_timeout(3000)
         car=await pg.evaluate("MOCK.store.get('cars/u9999900002')")
         check('online driver writes cars/{login id}',bool(car) and car.get('online') is True,car)

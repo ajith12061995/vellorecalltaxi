@@ -8,8 +8,7 @@ async def main():
         D=pg.frame_locator('#d');C=pg.frame_locator('#c');cf=pg.frame(url='http://localhost:8765/tests/e2e/out/c2.html')
         await D.locator('#ph').fill('9999900002');await D.locator('#go').click();await pg.wait_for_timeout(300)
         for i,d in enumerate('123456'):await D.locator(f'#o{i}').fill(d)
-        # auto sign-in when the 6th digit is in
-        await pg.wait_for_timeout(1200)
+        await D.locator('#go').click();await pg.wait_for_timeout(1200)
         await pg.screenshot(path='shots/du1.png',clip={'x':400,'y':0,'width':400,'height':860})
         await D.locator('#ons').click();await pg.wait_for_timeout(1000)
         await pg.screenshot(path='shots/du2.png',clip={'x':400,'y':0,'width':400,'height':860})

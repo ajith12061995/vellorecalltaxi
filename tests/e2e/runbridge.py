@@ -23,8 +23,7 @@ async def main():
         D=pg.frame_locator('#d');df=pg.frame(url=B+'d2.html')
         await D.locator('#ph').fill('9999900002');await D.locator('#go').click();await pg.wait_for_timeout(300)
         for i,d in enumerate('123456'):await D.locator(f'#o{i}').fill(d)
-        # auto sign-in when the 6th digit is in
-        await pg.wait_for_timeout(1200)
+        await D.locator('#go').click();await pg.wait_for_timeout(1200)
         await df.evaluate(BRIDGE)
         check('no registerPlugin in the mocked bridge',await df.evaluate("typeof Capacitor.registerPlugin==='undefined'"))
         await D.locator('#ons').click();await pg.wait_for_timeout(1200)

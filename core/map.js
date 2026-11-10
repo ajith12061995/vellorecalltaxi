@@ -144,8 +144,7 @@ const MAPCFG={
   route:'https://router.project-osrm.org/route/v1/driving/'
 };
 const LF=window.L&&window.L.map?window.L:null;
-// (the customer app loads Google Maps in the background: window.MAPS_READY; driver / office load it before this file)
-const REALMAP=(!!LF||!!(window.GMAPS_KEY&&((window.google&&window.google.maps)||window.MAPS_READY)))&&/^https?:/.test(location.protocol);
+const REALMAP=(!!LF||!!(window.GMAPS_KEY&&window.google&&window.google.maps))&&/^https?:/.test(location.protocol);
 const zFromS=s=>Math.max(3,Math.min(19,Math.log2(s*360/256)));
 const sFromZ=z=>256*Math.pow(2,z)/360;
 function makeMap(cv,o={}){return GMAP()?makeGoogleMap(cv,o):(LF&&REALMAP)?makeLeafletMap(cv,o):makeCanvasMap(cv,o)}

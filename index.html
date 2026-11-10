@@ -13,7 +13,7 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <script src="./maps-config.js"></script>
-<script>/* Google Maps loads in the background (it no longer holds up the first screen); MAPS_READY → true when loaded, false if it fails */(function(){if(!window.GMAPS_KEY){window.MAPS_READY=Promise.resolve(false);return}var l='ta';try{var s=JSON.parse(localStorage.getItem('vct')||'{}');if(s.lang)l=s.lang}catch(e){}window.MAPS_READY=new Promise(function(r){window.__vctMapsCb=function(){r(true)};var x=document.createElement('script');x.async=true;x.onerror=function(){r(false)};x.src='https://maps.googleapis.com/maps/api/js?key='+encodeURIComponent(window.GMAPS_KEY)+'&libraries=places&language='+l+'&region=IN&v=weekly&callback=__vctMapsCb';document.head.appendChild(x)})})();</script>
+<script>(function(){if(!window.GMAPS_KEY)return;var l='ta';try{var s=JSON.parse(localStorage.getItem('vct')||'{}');if(s.lang)l=s.lang}catch(e){}document.write('<script src="https://maps.googleapis.com/maps/api/js?key='+encodeURIComponent(window.GMAPS_KEY)+'&libraries=places&language='+l+'&region=IN&v=weekly"><\/script>')})();</script>
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{height:100%}body{margin:0;font-family:system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}
 .hasdot{position:relative}.hasdot::after{content:"";position:absolute;top:6px;right:10px;width:10px;height:10px;border-radius:50%;background:#D9443B;border:2px solid var(--surface)}
 .chatlog .msg.dr small,.chatlog .msg.me small{display:block;font-size:10px;opacity:.6;margin-top:2px}
@@ -39,7 +39,7 @@
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('./vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV=window.VCT_V='76',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV=window.VCT_V='77',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('./version.json',location.href)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -48,8 +48,8 @@ setTimeout(chk,3000);setInterval(chk,5*60*1000);document.addEventListener('visib
 <body>
 <title>Vellore Taxi</title>
 <meta name="claude:viewport-fit-sides" content="cover">
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+Thambi+2:wght@500;600;700;800&family=Hind+Madurai:wght@400;500;600;700&display=swap" media="print" onload="this.media='all'">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+Thambi+2:wght@500;600;700;800&family=Hind+Madurai:wght@400;500;600;700&display=swap">
 <style>
 /* Layout: one phone-width app column; map is the stage, a white bottom sheet carries the actions. */
 :root{
@@ -536,14 +536,13 @@ details.faq p{margin:0;padding:0 14px 14px;color:var(--muted);font-size:14px;lin
 <div class="app" id="app"></div>
 <div class="toast" id="toast"></div>
 
-<script src="./core/report.js?v=76"></script>
-<script src="./core/geo.js?v=76"></script>
-<script src="./core/fare.js?v=76"></script>
-<script src="./core/pin.js?v=76"></script>
-<script src="./core/clock.js?v=76"></script>
-<script src="./core/map.js?v=76"></script>
-<script src="./core/chat.js?v=76"></script>
-<script src="./core/otp.js?v=76"></script>
+<script src="./core/report.js?v=77"></script>
+<script src="./core/geo.js?v=77"></script>
+<script src="./core/fare.js?v=77"></script>
+<script src="./core/pin.js?v=77"></script>
+<script src="./core/clock.js?v=77"></script>
+<script src="./core/map.js?v=77"></script>
+<script src="./core/chat.js?v=77"></script>
 <script>
 /* ---------- icons ---------- */
 const I = {
@@ -663,7 +662,7 @@ setBike(false);
 /* ---------- state ---------- */
 const S={lang:'ta',from:'home',phone:'',name:'',logged:false,tab:'home',dest:null,veh:'auto',pay:'upi'};
 try{const s=JSON.parse(localStorage.getItem('vct')||'{}');Object.assign(S,s)}catch(e){}
-function save(){try{localStorage.setItem('vct',JSON.stringify({lang:S.lang,phone:S.phone,name:S.name,logged:S.logged,uid:S.logged?S.uid||'':''}))}catch(e){}}
+function save(){try{localStorage.setItem('vct',JSON.stringify({lang:S.lang,phone:S.phone,name:S.name,logged:S.logged}))}catch(e){}}
 const t=k=>T[S.lang][k]||k;
 const pn=k=>P[k][S.lang];
 const app=document.getElementById('app');
@@ -676,12 +675,8 @@ function splash(){
   if(/^#track-/.test(location.hash)){trackView(location.hash.slice(7));return}
   go(`<section class="screen" id="splash"><div class="roofsign"><b>TAXI</b><span>வேலூர் டாக்ஸி</span></div>
     <div class="road"></div><div class="tag">Vellore Taxi</div></section>`);
-  SPLASH_MIN=new Promise(r=>setTimeout(r,450)); // just long enough to see the logo; no fixed 1.7 s wait any more
-  (async()=>{if(await cloudBoot())return;await SPLASH_MIN;await mapsWait();S.logged?home():langScreen()})();
+  setTimeout(async()=>{if(await cloudBoot())return;S.logged?home():langScreen()},1700);
 }
-let SPLASH_MIN=Promise.resolve();
-// the home map needs Google Maps: wait for it (it loads together with the sign-in check), at most ms; then the free map is used
-const mapsWait=(ms=3000)=>Promise.race([window.MAPS_READY||Promise.resolve(false),new Promise(r=>setTimeout(()=>r(false),ms))]);
 function langScreen(){
   go(`<section class="screen"><div class="hero pad"><span class="mini">VCT · VELLORE TAXI</span><h1>${t('chooseLang')}</h1><p>${t('langSub')}</p></div>
   <div class="body pad">
@@ -702,32 +697,32 @@ function login(){
     const ph=document.getElementById('ph'),b=document.getElementById('go');
     ph.oninput=()=>{ph.value=ph.value.replace(/\D/g,'').slice(0,10);b.disabled=ph.value.length!==10;document.getElementById('e').textContent=''};
     b.onclick=()=>{if(!/^[6-9]\d{9}$/.test(ph.value)){document.getElementById('e').textContent=t('phoneErr');return}S.phone=ph.value;save();
-      if(CL){b.disabled=true;b.textContent=L('OTP அனுப்புது…','Sending OTP…');const nat=VCTOTP.native();CL.sendOtp(ph.value).then(()=>otp(nat)).catch(e=>{VCTOTP.stop();b.disabled=false;b.textContent=t('getOtp');document.getElementById('e').textContent=CL.errText(e,S.lang==='ta')});return}otp()};
+      if(CL){b.disabled=true;b.textContent=L('OTP அனுப்புது…','Sending OTP…');CL.sendOtp(ph.value).then(otp).catch(e=>{b.disabled=false;b.textContent=t('getOtp');document.getElementById('e').textContent=CL.errText(e,S.lang==='ta')});return}otp()};
     const gg=document.getElementById('gg');if(gg)gg.onclick=googleIn;
-    if(CL&&CL.prepOtp)CL.prepOtp();
     setTimeout(()=>ph.focus(),300);
   });
 }
 // inside the Play Store app (Capacitor WebView) Google does not allow its sign-in page, so only phone OTP is shown there
 function inApp(){try{return !!(window.Capacitor&&window.Capacitor.isNativePlatform&&window.Capacitor.isNativePlatform())}catch(e){return false}}
 async function googleIn(){const gg=document.getElementById('gg');if(gg){gg.disabled=true}
-  try{const u=await CL.googleLogin();if(!u)return;CUID=u.uid;S.uid=u.uid;await loadProfile();watchConfig();
+  try{const u=await CL.googleLogin();if(!u)return;CUID=u.uid;await loadProfile();watchConfig();
     if(S.name&&S.phone.length===10){S.logged=true;save();saveProfile({lastLogin:F().serverTimestamp()});home()}else nameScreen()}
   catch(e){if(gg)gg.disabled=false;const el=document.getElementById('e');if(el)el.textContent=CL.errText(e,S.lang==='ta')}}
-function otp(nat){
+function otp(){
   go(`<section class="screen"><div class="head pad"><button class="back" id="bk" aria-label="Back">${I.back}</button><h2>${t('otpH')}</h2></div>
   <div class="body pad" style="padding-top:8px"><p class="muted" style="margin:0">${t('otpP')} +91 ${S.phone.slice(0,5)} ${S.phone.slice(5)} · <button class="linkbtn" id="ch">${t('change')}</button></p>
    <div class="otp">${[...Array(CL?6:4).keys()].map(i=>`<input id="o${i}" inputmode="numeric" maxlength="1" autocomplete="one-time-code" aria-label="OTP digit ${i+1}">`).join('')}</div>
    <div class="err" id="e"></div>${CL?`<div class="note">${L('SMS-ல வந்த 6 இலக்க OTP-ஐ போடுங்க','Enter the 6-digit OTP from the SMS')}</div>`:`<div class="note">${t('demoOtp')}</div>`}
    <p class="muted" style="margin:0;font-size:14px" id="rs"></p>${CL?`<div class="note" id="nootp" hidden>${L('OTP வரலையா? Messages-ல Spam folder-ஐ பாருங்க. அல்லது SMS இல்லாம உடனே login பண்ணலாம்:','No OTP? Check the Spam folder in Messages, or sign in right away without SMS:')}<button class="btn gbtn" id="gg" style="margin-top:10px"><svg width="20" height="20" viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34.1 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34.1 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>${L('Google மூலம் login','Continue with Google')}</button></div>`:''}<div style="flex:1"></div><button class="btn" id="go" disabled>${t('verify')}</button></div></section>`,()=>{
     const ins=[...app.querySelectorAll('.otp input')],b=document.getElementById('go');
-    const box=VCTOTP.bind(ins,CL?6:4,()=>{if(!b.disabled)b.click()},v=>{b.disabled=v.length!==(CL?6:4);document.getElementById('e').textContent=''});
-    const val=box.val;
-    if(nat)nat.then(c=>{if(c&&document.body.contains(ins[0])&&!val())VCTOTP.fill(ins,c)});
-    b.onclick=()=>{if(CL){if(b.disabled&&val().length!==6)return;b.disabled=true;CL.verifyOtp(val()).then(async u=>{CUID=u.uid;S.uid=u.uid;await loadProfile();watchConfig();if(S.name){S.logged=true;save();saveProfile({lastLogin:F().serverTimestamp()});resumeActive()||home()}else nameScreen()}).catch(e=>{b.disabled=false;document.getElementById('e').textContent=CL.errText(e,S.lang==='ta');box.reset()});return}
-      if(val()==='1234'){S.name?(S.logged=true,save(),home()):nameScreen()}else{document.getElementById('e').textContent=t('otpErr');box.reset();b.disabled=true}};
-    document.getElementById('bk').onclick=()=>{VCTOTP.stop();login()};document.getElementById('ch').onclick=document.getElementById('bk').onclick;
-    let n=30;const rs=document.getElementById('rs');const tick=()=>{if(!document.body.contains(rs))return;rs.innerHTML=n>0?`${t('resend')} 0:${String(n).padStart(2,'0')}`:`<button class="linkbtn" id="rsb">${t('resend')}</button>`;if(n===0){document.getElementById('rsb').onclick=()=>{if(CL){const n2=VCTOTP.native();if(n2)n2.then(c=>{if(c&&document.body.contains(ins[0])&&val().length!==6)VCTOTP.fill(ins,c)});CL.sendOtp(S.phone).then(()=>toast(L('OTP மறுபடி அனுப்பியாச்சு','OTP sent again'))).catch(e=>toast(CL.errText(e,S.lang==='ta')))}else toast('OTP: 1234');n=30;tick()};return}n--;setTimeout(tick,1000)};tick();
+    const val=()=>ins.map(i=>i.value).join('');
+    ins.forEach((inp,i)=>{inp.oninput=()=>{inp.value=inp.value.replace(/\D/g,'').slice(-1);if(inp.value&&ins[i+1])ins[i+1].focus();b.disabled=val().length!==(CL?6:4);document.getElementById('e').textContent='';if(val().length===(CL?6:4))b.click()};
+      inp.onpaste=e=>{const d=(e.clipboardData.getData('text')||'').replace(/\D/g,'');if(d.length>1){e.preventDefault();ins.forEach((x,j)=>x.value=d[j]||'');b.disabled=val().length!==(CL?6:4);if(!b.disabled)b.click()}};
+      inp.onkeydown=e=>{if(e.key==='Backspace'&&!inp.value&&ins[i-1])ins[i-1].focus()}});
+    b.onclick=()=>{if(CL){b.disabled=true;CL.verifyOtp(val()).then(async u=>{CUID=u.uid;await loadProfile();watchConfig();if(S.name){S.logged=true;save();saveProfile({lastLogin:F().serverTimestamp()});resumeActive()||home()}else nameScreen()}).catch(e=>{b.disabled=false;document.getElementById('e').textContent=CL.errText(e,S.lang==='ta');ins.forEach(i=>i.value='');ins[0].focus()});return}
+      if(val()==='1234'){S.name?(S.logged=true,save(),home()):nameScreen()}else{document.getElementById('e').textContent=t('otpErr');ins.forEach(i=>i.value='');ins[0].focus();b.disabled=true}};
+    document.getElementById('bk').onclick=login;document.getElementById('ch').onclick=login;
+    let n=30;const rs=document.getElementById('rs');const tick=()=>{if(!document.body.contains(rs))return;rs.innerHTML=n>0?`${t('resend')} 0:${String(n).padStart(2,'0')}`:`<button class="linkbtn" id="rsb">${t('resend')}</button>`;if(n===0){document.getElementById('rsb').onclick=()=>{if(CL){CL.sendOtp(S.phone).then(()=>toast(L('OTP மறுபடி அனுப்பியாச்சு','OTP sent again'))).catch(e=>toast(CL.errText(e,S.lang==='ta')))}else toast('OTP: 1234');n=30;tick()};return}n--;setTimeout(tick,1000)};tick();
     const gg=document.getElementById('gg');if(gg){gg.onclick=googleIn;setTimeout(()=>{const n=document.getElementById('nootp');if(n)n.hidden=false},25000)}
     setTimeout(()=>ins[0].focus(),300);
   });
@@ -1888,17 +1883,13 @@ function offlineScreen(){
 }
 async function cloudBoot(){
   const c=await cloudP;
-  if(!c){if(ON_PAGES){await SPLASH_MIN;offlineScreen();return true}return false}
+  if(!c){if(ON_PAGES){offlineScreen();return true}return false}
   const u=await CL.waitUser();
-  await SPLASH_MIN;
   if(!u){S.logged=false;save();langScreen();return true}
-  // same person as last time, name and number already on this phone → open home now, refresh the profile in the background
-  const fast=S.logged&&!!S.uid&&S.uid===u.uid&&!!S.name&&/^[6-9]\d{9}$/.test(S.phone)&&(!u.phoneNumber||u.phoneNumber==='+91'+S.phone);
-  CUID=u.uid;S.uid=u.uid;if(u.phoneNumber)S.phone=u.phoneNumber.replace('+91','');else if(!fast)S.phone='';
-  if(fast)loadProfile().then(()=>{if(S.name)save()});else await loadProfile();
-  watchConfig();
+  CUID=u.uid;S.phone=(u.phoneNumber||'').replace('+91','');
+  await loadProfile();watchConfig();
   if(!S.name||!/^[6-9]\d{9}$/.test(S.phone)){nameScreen();return true}
-  S.logged=true;save();await mapsWait();resumeActive()||home();return true;
+  S.logged=true;save();resumeActive()||home();return true;
 }
 async function loadProfile(){
   try{const s=await F().getDoc(F().doc(CL.db,'users',CUID));if(!s.exists()||!s.data().joinedAt)F().setDoc(F().doc(CL.db,'users',CUID),{joinedAt:F().serverTimestamp()},{merge:true}).catch(()=>{});if(s.exists()){const d=s.data();if(d.name)S.name=d.name;if(!CL.user.phoneNumber&&d.phone)S.phone=String(d.phone).replace('+91','');if(Array.isArray(d.ec)){EC=d.ec;saveEc()}}}catch(e){}

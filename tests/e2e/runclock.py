@@ -13,8 +13,7 @@ async def main():
         print('driver clock ahead by min:',round((await df.evaluate("Date.now()")-await pg.evaluate("Date.now()"))/6e4))
         await D.locator('#ph').fill('9999900002');await D.locator('#go').click();await pg.wait_for_timeout(300)
         for i,d in enumerate('123456'):await D.locator(f'#o{i}').fill(d)
-        # auto sign-in when the 6th digit is in
-        await pg.wait_for_timeout(1500);await D.locator('#ons').click();await pg.wait_for_timeout(1500)
+        await D.locator('#go').click();await pg.wait_for_timeout(1500);await D.locator('#ons').click();await pg.wait_for_timeout(1500)
         off=await df.evaluate("VCTCLK.off");print('learned offset min:',round(off/6e4))
         await C.locator('#go').click();await pg.wait_for_timeout(300)
         await C.locator('#ph').fill('9999900001');await C.locator('#go').click();await pg.wait_for_timeout(500)

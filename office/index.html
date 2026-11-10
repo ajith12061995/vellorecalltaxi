@@ -29,7 +29,7 @@
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('../vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV=window.VCT_V='76',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV=window.VCT_V='77',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('../version.json',location.href)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -701,12 +701,11 @@ details.faq p{margin:0;padding:0 14px 14px;color:var(--muted);font-size:14px;lin
 <div class="app" id="app"></div>
 <div class="toast" id="toast"></div>
 
-<script src="../core/report.js?v=76"></script>
-<script src="../core/geo.js?v=76"></script>
-<script src="../core/fare.js?v=76"></script>
-<script src="../core/driverchecks.js?v=76"></script>
-<script src="../core/map.js?v=76"></script>
-<script src="../core/otp.js?v=76"></script>
+<script src="../core/report.js?v=77"></script>
+<script src="../core/geo.js?v=77"></script>
+<script src="../core/fare.js?v=77"></script>
+<script src="../core/driverchecks.js?v=77"></script>
+<script src="../core/map.js?v=77"></script>
 <script>
 /* shared with the customer app: icons, places, fares, map engine */
 const I = {
@@ -1933,17 +1932,16 @@ function cloudLogin(){
   app.innerHTML=`<section class="ologin"><div class="lcard"><div class="brand"><img src="./icon-192.png?v=8" alt="" style="width:40px;height:40px;border-radius:10px;flex:none" onerror="this.style.visibility='hidden'"><div><b>Vellore Taxi</b><small>Owner / Staff panel</small></div></div>
     <h1>${L('உள்ளே வாங்க','Sign in')}</h1><p class="muted" style="margin:0">${L('Owner அல்லது staff நம்பர்ல login பண்ணுங்க','Use the owner or staff number')}</p>
     <label class="kind" for="ph">${L('மொபைல் நம்பர்','Mobile number')}</label><div class="field"><span class="cc">+91</span><input id="ph" inputmode="numeric" maxlength="10" value="${esc(S.phone)}"></div>
-    <div id="ow" hidden><label class="kind" for="otp">OTP</label><div class="field"><input id="otp" inputmode="numeric" maxlength="60" autocomplete="one-time-code" placeholder="••••••"></div></div>
+    <div id="ow" hidden><label class="kind" for="otp">OTP</label><div class="field"><input id="otp" inputmode="numeric" maxlength="6" autocomplete="one-time-code" placeholder="••••••"></div></div>
     <div class="err" id="le"></div><button class="btn" id="lgn">${L('OTP அனுப்பு','Send OTP')}</button>
     <div class="lang2"><button data-l="ta" class="${S.lang==='ta'?'on':''}">தமிழ்</button><button data-l="en" class="${S.lang==='en'?'on':''}">English</button></div></div></section>`;
   app.querySelectorAll('[data-l]').forEach(b=>b.onclick=()=>{S.lang=b.dataset.l;save();cloudLogin()});
   const ph=document.getElementById('ph'),otp=document.getElementById('otp'),b=document.getElementById('lgn'),le=document.getElementById('le'),ow=document.getElementById('ow');let stage=0;
-  ph.oninput=()=>{ph.value=ph.value.replace(/\D/g,'').slice(0,10);le.textContent=''};otp.oninput=()=>{const d=otp.value.replace(/\D/g,'');otp.value=d.length>6&&window.VCTOTP?(VCTOTP.code(otp.value)||d.slice(0,6)):d.slice(0,6);le.textContent='';if(stage&&otp.value.length===6&&!b.disabled)b.click()};if(CL&&CL.prepOtp)CL.prepOtp();
+  ph.oninput=()=>{ph.value=ph.value.replace(/\D/g,'').slice(0,10);le.textContent=''};otp.oninput=()=>{otp.value=otp.value.replace(/\D/g,'').slice(0,6);le.textContent='';if(otp.value.length===6)b.click()};
   b.onclick=()=>{
     if(!stage){if(!/^[6-9]\d{9}$/.test(ph.value)){le.textContent=L('10 இலக்க நம்பர் கொடுங்க','Enter a 10-digit number');return}
       b.disabled=true;b.textContent=L('OTP அனுப்புது…','Sending OTP…');
-      const nat=VCTOTP.native();if(nat)nat.then(c=>{if(c&&stage&&document.body.contains(otp)&&!otp.value){otp.value=c;otp.dispatchEvent(new Event('input'))}});
-      CL.sendOtp(ph.value).then(()=>{stage=1;ph.disabled=true;ow.hidden=false;b.disabled=false;b.textContent=L('உள்ளே போ','Sign in');otp.focus()}).catch(e=>{VCTOTP.stop();b.disabled=false;b.textContent=L('OTP அனுப்பு','Send OTP');le.textContent=CL.errText(e,S.lang==='ta')});return}
+      CL.sendOtp(ph.value).then(()=>{stage=1;ph.disabled=true;ow.hidden=false;b.disabled=false;b.textContent=L('உள்ளே போ','Sign in');otp.focus()}).catch(e=>{b.disabled=false;b.textContent=L('OTP அனுப்பு','Send OTP');le.textContent=CL.errText(e,S.lang==='ta')});return}
     if(otp.value.length!==6){le.textContent=L('6 இலக்க OTP போடுங்க','Enter the 6-digit OTP');return}
     b.disabled=true;CL.verifyOtp(otp.value).then(()=>enterCloud()).catch(e=>{b.disabled=false;le.textContent=CL.errText(e,S.lang==='ta');otp.value='';otp.focus()});
   };

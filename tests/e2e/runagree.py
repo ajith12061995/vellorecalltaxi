@@ -19,8 +19,7 @@ async def main():
         check('office card: not signed shown',('கையெழுத்து இல்லை' in line) or ('not signed' in line),line[:120])
         await D.locator('#ph').fill('9999900002');await D.locator('#go').click();await pg.wait_for_timeout(300)
         for i,d in enumerate('123456'):await D.locator(f'#o{i}').fill(d)
-        # auto sign-in when the 6th digit is in
-        await pg.wait_for_timeout(1500)
+        await D.locator('#go').click();await pg.wait_for_timeout(1500)
         check('driver home shows the sign card',await df.evaluate("!!document.getElementById('sgn')"))
         await D.locator('#ons').click();await pg.wait_for_timeout(800)
         check('ON DUTY blocked until signed: agreement opens',await df.evaluate("!!document.getElementById('agsv')") and not await df.evaluate("S.online"))

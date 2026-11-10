@@ -19,8 +19,7 @@ async def main():
         txt=lambda:df.evaluate("document.body.innerText")
         await D.locator('#ph').fill('9999900002');await D.locator('#go').click();await pg.wait_for_timeout(300)
         for i,d in enumerate('123456'):await D.locator(f'#o{i}').fill(d)
-        # auto sign-in when the 6th digit is in
-        await pg.wait_for_timeout(1200);await D.locator('#ons').click();await pg.wait_for_timeout(1500)
+        await D.locator('#go').click();await pg.wait_for_timeout(1200);await D.locator('#ons').click();await pg.wait_for_timeout(1500)
         w0=await pg.evaluate("MOCK.store.get('drivers/+919999900002').wallet")
         await C.locator('#go').click();await pg.wait_for_timeout(300)
         await C.locator('#ph').fill('9999900001');await C.locator('#go').click();await pg.wait_for_timeout(500)

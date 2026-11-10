@@ -39,7 +39,7 @@ let db;
 try { db = initializeFirestore(app, { localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }) }); }
 catch (e) { console.warn('offline cache off', e); db = getFirestore(app); }
 
-let verifier = null, confirmation = null, verifierUsed = false, verifierReady = null;
+let verifier = null, confirmation = null;
 function recaptchaBox() {
   let el = document.getElementById('vct-recaptcha');
   if (!el) { el = document.createElement('div'); el.id = 'vct-recaptcha'; el.style.cssText = 'position:fixed;left:0;bottom:0;z-index:99'; document.body.appendChild(el); }
@@ -93,28 +93,11 @@ const api = {
   toMs,
   get user() { return auth.currentUser; },
   get phone() { return auth.currentUser ? auth.currentUser.phoneNumber : null; },
-  // Get the invisible security check ready while the person types the number, so "Send OTP" goes out at once.
-  // Safe to call many times; never throws.
-  prepOtp() {
-    if (verifier && !verifierUsed) return verifierReady || Promise.resolve();
-    try { if (verifier) verifier.clear(); } catch (e) {}
-    try {
-      recaptchaBox().innerHTML = '<div id="vct-recaptcha-inner"></div>';
-      verifier = new RecaptchaVerifier(auth, 'vct-recaptcha-inner', { size: 'invisible' });
-      verifierUsed = false;
-      verifierReady = verifier.render().catch((e) => { console.warn('otp prep', e); verifier = null; });
-    } catch (e) { console.warn('otp prep', e); verifier = null; verifierReady = null; }
-    return verifierReady || Promise.resolve();
-  },
   // phone10: 10 digits without +91
   async sendOtp(phone10) {
-    if (!verifier || verifierUsed) api.prepOtp();
-    if (verifierReady) await verifierReady;
-    if (!verifier) {   // preparing failed: one fresh try, errors go to the caller as before
-      recaptchaBox().innerHTML = '<div id="vct-recaptcha-inner"></div>';
-      verifier = new RecaptchaVerifier(auth, 'vct-recaptcha-inner', { size: 'invisible' });
-    }
-    verifierUsed = true;   // a check is used once; the next send makes a new one
+    try { if (verifier) verifier.clear(); } catch (e) {}
+    recaptchaBox().innerHTML = '<div id="vct-recaptcha-inner"></div>';
+    verifier = new RecaptchaVerifier(auth, 'vct-recaptcha-inner', { size: 'invisible' });
     confirmation = await signInWithPhoneNumber(auth, '+91' + phone10, verifier);
     return true;
   },

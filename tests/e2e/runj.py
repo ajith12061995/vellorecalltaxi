@@ -10,7 +10,7 @@ async def main():
         await O.locator('#ph').fill('8220201462'); await O.locator('#lgn').click(); await pg.wait_for_timeout(300); await O.locator('#otp').fill('123456'); await pg.wait_for_timeout(1500)
         await pg.screenshot(path='shots/j0.png')
         await J.locator('#ph').fill('9876512345'); await J.locator('#ph').dispatch_event('input'); await J.locator('#go').click(); await pg.wait_for_timeout(400)
-        await J.locator('#o0').fill('123456'); await pg.wait_for_timeout(800)
+        await J.locator('#o0').fill('123456'); await J.locator('#o0').dispatch_event('input'); await J.locator('#vf').click(); await pg.wait_for_timeout(800)
         await J.locator('#nm').fill('Murugan K'); await J.locator('#dln').fill('TN2320200012345'); await J.locator('#exp').fill('6'); await J.locator('#area').fill('Katpadi'); await J.locator('#ecn').fill('Lakshmi (wife)'); await J.locator('#ecp').fill('9840011122')
         await J.locator('[data-v=sedan]').click(); await pg.wait_for_timeout(200)
         await J.locator('#br').select_option('Maruti Suzuki'); await pg.wait_for_timeout(200); await J.locator('#mo').select_option('Dzire'); await J.locator('#yr').select_option('2021')
