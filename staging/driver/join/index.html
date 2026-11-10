@@ -57,7 +57,7 @@ a{color:inherit}
 .agr{margin:0;padding-left:20px;max-height:260px;overflow:auto;border:1.5px solid var(--line,#e5e5e5);border-radius:12px;padding:10px 10px 10px 30px;font-size:13.5px;line-height:1.55}.agr li{margin:0 0 6px}
 </style>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV=window.VCT_V='77',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV=window.VCT_V='78',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('../../version.json',location.href)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -71,8 +71,10 @@ setTimeout(chk,3000);setInterval(chk,5*60*1000);document.addEventListener('visib
 </div></header>
 <main class="wrap" id="app"></main>
 <footer><a href="../../privacy/#drivers" target="_blank" rel="noopener" id="plink"></a> · Vellore Taxi</footer>
-<script src="../../core/report.js?v=77"></script>
-<script src="../../core/driverchecks.js?v=77"></script>
+<script src="../../core/report.js?v=78"></script>
+<script src="../../core/driverchecks.js?v=78"></script>
+<script src="../../core/otp.js?v=78"></script>
+<script src="../../core/deskmode.js?v=78"></script>
 <script>
 const S={lang:'ta',phone:'',veh:'auto',files:{},data:{}};
 try{const s=JSON.parse(localStorage.getItem('vctj')||'{}');if(s.lang)S.lang=s.lang}catch(e){}
@@ -83,7 +85,7 @@ const app=document.getElementById('app');let CL=null,F=null;
 function head(h,p){document.getElementById('h1').textContent=h;document.getElementById('hp').textContent=p||''}
 function setLang(){document.getElementById('lang').textContent=S.lang==='ta'?'English':'தமிழ்';document.getElementById('plink').textContent=L('தனியுரிமை & விதிமுறைகள்','Privacy & Terms');document.documentElement.lang=S.lang}
 document.getElementById('lang').onclick=()=>{S.lang=S.lang==='ta'?'en':'ta';try{localStorage.setItem('vctj',JSON.stringify({lang:S.lang}))}catch(e){}setLang();route()};
-let VIEW='login';function route(){({login,otp,form,status,offline,owner}[VIEW]||login)()}
+let VIEW='login',NATOTP=null;function route(){({login,otp,form,status,offline,owner}[VIEW]||login)()}
 function owner(){head(L('வணக்கம் Owner!','Hello, owner!'),L('உங்க நம்பர் office நம்பர் — இந்த form driver-களுக்கு மட்டும்.','Your number is an office number — this form is only for drivers.'));
   app.innerHTML=`<div class="card"><p style="margin:0 0 6px">${L('Driver-கள் app-ஐ எப்படி பார்ப்பாங்கன்னு demo-வில பார்க்கலாம். Demo-வில எதுவும் உண்மையா சேமிக்கப்படாது.','You can try the driver app in demo mode. Nothing is saved for real.')}</p>
     <a class="btn y" href="../?demo=1" style="display:flex;align-items:center;justify-content:center;text-decoration:none">${L('Driver app demo பார்','Open the driver app demo')}</a>
@@ -103,8 +105,10 @@ function login(){
     <div class="note">${L('தயாரா வச்சுக்கோங்க: ஆதார், ஓட்டுநர் உரிமம், RC (முன் + பின்), Insurance, (இருந்தா) PAN, Permit, FC. போன் camera-ல photo எடுத்தா போதும்.','Keep ready: Aadhaar, driving licence and RC (front and back), insurance, and PAN, permit and FC if you have them. Phone camera photos are fine.')}</div>`;
   const ph=document.getElementById('ph'),b=document.getElementById('go');
   const ok=()=>/^[6-9]\d{9}$/.test(ph.value);ph.oninput=()=>{ph.value=ph.value.replace(/\D/g,'').slice(0,10);b.disabled=!ok()};b.disabled=!ok();
+  if(CL.prepOtp)CL.prepOtp();
   b.onclick=async()=>{S.phone=ph.value;b.disabled=true;b.textContent=L('அனுப்புது…','Sending…');
-    try{await CL.sendOtp(S.phone);go('otp')}catch(e){document.getElementById('e').textContent=CL.errText(e,S.lang==='ta');b.disabled=false;b.textContent=L('OTP அனுப்பு','Send OTP')}};
+    NATOTP=VCTOTP.native();
+    try{await CL.sendOtp(S.phone);go('otp')}catch(e){VCTOTP.stop();NATOTP=null;document.getElementById('e').textContent=CL.errText(e,S.lang==='ta');b.disabled=false;b.textContent=L('OTP அனுப்பு','Send OTP')}};
 }
 function otp(){
   head(L('OTP போடுங்க','Enter the OTP'),L(`+91 ${S.phone}-க்கு SMS-ல வந்த 6 இலக்க OTP`,`The 6-digit code sent to +91 ${S.phone}`));
@@ -112,11 +116,12 @@ function otp(){
     <div class="err" id="e" style="text-align:center"></div><button class="btn" id="vf" disabled>${L('சரிபார்','Verify')}</button><button class="btn ghost" id="bk">${L('நம்பரை மாத்து','Change number')}</button></div>`;
   const ins=[...app.querySelectorAll('.otp input')],vf=document.getElementById('vf');
   const code=()=>ins.map(i=>i.value).join('');
-  ins.forEach((inp,i)=>{inp.oninput=()=>{const v=inp.value.replace(/\D/g,'');if(v.length>1){v.slice(0,6).split('').forEach((d,j)=>{if(ins[j])ins[j].value=d});ins[Math.min(5,v.length-1)].focus()}else{inp.value=v;if(v&&ins[i+1])ins[i+1].focus()}vf.disabled=code().length!==6};
-    inp.onkeydown=e=>{if(e.key==='Backspace'&&!inp.value&&ins[i-1])ins[i-1].focus()}});
+  const box=VCTOTP.bind(ins,6,()=>{if(!vf.disabled)vf.click()},v=>{vf.disabled=v.length!==6;document.getElementById('e').textContent=''});
+  ins.forEach((x,i)=>x.setAttribute('autocomplete',i?'off':'one-time-code'));
   ins[0].focus();
-  vf.onclick=async()=>{vf.disabled=true;try{await CL.verifyOtp(code());await afterLogin()}catch(e){document.getElementById('e').textContent=CL.errText(e,S.lang==='ta');vf.disabled=false}};
-  document.getElementById('bk').onclick=()=>go('login');
+  if(NATOTP)NATOTP.then(c=>{if(c&&document.body.contains(ins[0])&&!code())VCTOTP.fill(ins,c)});NATOTP=null;
+  vf.onclick=async()=>{vf.disabled=true;try{await CL.verifyOtp(code());await afterLogin()}catch(e){document.getElementById('e').textContent=CL.errText(e,S.lang==='ta');box.reset();vf.disabled=true}};
+  document.getElementById('bk').onclick=()=>{VCTOTP.stop();go('login')};
 }
 async function afterLogin(){
   S.phone=CL.phone.replace('+91','');

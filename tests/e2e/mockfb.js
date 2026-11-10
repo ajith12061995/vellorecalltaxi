@@ -51,7 +51,8 @@
     let user=null,pending=null;const cbs=[];
     return{live:true,db:{},fs,toMs:v=>v&&typeof v.toMillis==='function'?v.toMillis():(typeof v==='number'?v:0),
       get user(){return user},get phone(){return user?user.phoneNumber:null},
-      async sendOtp(p){pending=p;return true},
+      prepOtp(){window.PREP=(window.PREP||0)+1;return Promise.resolve()},
+      async sendOtp(p){pending=p;window.SENT=(window.SENT||[]).concat([p]);return true},
       async verifyOtp(code){if(code!=='123456')throw{code:'auth/invalid-verification-code'};user={uid:'u'+pending,phoneNumber:'+91'+pending};cbs.forEach(c=>c(user));return user},
       waitUser(){return Promise.resolve(user)},onUser(cb){cbs.push(cb);return()=>{}},
       async googleLogin(){user={uid:'g123',phoneNumber:null,email:'priya@gmail.com',displayName:'Priya G'};cbs.forEach(c=>c(user));return user},

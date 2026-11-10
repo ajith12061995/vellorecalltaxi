@@ -8,7 +8,8 @@ async def main():
         C=pg.frame_locator('#c');D=pg.frame_locator('#d');cf=pg.frame(url='http://localhost:8765/tests/e2e/out/c2.html');df=pg.frame(url='http://localhost:8765/tests/e2e/out/d2.html')
         await D.locator('#ph').fill('9999900002');await D.locator('#go').click();await pg.wait_for_timeout(300)
         for i,d in enumerate('123456'):await D.locator(f'#o{i}').fill(d)
-        await D.locator('#go').click();await pg.wait_for_timeout(1200)
+        # auto sign-in when the 6th digit is in
+        await pg.wait_for_timeout(1200)
         await D.locator("#ons").click();await pg.wait_for_timeout(3000)
         print('driver POS',await df.evaluate("JSON.stringify(POS)"))
         await C.locator('#go').click();await pg.wait_for_timeout(300)

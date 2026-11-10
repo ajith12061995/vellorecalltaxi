@@ -57,7 +57,8 @@ async def main():
         # driver: login, go online, see request b1, accept, pickup screens
         await D.locator('#ph').fill('9999900002');await D.locator('#go').click();await pg.wait_for_timeout(300)
         for i,d in enumerate('123456'):await D.locator(f'#o{i}').fill(d)
-        await D.locator('#go').click();await pg.wait_for_timeout(1200)
+        # auto sign-in when the 6th digit is in
+        await pg.wait_for_timeout(1200)
         if await df.evaluate("!!document.getElementById('ons')"):await D.locator('#ons').click()
         await pg.wait_for_timeout(3000)
         req=await df.evaluate("!!document.getElementById('acc')")

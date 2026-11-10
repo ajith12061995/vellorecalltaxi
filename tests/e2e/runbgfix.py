@@ -23,7 +23,8 @@ async def main():
         D=pg.frame_locator('#d');df=pg.frame(url=B+'d2.html');C=pg.frame_locator('#c');cf=pg.frame(url=B+'c2.html')
         await D.locator('#ph').fill('9999900002');await D.locator('#go').click();await pg.wait_for_timeout(300)
         for i,d in enumerate('123456'):await D.locator(f'#o{i}').fill(d)
-        await D.locator('#go').click();await pg.wait_for_timeout(1200)
+        # auto sign-in when the 6th digit is in
+        await pg.wait_for_timeout(1200)
         await df.evaluate(FAKE);await pg.evaluate(FAKE)
         await pg.evaluate("MOCK.fs.setDoc({path:'config/app'},{comm:10,minbal:100,push:{vapid:'BTESTKEY'}})");await pg.wait_for_timeout(1200)
         check('driver: no web-push button inside the Android app',not await df.evaluate("!!document.getElementById('pushon')"))

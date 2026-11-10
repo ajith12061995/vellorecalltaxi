@@ -20,7 +20,8 @@ async def main():
         D=pg.frame_locator('#d');df=pg.frame(url=B+'d2.html')
         await D.locator('#ph').fill('9999900002');await D.locator('#go').click();await pg.wait_for_timeout(300)
         for i,d in enumerate('123456'):await D.locator(f'#o{i}').fill(d)
-        await D.locator('#go').click();await pg.wait_for_timeout(1200)
+        # auto sign-in when the 6th digit is in
+        await pg.wait_for_timeout(1200)
         await df.evaluate(FAKE);await pg.evaluate(FAKE)  # the mock cloud layer lives in the harness window
         await pg.evaluate("MOCK.fs.setDoc({path:'config/app'},{comm:10,minbal:100,push:{vapid:'BTESTKEY'}})");await pg.wait_for_timeout(1500)
         await D.locator('#ons').click();await pg.wait_for_timeout(1800)
