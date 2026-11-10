@@ -40,4 +40,6 @@ jobs:
           script: bash tests/android/shot.sh mobile/customer/android/app/build/outputs/apk/debug/app-debug.apk shots-${{ matrix.api }}
       - uses: actions/upload-artifact@v4
         if: always()
-        with: { name: shots-${{ matrix.api }}, path: shots-${{ matrix.api }} }
+        with:
+          name: shots-${{ matrix.api }}
+          path: shots-${{ matrix.api }}
