@@ -11,7 +11,8 @@ def check(n,c,i=''):res.append(bool(c));print(('PASS ' if c else 'FAIL ')+n,i)
 async def login_d(D,pg):
     await D.locator('#ph').fill('9999900002');await D.locator('#go').click();await pg.wait_for_timeout(500)
     for i,d in enumerate('123456'):await D.locator(f'#o{i}').fill(d)
-    await D.locator('#go').click();await pg.wait_for_timeout(2500)
+    # auto sign-in when the 6th digit is in
+    await pg.wait_for_timeout(2500)
     if await D.locator('#ons').count():await D.locator('#ons').click();await pg.wait_for_timeout(2500)
 async def login_c(C,pg):
     await C.locator('#go').click();await pg.wait_for_timeout(300)
@@ -48,7 +49,8 @@ async def main():
         dfr=pg.frame(url=B+'d2.html?r=1');Dr=pg.frame_locator('#d')
         await Dr.locator('#ph').fill('9999900002');await Dr.locator('#go').click();await pg.wait_for_timeout(500)
         for i,d in enumerate('123456'):await Dr.locator(f'#o{i}').fill(d)
-        await Dr.locator('#go').click();await pg.wait_for_timeout(3500)
+        # auto sign-in when the 6th digit is in
+        await pg.wait_for_timeout(3500)
         back=await dfr.evaluate("!!(J&&J.id)&&J.b&&J.b.status");kmk=await dfr.evaluate("J&&J.gpsKm")
         check('D reopen: driver is back in the trip',back=='ontrip',back)
         check('D reopen: GPS km kept',kmk==3.7,kmk)

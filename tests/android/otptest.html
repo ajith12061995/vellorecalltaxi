@@ -1,0 +1,13 @@
+<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width">
+<title>OTP test</title><body style="font:20px sans-serif;padding:20px">
+<div id="st">waiting for SMS…</div>
+<script src="/core/otp.js"></script>
+<script>
+// CI test page for the Android SmsOtp plugin (tests/android/otp-emulator.sh): starts the SMS reader like the apps do
+// and reports the code to the test server.
+const st=document.getElementById('st');const rep=(k,v)=>fetch('/report?'+k+'='+encodeURIComponent(v)).catch(()=>{});
+function go(tag){const p=VCTOTP.native();rep('started',tag+':'+(p?'native':'none'));if(p)p.then(c=>{st.textContent='CODE:'+c;rep(tag,String(c))})}
+go('first');
+window.next=()=>go('second');
+document.addEventListener('click',()=>{if(window.__second)return;window.__second=1;go('second')});
+</script>
