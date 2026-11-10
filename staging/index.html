@@ -33,6 +33,7 @@
 .vi:has(.vimg){background:#fff!important}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .vimg{mix-blend-mode:normal;background:#fff;border-radius:8px}}
 :root[data-theme="dark"] .vimg{mix-blend-mode:normal;background:#fff;border-radius:8px}
+.wxline{display:flex;align-items:center;gap:8px;margin:8px 0 4px;padding:8px 12px;border-radius:12px;background:#EEF4FF;color:#1F3A5F;font-size:13px;font-weight:600;line-height:1.35}.wxline span{flex:1}.wxline small{flex:none;font-weight:400;font-size:9.5px;opacity:.6}.wxline.wx-hot{background:#FFF1DC;color:#6B3D00}
 .nightnote{margin:6px 0 2px;padding:7px 11px;border-radius:12px;background:#EEF0FF;color:#2B2F6B;font-size:12.5px;font-weight:600}
 .pushask{display:flex;align-items:center;gap:10px;margin:10px 0;padding:10px 12px;border-radius:14px;background:#FFF7DB;border:1px solid #F2D27A;font-size:13.5px}.pushask span{flex:1}
 </style>
@@ -545,6 +546,7 @@ details.faq p{margin:0;padding:0 14px 14px;color:var(--muted);font-size:14px;lin
 <script src="./core/chat.js?v=78"></script>
 <script src="./core/otp.js?v=78"></script>
 <script src="./core/deskmode.js?v=78"></script>
+<script src="./core/weather.js?v=78"></script>
 <script>
 /* ---------- icons ---------- */
 const I = {
@@ -825,6 +827,7 @@ function home(mode){
      ${upNextHtml()}
      ${vrowHtml()}
      <div class="chips"><button class="chip" id="pinchip" style="background:var(--yellow);border-color:var(--yellow);color:#0B4A36">${I.pin}${t('pinChip')}</button>${[['cmc','hosp'],['katpadi','train'],['vit','pin'],['golden','pin']].map(([k,ic])=>`<button class="chip" data-p="${k}">${I[ic]}${pn(k)}</button>`).join('')}</div>
+     ${wxHtml()}
      ${recentHtml()}`}
    </div>`),()=>{
      bindNav();
@@ -1914,9 +1917,15 @@ function watchConfig(){
     // and reading it there used to throw before the outstation prices and settings above were applied
     try{if(CUID&&!NATIVEC()&&pushReadyC()&&typeof Notification!=='undefined'&&Notification.permission==='granted')enablePushC(false)}catch(e){}},()=>{});
   F().getDoc(F().doc(CL.db,'blocked','+91'+S.phone)).then(x=>{MEBLK=x.exists()}).catch(()=>{}); // only my own entry is readable
+  watchWx();
   if(CUID)VCTCLK.sync(F(),F().doc(CL.db,'users',CUID)); // learn the server time once
   watchMyB();
 }
+/* small weather line on home (config/weather, refreshed by the server every 30 minutes) */
+let WXD=null,WXUNSUB=null;
+function wxHtml(){return CL?VCTWX.html(WXD,Date.now(),'customer',S.lang):''}
+function watchWx(){if(WXUNSUB||!CL)return;
+  WXUNSUB=F().onSnapshot(F().doc(CL.db,'config','weather'),s=>{WXD=s.exists()?s.data():null;const el=document.getElementById('wx');if(el)el.outerHTML=wxHtml()},()=>{})}
 function resumeActive(){
   let a=null;try{a=JSON.parse(localStorage.getItem('vct_ride')||'null')}catch(e){}
   if(!a||!a.id)return false;

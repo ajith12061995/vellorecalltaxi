@@ -506,6 +506,7 @@ details.faq p{margin:0;padding:0 14px 14px;color:var(--muted);font-size:14px;lin
 .stpill.on{background:#1E8A5A;color:#fff}
 .stpill.on i{background:#fff;animation:ping 1.4s infinite}
 .chipbtn.lowbal{background:#C23B3B;color:#fff}
+.wxline{display:flex;align-items:center;gap:8px;margin:8px 0 4px;padding:8px 12px;border-radius:12px;background:#EEF4FF;color:#1F3A5F;font-size:13px;font-weight:600;line-height:1.35}.wxline span{flex:1}.wxline small{flex:none;font-weight:400;font-size:9.5px;opacity:.6}.wxline.wx-hot{background:#FFF1DC;color:#6B3D00}
 .warn{background:rgba(194,59,59,.10);color:var(--danger);border-radius:14px;padding:10px 14px;font-size:13.5px;font-weight:600}
 .liveCard{display:flex;align-items:center;gap:14px;padding:14px;border-radius:18px;background:rgba(30,138,90,.10)}
 .liveCard b{font-family:var(--display);font-size:18px;display:block;color:var(--ok)}
@@ -658,6 +659,7 @@ a.btn{text-decoration:none}
 <script src="../core/nav.js?v=78"></script>
 <script src="../core/otp.js?v=78"></script>
 <script src="../core/deskmode.js?v=78"></script>
+<script src="../core/weather.js?v=78"></script>
 <script>
 /* shared with the customer app: icons, places, fares, map engine */
 const I = {
@@ -961,6 +963,7 @@ function home(){
      ${pushReady()&&(CL.nativePush&&CL.nativePush()?!lsGet('vct_fcm'):Notification.permission==='default')?`<button class="warn" id="pushon" style="text-align:left;border:0;width:100%">🔔 ${L('Phone lock ஆனாலும் ride alert வரணுமா? இங்கே தொட்டு Allow கொடுங்க','Get ride alerts even when the phone is locked: tap and Allow')}</button>`:''}
      ${upcHtml()}
      ${SHOW_SMGR?smgrHtml():''}
+     ${wxHtmlD()}
      <div class="sec"><h3>${L('இன்று','Today')}</h3><span class="sample">${new Date().toLocaleDateString(S.lang==='ta'?'ta-IN':'en-IN',{day:'numeric',month:'short'})}</span></div>
      <div class="stats"><div><b>${inr(net)}</b><small>${L('வருமானம்','Earnings')}</small></div><div><b>${today.length}</b><small>${L('பயணங்கள்','Rides')}</small></div><div><b>${Math.floor(onMinutes()/60)}:${String(onMinutes()%60).padStart(2,'0')}</b><small>${L('Online நேரம்','Online hrs')}</small></div></div>
      <div class="vcard"><span class="vi">${I[d.veh]}</span><div><b>${d[S.lang]}</b><small>${VEH.find(v=>v.id===d.veh)[S.lang]} · ${d.model}</small></div><span class="plate">${d.plate}</span></div>
@@ -1350,7 +1353,7 @@ async function loadMe(){
   if(!s||!s.exists()){notDriver();return false}
   applyMe(s.data());S.phone=(CL.phone||'').replace('+91','');S.logged=true;S.pid='cloud';save();
   DS={wallet:DS.wallet,tx:[],trips:[],pending:[],onMs:0,onDay:new Date().toDateString()};
-  watchMe();watchCfgD();watchMine();watchRch();
+  watchMe();watchCfgD();watchWxD();watchMine();watchRch();
   VCTCLK.sync(F(),F().doc(CL.db,'live',CL.phone)); // learn the server time once
   return true;
 }
@@ -1364,6 +1367,10 @@ function watchMe(){UNS.push(F().onSnapshot(F().doc(CL.db,'drivers',CL.phone),s=>
   if(DME.blocked&&S.online){setOnline(false);toast(L('உங்க account நிறுத்தி வைக்கப்பட்டிருக்கு','Your account is on hold'))}
   if(S.online&&!J&&docState().expired.length){setOnline(false);toast(L('ஒரு document காலாவதி ஆயிடுச்சு. Offline ஆக்கப்பட்டீங்க','A document has expired. You have been taken offline'))}
   if(!J&&!document.querySelector('.modal')){if(S.tab==='wallet'&&before!==DS.wallet)walletTab();else if(S.tab==='home'&&(document.getElementById('ons')||(document.getElementById('ons')||document.getElementById('offs'))))home()}},()=>{}))}
+/* small weather line on home (config/weather, refreshed by the server every 30 minutes) */
+let WXD=null;
+function wxHtmlD(){return CL?VCTWX.html(WXD,Date.now(),'driver',S.lang):''}
+function watchWxD(){UNS.push(F().onSnapshot(F().doc(CL.db,'config','weather'),s=>{WXD=s.exists()?s.data():null;const el=document.getElementById('wx');if(el)el.outerHTML=wxHtmlD()},()=>{}))}
 function watchCfgD(){UNS.push(F().onSnapshot(F().doc(CL.db,'config','app'),s=>{if(!s.exists())return;const d=s.data();
   if(d.comm!=null)COMM=+d.comm;if(d.minbal!=null)MINBAL=+d.minbal;CFGD.upi=d.upi||'';CFGD.office=d.driverHelp||d.office||''; /* drivers call the driver help line when the office has set one */CFGD.serverComm=!!d.serverComm;CFGD.serverPin=!!d.serverPin;CFGD.reqConsent=!!d.reqConsent;CFGD.extNav=!!d.extNav;CFGD.showFee=!!d.showFee;CFGD.wait=d.wait||null;CFGD.push=d.push||null;
   {const na=Array.isArray(d.announce)?d.announce:[],top=na[0];const fresh=top&&(!ANN[0]||ANN[0].id!==top.id)&&top.t>seenAt();ANN=na;

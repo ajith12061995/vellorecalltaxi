@@ -17,6 +17,7 @@ const { setGlobalOptions, logger } = require('firebase-functions/v2');
 const { defineString } = require('firebase-functions/params');
 const admin = require('firebase-admin');
 const L = require('./lib/logic');
+const WX = require('./lib/weather');
 
 admin.initializeApp();
 const db = admin.firestore();
@@ -63,6 +64,29 @@ exports.housekeeping = onSchedule({ schedule: 'every 2 minutes', timeZone: 'Asia
   const old = await db.collection('purgeBackups').where('at', '<', new Date(now - 30 * 864e5)).limit(5).get();
   for (const r of old.docs) { await db.recursiveDelete(r.ref); n++; }
   logger.info('housekeeping', { changed: n });
+});
+
+// Weather line in the apps: every 30 minutes read MET Norway's forecast for Vellore and keep a tiny summary in
+// config/weather (signed-in users can read config/*; only this function writes it). A failure changes nothing:
+// the apps hide the line when the summary is older than 100 minutes.
+exports.weatherTick = onSchedule({ schedule: '7,37 * * * *', timeZone: 'Asia/Kolkata', timeoutSeconds: 30, retryCount: 0 }, async () => {
+  const ref = db.doc('config/weather'), keep = db.doc('serverState/weather');   // serverState/*: no client access (no rule)
+  try {
+    const old = (await keep.get()).data() || {};
+    const r = await WX.get(fetch, typeof old.lastMod === 'string' ? old.lastMod : '');
+    const now = Date.now();
+    let fc = null;
+    if (r.status === 304) { try { fc = JSON.parse(old.raw); } catch (e) { fc = null; } }   // unchanged: use the kept hours
+    else if (r.status === 200) {
+      // keep the next 12 hours so an "unchanged" answer can still move on to the new hour
+      const ts = ((r.data && r.data.properties && r.data.properties.timeseries) || []).filter(x => { const t = Date.parse(x && x.time); return t > now - 2 * 3600e3 && t < now + 12 * 3600e3; });
+      fc = { properties: { timeseries: ts } };
+      await keep.set({ lastMod: r.lastMod, raw: JSON.stringify(fc), at: now });
+    } else { logger.warn('weather http', { status: r.status }); return; }
+    const s = WX.summary(fc, now);
+    if (!s) { logger.warn('weather: no usable forecast', { status: r.status }); return; }
+    await ref.set({ ...s, at: now, src: 'MET Norway (CC BY 4.0)' });
+  } catch (e) { logger.warn('weather failed', { message: String(e && e.message || e) }); }
 });
 
 exports.onBookingCreated = onDocumentCreated('bookings/{id}', async ev => {

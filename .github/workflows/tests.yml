@@ -16,6 +16,9 @@ jobs:
         with: { node-version: '22' }
       - name: Unit tests (fare, geo)
         run: for f in tests/unit/*.test.js; do node "$f"; done
+      - name: Weather source check (real request to MET Norway; informative, does not fail the run)
+        continue-on-error: true
+        run: node -e "const W=require('./functions/lib/weather');W.get(fetch,'').then(r=>{console.log('status',r.status,'last-modified',r.lastMod);const s=W.summary(r.data,Date.now());console.log('summary',JSON.stringify(s));if(!s)process.exit(1)})"
       - name: Security rules tests (Firestore emulator)
         working-directory: tests/rules
         run: npm install --no-audit --no-fund && npm test
