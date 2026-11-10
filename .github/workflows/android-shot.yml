@@ -35,6 +35,7 @@ jobs:
           api-level: ${{ matrix.api }}
           target: google_apis
           arch: x86_64
+          profile: pixel_6
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           script: bash tests/android/shot.sh mobile/customer/android/app/build/outputs/apk/debug/app-debug.apk shots-${{ matrix.api }}
