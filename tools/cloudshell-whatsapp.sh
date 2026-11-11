@@ -12,23 +12,29 @@ say(){ printf '\n\033[1;33m== %s\033[0m\n' "$*"; }
 gcloud config set project "$PROJECT" >/dev/null
 gcloud services enable secretmanager.googleapis.com >/dev/null
 
-put(){ # put NAME "explanation" — asks for the value with hidden input and stores a new version
-  local name="$1" v
+put(){ # put NAME "explanation" REGEX — hidden input, shape check, up to 3 tries; stores a new version
+  local name="$1" v try
   if gcloud secrets describe "$name" >/dev/null 2>&1; then
     read -r -p "$name is already stored. Replace it? (y/N) " a; [[ "$a" =~ ^[Yy]$ ]] || { echo "kept"; return; }
   fi
   echo "$2"
-  read -r -s -p "Paste $name and press Enter (nothing will show): " v; echo
-  [[ ${#v} -ge 20 ]] || { echo "That looks too short — not saved."; exit 1; }
-  if gcloud secrets describe "$name" >/dev/null 2>&1; then printf '%s' "$v" | gcloud secrets versions add "$name" --data-file=- >/dev/null
-  else printf '%s' "$v" | gcloud secrets create "$name" --replication-policy=automatic --data-file=- >/dev/null; fi
-  unset v; echo "$name saved."
+  for try in 1 2 3; do
+    read -r -s -p "Paste $name (Ctrl+V), then Enter — nothing will show [try $try/3]: " v; echo
+    v="$(printf '%s' "$v" | tr -d '[:space:]')"
+    if [[ "$v" =~ $3 ]]; then
+      if gcloud secrets describe "$name" >/dev/null 2>&1; then printf '%s' "$v" | gcloud secrets versions add "$name" --data-file=- >/dev/null
+      else printf '%s' "$v" | gcloud secrets create "$name" --replication-policy=automatic --data-file=- >/dev/null; fi
+      unset v; echo "$name saved."; return
+    fi
+    echo "  That does not look right (length ${#v}). Copy it again and paste."
+  done
+  unset v; echo "Not saved after 3 tries."; exit 1
 }
 
 say "1/4 Meta access token (System User, permanent)"
-put WA_TOKEN "Business settings → Users → System users → Vellore Taxi API → Generate token (whatsapp_business_messaging + whatsapp_business_management)."
+put WA_TOKEN "Business settings → Users → System users → Vellore Taxi API → Generate token (whatsapp_business_messaging + whatsapp_business_management)." '^EAA[A-Za-z0-9]{100,}$'
 say "2/4 Meta app secret"
-put WA_APP_SECRET "developers.facebook.com → Vellore Taxi Messaging → App settings → Basic → App secret → Show."
+put WA_APP_SECRET "developers.facebook.com → Vellore Taxi Messaging → App settings → Basic → App secret → Show." '^[0-9a-f]{32}$'
 
 say "3/4 Webhook verify token (made here at random)"
 if ! gcloud secrets describe WA_VERIFY_TOKEN >/dev/null 2>&1; then
