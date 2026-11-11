@@ -44,7 +44,7 @@ fi
 say "4/4 Tests + deploy (stops if any test fails)"
 (cd functions && npm install --no-audit --no-fund --loglevel=error)
 (cd functions && node --test test/*.test.js > /tmp/vct-wa-test.log 2>&1) || { tail -30 /tmp/vct-wa-test.log; echo "TESTS FAILED — nothing deployed"; exit 1; }
-grep -E '^# (pass|fail)' /tmp/vct-wa-test.log
+grep -E '^(# |ℹ )(tests|pass|fail)' /tmp/vct-wa-test.log || tail -8 /tmp/vct-wa-test.log
 npx --yes firebase-tools@13 login --no-localhost
 npx --yes firebase-tools@13 use "$PROJECT"
 echo "If it asks to DELETE anything → answer N."
