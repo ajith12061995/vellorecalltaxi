@@ -55,6 +55,9 @@ def main():
         return
     token = subprocess.run(['gcloud', 'secrets', 'versions', 'access', 'latest', '--secret=WA_TOKEN', '--project', PROJECT],
                            capture_output=True, text=True, check=True).stdout.strip()
+    if not re.fullmatch(r'EAA[A-Za-z0-9]{100,}', token):
+        raise SystemExit('WA_TOKEN does not look like a Meta token (extra text pasted with it?). Store it again: bash tools/wa-token.sh')
+    hide = lambda m: m.replace(token, '[token]') if token else m
     ok = 0
     for name, lang, text in items:
         body = {'name': name, 'language': lang, 'category': 'UTILITY',
@@ -66,7 +69,8 @@ def main():
             print(f'OK    {name} [{lang}] status={r.get("status")} category={r.get("category")}'); ok += 1
         except urllib.error.HTTPError as e:
             err = json.loads(e.read() or b'{}').get('error', {})
-            msg = err.get('error_user_msg') or err.get('message') or str(e)
+            msg = hide(err.get('error_user_msg') or err.get('message') or str(e))
+            msg = re.sub(r'EAA[A-Za-z0-9]{20,}', '[token]', msg)
             if 'already' in msg.lower() or err.get('error_subcode') == 2388024:
                 print(f'SKIP  {name} [{lang}] already exists'); ok += 1
             else:
