@@ -7,6 +7,10 @@ P=vellore-taxi23
 read -rsp "Token (paste, then Enter): " v; echo
 v="$(printf '%s' "$v" | tr -d '[:space:]')"
 if ! [[ "$v" =~ ^EAA[A-Za-z0-9]{100,}$ ]]; then echo "That is not a Meta token (length ${#v}). Nothing saved."; unset v; exit 1; fi
+# ask Meta whether it accepts the token BEFORE saving (only the HTTP status is shown, never the reply)
+code=$(curl -s -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $v" "https://graph.facebook.com/v21.0/29068467292795781?fields=name")
+if [[ "$code" != "200" ]]; then echo "Meta did not accept this token (HTTP $code). Nothing saved. Copy it again from Meta and retry."; unset v; exit 1; fi
+echo "Meta accepted the token."
 if gcloud secrets describe WA_TOKEN --project "$P" >/dev/null 2>&1; then
   new=$(printf '%s' "$v" | gcloud secrets versions add WA_TOKEN --project "$P" --data-file=- --format='value(name)')
 else
