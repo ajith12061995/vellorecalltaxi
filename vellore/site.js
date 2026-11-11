@@ -21,7 +21,7 @@
   document.addEventListener('keydown', e => { if (e.key === 'Escape') menu(false); });
 
   /* ---------- content: built-in values = what Office had on 9 Nov 2026; the database replaces them ---------- */
-  const SITE0 = { phone: '9344640416', driverPhone: '9944039933', whatsapp: '', email: 'vellorecalltaxi.office@gmail.com', address: 'Vellore, Tamil Nadu',
+  const SITE0 = { phone: '9344640416', driverPhone: '9344039933', whatsapp: '', email: 'vellorecalltaxi.office@gmail.com', address: 'Vellore, Tamil Nadu',
     places: [
       { id: 'fort', ta: 'வேலூர் கோட்டை', en: 'Vellore Fort', dta: '16-ஆம் நூற்றாண்டு கருங்கல் கோட்டை, அகழியுடன்.', den: 'A 16th-century granite fort with its moat.' },
       { id: 'temple', ta: 'ஜலகண்டேஸ்வரர் கோவில்', en: 'Jalakandeswarar Temple', dta: 'கோட்டைக்குள் இருக்கும் சிற்பக் கோவில்.', den: 'The carved temple inside the fort.' },

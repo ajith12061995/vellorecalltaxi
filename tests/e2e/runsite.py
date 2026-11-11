@@ -1,7 +1,8 @@
 # Public website velloretaxi.app/vellore/ — the whole page with fake Google Maps / Routes and a fake Firebase:
 # Office content + prices replace the built-in ones, photos, booking box (Google place search, road km, city and
 # outstation fares = the app's prices, vehicle choice, link into the app), contact form, language, menu, phones, safety.
-import asyncio, json, base64, re
+import asyncio, json, base64, re, os
+R=os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from playwright.async_api import async_playwright
 U='http://localhost:8765/vellore/'
 res=[]
@@ -62,7 +63,9 @@ async def main():
         await pg.goto(U);await pg.wait_for_timeout(3500)
         hrefs=await pg.evaluate("[...document.querySelectorAll('a')].map(a=>a.getAttribute('href'))")
         check('Office numbers replace the built-in ones (call, WhatsApp, driver, email)','tel:+919876543210' in hrefs and 'tel:+919123456780' in hrefs and any(h.startswith('https://wa.me/919000000001') for h in hrefs) and 'mailto:hello@velloretaxi.app' in hrefs)
-        check('no old number left on the page',not any(h in ('tel:+917200730416','tel:+919944039933') for h in hrefs))
+        check('no old number left on the page',not any(h in ('tel:+917200730416','tel:+919944039933','tel:+919344039933') for h in hrefs))
+        src=open(os.path.join(R,'vellore','index.html'),encoding='utf-8').read()+open(os.path.join(R,'vellore','site.js'),encoding='utf-8').read()
+        check('built-in driver help number is 93440 39933 (99440 39933 was a mistake)','9944039933' not in src and '99440 39933' not in src and "driverPhone: '9344039933'" in src and 'tel:+919344039933' in src)
         ct=await pg.inner_text('#contact')
         check('numbers and address shown as text','98765 43210' in ct and '12 Officer Line, Vellore' in ct,ct[:200])
         check('Office prices: Mini ₹99 on the board',('₹99' in await pg.inner_text('#board')) and await pg.locator('[data-show=mini]').first.inner_text()=='99')

@@ -1757,7 +1757,7 @@ function sitePrices(c){if(!CL)return Promise.resolve();
   return F().setDoc(F().doc(CL.db,'public','prices'),{fares:pick(c.fares)||{},out:pick(c.out)||{},rent:pick(c.rent)||{},night:pick(c.night),area:pick(c.area),updatedAt:ts()})
     .catch(e=>{oerr(e);toast(L('Website-ல விலை மாறலை: ','Website prices not updated: ')+CL.errText(e,S.lang==='ta'))})}
 /* ---------- public website editor (owner): public/site + one photo per place in siteImg/{place id} ---------- */
-const SITE0={phone:'9344640416',driverPhone:'9944039933',whatsapp:'',email:'vellorecalltaxi.office@gmail.com',address:'Vellore, Tamil Nadu',
+const SITE0={phone:'9344640416',driverPhone:'9344039933',whatsapp:'',email:'vellorecalltaxi.office@gmail.com',address:'Vellore, Tamil Nadu',
   places:[{id:'fort',ta:'வேலூர் கோட்டை',en:'Vellore Fort',dta:'16-ஆம் நூற்றாண்டு கருங்கல் கோட்டை, அகழியுடன்.',den:'A 16th-century granite fort with its moat.'},
     {id:'temple',ta:'ஜலகண்டேஸ்வரர் கோவில்',en:'Jalakandeswarar Temple',dta:'கோட்டைக்குள் இருக்கும் சிற்பக் கோவில்.',den:'The carved temple inside the fort.'},
     {id:'golden',ta:'ஸ்ரீபுரம் பொற்கோவில்',en:'Sripuram Golden Temple',dta:'மாலை விளக்கொளியில் பார்க்க மிக அழகு. நகரத்திலிருந்து சுமார் 10 கி.மீ.',den:'Best seen lit up in the evening. About 10 km from town.'},
