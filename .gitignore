@@ -6,3 +6,5 @@ functions/node_modules/
 *.log
 functions/.env*
 /shots/
+/functions/.secret.local
+__pycache__/

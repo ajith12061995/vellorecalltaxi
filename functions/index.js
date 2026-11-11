@@ -9,15 +9,19 @@
                        (only drivers who allowed notifications; needs config/app.push.vapid).
    - verifyPin       : callable; checks the ride PIN on the server (strongest check).
    - purgeDriver     : callable, owner only; removes a driver completely (backup copy kept 30 days).
-   - dailyBackup     : 02:30 IST export of the whole database to the bucket in BACKUP_BUCKET. */
-const { onDocumentUpdated, onDocumentCreated } = require('firebase-functions/v2/firestore');
+   - dailyBackup     : 02:30 IST export of the whole database to the bucket in BACKUP_BUCKET.
+   - waBooking / waWebhook: WhatsApp booking messages (Meta Cloud API). Deployed only after the owner has stored the
+                       secrets WA_TOKEN, WA_APP_SECRET, WA_VERIFY_TOKEN (tools/cloudshell-whatsapp.sh); sends nothing
+                       until Office → Settings → WhatsApp is switched on (waConfig/main.on). */
+const { onDocumentUpdated, onDocumentCreated, onDocumentWritten } = require('firebase-functions/v2/firestore');
 const { onSchedule } = require('firebase-functions/v2/scheduler');
-const { onCall, HttpsError } = require('firebase-functions/v2/https');
+const { onCall, onRequest, HttpsError } = require('firebase-functions/v2/https');
 const { setGlobalOptions, logger } = require('firebase-functions/v2');
-const { defineString } = require('firebase-functions/params');
+const { defineString, defineSecret } = require('firebase-functions/params');
 const admin = require('firebase-admin');
 const L = require('./lib/logic');
 const WX = require('./lib/weather');
+const W = require('./lib/wa');
 
 admin.initializeApp();
 const db = admin.firestore();
@@ -260,4 +264,73 @@ exports.dailyBackup = onSchedule({ schedule: '30 2 * * *', timeZone: 'Asia/Kolka
   const day = L.istStamp(Date.now());
   const [op] = await client.exportDocuments({ name: client.databasePath(project, '(default)'), outputUriPrefix: `gs://${bucket}/firestore/${day}`, collectionIds: [] });
   logger.info('backup started', { op: op.name, to: `gs://${bucket}/firestore/${day}` });
+});
+
+// ---- WhatsApp (Meta Cloud API) ----------------------------------------------------------------------------------
+// Settings live in waConfig/main (owner only — not in config/app, which every signed-in user can read):
+//   { on, phoneId, testTo: ['9944xxxxxx'], kinds: ['confirmed','assigned','ontrip','done','cancelled'], ver }
+// Every message is logged in waLog/{booking}_{kind} (created first, so a retried trigger never sends twice);
+// delivery receipts from the webhook update that log; customer replies are kept in waInbox for the office.
+const WA_TOKEN = defineSecret('WA_TOKEN'), WA_APP_SECRET = defineSecret('WA_APP_SECRET'), WA_VERIFY = defineSecret('WA_VERIFY_TOKEN');
+const waKey = wamid => require('crypto').createHash('sha256').update(String(wamid)).digest('hex').slice(0, 40); // wamids may contain "/"
+
+async function waSend(w, msg) {
+  const ver = /^v\d{2}\.0$/.test(w.ver || '') ? w.ver : 'v23.0';
+  try {
+    const r = await fetch(`https://graph.facebook.com/${ver}/${encodeURIComponent(w.phoneId)}/messages`, {
+      method: 'POST', headers: { Authorization: `Bearer ${WA_TOKEN.value()}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(msg), signal: AbortSignal.timeout(15000) });
+    const j = await r.json().catch(() => ({}));
+    const wamid = j && j.messages && j.messages[0] && j.messages[0].id;
+    if (r.ok && wamid) return { status: 'accepted', wamid: String(wamid) };
+    const e = (j && j.error) || {};
+    return { status: 'failed', error: W.clean(`${e.code || r.status} ${e.error_user_msg || e.message || ''}`, 300) };
+  } catch (e) { return { status: 'failed', error: W.clean(`network ${e.name || ''} ${e.message || ''}`, 300) }; }
+}
+
+exports.waBooking = onDocumentWritten({ document: 'bookings/{id}', secrets: [WA_TOKEN] }, async ev => {
+  const before = ev.data.before.exists ? ev.data.before.data() : null, after = ev.data.after.exists ? ev.data.after.data() : null;
+  const kinds = W.waEvents(before, after); if (!kinds.length) return;
+  const w = (await db.doc('waConfig/main').get()).data() || {}; if (w.on !== true || !w.phoneId) return;
+  const id = ev.params.id, ref = ev.data.after.ref;
+  const ct = (await ref.collection('private').doc('contact').get().catch(() => null));
+  const to = W.waPhone((ct && ct.exists && ct.data().custPhone) || after.custPhone);
+  if (!to) return;
+  const c = await cfg();
+  let lang = 'ta';
+  if (after.customerUid) { const u = (await db.doc(`users/${after.customerUid}`).get()).data(); if (u && u.lang === 'en') lang = 'en'; }
+  for (const kind of kinds) {
+    if (!W.waAllowed(w, kind, to)) continue;
+    const key = kind === 'assigned' ? `${id}_assigned_${String(after.driverPhone).slice(-4)}` : `${id}_${kind}`;
+    const lref = db.doc(`waLog/${key}`);
+    try { await lref.create({ bookingId: id, kind, to, status: 'sending', at: FV.serverTimestamp() }); }
+    catch (e) { if (e.code === 6 || /ALREADY_EXISTS/i.test(e.message || '')) continue; throw e; }
+    const msg = W.waMessage(kind, after, id, { to, lang, office: c.office || '', now: Date.now() });
+    const r = await waSend(w, msg);
+    await lref.update({ ...r, tpl: msg.template.name, lang, updatedAt: FV.serverTimestamp() });
+    if (r.wamid) await db.doc(`waMsgs/${waKey(r.wamid)}`).set({ log: key, at: FV.serverTimestamp() });
+    if (r.status === 'failed') logger.warn('whatsapp failed', { id, kind, error: r.error });
+    else logger.info('whatsapp sent', { id, kind });
+  }
+});
+
+exports.waWebhook = onRequest({ secrets: [WA_APP_SECRET, WA_VERIFY], maxInstances: 5 }, async (req, res) => {
+  if (req.method === 'GET') {   // Meta checks the address once when the webhook is saved
+    const q = req.query || {}, tok = WA_VERIFY.value();
+    if (q['hub.mode'] === 'subscribe' && tok && q['hub.verify_token'] === tok) return res.type('text/plain').status(200).send(String(q['hub.challenge'] || '').slice(0, 200));
+    return res.sendStatus(403);
+  }
+  if (req.method !== 'POST') return res.sendStatus(405);
+  if (!W.sigOk(req.rawBody, req.get('x-hub-signature-256'), WA_APP_SECRET.value())) { logger.warn('whatsapp webhook: bad signature'); return res.sendStatus(401); }
+  const { statuses, messages } = W.waParse(req.body);
+  for (const s of statuses) {
+    const m = await db.doc(`waMsgs/${waKey(s.wamid)}`).get(); if (!m.exists) continue;
+    const lref = db.doc(`waLog/${m.data().log}`);
+    await db.runTransaction(async tx => {
+      const cur = (await tx.get(lref)).data();
+      if (cur && W.newer(cur.status, s.status)) tx.update(lref, { status: s.status, ...(s.error ? { error: s.error } : {}), updatedAt: FV.serverTimestamp() });
+    });
+  }
+  for (const m of messages) await db.doc(`waInbox/${waKey(m.wamid)}`).set({ ...m, at: m.at ? new Date(m.at) : FV.serverTimestamp(), seen: false });
+  res.sendStatus(200);
 });
