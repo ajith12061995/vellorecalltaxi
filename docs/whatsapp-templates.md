@@ -1,6 +1,6 @@
 # WhatsApp message templates (Meta → WhatsApp Manager → Message templates)
 
-Category: **Utility** for all. Submitted 9 Nov 2026 to WhatsApp account 979987628508850. Each name is created twice: language **Tamil (ta)** and **English (en)**.
+Category: **Utility** for all. Submitted 9 Nov 2026 to the test WhatsApp account 979987628508850; for the real account (29068467292795781, number 93446 40416) submit with `python3 tools/wa-templates.py --send` in Cloud Shell. Each name is created twice: language **Tamil (ta)** and **English (en)**.
 Variables are filled by `functions/lib/wa.js` (`waMessage`) in exactly this order. Meta rule: a template body must not
 start or end with a variable, so every body starts with "வணக்கம்" / "Hello" and ends with fixed text.
 
