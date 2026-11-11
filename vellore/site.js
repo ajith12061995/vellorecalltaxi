@@ -34,6 +34,9 @@
       bata: { mini: 300, sedan: 300, suv: 350, psuv: 400, trav: 500 }, bata1: { mini: 300, sedan: 300, suv: 350, psuv: 400, trav: 500 }, min1: 80, mind: 250, daykm: 400 } };
   let SITE = SITE0, PRICES = PRICES0;
   const IMG = {};   // place id → photo (data URL) from siteImg
+  // built-in photos (Wikimedia Commons, free licences — credited under the places list); an Office upload replaces them
+  const IMG0 = { fort: 1, temple: 1, golden: 1, amirthi: 1, yelagiri: 1, cmc: 1 };
+  const img0 = id => IMG0[id] ? '/vellore/places/' + id + '.webp' : '';
 
   // drawings used when a place has no photo (own artwork)
   const ART = {
@@ -73,8 +76,8 @@
   }
   function renderPlaces() {
     $('#plist').innerHTML = (SITE.places || []).map(p => {
-      const name = L(p.ta || p.en, p.en || p.ta), d = L(p.dta || p.den, p.den || p.dta), im = IMG[p.id];
-      return `<article class="place"><div class="pic">${im ? `<img src="${im}" alt="${esc(name)}" loading="lazy">` : art(p.id)}</div><h3>${esc(name)}</h3>${d ? `<p>${esc(d)}</p>` : ''}</article>`;
+      const name = L(p.ta || p.en, p.en || p.ta), d = L(p.dta || p.den, p.den || p.dta), im = IMG[p.id] || img0(p.id);
+      return `<article class="place"><div class="pic">${im ? `<img src="${im}" alt="${esc(name)}" width="1200" height="750" loading="lazy">` : art(p.id)}</div><h3>${esc(name)}</h3>${d ? `<p>${esc(d)}</p>` : ''}</article>`;
     }).join('');
   }
   function renderAll() { renderContacts(); renderFares(); renderPlaces(); }

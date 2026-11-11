@@ -49,7 +49,7 @@ async def main():
         pg=await ctx.new_page();errs=[];pg.on('pageerror',lambda e:errs.append(str(e)))
         await pg.goto(U);await pg.wait_for_timeout(1500)
         check('English by default, 6 vehicles, Mini ₹105',await pg.evaluate("document.documentElement.dataset.l")=='en' and await pg.locator('#board .row').count()==6 and '₹105' in await pg.inner_text('#board'))
-        check('6 places with drawings, Chennai Airport example ₹2,280',await pg.locator('#plist .place svg').count()==6 and await pg.inner_text('#exAmt')=='2,280')
+        check('6 places with built-in photos and a photo credit line, Chennai Airport example ₹2,280',await pg.locator('#plist .place img[src^="/vellore/places/"]').count()==6 and await pg.locator('.credit a').count()==6 and await pg.inner_text('#exAmt')=='2,280')
         await pg.click('#chips [data-pt=katpadi]');await pg.click('#chips [data-pt=cmc]');await pg.wait_for_timeout(1500)
         ri=await pg.inner_text('#rinfo')
         check('no Google: estimate marked approx., fares shown',('தோராயம்' in ri or 'approx' in ri) and await pg.locator('#vl label').count()==6,ri)
