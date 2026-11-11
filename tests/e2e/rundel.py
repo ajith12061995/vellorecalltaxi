@@ -26,10 +26,15 @@ async def main():
         await pg.wait_for_timeout(800);await C.locator('#nm').fill('Priya');await C.locator('#go').click();await pg.wait_for_timeout(2000)
         uid=await cf.evaluate("CUID")
         await cf.evaluate("S.dest='cmc';S.veh='sedan';S.pay='cash';fareScreen()");await pg.wait_for_timeout(1000)
-        await C.locator('#bookb').click();await pg.wait_for_timeout(2500);bid=await cf.evaluate("R.id")
+        await C.locator('#bookb').click()
+        # wait until the booking really exists (a fixed pause was too short when the machine is busy: the ride screen
+        # then drew over the profile and the Delete button was "missing")
+        await cf.wait_for_function("typeof R==='object'&&R&&R.id",timeout=15000);await pg.wait_for_timeout(1200);bid=await cf.evaluate("R.id")
         # 1) active ride → refused
-        await cf.evaluate("profile()");await pg.wait_for_timeout(500)
-        check('customer profile has "Delete my account"',await cf.evaluate("!!document.getElementById('delacc')"))
+        await cf.evaluate("profile()")
+        try:await C.locator('#delacc').wait_for(timeout=6000)
+        except Exception:pass
+        check('customer profile has "Delete my account"',await cf.evaluate("!!document.getElementById('delacc')"),await cf.evaluate("({from:S.from,rid:typeof R==='object'&&R?R.id:null,st:typeof R==='object'&&R?R.status:null,txt:document.body.innerText.slice(0,160)})"))
         await C.locator('#delacc').click();await pg.wait_for_timeout(300)
         await pg.screenshot(path='shots/delete_confirm.png',clip={'x':0,'y':0,'width':400,'height':860})
         await C.locator('#dyes').click();await pg.wait_for_timeout(800)
