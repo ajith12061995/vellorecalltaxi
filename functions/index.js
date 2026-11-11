@@ -334,3 +334,14 @@ exports.waWebhook = onRequest({ secrets: [WA_APP_SECRET, WA_VERIFY], maxInstance
   for (const m of messages) await db.doc(`waInbox/${waKey(m.wamid)}`).set({ ...m, at: m.at ? new Date(m.at) : FV.serverTimestamp(), seen: false });
   res.sendStatus(200);
 });
+
+// Website contact form (enquiries): the same number sending more than 3 in an hour, or more than 40 from everyone in
+// an hour, is closed automatically as "too many" so the office list stays usable. Nothing is deleted.
+exports.onEnquiry = onDocumentCreated('enquiries/{id}', async ev => {
+  const e = ev.data.data(); if (!e) return;
+  const hourAgo = new Date(Date.now() - 3600e3);
+  const all = await db.collection('enquiries').where('createdAt', '>', hourAgo).get();
+  const same = all.docs.filter(d => d.data().phone === e.phone).length;
+  const why = L.enquiryFlood(same, all.size);
+  if (why) { await ev.data.ref.update({ status: 'closed', note: why, handledBy: 'server', updatedAt: FV.serverTimestamp() }); logger.warn('enquiry flood', { why, same, all: all.size }); }
+});

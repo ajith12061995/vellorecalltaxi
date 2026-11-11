@@ -2,7 +2,7 @@
 const assert = require('assert'), fs = require('fs'), path = require('path');
 const R = path.join(__dirname, '../..'); let n = 0; const ok = (name, fn) => { fn(); n++; console.log('PASS', name); };
 const rd = p => fs.readFileSync(path.join(R, p), 'utf8');
-const PAGES = ['index.html', 'driver/index.html', 'office/index.html', 'driver/join/index.html'];
+const PAGES = ['index.html', 'driver/index.html', 'office/index.html', 'driver/join/index.html', 'vellore/index.html'];
 ok('every third-party script / stylesheet is pinned with an integrity hash (Leaflet 1.9.4 from npm)', () => {
   for (const p of PAGES) {
     const s = rd(p);

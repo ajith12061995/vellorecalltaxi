@@ -59,6 +59,6 @@ if gcloud secrets describe WA_TOKEN >/dev/null 2>&1 && gcloud secrets describe W
   npx --yes firebase-tools@13 deploy --only firestore:rules,functions --project "$PROJECT"
 else
   echo "(WhatsApp secrets not set yet — WhatsApp functions skipped)"
-  npx --yes firebase-tools@13 deploy --only firestore:rules,functions:onBookingDone,functions:housekeeping,functions:weatherTick,functions:onBookingCreated,functions:onBookingCust,functions:deleteMyAccount,functions:purgeDriver,functions:verifyPin,functions:dailyBackup --project "$PROJECT"
+  npx --yes firebase-tools@13 deploy --only firestore:rules,functions:onBookingDone,functions:housekeeping,functions:weatherTick,functions:onBookingCreated,functions:onBookingCust,functions:onEnquiry,functions:deleteMyAccount,functions:purgeDriver,functions:verifyPin,functions:dailyBackup --project "$PROJECT"
 fi
 say "DONE. Send Claude a screenshot of the last 15 lines. Do NOT turn on the switches yet."

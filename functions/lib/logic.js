@@ -204,6 +204,8 @@ function bookingLimit(lim, openNow, now) {
 }
 
 // '2026-11-04_0230' — Indian date and time, for backup folder names
+// website enquiries in the last hour (including this one): same = from this phone, all = from everyone
+const enquiryFlood = (same, all) => same > 3 ? 'auto: more than 3 from this number in an hour' : all > 40 ? 'auto: more than 40 in an hour' : null;
 const istStamp = ms => new Date(ms + 19800000).toISOString().slice(0, 16).replace('T', '_').replace(':', '');
 
-module.exports = { OUTCAT, outCat, catBata, AUTO_GOVT, AREA, autoFare, outsideArea, rentCheck, outCheck, tariffs, rentPrice, istStamp, commissionFor, settle, housekeeping, fareLooksWrong, liveStale, custPush, fareCheck, bookingLimit, nightPct, withNight, crowKm, LIMIT_OPEN, LIMIT_HOUR };
+module.exports = { enquiryFlood, OUTCAT, outCat, catBata, AUTO_GOVT, AREA, autoFare, outsideArea, rentCheck, outCheck, tariffs, rentPrice, istStamp, commissionFor, settle, housekeeping, fareLooksWrong, liveStale, custPush, fareCheck, bookingLimit, nightPct, withNight, crowKm, LIMIT_OPEN, LIMIT_HOUR };

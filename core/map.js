@@ -173,7 +173,10 @@ function makeLeafletMap(cv,o={}){
       else{pins[i].setLatLng([p.lat,p.lon]);if(pins[i]._col!==p.col){pins[i].setIcon(pinI(p.col));pins[i]._col=p.col}}});
   }
   function sync(){
-    if(!alive()){clearInterval(tk);try{m.off();m.stop();m.remove()}catch(e){}return}
+    if(!alive()){clearInterval(tk);if(gone)return;gone=true;try{m.stop()}catch(e){}
+      // a zoom animation may still be running (CSS transition): removing the map now makes Leaflet throw
+      // "_leaflet_pos" when it ends, so remove it after the animation has finished
+      setTimeout(()=>{try{m.off();m.remove()}catch(e){}},1000);return}
     const list=(o.pins||[]).slice();
     if(o.path&&o.path.length){const a=P[o.path[0]],b=P[o.path[o.path.length-1]];if(a)list.push({lat:a.lat,lon:a.lon,col:'#1E8A5A'});if(b&&o.path.length>1)list.push({lat:b.lat,lon:b.lon,col:'#121212'})}
     setPins(list.filter(p=>p&&p.lat!=null));
@@ -195,7 +198,7 @@ function makeLeafletMap(cv,o={}){
     if(o.near){const seen={};o.near().forEach(c=>{seen[c.id]=1;if(!near[c.id]){near[c.id]=LF.marker([c.lat,c.lon],{icon:ic('<div class="lcar2" style="transform:rotate('+c.rot+'deg)">'+topSvg(topKind(c.veh),0,40)+'</div>',40,40,20,20),interactive:false,keyboard:false}).addTo(m)}else near[c.id].setLatLng([c.lat,c.lon])});
       Object.keys(near).forEach(k=>{if(!seen[k]){m.removeLayer(near[k]);delete near[k]}})}
   }
-  const alive=()=>document.body.contains(host);
+  const alive=()=>document.body.contains(host);let gone=false;
   const tk=setInterval(sync,500);setTimeout(()=>{if(alive()){m.invalidateSize();sync()}},60);
   const api={
     cam:{get s(){return sFromZ(m.getZoom())},get lat(){return m.getCenter().lat},get lon(){return m.getCenter().lng}},

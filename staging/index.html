@@ -675,6 +675,27 @@ function go(html,after){cancelAnimationFrame(mapLoop);clearInterval(rideTimer);a
 function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(toast.h);toast.h=setTimeout(()=>el.classList.remove('show'),2400)}
 
 /* ---------- screens ---------- */
+/* "Book" on the public website (velloretaxi.app/vellore/) opens the app as #book=<base64url JSON>:
+   {f:{lat,lon,n}, t:{lat,lon,n}, v:'mini', k:'local'|'out', o:'one'|'round'}. It is kept until the customer is signed in,
+   then the fare screen opens with those places. Everything in it is checked: it is just a link anyone could make. */
+function readBookLink(){
+  let x=null;
+  try{const m=/^#book=([A-Za-z0-9_-]{10,1200})$/.exec(location.hash);
+    if(m){x=JSON.parse(decodeURIComponent(escape(atob(m[1].replace(/-/g,'+').replace(/_/g,'/')))));try{sessionStorage.setItem('vct-booklink',JSON.stringify(x))}catch(e){}
+      try{history.replaceState(null,'',location.pathname+location.search)}catch(e){}}
+    else{const s=sessionStorage.getItem('vct-booklink');if(s)x=JSON.parse(s)}}catch(e){x=null}
+  const pt=p=>p&&isFinite(+p.lat)&&isFinite(+p.lon)&&+p.lat>6&&+p.lat<37&&+p.lon>68&&+p.lon<98?{lat:+p.lat,lon:+p.lon,n:String(p.n||'').replace(/[<>"'`&\\]/g,'').trim().slice(0,80)}:null;
+  if(!x||!pt(x.f)||!pt(x.t))return null;
+  return{f:pt(x.f),t:pt(x.t),v:/^(auto|mini|sedan|suv|psuv|trav)$/.test(x.v)?x.v:'',k:x.k==='out'?'out':'local',o:x.o==='round'?'round':'one'};
+}
+let BOOKLINK=readBookLink();
+function useBookLink(){
+  const x=BOOKLINK;BOOKLINK=null;try{sessionStorage.removeItem('vct-booklink')}catch(e){}
+  [['pick',x.f],['drop',x.t]].forEach(([k,p])=>{setCustom(k,{lat:p.lat,lon:p.lon});if(p.n){P[k].ta=P[k].en=p.n}});
+  S.from='pick';S.dest='drop';S.when=null;S.rider=null;S.autoFor='';
+  if(x.k==='out'&&x.v!=='auto'){S.mode='out';if(x.v)OS.veh=x.v;OS.type=x.o;return outFare2()}
+  S.mode='';if(x.v)S.veh=x.v;fareScreen();
+}
 function splash(){
   if(/^#track-/.test(location.hash)){trackView(location.hash.slice(7));return}
   go(`<section class="screen" id="splash"><div class="roofsign"><b>TAXI</b><span>வேலூர் டாக்ஸி</span></div>
@@ -814,6 +835,7 @@ function watchNear(){if(!CL)return;const c=P[S.from]||P.home;if(!c||c.lat==null)
     s=>{per[cell]=s.docs.map(d=>({id:d.id,...d.data()}));draw()},()=>{}));
   NEARUNSUB=()=>{uns.forEach(u=>{try{u()}catch(e){}});NEARUNSUB=null;NEARKEY=''};}
 function home(mode){
+  if(BOOKLINK&&S.logged&&!mode){try{return useBookLink()}catch(e){BOOKLINK=null}}
   const RENTM=mode==='rent',OUTM=mode==='out';S.mode=RENTM?'rent':OUTM?'out':'';
   S.tab='home';S.dest=null;if(!RENTM&&!OUTM)S.from='home';S.when=null;S.rider=null;
   const h=new Date().getHours();const g=h<12?t('morning'):h<17?t('afternoon'):t('evening');

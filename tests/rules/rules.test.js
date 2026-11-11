@@ -315,3 +315,50 @@ test('WhatsApp log and replies: server writes, office reads, office only marks r
   await assertFails(setDoc(doc(as.owner(), 'waInbox', 'm2'), { from: '1', text: 'fake' }));
   await assertFails(getDoc(doc(as.owner(), 'waMsgs', 'k')));
 });
+
+// ---- public website data + contact form
+test('website data: everyone reads, only the owner writes known fields', async () => {
+  await assertSucceeds(setDoc(doc(as.owner(), 'public', 'site'), { phone: '7200730416', places: [{ id: 'fort', ta: 'கோட்டை', en: 'Fort' }], updatedAt: serverTimestamp() }));
+  await assertSucceeds(setDoc(doc(as.owner(), 'public', 'prices'), { fares: { mini: { base: 105, per: 16 } }, out: {}, updatedAt: serverTimestamp() }));
+  await assertSucceeds(getDoc(doc(as.anon(), 'public', 'site')));
+  await assertSucceeds(getDoc(doc(as.anon(), 'public', 'prices')));
+  await assertFails(setDoc(doc(as.staff(), 'public', 'site'), { phone: '9' }));
+  await assertFails(setDoc(doc(as.anon(), 'public', 'prices'), { fares: {} }));
+  await assertFails(setDoc(doc(as.cust(), 'public', 'site'), { phone: '9' }));
+  await assertFails(setDoc(doc(as.owner(), 'public', 'site'), { phone: '1', blocked: ['9999900001'] }), 'unknown field');
+  await assertFails(setDoc(doc(as.owner(), 'public', 'prices'), { fares: {}, comm: 10 }), 'commission is not public');
+  await assertFails(setDoc(doc(as.owner(), 'public', 'other'), { x: 1 }));
+  await assertFails(setDoc(doc(as.owner(), 'public', 'site'), { places: Array.from({ length: 25 }, (_, i) => ({ id: 'p' + i })) }));
+});
+test('website photos: everyone reads, owner uploads JPEG data only', async () => {
+  const jpg = 'data:image/jpeg;base64,' + 'A'.repeat(1000);
+  await assertSucceeds(setDoc(doc(as.owner(), 'siteImg', 'fort'), { data: jpg, at: serverTimestamp() }));
+  await assertSucceeds(getDoc(doc(as.anon(), 'siteImg', 'fort')));
+  await assertFails(setDoc(doc(as.staff(), 'siteImg', 'x'), { data: jpg }));
+  await assertFails(setDoc(doc(as.owner(), 'siteImg', 'x'), { data: 'data:text/html;base64,PHNjcmlwdD4=' }), 'not an image');
+  await assertFails(setDoc(doc(as.owner(), 'siteImg', 'x'), { data: 'javascript:alert(1)' }));
+  await assertFails(setDoc(doc(as.owner(), 'siteImg', 'x'), { data: jpg, extra: 1 }));
+  await assertSucceeds(deleteDoc(doc(as.owner(), 'siteImg', 'fort')));
+});
+test('contact form: anyone sends a checked enquiry; only the office reads and handles it', async () => {
+  const e = o => ({ name: 'Priya', phone: '9944640416', kind: 'outstation', msg: 'Tirupati 2 days', status: 'open', src: 'web', createdAt: serverTimestamp(), ...o });
+  await assertSucceeds(addDoc(collection(as.anon(), 'enquiries'), e()));
+  await assertSucceeds(addDoc(collection(as.cust(), 'enquiries'), e({ msg: '' })));
+  await assertFails(addDoc(collection(as.anon(), 'enquiries'), e({ phone: '12345' })));
+  await assertFails(addDoc(collection(as.anon(), 'enquiries'), e({ name: 'x' })));
+  await assertFails(addDoc(collection(as.anon(), 'enquiries'), e({ msg: 'x'.repeat(501) })));
+  await assertFails(addDoc(collection(as.anon(), 'enquiries'), e({ kind: 'hack' })));
+  await assertFails(addDoc(collection(as.anon(), 'enquiries'), e({ status: 'closed' })));
+  await assertFails(addDoc(collection(as.anon(), 'enquiries'), e({ createdAt: new Date(2020, 1, 1) })));
+  await assertFails(addDoc(collection(as.anon(), 'enquiries'), e({ note: 'x' })));
+  await seed(async db => { await setDoc(doc(db, 'enquiries', 'q1'), e({ createdAt: new Date() })); });
+  await assertFails(getDoc(doc(as.anon(), 'enquiries', 'q1')));
+  await assertFails(getDoc(doc(as.cust(), 'enquiries', 'q1')));
+  await assertFails(getDoc(doc(as.drv(), 'enquiries', 'q1')));
+  await assertSucceeds(getDoc(doc(as.staff(), 'enquiries', 'q1')));
+  await assertSucceeds(updateDoc(doc(as.staff(), 'enquiries', 'q1'), { status: 'progress', note: 'called', handledBy: STAFF, updatedAt: serverTimestamp() }));
+  await assertFails(updateDoc(doc(as.staff(), 'enquiries', 'q1'), { phone: '9000000000' }));
+  await assertFails(updateDoc(doc(as.staff(), 'enquiries', 'q1'), { status: 'spam' }));
+  await assertFails(deleteDoc(doc(as.staff(), 'enquiries', 'q1')));
+  await assertSucceeds(deleteDoc(doc(as.owner(), 'enquiries', 'q1')));
+});
