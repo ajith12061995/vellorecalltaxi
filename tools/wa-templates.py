@@ -58,11 +58,37 @@ def main():
     if not re.fullmatch(r'EAA[A-Za-z0-9]{100,}', token):
         raise SystemExit('WA_TOKEN does not look like a Meta token (extra text pasted with it?). Store it again: bash tools/wa-token.sh')
     hide = lambda m: m.replace(token, '[token]') if token else m
+    def api(path):
+        req = urllib.request.Request(f'{GRAPH}/{path}', headers={'Authorization': 'Bearer ' + token})
+        try:
+            return json.load(urllib.request.urlopen(req, timeout=30))
+        except urllib.error.HTTPError as e:
+            return json.loads(e.read() or b'{}')
+    # Which WhatsApp account may this token manage? Ask Meta (the id shown in Business Suite can be a different object).
+    cands = [WABA]
+    dbg = api('debug_token?input_token=' + token).get('data', {})
+    for g in dbg.get('granular_scopes', []) or []:
+        if g.get('scope') in ('whatsapp_business_management', 'whatsapp_business_messaging'):
+            for t in g.get('target_ids', []) or []:
+                if t not in cands:
+                    cands.append(t)
+    print('token scopes:', dbg.get('scopes'), '| candidate account ids:', cands)
+    waba = None
+    for c in cands:
+        r = api(f'{c}/message_templates?limit=1&fields=name')
+        nums = api(f'{c}/phone_numbers?fields=display_phone_number')
+        print(f'  {c}: templates {"OK" if "data" in r else "no"}; numbers {[n.get("display_phone_number") for n in nums.get("data", [])] if "data" in nums else "no"}')
+        if 'data' in r and any('93446' in (n.get('display_phone_number') or '') for n in nums.get('data', [])):
+            waba = c
+            break
+    if not waba:
+        raise SystemExit('No WhatsApp account with 93446 40416 is reachable with this token. Nothing sent.')
+    print('using WhatsApp account', waba)
     ok = 0
     for name, lang, text in items:
         body = {'name': name, 'language': lang, 'category': 'UTILITY',
                 'components': [{'type': 'BODY', 'text': text, 'example': {'body_text': [SAMPLES[name]]}}]}
-        req = urllib.request.Request(f'{GRAPH}/{WABA}/message_templates', data=json.dumps(body).encode(),
+        req = urllib.request.Request(f'{GRAPH}/{waba}/message_templates', data=json.dumps(body).encode(),
                                      headers={'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json'})
         try:
             r = json.load(urllib.request.urlopen(req, timeout=30))
