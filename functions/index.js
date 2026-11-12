@@ -314,6 +314,28 @@ exports.waBooking = onDocumentWritten({ document: 'bookings/{id}', secrets: [WA_
   }
 });
 
+// A driver who joined through the app and was just approved by the office gets a WhatsApp welcome.
+// Same switch and test-number list as booking messages (waConfig/main); waConfig/main.drvWelcome === false turns only this off.
+// Booking message types (w.kinds) do not apply here.
+exports.waDriverWelcome = onDocumentCreated({ document: 'drivers/{ph}', secrets: [WA_TOKEN] }, async ev => {
+  const d = ev.data && ev.data.data(); if (!d || d.fromApp !== true) return;
+  const w = (await db.doc('waConfig/main').get()).data() || {};
+  if (w.drvWelcome === false) return;
+  const to = W.waPhone(ev.params.ph);
+  if (!W.waAllowed({ ...w, kinds: undefined }, 'drvwelcome', to)) return;
+  const key = `drv_${to}_welcome`, lref = db.doc(`waLog/${key}`);
+  try { await lref.create({ driver: ev.params.ph, kind: 'drvwelcome', to, status: 'sending', at: FV.serverTimestamp() }); }
+  catch (e) { if (e.code === 6 || /ALREADY_EXISTS/i.test(e.message || '')) return; throw e; }
+  const c = await cfg();
+  const lang = d.consent && d.consent.lang === 'en' ? 'en' : 'ta';
+  const msg = W.waDriverWelcome(d, { to, lang, help: c.driverHelp || c.office || '9344039933' });
+  const r = await waSend(w, msg);
+  await lref.update({ ...r, tpl: msg.template.name, lang, updatedAt: FV.serverTimestamp() });
+  if (r.wamid) await db.doc(`waMsgs/${waKey(r.wamid)}`).set({ log: key, at: FV.serverTimestamp() });
+  if (r.status === 'failed') logger.warn('whatsapp driver welcome failed', { to, error: r.error });
+  else logger.info('whatsapp driver welcome sent', { to });
+});
+
 exports.waWebhook = onRequest({ secrets: [WA_APP_SECRET, WA_VERIFY], maxInstances: 5 }, async (req, res) => {
   if (req.method === 'GET') {   // Meta checks the address once when the webhook is saved
     const q = req.query || {}, tok = WA_VERIFY.value();

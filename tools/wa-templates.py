@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Submit the 5 WhatsApp templates (Tamil + English = 10) to a WhatsApp Business Account.
+"""Submit the 6 WhatsApp templates (Tamil + English = 12) to a WhatsApp Business Account.
 
 Run in Google Cloud Shell (the token stays in Secret Manager; it is never printed):
     cd ~/vellorecalltaxi && git fetch origin whatsapp-api && git checkout whatsapp-api && git pull
@@ -20,6 +20,7 @@ SAMPLES = {   # example values Meta needs for review, in variable order
     'vct_trip_started': ['Priya', 'TN23AB1234', '9344640416'],
     'vct_trip_completed': ['Priya', '450', 'AB12CD'],
     'vct_booking_cancelled': ['Priya', 'AB12CD', '9344640416'],
+    'vct_driver_welcome': ['Murugan', '9344039933'],
 }
 
 def parse(md):
@@ -44,7 +45,7 @@ def check(name, text):
 def main():
     root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     items = parse(open(os.path.join(root, 'docs', 'whatsapp-templates.md'), encoding='utf-8').read())
-    assert len(items) == 10, len(items)
+    assert len(items) == 12, len(items)
     for name, lang, text in items:
         check(name, text)
     send = '--send' in sys.argv

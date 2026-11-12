@@ -109,6 +109,11 @@ h1,h2,h3{font-family:var(--display);margin:0;line-height:1.15;text-wrap:balance}
 .roofsign b{display:block;font-family:var(--display);font-size:30px;font-weight:800;letter-spacing:.06em}
 .roofsign span{font-family:var(--display);font-size:17px;font-weight:600}
 @keyframes pop{from{transform:scale(.6);opacity:0}}
+.welc{text-align:center;position:relative;overflow:hidden}.welc .big{font-size:54px;line-height:1;margin:4px 0 6px;animation:pop .5s ease-out}
+.welc h3{margin:0 0 6px;font-size:22px}.welc p{margin:6px 0;line-height:1.55}.welc ul{list-style:none;padding:0;margin:12px 0;text-align:left}
+.welc li{padding:7px 10px;margin:6px 0;border-radius:10px;background:rgba(11,74,54,.08);font-size:14.5px}.welc .nx{font-size:14px;margin:10px 0 14px}
+.welc>*:not(.cf){position:relative;z-index:1}.cf{position:absolute;z-index:0;top:-12px;width:8px;height:14px;border-radius:2px;opacity:.55;animation:cf 2.6s ease-in forwards;pointer-events:none}
+@keyframes cf{to{transform:translateY(560px) rotate(540deg);opacity:0}}
 .road{width:220px;height:6px;border-radius:3px;background:repeating-linear-gradient(90deg,#FFC21A 0 26px,transparent 26px 44px);background-size:44px 6px;animation:roll .6s linear infinite;opacity:.8}
 @keyframes roll{to{background-position:-44px 0}}
 .tag{font-size:13px;letter-spacing:.14em;text-transform:uppercase;opacity:.7}
@@ -738,6 +743,25 @@ Object.assign(I,{
 
 /* position along a lat/lon polyline at fraction f */
 
+/* one-time celebration after the office approves a new driver (joined through the app, approved within 30 days).
+   Remembered per phone on this device, so it shows once. No server or rules change. */
+let WELC=false;
+function welcomeDue(d){try{if(!d||!d.fromApp)return false;const at=CL&&d.createdAt?CL.toMs(d.createdAt):0;if(!at||Date.now()-at>30*864e5)return false;
+  return !localStorage.getItem('vct_welc_'+(CL.phone||''))}catch(e){return false}}
+function welcomeDriver(){WELC=false;try{localStorage.setItem('vct_welc_'+(CL.phone||''),String(Date.now()))}catch(e){}
+  const nm=esc((DME&&DME.ta)||'Driver'),help=String(CFGD.office||'9344039933').replace(/\D/g,'').slice(-10),hp=help.slice(0,5)+' '+help.slice(5);
+  const cols=['#FFD84D','#0B4A36','#E53935','#1E88E5','#43A047','#FB8C00'];
+  const conf=matchMedia('(prefers-reduced-motion: reduce)').matches?'':Array.from({length:36},(_,i)=>`<i class="cf" style="left:${(i*97)%100}%;background:${cols[i%cols.length]};animation-delay:${(i%9)*0.12}s"></i>`).join('');
+  modal(`<div class="welc">${conf}<div class="big">🎉🚖</div>
+    <h3>${L(`வாழ்த்துக்கள் ${nm}!`,`Congratulations, ${nm}!`)}</h3>
+    <p>${L('நீங்க இப்போ அதிகாரப்பூர்வமா <b>Vellore Taxi</b> குடும்பத்தில் ஒருவர்!','You are now officially part of the <b>Vellore Taxi</b> family!')}</p>
+    <p class="muted">${L('வேலூர் மக்களுக்கு பாதுகாப்பான, நம்பிக்கையான பயணம் தர எங்களோட கைகோர்த்ததுக்கு நன்றி.','Thank you for joining us to give the people of Vellore safe, trusted rides.')}</p>
+    <ul><li>✅ ${L('<b>0% commission</b> — நீங்க ஓட்டி சம்பாதிக்கிற முழு கட்டணமும் உங்களுக்கே','<b>0% commission</b> — the full fare you earn is yours')}</li>
+    <li>✅ ${L('உங்க ஊர்லயே, உங்க நேரத்துல வேலை','Work in your own town, on your own time')}</li>
+    <li>✅ ${L(`உதவி தேவைன்னா எப்பவும்: <a href="tel:+91${help}">${hp}</a>`,`Need help? Call anytime: <a href="tel:+91${help}">${hp}</a>`)}</li></ul>
+    <p class="nx"><b>${L('அடுத்து:','Next:')}</b> ${L('Wallet-ல recharge → <b>Online</b> போங்க → முதல் ride-க்கு ரெடி!','Recharge your wallet → go <b>Online</b> → ready for your first ride!')}</p>
+    <p><b>${L('உங்க முதல் சவாரி இனிதாக அமைய வாழ்த்துக்கள் 🙏','Wishing you a great first ride 🙏')}</b><br>Welcome to Vellore Taxi!</p>
+    <button class="btn" id="welok">${L('தொடங்கலாம் 🚀',"Let's start 🚀")}</button></div>`,(m,close)=>{m.querySelector('#welok').onclick=()=>{close();home()}})}
 function modal(html,bind){const m=document.createElement('div');m.className='modal';m.innerHTML=`<div class="card pad">${html}</div>`;app.appendChild(m);const close=()=>m.remove();m.onclick=e=>{if(e.target===m)close()};bind&&bind(m,close);return close}
 /* ---------- interactive Vellore map: drag, pinch, wheel, double-tap, fling ---------- */
 
@@ -927,7 +951,7 @@ function login(){
         S.phone=ph.value;save();
         if(CL){b.disabled=true;b.textContent=L('OTP அனுப்புது…','Sending OTP…');nat=VCTOTP.native();if(nat)nat.then(c=>{if(c&&stage&&document.body.contains(ins[0])&&!box.val())VCTOTP.fill(ins,c)});CL.sendOtp(ph.value).then(()=>{stage=1;ow.hidden=false;ph.disabled=true;b.textContent=L('சரிபார்','Verify');b.disabled=true;ins[0].focus()}).catch(er=>{VCTOTP.stop();b.disabled=false;b.textContent=L('OTP அனுப்பு','Send OTP');e.textContent=CL.errText(er,S.lang==='ta')});return}
         stage=1;ow.hidden=false;ph.disabled=true;b.textContent=L('சரிபார்','Verify');b.disabled=true;ins[0].focus();return}
-      if(CL){b.disabled=true;CL.verifyOtp(box.val()).then(async()=>{if(await loadMe())home()}).catch(er=>{b.disabled=false;e.textContent=CL.errText(er,S.lang==='ta');box.reset();b.disabled=true});return}
+      if(CL){b.disabled=true;CL.verifyOtp(box.val()).then(async()=>{if(await loadMe()){home();if(WELC)welcomeDriver()}}).catch(er=>{b.disabled=false;e.textContent=CL.errText(er,S.lang==='ta');box.reset();b.disabled=true});return}
       if(box.val()!=='1234'){e.textContent=L('OTP தவறு','Wrong OTP');box.reset();b.disabled=true;return}
       S.logged=true;save();pickProfile();
     };
@@ -1346,13 +1370,14 @@ async function cloudBootD(){
   if(!c){if(ON_PAGES){offlineD();return true}return false}
   const u=await CL.waitUser();
   if(!u||!u.phoneNumber){login();return true}
-  if(await loadMe())home();
+  if(await loadMe()){home();if(WELC)welcomeDriver()}
   return true;
 }
 async function loadMe(){
   let s=null;try{s=await F().getDoc(F().doc(CL.db,'drivers',CL.phone))}catch(e){}
   if(!s||!s.exists()){notDriver();return false}
   applyMe(s.data());S.phone=(CL.phone||'').replace('+91','');S.logged=true;S.pid='cloud';save();
+  WELC=welcomeDue(s.data());
   DS={wallet:DS.wallet,tx:[],trips:[],pending:[],onMs:0,onDay:new Date().toDateString()};
   watchMe();watchCfgD();watchWxD();watchMine();watchRch();
   VCTCLK.sync(F(),F().doc(CL.db,'live',CL.phone)); // learn the server time once

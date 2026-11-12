@@ -10,7 +10,8 @@ const TPL = {
   assigned: 'vct_driver_assigned',         // 1 name · 2 driver · 3 car + number plate · 4 booking no.
   ontrip: 'vct_trip_started',              // 1 name · 2 number plate · 3 help phone
   done: 'vct_trip_completed',              // 1 name · 2 fare · 3 booking no.
-  cancelled: 'vct_booking_cancelled'       // 1 name · 2 booking no. · 3 office phone
+  cancelled: 'vct_booking_cancelled',      // 1 name · 2 booking no. · 3 office phone
+  drvwelcome: 'vct_driver_welcome'         // to a new DRIVER when the office approves them: 1 name · 2 driver help phone
 };
 const KINDS = ['confirmed', 'assigned', 'ontrip', 'done', 'cancelled'];
 const OFFER = ['outstation', 'rental'];
@@ -84,6 +85,15 @@ function waMessage(kind, b, id, o) {
       components: [{ type: 'body', parameters: p.map(text => ({ type: 'text', text })) }] } };
 }
 
+/* Welcome message to a driver the office has just approved (joined through the app). d = drivers/{phone} doc. */
+function waDriverWelcome(d, o) {
+  const ta = o.lang !== 'en';
+  const p = [clean(d && d.name || (ta ? 'Driver' : 'Driver'), 40), clean(o.help)];
+  return { messaging_product: 'whatsapp', to: o.to, type: 'template',
+    template: { name: TPL.drvwelcome, language: { code: ta ? 'ta' : 'en' },
+      components: [{ type: 'body', parameters: p.map(text => ({ type: 'text', text })) }] } };
+}
+
 // Should this number get a message now? (switch on, kind allowed, test list)
 function waAllowed(w, kind, to) {
   if (!w || w.on !== true || !w.phoneId || !to) return false;
@@ -121,4 +131,4 @@ function waParse(body) {
 const RANK = { accepted: 0, sent: 1, delivered: 2, read: 3, failed: 4 };
 const newer = (oldS, newS) => (RANK[newS] ?? -1) > (RANK[oldS] ?? -1);
 
-module.exports = { TPL, KINDS, waEvents, waPhone, waMessage, waAllowed, sigOk, waParse, newer, clean, istTime, ref6 };
+module.exports = { TPL, KINDS, waEvents, waPhone, waMessage, waDriverWelcome, waAllowed, sigOk, waParse, newer, clean, istTime, ref6 };

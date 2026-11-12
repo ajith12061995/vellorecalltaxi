@@ -178,3 +178,35 @@ test('webhook POST without the app secret stored → refused', async () => {
   const r = res(); await F.waWebhook(signed({ object: 'whatsapp_business_account', entry: [] }, ''), r);
   process.env.WA_APP_SECRET = s; assert.strictEqual(r.code, 401);
 });
+
+// ---- driver welcome (drivers/{phone} created by the office approving an app application) ---------------------
+const dev = (ph, d) => ({ params: { ph }, data: { data: () => d } });
+test('driver welcome: sent once to an app-joined driver, in their language, with the driver help number', async () => {
+  reset(); store.set('config/app', { office: '9344640416', driverHelp: '9344039933' }); store.set('waConfig/main', { on: true, phoneId: '1', kinds: ['done'] });
+  await F.waDriverWelcome(dev('+919876500001', { name: 'Murugan', fromApp: true, consent: { lang: 'en' } }));
+  assert.strictEqual(sent.length, 1, 'booking message types do not block it');
+  const t = sent[0].body.template;
+  assert.strictEqual(t.name, 'vct_driver_welcome'); assert.strictEqual(t.language.code, 'en');
+  assert.deepStrictEqual(t.components[0].parameters.map(p => p.text), ['Murugan', '9344039933']);
+  assert.strictEqual(sent[0].body.to, '919876500001');
+  assert.strictEqual(store.get('waLog/drv_919876500001_welcome').status, 'accepted');
+  await F.waDriverWelcome(dev('+919876500001', { name: 'Murugan', fromApp: true }));
+  assert.strictEqual(sent.length, 1, 'a retried trigger never sends twice');
+  await F.waDriverWelcome(dev('+919876500002', { name: 'Ravi', fromApp: true }));
+  assert.strictEqual(sent[1].body.template.language.code, 'ta', 'Tamil by default');
+});
+test('driver welcome: not sent when off, for office-added drivers, outside the test list, or when turned off', async () => {
+  reset(); await F.waDriverWelcome(dev('+919876500001', { name: 'A', fromApp: true }));
+  assert.strictEqual(sent.length, 0, 'WhatsApp switch off');
+  store.set('waConfig/main', { on: true, phoneId: '1' });
+  await F.waDriverWelcome(dev('+919876500001', { name: 'A' })); assert.strictEqual(sent.length, 0, 'added by office, not via the app');
+  store.set('waConfig/main', { on: true, phoneId: '1', testTo: ['9944640416'] });
+  await F.waDriverWelcome(dev('+919876500001', { name: 'A', fromApp: true })); assert.strictEqual(sent.length, 0, 'test list only');
+  store.set('waConfig/main', { on: true, phoneId: '1', drvWelcome: false });
+  await F.waDriverWelcome(dev('+919876500001', { name: 'A', fromApp: true })); assert.strictEqual(sent.length, 0, 'driver welcome turned off');
+  store.set('waConfig/main', { on: true, phoneId: '1' });
+  reply = () => ({ status: 400, body: { error: { code: 132001, message: 'Template name does not exist in the translation' } } });
+  await F.waDriverWelcome(dev('+919876500003', { name: 'B', fromApp: true }));
+  assert.strictEqual(store.get('waLog/drv_919876500003_welcome').status, 'failed', 'template not approved yet → logged as failed, no crash');
+  reply = () => ({ status: 200, body: { messages: [{ id: 'wamid.ok' }] } });
+});

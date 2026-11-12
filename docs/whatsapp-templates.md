@@ -92,6 +92,25 @@ To book again, call: {{3}}
 Sorry for the trouble.
 ```
 
+## vct_driver_welcome — 1 driver name · 2 driver help phone
+Sent to a NEW DRIVER (not a customer) once, when the office approves their app application.
+**ta**
+```
+வணக்கம் {{1}}, உங்க Vellore Taxi driver கணக்கு approve ஆகிவிட்டது 🎉
+Vellore Taxi குடும்பத்துக்கு உங்களை அன்புடன் வரவேற்கிறோம்!
+Driver app-ஐ திறந்து, wallet recharge செய்து, Online போனதும் ride-கள் வரத் தொடங்கும்.
+உதவிக்கு அழைக்க: {{2}}
+உங்க முதல் சவாரி இனிதாக அமைய வாழ்த்துக்கள்!
+```
+**en**
+```
+Hello {{1}}, your Vellore Taxi driver account has been approved 🎉
+A warm welcome to the Vellore Taxi family!
+Open the driver app, recharge your wallet and go Online to start getting rides.
+For help, call: {{2}}
+Wishing you a great first ride!
+```
+
 ## Cost (Meta, India, per delivered template — check the current rate card before going live)
 Utility messages are charged per message; a reply from the customer opens a free 24-hour window for utility templates.
 Message types can be turned off one by one in Office → Settings → WhatsApp to save cost (e.g. "trip started").
