@@ -13,7 +13,7 @@ async def main():
         await pg.evaluate("""(()=>{const t=Date.now();
           MOCK.store.set('waLog/b1_done',{bookingId:'abcdef99',kind:'done',to:'919944640416',status:'read',at:{toDate:()=>new Date(t)}});
           MOCK.store.set('waLog/b2_confirmed',{bookingId:'zzzzzz11',kind:'confirmed',to:'917200730416',status:'failed',error:'132001 Template <b>missing</b>',at:{toDate:()=>new Date(t-1000)}});
-          MOCK.store.set('waInbox/m1',{from:'919944640416',name:'Priya',text:'<img src=x onerror=window.PWN=1> driver எங்கே?',type:'text',seen:false,at:{toDate:()=>new Date(t)}});})()""")
+          MOCK.store.set('waInbox/m1',{from:'919944640416',name:'Priya',text:'<img src=x onerror=window.PWN=1> driver எங்கே?',type:'text',seen:false,at:new Date(t).toISOString()});})()""")
         O=pg.frame_locator('#o');of=pg.frame(url=B+'o2.html')
         await O.locator('#ph').fill('8220201462');await O.locator('#lgn').click();await pg.wait_for_timeout(300)
         await O.locator('#otp').fill('123456');await pg.wait_for_timeout(1500)
@@ -44,9 +44,33 @@ async def main():
         inb=await O.locator('#wain').inner_text()
         check('customer reply shown with name and number','Priya' in inb and '919944640416' in inb and 'driver எங்கே?' in inb,inb[:200])
         check('reply text is escaped (no script runs)',await of.evaluate("!window.PWN") and await O.locator('#wain img').count()==0)
-        await O.locator('[data-was="m1"]').click();await pg.wait_for_timeout(1200)
-        check('mark seen → saved',(await pg.evaluate("MOCK.store.get('waInbox/m1')")).get('seen') is True)
         check('reloaded settings keep the saved values',await O.locator('#wapid').input_value()=='123456789012345' and await O.locator('#wao').is_checked() and not await O.locator('[data-wak="ontrip"]').is_checked())
+        # conversation + reply (customer); a registered driver is tagged Driver; 24 h window enforced
+        await pg.evaluate("""(()=>{const t=Date.now();
+          MOCK.store.set('waInbox/m2',{from:'919999900002',name:'Raja',text:'wallet recharge பண்ணிட்டேன்',type:'text',seen:false,at:new Date(t-60e3).toISOString()});
+          MOCK.store.set('waInbox/m3',{from:'919876500009',name:'Old',text:'hello',type:'text',seen:false,at:new Date(t-26*3600e3).toISOString()});})()""")
+        await O.locator('#wal').click();await pg.wait_for_timeout(1200)
+        inb=await O.locator('#wain').inner_text()
+        check('sender tagged: registered driver vs customer',('🚖 Driver' in inb) and ('👤 Customer' in inb),inb[:300])
+        await O.locator('[data-wth="919944640416"]').click();await pg.wait_for_timeout(1000)
+        th=await of.evaluate("document.getElementById('wtl').innerText")
+        check('conversation shows their message',('driver எங்கே?' in th),th[:120])
+        ww=await O.locator('#wtw').inner_text();dis=await O.locator('#wtx').is_disabled()
+        check('reply allowed inside 24 h',not dis and ('மணி' in ww or ' h ' in ww),(dis,ww))
+        await O.locator('#wts').click();await pg.wait_for_timeout(400)
+        check('empty reply not sent',not await pg.evaluate("(window.__waSent||[]).length") and bool(await O.locator('#wte').inner_text()))
+        await O.locator('#wtx').fill('<b>5</b> நிமிஷத்துல driver வருவார்');await O.locator('#wts').click();await pg.wait_for_timeout(1200)
+        sent=await pg.evaluate("window.__waSent||[]")
+        check('reply sent through the server to that number',len(sent)==1 and sent[0]['to']=='919944640416' and 'நிமிஷத்துல' in sent[0]['text'],sent)
+        th=await of.evaluate("document.getElementById('wtl').innerText")
+        check('our reply shows in the conversation (escaped)','<b>5</b>' in th and await O.locator('#wtl b').count()==0,th[-120:])
+        await pg.screenshot(path='shots/wa_reply.png',clip={'x':1150,'y':0,'width':750,'height':860})
+        await O.locator('#wtc').click();await pg.wait_for_timeout(300)
+        await O.locator('#wal').click();await pg.wait_for_timeout(1200)
+        await O.locator('[data-wth="919876500009"]').click();await pg.wait_for_timeout(1000)
+        check('after 24 h: reply box locked with a clear note',await O.locator('#wtx').is_disabled() and ('24' in await O.locator('#wtw').inner_text()))
+        check('opening a conversation marks it seen',(await pg.evaluate("MOCK.store.get('waInbox/m3')")).get('seen') is True)
+        await O.locator('#wtc').click();await pg.wait_for_timeout(300)
         # switch off
         await O.locator('#wao').uncheck();await O.locator('#wasv').click();await pg.wait_for_timeout(800)
         check('switched off',(await pg.evaluate("MOCK.store.get('waConfig/main')")).get('on') is False)

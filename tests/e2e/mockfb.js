@@ -82,6 +82,14 @@
           const mine=[...store.keys()].filter(k=>/^bookings\/[^/]+$/.test(k)&&store.get(k).customerUid===user.uid);
           if(mine.some(k=>['searching','assigned','ontrip','scheduled'].includes(store.get(k).status)))return{ok:false,why:'active'};
           mine.forEach(k=>{const b=store.get(k);delete b.custPhone;b.custName='Deleted user';b.custDeleted=true;store.set(k,b)});store.delete('users/'+user.uid);(window.__deleted=window.__deleted||[]).push(user.uid);return{ok:true,bookings:mine.length}}
+        // same decisions as functions/index.js waReply (staff only; 24 h after their last message; logged as kind 'reply')
+        if(name==='waReply'){const me=user&&user.phoneNumber;if(!me)throw{code:'functions/unauthenticated'};if(!store.get('staff/'+me))throw{code:'functions/permission-denied',message:'office only'};
+          let to=String((data||{}).to||'').replace(/\D/g,'');if(to.length===10)to='91'+to;const text=String((data||{}).text||'').trim();
+          if(!/^91[6-9]\d{9}$/.test(to)||!text||text.length>1000)throw{code:'functions/invalid-argument',message:'bad request'};
+          const ms=a=>a&&a.toMillis?a.toMillis():a&&a.toDate?a.toDate().getTime():+new Date(a||0)||0;
+          const last=Math.max(0,...[...store.keys()].filter(k=>/^waInbox\/[^/]+$/.test(k)&&store.get(k).from===to).map(k=>ms(store.get(k).at)));
+          if(!(last>0&&Date.now()-last<24*3600e3))throw{code:'functions/failed-precondition',message:'reply window closed'};
+          (window.__waSent=window.__waSent||[]).push({to,text,by:me});const t=Date.now();store.set('waLog/reply_'+to+'_'+t,{kind:'reply',to,text,by:me,status:'accepted',at:{toMillis:()=>t}});return{ok:true}}
         // same decisions as functions/index.js purgeDriver (owner only; refused on a ride; wallet needs force; backup copy first)
         if(name==='purgeDriver'){const me=user&&user.phoneNumber,st=me&&store.get('staff/'+me),{phone,confirm,force}=data||{};
           if(!st||st.role!=='owner')throw{code:'functions/permission-denied'};if(!/^\+91[6-9]\d{9}$/.test(String(phone||''))||String(confirm)!==String(phone).slice(-4))throw{code:'functions/invalid-argument'};

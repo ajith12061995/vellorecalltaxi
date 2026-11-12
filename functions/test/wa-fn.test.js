@@ -13,14 +13,16 @@ function docRef(path) {
     collection: c => ({ doc: id => docRef(`${path}/${c}/${id}`) })
   };
 }
-const db = { doc: docRef, runTransaction: async fn => fn({ get: r => r.get(), update: (r, d) => r.update(d) }) };
+const coll = name => ({ where: (f, op, v) => ({ get: async () => ({ docs: [...store.keys()]
+  .filter(k => k.startsWith(name + '/') && k.split('/').length === 2 && store.get(k)[f] === v).map(k => snap(k)) }) }) });
+const db = { doc: docRef, collection: coll, runTransaction: async fn => fn({ get: r => r.get(), update: (r, d) => r.update(d) }) };
 const logs = [];
 const mocks = {
   'firebase-admin': { initializeApp() {}, firestore: () => db, messaging: () => ({}), auth: () => ({}) },
   'firebase-admin/firestore': { FieldValue: { serverTimestamp: () => 'TS', increment: n => n, delete: () => null } },
   'firebase-functions/v2/firestore': { onDocumentUpdated: (o, h) => h, onDocumentCreated: (o, h) => h, onDocumentWritten: (o, h) => h },
   'firebase-functions/v2/scheduler': { onSchedule: (o, h) => h },
-  'firebase-functions/v2/https': { onCall: (o, h) => h, onRequest: (o, h) => h, HttpsError: class extends Error {} },
+  'firebase-functions/v2/https': { onCall: (o, h) => h, onRequest: (o, h) => h, HttpsError: class extends Error { constructor(c, m) { super(`${c}: ${m}`); this.code = c; } } },
   'firebase-functions/v2': { setGlobalOptions() {}, logger: { info: (...a) => logs.push(['info', ...a]), warn: (...a) => logs.push(['warn', ...a]) } },
   'firebase-functions/params': { defineString: () => ({ value: () => '' }), defineSecret: n => ({ value: () => process.env[n] || '' }) }
 };
@@ -208,5 +210,36 @@ test('driver welcome: not sent when off, for office-added drivers, outside the t
   reply = () => ({ status: 400, body: { error: { code: 132001, message: 'Template name does not exist in the translation' } } });
   await F.waDriverWelcome(dev('+919876500003', { name: 'B', fromApp: true }));
   assert.strictEqual(store.get('waLog/drv_919876500003_welcome').status, 'failed', 'template not approved yet → logged as failed, no crash');
+  reply = () => ({ status: 200, body: { messages: [{ id: 'wamid.ok' }] } });
+});
+
+// ---- office reply (waReply) -------------------------------------------------------------------------------------
+const call = (phone, data) => F.waReply({ auth: phone ? { token: { phone_number: phone } } : null, data, app: {} });
+test('office reply: staff only, within 24 h of their last message, logged with delivery tracking', async () => {
+  reset(); store.set('waConfig/main', { on: false, phoneId: '1' }); store.set('staff/+918220201462', { role: 'owner' }); store.set('staff/+919000000001', { role: 'staff' });
+  store.set('waInbox/m1', { from: '919944640416', text: 'Driver எங்கே?', at: new Date(Date.now() - 3600e3).toISOString() });
+  await assert.rejects(call(null, { to: '9944640416', text: 'hi' }), /login/);
+  await assert.rejects(call('+919999999999', { to: '9944640416', text: 'hi' }), /office only/);
+  await assert.rejects(call('+919000000001', { to: '9944640416', text: '   ' }), /bad request/);
+  await assert.rejects(call('+919000000001', { to: '12345', text: 'hi' }), /bad request/);
+  await assert.rejects(call('+919000000001', { to: '9944640416', text: 'x'.repeat(1001) }), /bad request/);
+  await assert.rejects(call('+919000000001', { to: '9876500009', text: 'hi' }), /window closed/, 'never messaged us');
+  reply = () => ({ status: 200, body: { messages: [{ id: 'wamid.rep1' }] } });
+  const r = await call('+919000000001', { to: '+91 99446 40416', text: '  5 நிமிஷத்துல வருவார்  ' });
+  assert.deepStrictEqual(r, { ok: true }, 'staff can reply; works while booking messages are switched off');
+  assert.strictEqual(sent.length, 1); assert.deepStrictEqual(sent[0].body, { messaging_product: 'whatsapp', to: '919944640416', type: 'text', text: { body: '5 நிமிஷத்துல வருவார்', preview_url: false } });
+  const log = [...store.entries()].find(([k]) => k.startsWith('waLog/reply_919944640416_'));
+  assert.ok(log); assert.strictEqual(log[1].status, 'accepted'); assert.strictEqual(log[1].by, '+919000000001'); assert.strictEqual(log[1].kind, 'reply');
+  assert.ok(store.get(`waMsgs/${require('crypto').createHash('sha256').update('wamid.rep1').digest('hex').slice(0, 40)}`), 'receipts can find it');
+});
+test('office reply: closed after 24 h; Meta error is returned, not thrown', async () => {
+  reset(); store.set('waConfig/main', { phoneId: '1' }); store.set('staff/+918220201462', { role: 'owner' });
+  store.set('waInbox/m1', { from: '919944640416', text: 'hi', at: new Date(Date.now() - 25 * 3600e3).toISOString() });
+  await assert.rejects(call('+918220201462', { to: '9944640416', text: 'hello' }), /window closed/);
+  store.set('waInbox/m2', { from: '919944640416', text: 'hi again', at: new Date(Date.now() - 60e3).toISOString() });
+  reply = () => ({ status: 400, body: { error: { code: 131047, message: 'Re-engagement message' } } });
+  const r = await call('+918220201462', { to: '9944640416', text: 'hello' });
+  assert.strictEqual(r.ok, false); assert.match(r.error, /131047/);
+  store.delete('waConfig/main'); await assert.rejects(call('+918220201462', { to: '9944640416', text: 'hello' }), /not set up/);
   reply = () => ({ status: 200, body: { messages: [{ id: 'wamid.ok' }] } });
 });

@@ -94,6 +94,13 @@ function waDriverWelcome(d, o) {
       components: [{ type: 'body', parameters: p.map(text => ({ type: 'text', text })) }] } };
 }
 
+/* A typed reply from the office to someone who messaged us (customer or driver). WhatsApp allows free text only
+   within 24 hours of that person's last message. lastIn = ms of their last message (0 = never). */
+const REPLY_WINDOW = 24 * 3600e3;
+function replyOpen(lastIn, now) { return +lastIn > 0 && now - lastIn < REPLY_WINDOW && lastIn <= now + 60e3; }
+function replyText(v) { const s = String(v == null ? '' : v).replace(/\r\n?/g, '\n').replace(/\n{3,}/g, '\n\n').trim(); return s.length && s.length <= 1000 ? s : null; }
+function waText(to, body) { return { messaging_product: 'whatsapp', to, type: 'text', text: { body, preview_url: false } }; }
+
 // Should this number get a message now? (switch on, kind allowed, test list)
 function waAllowed(w, kind, to) {
   if (!w || w.on !== true || !w.phoneId || !to) return false;
@@ -131,4 +138,4 @@ function waParse(body) {
 const RANK = { accepted: 0, sent: 1, delivered: 2, read: 3, failed: 4 };
 const newer = (oldS, newS) => (RANK[newS] ?? -1) > (RANK[oldS] ?? -1);
 
-module.exports = { TPL, KINDS, waEvents, waPhone, waMessage, waDriverWelcome, waAllowed, sigOk, waParse, newer, clean, istTime, ref6 };
+module.exports = { TPL, KINDS, waEvents, waPhone, waMessage, waDriverWelcome, waAllowed, REPLY_WINDOW, replyOpen, replyText, waText, sigOk, waParse, newer, clean, istTime, ref6 };

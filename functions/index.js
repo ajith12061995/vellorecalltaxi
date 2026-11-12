@@ -336,6 +336,30 @@ exports.waDriverWelcome = onDocumentCreated({ document: 'drivers/{ph}', secrets:
   else logger.info('whatsapp driver welcome sent', { to });
 });
 
+// Office (owner or staff) replies to someone who messaged our WhatsApp number — a customer or a driver.
+// Free text is allowed by WhatsApp only within 24 h of their last message; the server checks that, not the app.
+// Each reply is logged in waLog (kind 'reply') so delivery receipts from the webhook update it.
+exports.waReply = onCall({ secrets: [WA_TOKEN], enforceAppCheck: AC_ENFORCE }, async req => {
+  acLog('waReply', req);
+  const me = req.auth && req.auth.token.phone_number, { to: to0, text: t0 } = req.data || {};
+  if (!me) throw new HttpsError('unauthenticated', 'login first');
+  if (!(await db.doc(`staff/${me}`).get()).exists) throw new HttpsError('permission-denied', 'office only');
+  const to = W.waPhone(to0), text = W.replyText(t0);
+  if (!to || !text) throw new HttpsError('invalid-argument', 'bad request');
+  const w = (await db.doc('waConfig/main').get()).data() || {};
+  if (!w.phoneId) throw new HttpsError('failed-precondition', 'whatsapp not set up');
+  const q = await db.collection('waInbox').where('from', '==', to).get();
+  const lastIn = q.docs.reduce((m, d) => { const a = d.data().at; const ms = a && a.toMillis ? a.toMillis() : +new Date(a || 0); return Math.max(m, ms || 0); }, 0);
+  if (!W.replyOpen(lastIn, Date.now())) throw new HttpsError('failed-precondition', 'reply window closed');
+  const key = `reply_${to}_${Date.now()}`, lref = db.doc(`waLog/${key}`);
+  await lref.create({ kind: 'reply', to, text, by: me, status: 'sending', at: FV.serverTimestamp() });
+  const r = await waSend(w, W.waText(to, text));
+  await lref.update({ ...r, updatedAt: FV.serverTimestamp() });
+  if (r.wamid) await db.doc(`waMsgs/${waKey(r.wamid)}`).set({ log: key, at: FV.serverTimestamp() });
+  if (r.status === 'failed') { logger.warn('whatsapp reply failed', { error: r.error }); return { ok: false, error: r.error }; }
+  return { ok: true };
+});
+
 exports.waWebhook = onRequest({ secrets: [WA_APP_SECRET, WA_VERIFY], maxInstances: 5 }, async (req, res) => {
   if (req.method === 'GET') {   // Meta checks the address once when the webhook is saved
     const q = req.query || {}, tok = WA_VERIFY.value();

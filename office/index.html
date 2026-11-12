@@ -1745,11 +1745,47 @@ function waPanel(){const el=document.getElementById('wab');if(!el||!CL)return;el
       cw(F().setDoc(F().doc(CL.db,'waConfig','main'),{on,phoneId:pid,testTo:tt,kinds,updatedAt:ts()}).then(()=>toast(on?(tt.length?L('சேமிச்சாச்சு — test நம்பர்களுக்கு மட்டும்','Saved — test numbers only'):L('சேமிச்சாச்சு — எல்லா customer-க்கும் போகும்','Saved — goes to every customer')):L('சேமிச்சாச்சு — OFF','Saved — off'))))};
     const lg=document.getElementById('walog'),inb=document.getElementById('wain'),t=x=>x&&x.toDate?x.toDate().toLocaleString('en-IN'):'';
     F().getDocs(F().query(F().collection(CL.db,'waLog'),F().orderBy('at','desc'),F().limit(30))).then(q=>{const r=q.docs.map(d=>d.data());
-      lg.innerHTML=r.length?r.map(x=>{const k=WAK.find(y=>y[0]===x.kind),st=WAST[x.status]||[x.status,x.status];return `<div style="padding:5px 0;border-bottom:1px solid var(--line)"><b>${esc(k?L(k[1],k[2]):x.kind)}</b> · ${esc('+'+String(x.to||'').replace(/^91/,'91 '))} · ${esc(L(st[0],st[1]))} · ${esc(t(x.at))}<br><small>Booking ${esc(String(x.bookingId||'').slice(0,6).toUpperCase())}${x.error?` · <span style="color:var(--danger,#c00)">${esc(x.error)}</span>`:''}</small></div>`}).join(''):L('இன்னும் எதுவும் அனுப்பலை','Nothing sent yet')}).catch(e=>{lg.textContent=CL.errText(e,S.lang==='ta')});
-    F().getDocs(F().query(F().collection(CL.db,'waInbox'),F().orderBy('at','desc'),F().limit(20))).then(q=>{
-      inb.innerHTML=q.docs.length?q.docs.map(d=>{const x=d.data();return `<div style="padding:5px 0;border-bottom:1px solid var(--line);${x.seen?'':'font-weight:700'}">${esc(x.name||'')} · <a href="tel:+${esc(x.from)}">+${esc(x.from)}</a> · ${esc(t(x.at))}<br>${esc(x.text||('['+x.type+']'))} ${x.seen?'':`<button class="btn ghost sm" data-was="${esc(d.id)}">${L('பார்த்தாச்சு','Mark seen')}</button>`}</div>`}).join(''):L('பதில் எதுவும் இல்லை','No replies');
-      inb.querySelectorAll('[data-was]').forEach(b=>b.onclick=()=>cw(F().updateDoc(F().doc(CL.db,'waInbox',b.dataset.was),{seen:true}).then(()=>waPanel())))}).catch(e=>{inb.textContent=CL.errText(e,S.lang==='ta')});
+      lg.innerHTML=r.length?r.map(x=>{const k=x.kind==='reply'?['reply','✍️ Office பதில்','✍️ Office reply']:x.kind==='drvwelcome'?['drvwelcome','🎉 Driver வரவேற்பு','🎉 Driver welcome']:WAK.find(y=>y[0]===x.kind),st=WAST[x.status]||[x.status,x.status];return `<div style="padding:5px 0;border-bottom:1px solid var(--line)"><b>${esc(k?L(k[1],k[2]):x.kind)}</b> · ${esc('+'+String(x.to||'').replace(/^91/,'91 '))} · ${esc(L(st[0],st[1]))} · ${esc(t(x.at))}<br><small>${x.kind==='reply'?esc(String(x.text||'').slice(0,80)):x.bookingId?'Booking '+esc(String(x.bookingId).slice(0,6).toUpperCase()):''}${x.error?` · <span style="color:var(--danger,#c00)">${esc(x.error)}</span>`:''}</small></div>`}).join(''):L('இன்னும் எதுவும் அனுப்பலை','Nothing sent yet')}).catch(e=>{lg.textContent=CL.errText(e,S.lang==='ta')});
+    F().getDocs(F().query(F().collection(CL.db,'waInbox'),F().orderBy('at','desc'),F().limit(40))).then(q=>{
+      const by=new Map();q.docs.forEach(d=>{const x=d.data();if(!by.has(x.from))by.set(x.from,{from:x.from,name:x.name||'',last:x,unseen:0});if(!x.seen)by.get(x.from).unseen++});
+      inb.innerHTML=by.size?[...by.values()].map(g=>{const x=g.last,who=waWho(g.from),open=waOpen(x.at);return `<div style="padding:6px 0;border-bottom:1px solid var(--line);${g.unseen?'font-weight:700':''}">
+        <span class="sst ${who.drv?'progress':'closed'}" style="font-size:11px">${who.drv?'🚖 Driver':'👤 Customer'}</span> ${esc(who.name||g.name||'')} · <a href="tel:+${esc(g.from)}">+${esc(g.from)}</a> · ${esc(t(x.at))}${g.unseen?` · <b>${g.unseen} ${L('புதுசு','new')}</b>`:''}
+        <br>${esc(x.text||('['+x.type+']'))}<br><button class="btn sm" data-wth="${esc(g.from)}" style="margin-top:4px">💬 ${open?L('பதில் அனுப்பு','Reply'):L('பார்','View')}</button></div>`}).join(''):L('பதில் எதுவும் இல்லை','No replies');
+      inb.querySelectorAll('[data-wth]').forEach(b=>b.onclick=()=>waThread(b.dataset.wth,by.get(b.dataset.wth).name))}).catch(e=>{inb.textContent=CL.errText(e,S.lang==='ta')});
   }).catch(e=>{el.textContent=e&&e.code==='permission-denied'?L('புது rules publish ஆன பிறகு தான் தெரியும்','Visible after the new rules are published'):CL.errText(e,S.lang==='ta')})}
+/* Office reply to one person who messaged our WhatsApp (customer or driver). The server (waReply) checks staff,
+   the 24-hour window and sends; this screen shows the conversation (their messages + our replies). */
+const WA_WIN=24*3600e3;
+const waMs=a=>a&&a.toMillis?a.toMillis():a&&a.toDate?a.toDate().getTime():+new Date(a||0)||0;
+function waOpen(at){const ms=waMs(at);return ms>0&&Date.now()-ms<WA_WIN}
+function waWho(from){const d=drvById('+'+String(from||''));return d?{drv:true,name:d[S.lang]||d.en||''}:{drv:false,name:''}}
+async function waThread(from,nm){const who=waWho(from);
+  const close=modal(`<h3>💬 ${esc(who.name||nm||'')} <small class="muted">+${esc(from)}</small></h3>
+    <div class="muted" style="font-size:12px;margin-bottom:6px">${who.drv?'🚖 Driver':'👤 Customer'}</div>
+    <div id="wtl" style="max-height:46vh;overflow:auto;display:flex;flex-direction:column;gap:6px;padding:4px 0">…</div>
+    <div id="wtw" class="muted" style="font-size:12px;margin:8px 0 4px"></div>
+    <textarea id="wtx" rows="3" maxlength="1000" style="width:100%;box-sizing:border-box;font:inherit;padding:8px;border-radius:10px;border:1px solid var(--line)" placeholder="${L('பதில் type பண்ணுங்க…','Type a reply…')}"></textarea>
+    <div class="err" id="wte"></div>
+    <div class="two"><button class="btn" id="wts">${L('அனுப்பு','Send')}</button><button class="btn ghost" id="wtc">${L('மூடு','Close')}</button></div>`,(m,cl)=>{m.querySelector('#wtc').onclick=cl});
+  const box=document.getElementById('wtl'),win=document.getElementById('wtw'),tx=document.getElementById('wtx'),sb=document.getElementById('wts'),er=document.getElementById('wte');
+  const load=async()=>{const[qi,qo]=await Promise.all([F().getDocs(F().query(F().collection(CL.db,'waInbox'),F().where('from','==',from))),F().getDocs(F().query(F().collection(CL.db,'waLog'),F().where('to','==',from)))]);
+    const ins=qi.docs.map(d=>({id:d.id,...d.data(),dir:'in'})),outs=qo.docs.map(d=>({...d.data(),dir:'out'})).filter(x=>x.kind==='reply');
+    const all=[...ins,...outs].sort((a,b)=>waMs(a.at)-waMs(b.at)).slice(-40);
+    box.innerHTML=all.length?all.map(x=>{const st=x.dir==='out'?(WAST[x.status]||[x.status||'',x.status||'']):null;
+      return `<div style="align-self:${x.dir==='in'?'flex-start':'flex-end'};max-width:85%;padding:7px 10px;border-radius:12px;background:${x.dir==='in'?'var(--card2,#f1f3f2)':'#dcf8c6'};color:#111;white-space:pre-wrap">${esc(x.text||('['+(x.type||'')+']'))}<div style="font-size:10.5px;opacity:.65;margin-top:2px">${esc(new Date(waMs(x.at)).toLocaleString('en-IN'))}${st?' · '+esc(L(st[0],st[1])):''}${x.error?' · '+esc(x.error):''}</div></div>`}).join(''):L('மெசேஜ் இல்லை','No messages');
+    box.scrollTop=box.scrollHeight;
+    const lastIn=Math.max(0,...ins.map(x=>waMs(x.at))),left=lastIn+WA_WIN-Date.now(),open=lastIn>0&&left>0;
+    win.textContent=open?L(`இன்னும் ${Math.floor(left/3600e3)} மணி ${Math.floor(left%3600e3/60e3)} நிமிஷம் பதில் அனுப்பலாம் (WhatsApp விதி: அவங்க கடைசி மெசேஜுக்கு 24 மணி நேரம்)`,`You can reply for ${Math.floor(left/3600e3)} h ${Math.floor(left%3600e3/60e3)} min more (WhatsApp rule: 24 hours after their last message)`)
+      :L('24 மணி நேரம் தாண்டிடுச்சு — WhatsApp-ல பதில் அனுப்ப முடியாது. Call பண்ணுங்க.','More than 24 hours since their last message — WhatsApp does not allow a reply now. Please call them.');
+    tx.disabled=sb.disabled=!open;
+    ins.filter(x=>!x.seen).forEach(x=>F().updateDoc(F().doc(CL.db,'waInbox',x.id),{seen:true}).catch(()=>{}))};
+  try{await load()}catch(e){box.textContent=CL.errText(e,S.lang==='ta')}
+  sb.onclick=async()=>{const v=tx.value.trim();er.textContent='';if(!v){er.textContent=L('முதல்ல பதில் type பண்ணுங்க','Type a reply first');return}
+    sb.disabled=true;sb.textContent=L('அனுப்புது…','Sending…');
+    try{const r=await CL.call('waReply',{to:from,text:v});if(r&&r.ok===false){er.textContent=L('WhatsApp ஏத்துக்கலை: ','WhatsApp refused: ')+(r.error||'')}else{tx.value='';toast(L('அனுப்பியாச்சு','Sent'))}}
+    catch(e){er.textContent=/window/i.test(e&&e.message||'')?L('24 மணி நேரம் தாண்டிடுச்சு. Call பண்ணுங்க.','The 24-hour window has closed. Please call.'):CL.errText(e,S.lang==='ta')}
+    sb.textContent=L('அனுப்பு','Send');sb.disabled=false;try{await load()}catch(e){}};
+  return close}
 /* the public website (velloretaxi.app/vellore/) shows the same prices: copy only the price fields to public/prices
    (config/app is not public — it also holds commission, blocked numbers and other private settings) */
 function sitePrices(c){if(!CL)return Promise.resolve();
