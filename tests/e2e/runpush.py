@@ -46,7 +46,7 @@ async def main():
         check('nothing saved before the customer says yes',not await pg.evaluate(f"(MOCK.store.get('users/{uid}')||{{}}).fcm"))
         await C.locator('#pushon').click();await pg.wait_for_timeout(1200)
         u=await pg.evaluate(f"MOCK.store.get('users/{uid}')||{{}}")
-        check('"Yes" asks the phone once and saves token + language on the customer record',await cf.evaluate("__asked")==1 and str(u.get('fcm','')).startswith('tok-') and u.get('lang')=='ta',(u.get('fcm'),u.get('lang')))
+        check('"Yes" asks the phone once and saves token + language on the customer record',await cf.evaluate("__asked")==1 and str(u.get('fcm','')).startswith('tok-') and u.get('lang')=='en',(u.get('fcm'),u.get('lang')))  # app opens in English by default
         check('question disappears after yes',not await cf.evaluate("!!document.getElementById('pushask')"))
         check('customer service worker is the customer one (./fcm-sw.js at the app root)',len([x for x in await pg.evaluate("window.__pushReg||[]") if x=='./fcm-sw.js|./fcm/'])>=2)
         await D.locator('#acc').click();await pg.wait_for_timeout(2000)

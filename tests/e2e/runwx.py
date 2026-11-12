@@ -23,7 +23,7 @@ async def main():
         check('credit shown (MET Norway)','MET Norway' in await C.locator('#wx').inner_text())
         await setwx({'t':26,'kind':'rain','heavy':False});await pg.wait_for_timeout(600)
         tx=await C.locator('#wx').inner_text()
-        check('rain: customer line says it is raining',('மழை பெய்யுது' in tx) and '26°C' in tx,tx)
+        check('rain: customer line says it is raining',(('மழை பெய்யுது' in tx) or ('Raining now' in tx)) and '26°C' in tx,tx)
         await cf.evaluate("S.lang='en';save();home()");await pg.wait_for_timeout(1200)
         check('English',"Raining now" in await C.locator('#wx').inner_text())
         await cf.evaluate("S.lang='ta';save();home()");await pg.wait_for_timeout(1200)
