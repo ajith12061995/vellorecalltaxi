@@ -420,6 +420,8 @@ exports.rzpOrder = onCall({ secrets: [RZP_KEY_ID, RZP_KEY_SECRET], enforceAppChe
   if (ds.data().blocked) throw new HttpsError('permission-denied', 'blocked');
   const key = RZP_KEY_ID.value(), sec = RZP_KEY_SECRET.value();
   if (!key || !sec) throw new HttpsError('failed-precondition', 'razorpay not set up');
+  // TEST keys take fake money: only the drivers listed in config/app.rzpTesters may use them (no free wallet credit)
+  if (key.startsWith('rzp_test_') && !(Array.isArray(c.rzpTesters) && c.rzpTesters.includes(me))) throw new HttpsError('permission-denied', 'test mode: testers only');
   let j;
   try {
     const r = await fetch('https://api.razorpay.com/v1/orders', { method: 'POST',

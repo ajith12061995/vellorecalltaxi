@@ -84,7 +84,7 @@
           mine.forEach(k=>{const b=store.get(k);delete b.custPhone;b.custName='Deleted user';b.custDeleted=true;store.set(k,b)});store.delete('users/'+user.uid);(window.__deleted=window.__deleted||[]).push(user.uid);return{ok:true,bookings:mine.length}}
         // same decisions as functions/index.js rzpOrder / rzpVerify (signature check replaced by a fixed test signature)
         if(name==='rzpOrder'){const me=user&&user.phoneNumber;const amt=+(data||{}).amt;if(!me||!store.get('drivers/'+me))throw{code:'functions/permission-denied',message:'drivers only'};
-          if(!(Number.isInteger(amt)&&amt>=100&&amt<=10000))throw{code:'functions/invalid-argument',message:'amount'};if(!(store.get('config/app')||{}).rzp)throw{code:'functions/failed-precondition',message:'razorpay off'};
+          if(!(Number.isInteger(amt)&&amt>=100&&amt<=10000))throw{code:'functions/invalid-argument',message:'amount'};const ca=store.get('config/app')||{};if(!ca.rzp)throw{code:'functions/failed-precondition',message:'razorpay off'};if(!(ca.rzpTesters||[]).includes(me))throw{code:'functions/permission-denied',message:'test mode: testers only'};
           const id='order_E'+Date.now();store.set('rzpOrders/'+id,{driverPhone:me,amt,status:'created'});(window.__rzp=window.__rzp||[]).push(['order',id,amt]);return{orderId:id,keyId:'rzp_test_E2E',amount:amt*100,currency:'INR'}}
         if(name==='rzpVerify'){const me=user&&user.phoneNumber;const{orderId,paymentId,signature}=data||{};const o=store.get('rzpOrders/'+orderId);
           if(signature!=='sig_ok')throw{code:'functions/permission-denied',message:'bad signature'};if(!o||o.driverPhone!==me)throw{code:'functions/permission-denied',message:'not your order'};

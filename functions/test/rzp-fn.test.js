@@ -32,7 +32,7 @@ process.env.RZP_KEY_ID = 'rzp_test_KEY'; process.env.RZP_KEY_SECRET = 'key-secre
 const hm = (s, d) => crypto.createHmac('sha256', s).update(d).digest('hex');
 const ME = '+919999900002';
 const call = (fn, phone, data) => F[fn]({ auth: phone ? { token: { phone_number: phone } } : null, data, app: {} });
-const reset = () => { store.clear(); calls = []; logs.length = 0; store.set('config/app', { rzp: true }); store.set(`drivers/${ME}`, { name: 'Raja', wallet: 100, blocked: false }); };
+const reset = () => { store.clear(); calls = []; logs.length = 0; store.set('config/app', { rzp: true, rzpTesters: [ME] }); store.set(`drivers/${ME}`, { name: 'Raja', wallet: 100, blocked: false }); };
 function res() { const r = { code: 0, sendStatus(c) { r.code = c; return r; } }; return r; }
 const hook = (body, secret = 'hook-secret') => { const raw = Buffer.from(JSON.stringify(body)); return { method: 'POST', rawBody: raw, body, get: h => (h === 'x-razorpay-signature' ? hm(secret, raw) : '') }; };
 const paid = (order, pay, paise, ev = 'payment.captured') => ({ event: ev, payload: { payment: { entity: { id: pay, order_id: order, amount: paise, currency: 'INR', status: 'captured', method: 'upi' } } } });
@@ -43,7 +43,9 @@ test('order: drivers only, amount limits, switch, then one Razorpay order saved 
   await assert.rejects(call('rzpOrder', '+919000000001', { amt: 500 }), /drivers only/);
   for (const a of [0, 99, 10001, 250.5, '500x']) await assert.rejects(call('rzpOrder', ME, { amt: a }), /amount/, String(a));
   store.set('config/app', { rzp: false }); await assert.rejects(call('rzpOrder', ME, { amt: 500 }), /razorpay off/);
-  store.set('config/app', { rzp: true }); store.set(`drivers/${ME}`, { name: 'Raja', wallet: 100, blocked: true });
+  store.set('config/app', { rzp: true }); await assert.rejects(call('rzpOrder', ME, { amt: 500 }), /testers only/, 'test keys: not in tester list');
+  store.set('config/app', { rzp: true, rzpTesters: ['+919999900009'] }); await assert.rejects(call('rzpOrder', ME, { amt: 500 }), /testers only/);
+  store.set('config/app', { rzp: true, rzpTesters: [ME] }); store.set(`drivers/${ME}`, { name: 'Raja', wallet: 100, blocked: true });
   await assert.rejects(call('rzpOrder', ME, { amt: 500 }), /blocked/);
   store.set(`drivers/${ME}`, { name: 'Raja', wallet: 100, blocked: false });
   assert.strictEqual(calls.length, 0, 'nothing sent to Razorpay for refused requests');
