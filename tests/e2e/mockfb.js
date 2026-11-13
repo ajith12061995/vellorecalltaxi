@@ -82,6 +82,14 @@
           const mine=[...store.keys()].filter(k=>/^bookings\/[^/]+$/.test(k)&&store.get(k).customerUid===user.uid);
           if(mine.some(k=>['searching','assigned','ontrip','scheduled'].includes(store.get(k).status)))return{ok:false,why:'active'};
           mine.forEach(k=>{const b=store.get(k);delete b.custPhone;b.custName='Deleted user';b.custDeleted=true;store.set(k,b)});store.delete('users/'+user.uid);(window.__deleted=window.__deleted||[]).push(user.uid);return{ok:true,bookings:mine.length}}
+        // same decisions as functions/index.js rzpOrder / rzpVerify (signature check replaced by a fixed test signature)
+        if(name==='rzpOrder'){const me=user&&user.phoneNumber;const amt=+(data||{}).amt;if(!me||!store.get('drivers/'+me))throw{code:'functions/permission-denied',message:'drivers only'};
+          if(!(Number.isInteger(amt)&&amt>=100&&amt<=10000))throw{code:'functions/invalid-argument',message:'amount'};if(!(store.get('config/app')||{}).rzp)throw{code:'functions/failed-precondition',message:'razorpay off'};
+          const id='order_E'+Date.now();store.set('rzpOrders/'+id,{driverPhone:me,amt,status:'created'});(window.__rzp=window.__rzp||[]).push(['order',id,amt]);return{orderId:id,keyId:'rzp_test_E2E',amount:amt*100,currency:'INR'}}
+        if(name==='rzpVerify'){const me=user&&user.phoneNumber;const{orderId,paymentId,signature}=data||{};const o=store.get('rzpOrders/'+orderId);
+          if(signature!=='sig_ok')throw{code:'functions/permission-denied',message:'bad signature'};if(!o||o.driverPhone!==me)throw{code:'functions/permission-denied',message:'not your order'};
+          if(o.status==='paid')return{ok:true,result:'already'};o.status='paid';write('rzpOrders/'+orderId,o);const d=store.get('drivers/'+me);d.wallet=(+d.wallet||0)+o.amt;write('drivers/'+me,d);
+          write('recharges/rzp_'+orderId,{driverPhone:me,amt:o.amt,utr:paymentId,method:'razorpay',status:'approved',date:Date.now(),createdAt:{__ts:true},approvedAt:{__ts:true}});notify();(window.__rzp=window.__rzp||[]).push(['verify',orderId]);return{ok:true,result:'credited'}}
         // same decisions as functions/index.js waReply (staff only; 24 h after their last message; logged as kind 'reply')
         if(name==='waReply'){const me=user&&user.phoneNumber;if(!me)throw{code:'functions/unauthenticated'};if(!store.get('staff/'+me))throw{code:'functions/permission-denied',message:'office only'};
           let to=String((data||{}).to||'').replace(/\D/g,'');if(to.length===10)to='91'+to;const text=String((data||{}).text||'').trim();

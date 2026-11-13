@@ -1279,15 +1279,40 @@ function walletTab(){
     app.querySelectorAll('[data-ap]').forEach(b=>b.onclick=()=>{const p=DS.pending.splice(+b.dataset.ap,1)[0];DS.wallet+=p.amt;DS.tx.unshift({amt:p.amt,ta:'Recharge (Owner approve)',en:'Recharge (approved by owner)',date:Date.now()});saveDS();walletTab();toast(L(`${inr(p.amt)} wallet-ல சேர்ந்தது`,`${inr(p.amt)} added to wallet`))});
   });
 }
+/* Razorpay (Office → Settings switch). The wallet is credited by the SERVER after it checks Razorpay's signature
+   (rzpVerify) or Razorpay's signed webhook — never by this app. */
+let RZPJS=null;
+function rzpLoad(){return RZPJS||(RZPJS=new Promise((ok,no)=>{if(window.Razorpay)return ok();const s=document.createElement('script');s.src='https://checkout.razorpay.com/v1/checkout.js';s.onload=()=>ok();s.onerror=()=>{RZPJS=null;no(new Error('load'))};document.head.appendChild(s)}))}
+async function rzpPay(amt,btn,errEl,close){
+  btn.disabled=true;const t0=btn.textContent;btn.textContent=L('திறக்குது…','Opening…');errEl.textContent='';
+  const back=()=>{btn.disabled=false;btn.textContent=t0};
+  try{await rzpLoad();const o=await CL.call('rzpOrder',{amt});
+    const rp=new window.Razorpay({key:o.keyId,order_id:o.orderId,amount:o.amount,currency:o.currency,name:'VELLORE CALL TAXI',description:L('Driver wallet recharge','Driver wallet recharge'),
+      prefill:{contact:String(CL.phone||'').replace('+91','')},theme:{color:'#0B4A36'},
+      modal:{ondismiss:back},
+      handler:async r=>{btn.textContent=L('சரிபார்க்குது…','Checking…');
+        try{const v=await CL.call('rzpVerify',{orderId:r.razorpay_order_id,paymentId:r.razorpay_payment_id,signature:r.razorpay_signature});
+          if(v&&v.ok){close();S.tab='wallet';walletTab();toast(L(`${inr(amt)} wallet-ல சேர்ந்தது ✅`,`${inr(amt)} added to your wallet ✅`))}
+          else{errEl.textContent=L('பணம் வந்ததும் சில நிமிஷத்துல wallet-ல சேரும்.','It will be added to your wallet within a few minutes.');back()}}
+        catch(e){errEl.textContent=L('பணம் கட்டியிருந்தா சில நிமிஷத்துல தானா wallet-ல சேரும். மறுபடி கட்ட வேண்டாம்.','If you paid, it will be added automatically in a few minutes. Do not pay again.');back()}}});
+    rp.on('payment.failed',()=>{errEl.textContent=L('Payment தோல்வி. பணம் போயிருந்தா வங்கி திருப்பித் தரும்.','Payment failed. If money was taken, your bank returns it.')});
+    rp.open()}
+  catch(e){errEl.textContent=/load/.test(e&&e.message||'')?L('Razorpay திறக்கலை. Internet பாருங்க.','Could not open Razorpay. Check your internet.'):CL.errText(e,S.lang==='ta');back()}}
 function recharge(){
   let amt=500;
   modal(`<h3>${L('Wallet recharge','Recharge wallet')}</h3>
+    ${CL&&CFGD.rzp?`<div class="tags" style="justify-content:flex-start" id="rzamt">${[200,500,1000,2000].map(a=>`<button class="chip ${a===500?'sel':''}" data-za="${a}">₹${a}</button>`).join('')}</div>
+    <button class="btn yellow" id="rzp">⚡ ${L('UPI / Card-ல உடனே recharge','Pay now with UPI / card')}</button>
+    <div class="err" id="rze"></div><div class="muted" style="font-size:12.5px;margin:6px 0 12px">${L('பணம் கட்டின உடனே wallet-ல தானா சேரும். Approval தேவையில்லை.','Added to your wallet right after payment. No approval needed.')}</div>
+    <div class="sec"><h3 style="font-size:14px">${L('அல்லது: UPI-ல அனுப்பி UTR போடுங்க','Or: send by UPI and enter the UTR')}</h3></div>`:''}
     <div class="steps"><div><i>1</i>${L('கீழே உள்ள amount-ஐ Owner UPI-க்கு அனுப்புங்க','Send the amount to the owner’s UPI')}</div><div><i>2</i>${L('UPI app-ல வர்ற 12 இலக்க UTR / Transaction ID-ஐ போடுங்க','Enter the 12-digit UTR / transaction ID from your UPI app')}</div><div><i>3</i>${L('Owner சரிபார்த்ததும் wallet-ல சேரும்','It is added once the owner verifies it')}</div></div>
     ${CFGD&&CFGD.upi?`<div class="note" style="font-size:15px">UPI ID: <b>${esc(CFGD.upi)}</b></div>`:`<div class="note">${L('Owner UPI ID, Owner app-ல set பண்ணதும் இங்கே காட்டும்.','The owner’s UPI ID shows here once set in the Owner app.')}</div>`}
     <div class="tags" style="justify-content:flex-start">${[200,500,1000,2000].map(a=>`<button class="chip ${a===500?'sel':''}" data-a="${a}">₹${a}</button>`).join('')}</div>
     <div class="field" style="height:52px"><span class="cc">UTR</span><input id="utr" inputmode="numeric" maxlength="12" placeholder="123456789012"></div>
     <div class="err" id="re"></div><button class="btn" id="rs">${L('Approval-க்கு அனுப்பு','Send for approval')}</button>`,(m,close)=>{
     m.querySelectorAll('[data-a]').forEach(b=>b.onclick=()=>{amt=+b.dataset.a;m.querySelectorAll('[data-a]').forEach(x=>x.classList.toggle('sel',x===b))});
+    {let za=500;m.querySelectorAll('[data-za]').forEach(b=>b.onclick=()=>{za=+b.dataset.za;m.querySelectorAll('[data-za]').forEach(x=>x.classList.toggle('sel',x===b))});
+     const zb=m.querySelector('#rzp');if(zb)zb.onclick=()=>rzpPay(za,zb,m.querySelector('#rze'),close)}
     const u=m.querySelector('#utr');u.oninput=()=>{u.value=u.value.replace(/\D/g,'').slice(0,12)};
     m.querySelector('#rs').onclick=()=>{if(u.value.length!==12){m.querySelector('#re').textContent=L('12 இலக்க UTR எண் போடுங்க','Enter the 12-digit UTR');return}
       if(CL)cloudRecharge(amt,u.value);DS.pending.unshift({amt,utr:u.value,date:Date.now()});saveDS();close();S.tab='wallet';walletTab();toast(L('அனுப்பியாச்சு. Owner approve பண்ணணும்','Sent. Waiting for owner approval'))};
@@ -1398,7 +1423,7 @@ let WXD=null;
 function wxHtmlD(){return CL?VCTWX.html(WXD,Date.now(),'driver',S.lang):''}
 function watchWxD(){UNS.push(F().onSnapshot(F().doc(CL.db,'config','weather'),s=>{WXD=s.exists()?s.data():null;const el=document.getElementById('wx');if(el)el.outerHTML=wxHtmlD()},()=>{}))}
 function watchCfgD(){UNS.push(F().onSnapshot(F().doc(CL.db,'config','app'),s=>{if(!s.exists())return;const d=s.data();
-  if(d.comm!=null)COMM=+d.comm;if(d.minbal!=null)MINBAL=+d.minbal;CFGD.upi=d.upi||'';CFGD.office=d.driverHelp||d.office||''; /* drivers call the driver help line when the office has set one */CFGD.serverComm=!!d.serverComm;CFGD.serverPin=!!d.serverPin;CFGD.reqConsent=!!d.reqConsent;CFGD.extNav=!!d.extNav;CFGD.showFee=!!d.showFee;CFGD.wait=d.wait||null;CFGD.push=d.push||null;
+  if(d.comm!=null)COMM=+d.comm;if(d.minbal!=null)MINBAL=+d.minbal;CFGD.upi=d.upi||'';CFGD.office=d.driverHelp||d.office||''; /* drivers call the driver help line when the office has set one */CFGD.serverComm=!!d.serverComm;CFGD.serverPin=!!d.serverPin;CFGD.reqConsent=!!d.reqConsent;CFGD.extNav=!!d.extNav;CFGD.rzp=!!d.rzp;CFGD.showFee=!!d.showFee;CFGD.wait=d.wait||null;CFGD.push=d.push||null;
   {const na=Array.isArray(d.announce)?d.announce:[],top=na[0];const fresh=top&&(!ANN[0]||ANN[0].id!==top.id)&&top.t>seenAt();ANN=na;
    if(fresh&&ANN.length&&!J&&!document.querySelector('.modal')){beep();toast('📢 '+(top.title||L('Office அறிவிப்பு','Office notice')));if(S.tab==='home'&&document.getElementById('menu'))home()}}if(d.dispatch)Object.assign(DISP,d.dispatch);
   if(d.fares)VEH.forEach(v=>{const f=d.fares[v.id];if(f&&v.id!=='auto'){if(f.base!=null)v.base=+f.base;if(f.per!=null)v.per=+f.per}})},()=>{}))}
@@ -1424,7 +1449,7 @@ function watchRch(){UNS.push(F().onSnapshot(F().query(F().collection(CL.db,'rech
   if(!J&&!document.querySelector('.modal')&&S.tab==='wallet')walletTab();
 },()=>{}))}
 function rebuildTx(){
-  DS.tx=[...RCH.filter(r=>r.status==='approved').map(r=>({amt:+r.amt,ta:'Recharge (Owner approve)',en:'Recharge (approved)',date:CL.toMs(r.approvedAt)||r.date||0})),
+  DS.tx=[...RCH.filter(r=>r.status==='approved').map(r=>({amt:+r.amt,ta:r.method==='razorpay'?'Recharge (Razorpay)':'Recharge (Owner approve)',en:r.method==='razorpay'?'Recharge (Razorpay)':'Recharge (approved)',date:CL.toMs(r.approvedAt)||r.date||0})),
     ...RCH.filter(r=>r.status==='rejected').map(r=>({amt:0,ta:`Recharge நிராகரிப்பு · UTR ${r.utr}`,en:`Recharge rejected · UTR ${r.utr}`,date:CL.toMs(r.approvedAt)||r.date||0})),
     ...(FEE()?DS.trips.filter(t=>t.comm>0).map(t=>({amt:-t.comm,ta:`VCT கட்டணம்: ${t.to.ta}`,en:`VCT fee: ${t.to.en}`,date:t.date})):[])].sort((a,b)=>b.date-a.date);
 }
@@ -1686,7 +1711,7 @@ function notes(){
   ds.soon.forEach(n=>out.push({t:now-1,k:'acct',ic:'⚠️',title:L('சீக்கிரம் காலாவதி','Expiring soon'),msg:n,go:'docs'}));
   UPC.forEach(b=>out.push({t:CL&&b.assignedAt?CL.toMs(b.assignedAt):now-2,k:'trip',ic:b.kind==='outstation'?'🛣️':'⏱️',title:L('வரவிருக்கும் பயணம்','Upcoming trip'),msg:`${whenTxt(b.when)} · ${(b.from||{})[S.lang]||''} → ${(b.to||{})[S.lang]||''} · ${inr(+b.fare||0)}`}));
   RCH.slice().sort((a,b)=>(b.date||0)-(a.date||0)).slice(0,5).forEach(r=>out.push({t:CL&&r.approvedAt?CL.toMs(r.approvedAt):r.date||0,k:'acct',ic:r.status==='approved'?'✅':r.status==='rejected'?'❌':'⏳',
-    title:r.status==='approved'?L('Recharge ஏத்துக்கிட்டாங்க','Recharge approved'):r.status==='rejected'?L('Recharge நிராகரிப்பு','Recharge rejected'):L('Recharge காத்திருக்கு','Recharge pending'),msg:`${inr(+r.amt||0)} · UTR ${r.utr||''}`,go:'wallet'}));
+    title:r.status==='approved'?(r.method==='razorpay'?L('Recharge வந்தது (Razorpay)','Recharge received (Razorpay)'):L('Recharge ஏத்துக்கிட்டாங்க','Recharge approved')):r.status==='rejected'?L('Recharge நிராகரிப்பு','Recharge rejected'):L('Recharge காத்திருக்கு','Recharge pending'),msg:`${inr(+r.amt||0)} · ${r.method==='razorpay'?'Payment':'UTR'} ${r.utr||''}`,go:'wallet'}));
   DS.trips.slice(0,5).forEach(x=>out.push({t:x.date,k:'trip',ic:'🏁',title:L('Trip முடிஞ்சது','Trip completed'),msg:`${x.from[S.lang]} → ${x.to[S.lang]} · ${L('உங்க வருமானம்','You earned')} ${inr(x.net)}`}));
   return out.sort((a,b)=>b.t-a.t);
 }

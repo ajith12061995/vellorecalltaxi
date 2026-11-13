@@ -121,13 +121,15 @@ test('newer: delivery status never goes backwards', () => {
   assert.ok(!W.newer('read', 'delivered')); assert.ok(!W.newer('read', 'sent')); assert.ok(W.newer('delivered', 'failed'));
 });
 
-test('deploy script: without WhatsApp secrets it still deploys every other function', () => {
+test('deploy script: every function is in exactly one group; WhatsApp / Razorpay only with their secrets', () => {
   const fs = require('fs'), path = require('path');
   const src = fs.readFileSync(path.join(__dirname, '..', 'index.js'), 'utf8');
   const all = [...src.matchAll(/^exports\.(\w+)\s*=/gm)].map(m => m[1]);
   const sh = fs.readFileSync(path.join(__dirname, '..', '..', 'tools', 'cloudshell-deploy.sh'), 'utf8');
-  const line = sh.split('\n').find(l => l.includes('deploy --only firestore:rules,functions:onBookingDone'));
-  const listed = [...line.matchAll(/functions:(\w+)/g)].map(m => m[1]);
-  assert.deepStrictEqual(listed.sort(), all.filter(n => !/^wa[A-Z]/.test(n)).sort());
-  assert.ok(all.includes('waBooking') && all.includes('waWebhook'));
+  const grab = re => [...(sh.split('\n').find(l => re.test(l)) || '').matchAll(/functions:(\w+)/g)].map(m => m[1]);
+  const base = grab(/^FNS="functions:onBookingDone/), wa = grab(/has WA_TOKEN/), rz = grab(/has RZP_KEY_ID/);
+  assert.deepStrictEqual(base.sort(), all.filter(n => !/^(wa|rzp)[A-Z]/.test(n)).sort());
+  assert.deepStrictEqual(wa.sort(), all.filter(n => /^wa[A-Z]/.test(n)).sort());
+  assert.deepStrictEqual(rz.sort(), all.filter(n => /^rzp[A-Z]/.test(n)).sort());
+  assert.ok(!/--only firestore:rules,functions\s/.test(sh), 'never a blanket deploy of all functions');
 });

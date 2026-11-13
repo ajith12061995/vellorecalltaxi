@@ -383,6 +383,75 @@ exports.waWebhook = onRequest({ secrets: [WA_APP_SECRET, WA_VERIFY], maxInstance
 
 // Website contact form (enquiries): the same number sending more than 3 in an hour, or more than 40 from everyone in
 // an hour, is closed automatically as "too many" so the office list stays usable. Nothing is deleted.
+// ---- Razorpay: driver wallet recharge --------------------------------------------------------------------------
+// Secrets (Cloud Shell, tools/cloudshell-razorpay.sh): RZP_KEY_ID, RZP_KEY_SECRET, RZP_WEBHOOK_SECRET.
+// The driver app shows the Razorpay button only when Office → Settings switches config/app.rzp on.
+const R = require('./lib/rzp');
+const RZP_KEY_ID = defineSecret('RZP_KEY_ID'), RZP_KEY_SECRET = defineSecret('RZP_KEY_SECRET'), RZP_HOOK = defineSecret('RZP_WEBHOOK_SECRET');
+
+// Credit one paid order to the driver's wallet — at most once, whichever proof (checkout or webhook) comes first.
+async function rzpCredit(orderId, paymentId, via, paise) {
+  const oref = db.doc(`rzpOrders/${orderId}`);
+  return db.runTransaction(async tx => {
+    const o = await tx.get(oref);
+    if (!o.exists) return 'unknown';
+    const d = o.data();
+    if (d.status === 'paid') return 'already';
+    if (paise != null && paise !== d.amt * 100) { tx.update(oref, { status: 'mismatch', paymentId, paise, updatedAt: FV.serverTimestamp() }); return 'mismatch'; }
+    const dref = db.doc(`drivers/${d.driverPhone}`), drv = await tx.get(dref);
+    if (!drv.exists) { tx.update(oref, { status: 'no-driver', paymentId, updatedAt: FV.serverTimestamp() }); return 'no-driver'; }
+    tx.update(oref, { status: 'paid', paymentId, via, paidAt: FV.serverTimestamp() });
+    tx.set(db.doc(`recharges/rzp_${orderId}`), { driverPhone: d.driverPhone, driverName: d.driverName || '', amt: d.amt, utr: paymentId,
+      method: 'razorpay', orderId, status: 'approved', approvedBy: 'razorpay', date: Date.now(), createdAt: FV.serverTimestamp(), approvedAt: FV.serverTimestamp() });
+    tx.update(dref, { wallet: FV.increment(d.amt), updatedAt: FV.serverTimestamp() });
+    return 'credited';
+  });
+}
+
+exports.rzpOrder = onCall({ secrets: [RZP_KEY_ID, RZP_KEY_SECRET], enforceAppCheck: AC_ENFORCE }, async req => {
+  acLog('rzpOrder', req);
+  const me = req.auth && req.auth.token.phone_number;
+  if (!me) throw new HttpsError('unauthenticated', 'login first');
+  const amt = +(req.data && req.data.amt);
+  if (!R.amountOk(amt)) throw new HttpsError('invalid-argument', 'amount');
+  const c = await cfg(); if (c.rzp !== true) throw new HttpsError('failed-precondition', 'razorpay off');
+  const ds = await db.doc(`drivers/${me}`).get();
+  if (!ds.exists) throw new HttpsError('permission-denied', 'drivers only');
+  if (ds.data().blocked) throw new HttpsError('permission-denied', 'blocked');
+  const key = RZP_KEY_ID.value(), sec = RZP_KEY_SECRET.value();
+  if (!key || !sec) throw new HttpsError('failed-precondition', 'razorpay not set up');
+  let j;
+  try {
+    const r = await fetch('https://api.razorpay.com/v1/orders', { method: 'POST',
+      headers: { Authorization: 'Basic ' + Buffer.from(`${key}:${sec}`).toString('base64'), 'Content-Type': 'application/json' },
+      body: JSON.stringify(R.orderBody(amt, me.replace('+91', ''), Date.now())), signal: AbortSignal.timeout(15000) });
+    j = await r.json().catch(() => ({}));
+    if (!r.ok || !/^order_\w+$/.test(j.id || '')) { logger.warn('razorpay order failed', { status: r.status, err: j && j.error && j.error.description }); throw new Error('order'); }
+  } catch (e) { throw new HttpsError('unavailable', 'payment service busy, try again'); }
+  await db.doc(`rzpOrders/${j.id}`).set({ driverPhone: me, driverName: ds.data().name || '', amt, status: 'created', createdAt: FV.serverTimestamp() });
+  return { orderId: j.id, keyId: key, amount: amt * 100, currency: 'INR' };
+});
+
+exports.rzpVerify = onCall({ secrets: [RZP_KEY_SECRET], enforceAppCheck: AC_ENFORCE }, async req => {
+  acLog('rzpVerify', req);
+  const me = req.auth && req.auth.token.phone_number;
+  if (!me) throw new HttpsError('unauthenticated', 'login first');
+  const { orderId, paymentId, signature } = req.data || {};
+  if (!R.checkoutSigOk(orderId, paymentId, signature, RZP_KEY_SECRET.value())) throw new HttpsError('permission-denied', 'bad signature');
+  const o = await db.doc(`rzpOrders/${orderId}`).get();
+  if (!o.exists || o.data().driverPhone !== me) throw new HttpsError('permission-denied', 'not your order');
+  const r = await rzpCredit(orderId, paymentId, 'checkout');
+  return { ok: r === 'credited' || r === 'already', result: r };
+});
+
+exports.rzpWebhook = onRequest({ secrets: [RZP_HOOK], maxInstances: 5 }, async (req, res) => {
+  if (req.method !== 'POST') return res.sendStatus(405);
+  if (!R.webhookSigOk(req.rawBody, req.get('x-razorpay-signature'), RZP_HOOK.value())) { logger.warn('razorpay webhook: bad signature'); return res.sendStatus(401); }
+  const p = R.webhookPayment(req.body);
+  if (p) { const r = await rzpCredit(p.orderId, p.paymentId, 'webhook', p.paise); if (r !== 'credited' && r !== 'already') logger.warn('razorpay webhook', { r, order: p.orderId }); }
+  res.sendStatus(200);
+});
+
 exports.onEnquiry = onDocumentCreated('enquiries/{id}', async ev => {
   const e = ev.data.data(); if (!e) return;
   const hourAgo = new Date(Date.now() - 3600e3);
