@@ -20,11 +20,17 @@ save(){ # name value
 }
 ok=0
 for try in 1 2 3; do
-  read -rsp "Razorpay Key Id (rzp_test_… or rzp_live_…) [try $try/3]: " kid; echo
-  read -rsp "Razorpay Key Secret: " ksec; echo
-  kid="$(printf '%s' "$kid" | tr -d '[:space:]')"; ksec="$(printf '%s' "$ksec" | tr -d '[:space:]')"
-  if ! [[ "$kid" =~ ^rzp_(test|live)_[A-Za-z0-9]{10,}$ ]]; then echo "  That is not a Razorpay Key Id. Try again."; continue; fi
-  if ! [[ "$ksec" =~ ^[A-Za-z0-9]{16,}$ ]]; then echo "  That does not look like a Key Secret. Try again."; continue; fi
+  echo "Paste the Key Id (or the whole line from the Razorpay file — Key Id and Secret together is fine). Typing is hidden."
+  read -rsp "Razorpay Key Id [try $try/3]: " in1; echo
+  # tolerate quotes, commas, labels, tabs and a pasted pair "rzp_test_…,secret"
+  kid=$(printf '%s' "$in1" | grep -oE 'rzp_(test|live)_[A-Za-z0-9]+' | head -1)
+  rest=$(printf '%s' "$in1" | sed -E 's/rzp_(test|live)_[A-Za-z0-9]+//' | grep -oE '[A-Za-z0-9]{16,}' | head -1)
+  if [[ -z "$kid" ]]; then
+    n=${#in1}; echo "  No Razorpay Key Id found in what was pasted (length $n$([[ $n == 0 ]] && echo ' — nothing arrived; use right-click → Paste')). Try again."; continue; fi
+  if [[ -n "$rest" ]]; then ksec="$rest"; echo "  Key Secret found in the same line."
+  else read -rsp "Razorpay Key Secret: " in2; echo; ksec=$(printf '%s' "$in2" | grep -oE '[A-Za-z0-9]{16,}' | head -1); fi
+  unset in1 in2 rest
+  if [[ -z "$ksec" ]]; then echo "  No Key Secret found in what was pasted. Try again."; continue; fi
   code=$(curl -s -o /dev/null -w '%{http_code}' -u "$kid:$ksec" "https://api.razorpay.com/v1/orders?count=1")
   if [[ "$code" != "200" ]]; then echo "  Razorpay refused this Key Id + Secret (HTTP $code). Try again."; continue; fi
   echo "  Razorpay accepted the keys (mode: $([[ $kid == rzp_live_* ]] && echo LIVE || echo TEST))."
