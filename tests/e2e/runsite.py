@@ -144,7 +144,7 @@ async def main():
         q=await ctx.new_page();e2=[];q.on('pageerror',lambda e:e2.append(str(e)))
         await q.goto(U);await q.wait_for_timeout(600);await q.click('#lang')
         check('works with storage blocked',not e2 and await q.evaluate("document.documentElement.dataset.l")=='ta',e2)
-        check('launch notice shown, links to the driver section',await q.locator('#soon').is_visible() and await q.get_attribute('#soon','href')=='#drivers')
+        check('live notice shown, links to booking',await q.locator('#soon').is_visible() and await q.get_attribute('#soon','href')=='#book' and ('Now live' in (st:=await q.locator('#soon').inner_text()) or 'இப்போ வேலூரில்' in st))
         await b.close()
 asyncio.run(main())
 print('RESULT','PASS' if all(res) else 'FAIL','%d/%d'%(sum(res),len(res)))
