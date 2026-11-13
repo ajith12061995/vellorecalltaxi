@@ -29,3 +29,8 @@ open(os.path.join(O,'harness_x.html'),'w').write(x)
 j=h.replace('src="c.html"','src="j2.html"').replace('src="d.html"','src="d2.html"').replace('src="o.html"','src="o2.html"')
 open(os.path.join(O,'harness_j.html'),'w').write(j)
 print('built',O)
+# app images referenced with ./ paths (place cards); vehicles/ is served the same way
+import shutil
+for d in ('places','vehicles'):
+    src=os.path.join(os.path.dirname(os.path.dirname(E)),d)
+    if os.path.isdir(src):shutil.copytree(src,os.path.join(O,d),dirs_exist_ok=True)

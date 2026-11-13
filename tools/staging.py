@@ -7,7 +7,7 @@ test copy is always the same code as the live one. Pages get noindex (not shown 
 import os, shutil, re
 root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 out = os.path.join(root, 'staging')
-COPY = ['index.html', 'driver', 'office', 'join', 'privacy', 'core', 'vehicles', 'brand', 'manifest.webmanifest',
+COPY = ['index.html', 'driver', 'office', 'join', 'privacy', 'core', 'vehicles', 'places', 'brand', 'manifest.webmanifest',
         'sw.js', 'fcm-sw.js', 'vct-cloud.js', 'firebase-config.js', 'maps-config.js', 'version.json',
         'icon-192.png', 'icon-512.png', 'icon-maskable-512.png', 'apple-touch-icon.png']
 if os.path.isdir(out): shutil.rmtree(out)
