@@ -29,7 +29,7 @@
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('../vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV=window.VCT_V='93',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV=window.VCT_V='94',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('../version.json',location.href)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -715,13 +715,13 @@ details.faq p{margin:0;padding:0 14px 14px;color:var(--muted);font-size:14px;lin
 <div class="app" id="app"></div>
 <div class="toast" id="toast"></div>
 
-<script src="../core/report.js?v=93"></script>
-<script src="../core/geo.js?v=93"></script>
-<script src="../core/fare.js?v=93"></script>
-<script src="../core/driverchecks.js?v=93"></script>
-<script src="../core/map.js?v=93"></script>
-<script src="../core/otp.js?v=93"></script>
-<script src="../core/refer.js?v=93"></script>
+<script src="../core/report.js?v=94"></script>
+<script src="../core/geo.js?v=94"></script>
+<script src="../core/fare.js?v=94"></script>
+<script src="../core/driverchecks.js?v=94"></script>
+<script src="../core/map.js?v=94"></script>
+<script src="../core/otp.js?v=94"></script>
+<script src="../core/refer.js?v=94"></script>
 <script>
 /* shared with the customer app: icons, places, fares, map engine */
 const I = {
@@ -906,7 +906,7 @@ function toast(msg){const el=document.getElementById('toast');el.textContent=msg
 function modal(html,bind){const m=document.createElement('div');m.className='modal';m.innerHTML=`<div class="card pad">${html}</div>`;document.body.appendChild(m);const close=()=>m.remove();m.onclick=e=>{if(e.target===m)close()};bind&&bind(m,close);return close}
 const SECS=()=>[['dash','navHome',L('இன்று','Today')],['book','navTrips','Bookings'],['drv','navMe','Drivers'],['cust','navCust','Customers'],['sup','navHelp',L('உதவி','Support')],
   ...(S.role==='owner'?[['appr','navWallet',L('Approvals','Approvals')],['rep','navEarn',L('Reports','Reports')],['set','gear',L('Settings','Settings')]]:[])];
-function badge(k){if(k==='book')return DB.bk.filter(b=>b.status==='searching'||(b.status==='scheduled'&&!b.driver)).length;if(k==='sup')return DB.sup.filter(s=>s.status==='open').length;if(k==='appr')return DB.rch.filter(r=>r.status==='pending').length+(DB.apps||[]).filter(a=>a.status==='pending').length;return 0}
+function badge(k){if(k==='book')return DB.bk.filter(b=>b.status==='searching'||(b.status==='scheduled'&&!b.driver)).length;if(k==='sup')return DB.sup.filter(s=>s.status==='open').length;if(k==='appr')return DB.rch.filter(r=>r.status==='pending').length+(DB.apps||[]).filter(a=>a.status==='pending').length+SREQ.filter(r=>r.status==='pending').length;return 0}
 function layout(){
   const secs=SECS();if(!secs.some(s=>s[0]===S.sec))S.sec='dash';
   const mob=secs.slice(0,4).concat([['more','more',L('மேலும்','More')]]);
@@ -928,8 +928,8 @@ function moreSheet(){const rest=SECS().slice(4);
     m.querySelectorAll('[data-s2]').forEach(b=>b.onclick=()=>{close();S.sec=b.dataset.s2;save();show()});
     m.querySelector('#lg2').onclick=()=>{close();S.lang=S.lang==='ta'?'en':'ta';save();show()};m.querySelector('#lo2').onclick=()=>{close();logout()}});
 }
-function logout(){clearInterval(SIM);if(CL){OUNS.forEach(u=>u());OUNS=[];CL.logout()}S.logged=false;save();WAU=[];waFab();if(NTITLE!==null){document.title=NTITLE;NTITLE=null}const nc=document.getElementById('ncards');if(nc)nc.remove();login()}
-function show(){cancelAnimationFrame(mapLoop);layout();waFab();({dash,book,drv:drivers,cust:customers,sup:support,appr:approvals,rep:reports,set:settings})[S.sec]()}
+function logout(){clearInterval(SIM);clearInterval(DUTYT);if(MEUN){MEUN();MEUN=null}ME=null;if(CL){OUNS.forEach(u=>u());OUNS=[];CL.logout()}S.logged=false;save();WAU=[];waFab();if(NTITLE!==null){document.title=NTITLE;NTITLE=null}const nc=document.getElementById('ncards');if(nc)nc.remove();login()}
+function show(){cancelAnimationFrame(mapLoop);layout();waFab();({dash,book,drv:drivers,cust:customers,sup:support,appr:approvals,rep:()=>reports().then(()=>{if(S.sec==='rep'&&S.role==='owner')auditPanel()}),set:settings})[S.sec]()}
 const main=()=>document.getElementById('main');
 const head=(t,sub,act='')=>`<div class="mhead"><div><h1>${t}</h1>${sub?`<p class="muted">${sub}</p>`:''}</div>${act}</div>`;
 const stPill=s=>`<em class="bst ${s}">${({searching:L('Driver தேடல்','Needs driver'),assigned:L('Pickup-க்கு போறாங்க','To pickup'),ontrip:L('பயணத்தில்','On trip'),done:L('முடிந்தது','Completed'),cancelled:L('ரத்து','Cancelled'),scheduled:L('முன்பதிவு','Scheduled')})[s]}</em>`;
@@ -1032,16 +1032,18 @@ function bookSheet(b){if(!b)return;const d=drvById(b.driver),st=AST[b.status]||[
     <div class="two">${b.cust.phone?`<a class="btn ghost" href="tel:+91${b.cust.phone}">📞 Customer</a>`:''}${d?`<a class="btn ghost" href="tel:+91${d.phone}">📞 Driver</a>`:''}</div>
     ${b.status==='searching'||b.status==='scheduled'?`<button class="btn" id="bsa">${b.dispatch&&b.dispatch.review?L('சரிபார்','Review'):L('Driver assign','Assign a driver')}</button>`:''}
     ${b.status==='assigned'&&b.driver?`<button class="btn ghost" id="bst">▶ ${L('Trip ஆரம்பி (PIN இல்லாம)','Start trip (skip PIN)')}</button>`:''}
-    ${billBigB(b)&&!b.billOk&&CL?`<button class="btn" id="bbok">✅ ${L('Customer-கிட்ட பேசினேன், bill சரி','Checked with the customer — bill is right')}</button>`:''}
+    ${billBigB(b)&&!b.billOk&&CL&&S.role==='owner'?`<button class="btn" id="bbok">✅ ${L('Customer-கிட்ட பேசினேன், bill சரி','Checked with the customer — bill is right')}</button>`:''}
     ${b.status==='done'&&S.role==='owner'&&b.driver?`<button class="btn ghost" id="bse">✏️ ${L('Bill திருத்து','Correct the bill')}</button>`:''}
+    ${S.role!=='owner'&&CL&&b.status!=='cancelled'?`<button class="btn ghost" id="bsq">🙋 ${b.status==='done'?L('Bill மாற்றம் → Owner-கிட்ட கேள்','Bill change → ask the owner'):L('கட்டணம் / extra km → Owner-கிட்ட கேள்','Fare / extra km → ask the owner')}</button>`:''}
     ${b.status==='cancelled'&&/^driver/.test(b.reason||'')?`<button class="btn" id="bsr">🔁 ${L('மறுபடி அனுப்பு','Send again')}</button>`:''}
     ${['searching','scheduled','assigned'].includes(b.status)?`<button class="btn ghost" id="bsc" style="color:var(--danger)">${L('ரத்து செய்','Cancel booking')}</button>`:''}`,(m,close)=>{
     const a=m.querySelector('#bsa');if(a)a.onclick=()=>{close();b.dispatch&&b.dispatch.review?reviewSheet(b):assignSheet(b)};
     {const e=m.querySelector('#bse');if(e)e.onclick=()=>{close();billSheet(b)}}
     {const e=m.querySelector('#bbok');if(e)e.onclick=()=>{ackDesk('bill'+b._id);close();cw(F().updateDoc(bkRef(b),{billOk:{by:CL.phone,at:Date.now()},updatedAt:ts()}).then(()=>toast(L('சரி. Bill பார்த்தாச்சுன்னு பதிவாச்சு','Recorded: bill reviewed'))))}}
     {const e=m.querySelector('#bst');if(e)e.onclick=()=>{if(!confirm(L('Customer-ஐ phone-ல பேசி உறுதி பண்ணீங்களா? Trip ஆரம்பிக்கவா?','Did you confirm with the customer by phone? Start the trip?')))return;
-      if(CL){cw(F().updateDoc(bkRef(b),{status:'ontrip',startedAt:ts(),startedBy:'office:'+CL.phone,updatedAt:ts()}).then(()=>{close();toast(L('Trip ஆரம்பிச்சாச்சு','Trip started'))}));return}b.status='ontrip';saveDB();close();show()}}
+      if(CL){audit('start',b.id,b.cust.name);cw(F().updateDoc(bkRef(b),{status:'ontrip',startedAt:ts(),startedBy:'office:'+CL.phone,updatedAt:ts()}).then(()=>{close();toast(L('Trip ஆரம்பிச்சாச்சு','Trip started'))}));return}b.status='ontrip';saveDB();close();show()}}
     const r=m.querySelector('#bsr');if(r)r.onclick=()=>{close();reopenSheet(b)};
+    {const q=m.querySelector('#bsq');if(q)q.onclick=()=>{close();reqSheet({kind:b.status==='done'?'bill':'fare',b})}}
     const c=m.querySelector('#bsc');if(c)c.onclick=()=>{close();cancelSheet(b)};
   });
 }
@@ -1053,7 +1055,7 @@ function dash(){setTimeout(bindFleet,0);
     ...DB.drv.filter(d=>d.docs.ins<30).map(d=>({c:'amber',t:L(`${d.ta} (${d.plate}) insurance ${d.docs.ins} நாள்ல முடியும்`,`${d.plate} insurance expires in ${d.docs.ins} days`)})),
     ...DB.sup.filter(s=>s.type==='sos'&&s.status!=='closed').map(s=>({c:'red',t:'SOS: '+esc(s.cust)}))];
   main().innerHTML=`${head(L('இன்று','Today'),new Date().toLocaleDateString(S.lang==='ta'?'ta-IN':'en-IN',{weekday:'long',day:'numeric',month:'long'}),`<span class="livetag"><i></i>LIVE</span>`)}
-   <div class="kpis" id="kpis">${kpisInner()}</div>
+   <div class="kpis" id="kpis">${kpisInner()}</div>${myReqHtml()}
    <section class="panel fleetp" id="fleet">${fleetHtml()}</section>
    <div class="dgrid">
     <section class="panel mappanel"><div class="ph"><h3>${L('எல்லா வண்டியும்','Fleet map')}</h3><div class="legend"><span><i style="background:#1E8A5A"></i>${L('காலி','Free')}</span><span><i style="background:#F2A900"></i>${L('Pickup-க்கு','To pickup')}</span><span><i style="background:#12664A"></i>${L('பயணத்தில்','On trip')}</span></div></div>
@@ -1224,7 +1226,7 @@ function reopenSheet(b){if(!b)return;const long=b.kind==='outstation'||b.kind===
     <button class="btn ghost" id="ro2">${L('நானே driver assign பண்றேன்','Assign a driver myself')}</button>
     <div class="two"><button class="btn ghost" id="ro3" style="color:var(--danger)">${L('வண்டி இல்லை · Customer-க்கு சொல்லு','No vehicle · tell the customer')}</button><button class="btn ghost" id="ro4">${L('இதை விடு','Dismiss')}</button></div>
     <p class="muted" style="margin:0;font-size:12.5px">${L('ரத்து செஞ்ச driver-க்கு இந்த booking மறுபடி போகாது.','The driver who cancelled will not get this booking again.')}</p>`,(m,close)=>{
-    m.querySelector('#ro1').onclick=()=>{ackDesk(b._id);if(CL){cw(F().updateDoc(bkRef(b),upd()).then(()=>{close();toast(L('மற்ற drivers-க்கு அனுப்பியாச்சு','Sent to other drivers'))}));return}b.status='searching';b.driver=null;saveDB();close();show()};
+    m.querySelector('#ro1').onclick=()=>{ackDesk(b._id);if(CL){audit('reopen',b.id,'');cw(F().updateDoc(bkRef(b),upd()).then(()=>{close();toast(L('மற்ற drivers-க்கு அனுப்பியாச்சு','Sent to other drivers'))}));return}b.status='searching';b.driver=null;saveDB();close();show()};
     m.querySelector('#ro2').onclick=()=>{ackDesk(b._id);const go2=()=>{close();b.status='searching';b.driver=null;assignSheet(b)};if(CL){cw(F().updateDoc(bkRef(b),upd()).then(go2));return}go2()};
     m.querySelector('#ro3').onclick=()=>{ackDesk(b._id);if(CL){cw(F().updateDoc(bkRef(b),{cancelReason:'novehicle',updatedAt:ts()}).then(()=>{close();toast(L('Customer-க்கு மன்னிப்பு செய்தி போச்சு','Apology sent to the customer'))}));return}close()};
     m.querySelector('#ro4').onclick=()=>{ackDesk(b._id);close();ringCheck()};
@@ -1239,7 +1241,7 @@ function cancelSheet(bk){if(!bk)return;let rs='novehicle';
     const msg=()=>{m.querySelector('#cxmsg').innerHTML=rs==='novehicle'?`${L('Customer-க்கு போகும் செய்தி:','Message the customer gets:')}<br><b>${SORRY.ta}</b><br><b>${SORRY.en}</b>`:L('Customer-க்கும் driver-க்கும் "ரத்து" என்று தகவல் போகும்.','The customer and driver are told it was cancelled.')};msg();
     m.querySelectorAll('[data-rs]').forEach(x=>x.onclick=()=>{rs=x.dataset.rs;m.querySelectorAll('[data-rs]').forEach(y=>y.classList.toggle('sel',y===x));msg()});
     m.querySelector('#n').onclick=close;
-    m.querySelector('#y').onclick=()=>{if(CL){cw(F().updateDoc(bkRef(bk),{status:'cancelled',cancelReason:rs,updatedAt:ts()}));close();toast(L('ரத்து ஆச்சு','Cancelled'));return}
+    m.querySelector('#y').onclick=()=>{if(CL){audit('cancel',bk.id,rs);cw(F().updateDoc(bkRef(bk),{status:'cancelled',cancelReason:rs,updatedAt:ts()}));close();toast(L('ரத்து ஆச்சு','Cancelled'));return}
       const d=drvById(bk.driver);if(d&&bk.status==='assigned')d.status='avail';bk.status='cancelled';bk.reason=rs;log(`${bk.id} ரத்து (office)`,`${bk.id} cancelled by office`);saveDB();close();show();toast(L('ரத்து ஆச்சு','Cancelled'))}});
 }
 const SORRY={ta:'மன்னிக்கவும்! இந்த நேரத்தில் எங்களிடம் வண்டி இல்லாததால் உங்க booking-ஐ ரத்து செய்ய வேண்டியதாயிற்று. Vellore Taxi-ஐ தேர்ந்தெடுத்ததற்கு நன்றி — அடுத்த முறை கண்டிப்பா உங்களுக்கு சேவை செய்வோம் 🙏',
@@ -1254,12 +1256,14 @@ function reviewSheet(b){
      <div><span>${L('வண்டி','Vehicle')}</span><b>${vname(b.veh)}</b></div>
      <div><span>${L('கணக்கிட்ட தூரம்','Billed distance')}</span><b>${b.km} ${L('கி.மீ','km')}</b></div>
      <div><span>${L('பணம்','Payment')}</span><b>${b.pay.toUpperCase()}</b></div></div>
-    <label class="kind" for="rvf">${L('கட்டணம் (தேவைன்னா மாத்துங்க)','Fare (change if needed)')}</label>
-    <div class="field" style="height:52px"><span class="cc">₹</span><input id="rvf" inputmode="numeric" value="${b.fare}"></div>
+    <label class="kind" for="rvf">${S.role==='owner'?L('கட்டணம் (தேவைன்னா மாத்துங்க)','Fare (change if needed)'):L('கட்டணம் (மாத்த owner அனுமதி வேணும்)','Fare (changing it needs the owner)')}</label>
+    <div class="field" style="height:52px"><span class="cc">₹</span><input id="rvf" inputmode="numeric" value="${b.fare}" ${S.role==='owner'?'':'readonly'}></div>
+    ${S.role==='owner'?'':`<button class="linkbtn" id="rvrq">🙋 ${L('வேற கட்டணம் வேணும் → Owner-கிட்ட கேள்','Need a different fare → ask the owner')}</button>`}
     <p class="muted" style="margin:0;font-size:12.5px">${L('மாத்தின கட்டணம் customer app-ல உடனே தெரியும். Customer-ஐ call பண்ணி சொல்லிடுங்க.','A changed fare shows in the customer app right away. Call the customer to let them know.')}</p>
     <button class="btn" id="rvok">✅ ${L('OK · drivers-க்கு அனுப்பு','Approve · send to drivers')}</button>
     <div class="two"><button class="btn ghost" id="rvas">${L('நானே driver assign பண்றேன்','Assign a driver myself')}</button><button class="btn ghost" id="rvcx" style="color:var(--danger)">${L('ரத்து செய்','Cancel booking')}</button></div>`,(m,close)=>{
-    const fv=()=>parseInt(m.querySelector('#rvf').value.replace(/\D/g,''))||0;
+    const fv=()=>S.role==='owner'?(parseInt(m.querySelector('#rvf').value.replace(/\D/g,''))||0):b.fare;
+    {const q=m.querySelector('#rvrq');if(q)q.onclick=()=>{close();reqSheet({kind:'fare',b})}}
     m.querySelector('#rvok').onclick=()=>{const f=fv();if(f<100){toast(L('கட்டணம் சரியா போடுங்க','Enter a valid fare'));return}
       if(CL){cw(F().updateDoc(bkRef(b),{fare:f,'dispatch.review':false,'dispatch.reviewedAt':Date.now(),'dispatch.openAt':Date.now(),updatedAt:ts()}));close();toast(L('OK! Top drivers-க்கு அனுப்பியாச்சு','Approved and sent to top drivers'));return}
       b.fare=f;b.dispatch={...b.dispatch,review:false,openAt:Date.now()};saveDB();close();show()};
@@ -1278,7 +1282,7 @@ function assignSheet(b){
     let sel=list[0]&&list[0].d.id;
     m.querySelectorAll('[data-d]').forEach(x=>x.onclick=()=>{sel=x.dataset.d;m.querySelectorAll('[data-d]').forEach(y=>y.classList.toggle('sel',y===x))});
     m.querySelector('#asg').onclick=()=>{if(!sel)return;
-      if(CL){const d=drvById(sel),upd={driverPhone:d.id,driverName:d.en,plate:d.plate,vehModel:d.model,assignedAt:ts(),updatedAt:ts()};if(b.status==='searching')upd.status='assigned';cw(F().updateDoc(bkRef(b),upd));close();toast(L(`${d.ta}-க்கு ride அனுப்பியாச்சு`,`Sent to ${d.en}`));return}
+      if(CL){const d=drvById(sel);audit('assign',b.id,d?d.en+' · '+d.plate:'');const upd={driverPhone:d.id,driverName:d.en,plate:d.plate,vehModel:d.model,assignedAt:ts(),updatedAt:ts()};if(b.status==='searching')upd.status='assigned';cw(F().updateDoc(bkRef(b),upd));close();toast(L(`${d.ta}-க்கு ride அனுப்பியாச்சு`,`Sent to ${d.en}`));return}
       const d=drvById(sel),prev=drvById(b.driver);if(prev&&b.status==='assigned')prev.status='avail';
       b.driver=sel;if(b.status==='searching'){b.status='assigned';b.prog=0;d.status='pickup'}
       log(`${b.id} → ${d.ta} (${d.plate})`,`${b.id} → ${d.en} (${d.plate})`);saveDB();close();show();
@@ -1315,7 +1319,7 @@ function newBooking(){
       if(CL){const vv=VEH.find(v=>v.id===veh);const cph='+91'+ph.value;const data={customerUid:null,custName:$('#nnm').value.trim()||'Customer',...(DB.cfg.privPhone?{}:{custPhone:cph}),src:'phone',kind:when==='later'?'schedule':'ride',from:placeK(fr),to:placeK(to),path:(r.pts||r.path.map(k=>P[k])).map(p=>({lat:p.lat,lon:p.lon})),veh,vehTa:vv.ta,vehEn:vv.en,km:+r.km.toFixed(1),base:+((DB.cfg.fares[veh]||{}).base||vv.base),fare:fareO(veh,r.km,w),pay,status:when==='later'?'scheduled':nn?'assigned':'searching',when:w,createdAt:ts(),updatedAt:ts()};
         if(nn)Object.assign(data,{driverPhone:nn.d.id,driverName:nn.d.en,plate:nn.d.plate,vehModel:nn.d.model,assignedAt:ts()});
         close();BT=data.status==='scheduled'?'sched':'live';S.sec='book';save();show();
-        cw(F().addDoc(F().collection(CL.db,'bookings'),data).then(ref=>{CONT[ref.id]={custPhone:cph,riderPhone:null};return F().setDoc(F().doc(CL.db,'bookings',ref.id,'private','contact'),CONT[ref.id])}).then(()=>toast(nn?L(`${nn.d.ta}-க்கு assign ஆச்சு`,`Assigned to ${nn.d.en}`):L('Booking சேமிச்சாச்சு','Booking saved'))));return}
+        audit('newbk','',(data.custName||'')+' · '+pnT(data.from&&data.from.key||'')+' → '+pnT(data.to&&data.to.key||''));cw(F().addDoc(F().collection(CL.db,'bookings'),data).then(ref=>{CONT[ref.id]={custPhone:cph,riderPhone:null};return F().setDoc(F().doc(CL.db,'bookings',ref.id,'private','contact'),CONT[ref.id])}).then(()=>toast(nn?L(`${nn.d.ta}-க்கு assign ஆச்சு`,`Assigned to ${nn.d.en}`):L('Booking சேமிச்சாச்சு','Booking saved'))));return}
       const b={id,cust:{name:$('#nnm').value.trim()||L('Customer','Customer'),phone:ph.value},from:fr,to,veh,km:+r.km.toFixed(1),fare:fareO(veh,r.km,w),pay,src:'phone',created:Date.now(),when:w,prog:0,
         status:when==='later'?'scheduled':nn?'assigned':'searching',driver:nn?nn.d.id:null};
       if(nn)nn.d.status='pickup';DB.bk.push(b);log(`${id} phone booking${nn?' → '+nn.d.ta:''}`,`${id} phone booking${nn?' → '+nn.d.en:''}`);saveDB();close();BT=b.status==='scheduled'?'sched':'live';S.sec='book';save();show();
@@ -1350,7 +1354,7 @@ function drivers(){
      ${exp.length?`<div class="alert amber">${exp.map(([k,v])=>`${k.toUpperCase()}: ${v} ${L('நாள்','days')}`).join(' · ')}</div>`:''}
      ${CL?(()=>{const r=RAWD.find(x=>x._id===d.id)||{},c=r.consent,ok=c&&c.v===VCTCHK.AGREEMENT.v;return `<div class="agrline ${ok?'ok':'no'}"><span>📄 ${ok?L('ஒப்பந்தம் ✅ கையெழுத்து: ','Agreement ✅ signed: ')+esc(c.name||'')+' · '+fmtD(CL.toMs(c.at)||+c.at||0):c?L('ஒப்பந்தம் ⚠️ பழைய version','Agreement ⚠️ old version'):L('ஒப்பந்தம் ⛔ கையெழுத்து இல்லை','Agreement ⛔ not signed')}</span><button class="linkbtn" data-agp="${d.id}">${L('பார் / Print','View / print')}</button></div>`})():''}
      <div class="dact"><button class="linkbtn" data-dv="${d.id}" style="font-weight:800">📊 ${L('விவரம் / குறிப்பு','Details / notes')}</button></div>
-     ${S.role==='owner'?`<div class="dact"><button class="linkbtn" data-blk="${d.id}">${d.blocked?L('தடையை நீக்கு','Unblock'):L('தடை செய்','Block')}</button><button class="linkbtn" data-dw="${d.id}">${L('Wallet சரிசெய்','Adjust wallet')}</button>${CL?`<button class="linkbtn" data-dd="${d.id}">${L('Document தேதி','Document dates')}</button><button class="linkbtn" data-dph="${d.id}">📷 ${L('Documents பார்','View documents')}</button>`:''}</div>`:''}</div>`}).join('')}</div>`;
+     ${S.role==='owner'?`<div class="dact"><button class="linkbtn" data-blk="${d.id}">${d.blocked?L('தடையை நீக்கு','Unblock'):L('தடை செய்','Block')}</button><button class="linkbtn" data-dw="${d.id}">${L('Wallet சரிசெய்','Adjust wallet')}</button>${CL?`<button class="linkbtn" data-dd="${d.id}">${L('Document தேதி','Document dates')}</button><button class="linkbtn" data-dph="${d.id}">📷 ${L('Documents பார்','View documents')}</button>`:''}</div>`:CL?`<div class="dact"><button class="linkbtn" data-rqd="${d.id}">🙋 ${L('Block / wallet → Owner-கிட்ட கேள்','Block / wallet → ask the owner')}</button><button class="linkbtn" data-dph="${d.id}">📷 ${L('Documents பார்','View documents')}</button></div>`:''}</div>`}).join('')}</div>`;
   const ad=document.getElementById('ad');if(ad)ad.onclick=addDriver;
   const dq=document.getElementById('dq');dq.oninput=()=>{DQ=dq.value;clearTimeout(dq.t);dq.t=setTimeout(()=>{drivers();const n=document.getElementById('dq');if(n){n.focus();n.setSelectionRange(n.value.length,n.value.length)}},250)};
   app.querySelectorAll('[data-df]').forEach(b=>b.onclick=()=>{DF=b.dataset.df;drivers()});
@@ -1360,6 +1364,7 @@ function drivers(){
     if(CL){cw(F().updateDoc(F().doc(CL.db,'drivers',id),{['svc.'+k]:!cur,updatedAt:ts()}));toast(L(`${d.ta}: ${SVCN[k][0]} ${!cur?'ON':'OFF'}`,`${d.en}: ${SVCN[k][1]} ${!cur?'on':'off'}`));return}
     d.svc={...svcOf(d),[k]:!cur};saveDB();drivers()});
   app.querySelectorAll('[data-prio]').forEach(sl=>sl.onchange=()=>{const d=drvById(sl.dataset.prio);if(CL){cw(F().updateDoc(F().doc(CL.db,'drivers',d.id),{prio:sl.value,updatedAt:ts()}));return}d.prio=sl.value;saveDB();drivers()});
+  app.querySelectorAll('[data-rqd]').forEach(b=>b.onclick=()=>reqSheet({kind:'block',drv:drvById(b.dataset.rqd)}));
   app.querySelectorAll('[data-blk]').forEach(b=>b.onclick=()=>{const d=drvById(b.dataset.blk);if(CL){cw(F().updateDoc(F().doc(CL.db,'drivers',d.id),{blocked:!d.blocked,...(!d.blocked?{online:false}:{}),updatedAt:ts()}));toast(d.blocked?L('தடை நீக்கப்பட்டது','Unblocked'):L('தடை செய்யப்பட்டது','Blocked'));return}d.blocked=!d.blocked;if(d.blocked&&d.status==='avail')d.status='off';log(`${d.ta} ${d.blocked?'தடை':'தடை நீக்கம்'}`,`${d.en} ${d.blocked?'blocked':'unblocked'}`);saveDB();drivers()});
   app.querySelectorAll('[data-agp]').forEach(b=>b.onclick=()=>{const r=RAWD.find(x=>x._id===b.dataset.agp)||{};
     printAgreement({...r,id:r._id,consent:r.consent?{...r.consent,at:CL.toMs(r.consent.at)||r.consent.at}:null})});
@@ -1496,7 +1501,7 @@ function loadDelReq(){if(!CL)return;const box=document.getElementById('delreq');
 function approvals(){
   const pend=DB.rch.filter(r=>r.status==='pending'),done=DB.rch.filter(r=>r.status!=='pending');
   main().innerHTML=`${head(L('Wallet recharge approvals','Wallet recharge approvals'),L('Driver UPI-ல அனுப்பின பணம் உங்க account-ல வந்ததை பார்த்துட்டு approve பண்ணுங்க','Check the money reached your account before approving'))}
-   <div id="delreq"></div>${appsHtml()}<div class="sec"><h3>${L('Wallet recharge','Wallet recharges')}</h3></div><div class="cards">${pend.length?pend.map(r=>{const d=drvById(r.driver);return `<div class="scard"><div class="dtop"><span class="vi sm">${I[d.veh]}</span><div style="flex:1;min-width:0"><b>${d[S.lang]}</b><small>${d.plate} · ${ago(r.date)}</small></div><b class="amtbig">${inr(r.amt)}</b></div>
+   <div id="delreq"></div>${reqHtml()}${appsHtml()}<div class="sec"><h3>${L('Wallet recharge','Wallet recharges')}</h3></div><div class="cards">${pend.length?pend.map(r=>{const d=drvById(r.driver);return `<div class="scard"><div class="dtop"><span class="vi sm">${I[d.veh]}</span><div style="flex:1;min-width:0"><b>${d[S.lang]}</b><small>${d.plate} · ${ago(r.date)}</small></div><b class="amtbig">${inr(r.amt)}</b></div>
      <div class="utr"><small>UTR</small><b>${esc(r.utr)}</b><button class="linkbtn" data-cp="${esc(r.utr)}">Copy</button></div>
      <div class="dact"><button class="btn sm" data-ok="${r.id}">${L('பணம் வந்தது — Approve','Received — approve')}</button><button class="linkbtn" data-no="${r.id}" style="color:var(--danger)">${L('நிராகரி','Reject')}</button></div></div>`}).join('')
      :`<div class="empty"><h3>${L('காத்திருக்கும் request இல்லை','No pending requests')}</h3></div>`}</div>
@@ -1767,7 +1772,109 @@ function waPanel(){const el=document.getElementById('wab');if(!el||!CL)return;el
         <br>${esc(x.text||('['+x.type+']'))}<br><button class="btn sm" data-wth="${esc(g.from)}" style="margin-top:4px">💬 ${open?L('பதில் அனுப்பு','Reply'):L('பார்','View')}</button></div>`}).join(''):L('பதில் எதுவும் இல்லை','No replies');
       inb.querySelectorAll('[data-wth]').forEach(b=>b.onclick=()=>waThread(b.dataset.wth,by.get(b.dataset.wth).name))}).catch(e=>{inb.textContent=CL.errText(e,S.lang==='ta')});
   }).catch(e=>{el.textContent=e&&e.code==='permission-denied'?L('புது rules publish ஆன பிறகு தான் தெரியும்','Visible after the new rules are published'):CL.errText(e,S.lang==='ta')})}
-/* quick replies: [chip ta, chip en, text ta, text en] — they only fill the box; staff reads and presses Send */
+/* ---------- staff: duty hours, requests to the owner, activity log ----------
+   The server rules are the real gate (a staff login outside duty hours or disabled cannot read or change anything);
+   these helpers only explain it on screen and keep the record. Times are minutes after midnight, India time. */
+let ME=null,MEUN=null,DUTYT=null,SREQ=[],RQSEEN=null;
+const hm=m=>String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0');
+const istNow=()=>{const d=new Date(Date.now()+330*60e3);return d.getUTCHours()*60+d.getUTCMinutes()};
+const toMin=v=>{const m=/^(\d{1,2}):(\d{2})$/.exec(String(v||''));return m&&+m[1]<24&&+m[2]<60?+m[1]*60+ +m[2]:null};
+function dutyOk(st){if(!st||st.role==='owner')return true;if(st.active===false)return false;const sh=st.shift;if(!sh)return true;const m=istNow();return sh.from<=sh.to?(m>=sh.from&&m<sh.to):(m>=sh.from||m<sh.to)}
+const shiftTxt=st=>st&&st.shift?`${hm(st.shift.from)} – ${hm(st.shift.to)}`:L('நேரம் வைக்கல','no hours set');
+function audit(act,ref,txt){if(!CL)return;F().addDoc(F().collection(CL.db,'audit'),{by:CL.phone,byName:String(S.name||'').slice(0,40),act:String(act).slice(0,40),ref:String(ref||'').slice(0,40),txt:String(txt||'').slice(0,300),at:ts()}).catch(()=>{})}
+function offDuty(st){OUNS.forEach(u=>u());OUNS=[];const w=document.getElementById('wafab');if(w)w.remove();
+  cardScreen(st&&st.active===false?L('உங்க login நிறுத்தப்பட்டிருக்கு','Your login is turned off'):L('இப்போ உங்க duty நேரம் இல்லை','You are off duty now'),
+    st&&st.active===false?L('Owner-கிட்ட பேசுங்க.','Please talk to the owner.'):L(`உங்க duty நேரம்: ${shiftTxt(st)}. அந்த நேரத்துல மட்டும் Office வேலை செய்யும்.`,`Your duty hours: ${shiftTxt(st)}. The office panel works only then.`),
+    L('மறுபடி முயற்சி','Try again'),()=>location.reload())}
+function watchMe(){if(MEUN)MEUN();clearInterval(DUTYT);if(S.role==='owner')return;
+  MEUN=F().onSnapshot(F().doc(CL.db,'staff',CL.phone),s=>{ME=s.exists()?s.data():null;if(!ME||!dutyOk(ME)){MEUN&&MEUN();MEUN=null;clearInterval(DUTYT);ME?offDuty(ME):logout()}},()=>{});
+  DUTYT=setInterval(()=>{if(ME&&!dutyOk(ME)){clearInterval(DUTYT);MEUN&&MEUN();MEUN=null;offDuty(ME)}},60e3)}
+/* owner: add / edit a staff member — login number, duty hours, personal details and resume / ID proof (owner-only, in staff/{ph}/private) */
+const SFILE=[['f_resume','Resume / CV','Resume / CV'],['f_id','ID proof (Aadhaar / Licence)','ID proof (Aadhaar / licence)']];
+async function staffSheet(st){const edit=!!st,ph=st?st.phone:'';let pr={},fl={};
+  if(edit&&CL){try{const[a,...f]=await Promise.all([F().getDoc(F().doc(CL.db,'staff','+91'+ph,'private','profile')),...SFILE.map(x=>F().getDoc(F().doc(CL.db,'staff','+91'+ph,'private',x[0])))]);pr=a.exists()?a.data():{};f.forEach((d,i)=>{if(d.exists())fl[SFILE[i][0]]=d.data()})}catch(e){}}
+  const sh=st&&st.shift?st.shift:{from:9*60,to:18*60},inp=(id,v,ph2,ex)=>`<div class="field" style="height:48px"><input id="${id}" value="${esc(v||'')}" placeholder="${esc(ph2)}" ${ex||''}></div>`;
+  const close=modal(`<h3>${edit?L('Staff விவரம்','Staff details'):L('புது Staff','New staff')}</h3>
+    <label class="kind">${L('பெயர்','Name')}</label>${inp('sn',st&&st.name,L('பெயர்','Name'),'maxlength="30"')}
+    <label class="kind">${L('Mobile (இதுவே login)','Mobile (this is the login)')}</label><div class="field" style="height:48px"><span class="cc">+91</span><input id="sp" inputmode="numeric" maxlength="10" value="${esc(ph)}" ${edit?'readonly':''}></div>
+    <label class="kind">${L('Duty நேரம் (India time)','Duty hours (India time)')}</label><div class="two"><div class="field" style="height:48px"><input id="sf" type="time" value="${hm(sh.from)}" aria-label="${L('ஆரம்பம்','From')}"></div><div class="field" style="height:48px"><input id="st2" type="time" value="${hm(sh.to)}" aria-label="${L('முடிவு','To')}"></div></div>
+    <label class="kind">${L('சேர்ந்த தேதி','Joining date')}</label>${inp('sj',pr.joined,'','type="date"')}
+    <label class="kind">${L('முகவரி','Address')}</label>${inp('sad',pr.address,L('வீட்டு முகவரி','Home address'),'maxlength="200"')}
+    <label class="kind">${L('அவசர தொடர்பு (பெயர் + நம்பர்)','Emergency contact (name + number)')}</label>${inp('sem',pr.emergency,'','maxlength="80"')}
+    <label class="kind">${L('குறிப்பு','Notes')}</label>${inp('sno',pr.notes,'','maxlength="300"')}
+    ${SFILE.map(([k,ta,en])=>`<label class="kind">${L(ta,en)} <small class="muted">(PDF / JPG, 700 KB ${L('வரை','max')})</small></label><div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">${fl[k]?`<a class="linkbtn" data-fv="${k}" href="#">📄 ${esc(fl[k].name||k)}</a>`:''}<input type="file" id="${k}" accept="application/pdf,image/jpeg,image/png"></div>`).join('')}
+    <p class="muted" style="font-size:12px;margin:8px 0 0">${L('விவரம், files உங்களுக்கு (owner) மட்டும் தான் தெரியும்.','Details and files are visible only to you (owner).')}</p>
+    <div class="err" id="se"></div><button class="btn" id="ss">${L('சேமி','Save')}</button>`,(m,cl)=>{
+    m.querySelectorAll('[data-fv]').forEach(a=>a.onclick=e=>{e.preventDefault();const f=fl[a.dataset.fv];const w=window.open('');if(w)w.document.write(f.type==='application/pdf'?`<iframe src="${f.data}" style="border:0;width:100%;height:100vh"></iframe>`:`<img src="${f.data}" style="max-width:100%">`)});
+    m.querySelector('#ss').onclick=async()=>{const er=m.querySelector('#se'),v=id=>m.querySelector('#'+id).value.trim();
+      const n=v('sn'),p=v('sp').replace(/\D/g,''),fr=toMin(v('sf')),to=toMin(v('st2'));
+      if(n.length<2||!/^[6-9]\d{9}$/.test(p)){er.textContent=L('பெயர், 10 இலக்க நம்பர் கொடுங்க','Enter a name and a 10-digit number');return}
+      if(fr==null||to==null||fr===to){er.textContent=L('Duty நேரம் சரியா போடுங்க','Set valid duty hours');return}
+      if(!edit&&(c=>c.staff.some(x=>x.phone===p))(DB.cfg)){er.textContent=L('இந்த நம்பர் ஏற்கனவே staff','This number is already staff');return}
+      if(!edit&&DB.drv.some(d=>d.id==='+91'+p)){er.textContent=L('இது ஒரு driver நம்பர். Staff-க்கு வேற நம்பர் போடுங்க.','This is a driver number. Use another number for staff.');return}
+      const files={};for(const[k]of SFILE){const f=m.querySelector('#'+k).files[0];if(!f)continue;if(f.size>700*1024){er.textContent=L('File 700 KB-க்கு மேல. சின்னதா ஆக்குங்க.','File is over 700 KB. Please make it smaller.');return}
+        files[k]={name:f.name.slice(0,80),type:f.type,size:f.size,data:await new Promise((ok,no)=>{const r=new FileReader();r.onload=()=>ok(r.result);r.onerror=no;r.readAsDataURL(f)}),at:Date.now()}}
+      if(!CL){const x=st||{};Object.assign(x,{name:n,phone:p,shift:{from:fr,to:to}});if(!st)DB.cfg.staff.push(x);saveDB();cl();settings();return}
+      const btn=m.querySelector('#ss');btn.disabled=true;btn.textContent=L('சேமிக்குது…','Saving…');
+      try{const ref=F().doc(CL.db,'staff','+91'+p);
+        await F().setDoc(ref,edit?{name:n,shift:{from:fr,to:to},updatedAt:ts()}:{name:n,role:'staff',active:true,shift:{from:fr,to:to},createdAt:ts()},{merge:true});
+        await F().setDoc(F().doc(CL.db,'staff','+91'+p,'private','profile'),{joined:v('sj'),address:v('sad'),emergency:v('sem'),notes:v('sno'),updatedAt:ts()});
+        for(const k in files)await F().setDoc(F().doc(CL.db,'staff','+91'+p,'private',k),files[k]);
+        audit(edit?'staff-edit':'staff-add',p,`${n} · ${hm(fr)}–${hm(to)}`);cl();toast(L('சேமிச்சாச்சு','Saved'));setTimeout(settings,400)}
+      catch(e){btn.disabled=false;btn.textContent=L('சேமி','Save');er.textContent=CL.errText(e,S.lang==='ta')}}})}
+function reqSnap(list){const prev=RQSEEN;SREQ=list;
+  if(prev){list.forEach(r=>{const was=prev.get(r.id);
+    if(!was&&r.status==='pending'&&S.role==='owner'){chime();ncard('rq','🙋',L('Staff கோரிக்கை','Staff request')+' · '+(r.byName||r.by),L(RQK[r.kind]?RQK[r.kind][0]:r.kind,RQK[r.kind]?RQK[r.kind][1]:r.kind)+(r.want?' ₹'+r.want:'')+' · '+(r.why||''),()=>{S.sec='appr';save();show()},90000)}
+    if(was==='pending'&&r.status!=='pending'&&r.by===CL.phone){chime();ncard('rq',r.status==='approved'?'✅':'❌',r.status==='approved'?L('Owner approve பண்ணார்','Owner approved'):L('Owner மறுத்தார்','Owner declined'),(r.bkId?r.bkId+' · ':'')+L(RQK[r.kind]?RQK[r.kind][0]:'',RQK[r.kind]?RQK[r.kind][1]:'')+(r.note?' · '+r.note:''),null,60000)}})}
+  RQSEEN=new Map(list.map(r=>[r.id,r.status]));clearTimeout(RTIMER);RTIMER=setTimeout(()=>rerender(),150)}
+const rqWhen=r=>{const t=CL&&CL.toMs?CL.toMs(r.createdAt):0;return t?ago(t):''};
+function reqHtml(){if(S.role!=='owner')return '';const P0=SREQ.filter(r=>r.status==='pending');setTimeout(bindReq,0);
+  return `<div class="sec"><h3>🙋 ${L('Staff கோரிக்கைகள்','Staff requests')}</h3></div><div class="cards">${P0.length?P0.map(r=>{const b=r.bk?DB.bk.find(x=>x._id===r.bk):null,d=r.drv?drvById(r.drv):null;
+    return `<div class="scard"><div class="dtop"><div style="flex:1;min-width:0"><b>${esc(L(RQK[r.kind]?RQK[r.kind][0]:r.kind,RQK[r.kind]?RQK[r.kind][1]:r.kind))}${r.want?` · <span class="amtbig">${inr(r.cur||0)} → ${inr(r.want)}</span>`:''}</b>
+      <small>${esc(r.byName||'')} (${esc(String(r.by||'').replace('+91',''))}) · ${rqWhen(r)}${r.bkId?' · '+esc(r.bkId):''}${b?' · '+pn(b.from)+' → '+pn(b.to):''}${d?' · 🚖 '+esc(d.en):''}</small></div></div>
+      <p style="margin:6px 0;white-space:pre-wrap">${esc(r.why||'')}</p>
+      <div class="dact"><button class="btn sm" data-rqok="${r.id}">✅ ${r.kind==='fare'&&b&&b.status!=='done'?L('Approve · கட்டணம் மாத்து','Approve · change fare'):L('Approve','Approve')}</button><button class="linkbtn" data-rqno="${r.id}" style="color:var(--danger)">${L('மறு','Decline')}</button>${b?`<button class="linkbtn" data-rqb="${r.id}">${L('Booking பார்','Open booking')}</button>`:''}</div></div>`}).join('')
+    :`<div class="empty"><h3>${L('காத்திருக்கும் கோரிக்கை இல்லை','No pending requests')}</h3></div>`}</div>`}
+function bindReq(){const A=main();if(!A)return;
+  A.querySelectorAll('[data-rqb]').forEach(x=>x.onclick=()=>{const r=SREQ.find(y=>y.id===x.dataset.rqb);bookSheet(DB.bk.find(b=>b._id===r.bk))});
+  A.querySelectorAll('[data-rqno]').forEach(x=>x.onclick=()=>{const r=SREQ.find(y=>y.id===x.dataset.rqno);const note=(prompt(L('மறுக்கும் காரணம் (staff-க்கு தெரியும்)','Reason for declining (staff will see it)'))||'').trim().slice(0,200);
+    cw(F().updateDoc(F().doc(CL.db,'staffReq',r.id),{status:'rejected',decidedBy:CL.phone,decidedAt:ts(),note}).then(()=>{audit('req-no',r.bkId||r.drv||'',(r.byName||'')+' · '+(r.why||''));toast(L('மறுத்தாச்சு','Declined'))}))});
+  A.querySelectorAll('[data-rqok]').forEach(x=>x.onclick=async()=>{const r=SREQ.find(y=>y.id===x.dataset.rqok),b=r.bk?DB.bk.find(y=>y._id===r.bk):null;x.disabled=true;
+    try{if(r.kind==='fare'&&b&&b.status!=='done'&&r.want>0){if(!confirm(L(`${b.id} கட்டணம் ${inr(b.fare)} → ${inr(r.want)} ஆக மாத்தவா? Customer app-ல உடனே தெரியும்.`,`Change ${b.id} fare ${inr(b.fare)} → ${inr(r.want)}? The customer app shows it right away.`))){x.disabled=false;return}
+        await F().updateDoc(bkRef(b),{fare:r.want,updatedAt:ts()})}
+      await F().updateDoc(F().doc(CL.db,'staffReq',r.id),{status:'approved',decidedBy:CL.phone,decidedAt:ts(),note:''});audit('req-ok',r.bkId||r.drv||'',(r.byName||'')+' · '+(r.want?'₹'+r.want+' · ':'')+(r.why||''));
+      toast(L('Approve ஆச்சு','Approved'));
+      if(r.kind==='bill'&&b)billSheet(b);else if(r.kind==='block'&&r.drv){S.sec='drv';save();show();toast(L('Driver பக்கத்துல Block அழுத்துங்க','Press Block on the driver'))}}
+    catch(e){x.disabled=false;toast(CL.errText(e,S.lang==='ta'))}});}
+function myReqHtml(){if(S.role==='owner'||!CL)return '';const mine=SREQ.filter(r=>r.by===CL.phone).slice(0,6);if(!mine.length)return '';
+  const ST={pending:['⏳ காத்திருக்கு','⏳ Waiting'],approved:['✅ Approve ஆச்சு','✅ Approved'],rejected:['❌ மறுத்தார்','❌ Declined']};
+  return `<section class="panel" style="margin-top:14px"><div class="ph"><h3>🙋 ${L('என் கோரிக்கைகள்','My requests to the owner')}</h3></div>${mine.map(r=>`<div class="lrow"><div><b>${esc(L(RQK[r.kind]?RQK[r.kind][0]:r.kind,RQK[r.kind]?RQK[r.kind][1]:r.kind))}${r.want?' · '+inr(r.want):''}${r.bkId?' · '+esc(r.bkId):''}</b><small>${esc(r.why||'')}${r.note?' · '+L('Owner: ','Owner: ')+esc(r.note):''}</small></div><span>${L((ST[r.status]||ST.pending)[0],(ST[r.status]||ST.pending)[1])}</span></div>`).join('')}</section>`}
+async function auditPanel(){const A=main();if(!A||!CL)return;const box=document.createElement('section');box.className='panel';box.style.marginTop='14px';
+  box.innerHTML=`<div class="ph"><h3>🧾 ${L('யார் என்ன பண்ணாங்க (Activity log)','Activity log (who did what)')}</h3></div><div id="audl" class="muted">…</div>`;A.appendChild(box);
+  try{const q=await F().getDocs(F().query(F().collection(CL.db,'audit'),F().orderBy('at','desc'),F().limit(100)));const rows=q.docs.map(d=>d.data());
+    const AN={assign:['Driver assign','Driver assigned'],cancel:['ரத்து','Cancelled'],reopen:['மறுபடி அனுப்பு','Sent again'],start:['Trip ஆரம்பம்','Trip started'],newbk:['புது booking','New booking'],request:['Owner-கிட்ட கேட்டது','Asked the owner'],'req-ok':['Approve','Approved'],'req-no':['மறுப்பு','Declined'],'staff-add':['Staff சேர்ப்பு','Staff added'],'staff-edit':['Staff மாற்றம்','Staff changed'],'staff-on':['Staff ON','Staff turned on'],'staff-off':['Staff நிறுத்தம்','Staff turned off'],'staff-remove':['Staff நீக்கம்','Staff removed']};
+    box.querySelector('#audl').innerHTML=rows.length?`<div class="table">${rows.map(r=>{const a=AN[r.act]||[r.act,r.act],t=CL.toMs(r.at);return `<div class="tr t4"><span>${t?new Date(t).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'numeric',minute:'2-digit'}):''}</span><span><b>${esc(r.byName||'')}</b> ${esc(String(r.by||'').replace('+91',''))}</span><span>${esc(L(a[0],a[1]))}${r.ref?' · '+esc(r.ref):''}</span><span class="muted">${esc(r.txt||'')}</span></div>`}).join('')}</div>`:L('இன்னும் எதுவும் இல்லை','Nothing yet')}
+  catch(e){box.querySelector('#audl').textContent=CL.errText(e,S.lang==='ta')}}
+const RQK={fare:['கட்டணம் மாற்றம் / extra km','Fare change / extra km'],bill:['Bill திருத்தம்','Bill correction'],block:['Block பண்ண','Block'],other:['மற்றவை','Other']};
+function reqSheet(x){x=x||{};const b=x.b,kinds=b?['fare','bill','other']:x.drv?['block','other']:['other','block'];
+  const k0=x.kind&&kinds.includes(x.kind)?x.kind:kinds[0];
+  const close=modal(`<h3>🙋 ${L('Owner-கிட்ட கேள்','Ask the owner')}</h3>
+    ${b?`<p class="muted" style="margin:0 0 8px">${b.id} · ${pn(b.from)} → ${pn(b.to)} · ${L('இப்போ','now')} ${inr(b.fare)}</p>`:x.drv?`<p class="muted" style="margin:0 0 8px">🚖 ${esc(x.drv.en||x.drv.id)} · +91 ${esc(x.drv.phone||'')}</p>`:''}
+    <label class="kind" for="rqk">${L('என்ன வேணும்','What is needed')}</label>
+    <select id="rqk" class="field" style="height:48px;width:100%;padding:0 10px">${kinds.map(k=>`<option value="${k}" ${k===k0?'selected':''}>${L(RQK[k][0],RQK[k][1])}</option>`).join('')}</select>
+    <div id="rqw"><label class="kind" for="rqa">${L('புது தொகை (₹)','New amount (₹)')}</label><div class="field" style="height:50px"><span class="cc">₹</span><input id="rqa" inputmode="numeric" maxlength="6" value="${b?b.fare:''}"></div></div>
+    <label class="kind" for="rqy">${L('காரணம் (Owner பார்ப்பார்)','Reason (the owner reads this)')}</label>
+    <textarea id="rqy" rows="3" maxlength="500" style="width:100%;box-sizing:border-box;font:inherit;padding:8px;border-radius:10px;border:1px solid var(--line)" placeholder="${L('உதா: Customer 12 கி.மீ extra போனாங்க, toll ₹60','e.g. Customer went 12 km extra, toll ₹60')}"></textarea>
+    <div class="err" id="rqe"></div><button class="btn" id="rqs">${L('அனுப்பு','Send to owner')}</button>`,(m,cl)=>{
+    const kk=m.querySelector('#rqk'),ww=m.querySelector('#rqw'),sync=()=>{ww.style.display=['fare','bill'].includes(kk.value)?'':'none'};kk.onchange=sync;sync();
+    m.querySelector('#rqs').onclick=async()=>{const kind=kk.value,why=m.querySelector('#rqy').value.trim(),a=parseInt(m.querySelector('#rqa').value.replace(/\D/g,''))||0,er=m.querySelector('#rqe');
+      if(!why){er.textContent=L('காரணம் எழுதுங்க','Write the reason');return}if(['fare','bill'].includes(kind)&&!(a>0)){er.textContent=L('தொகை போடுங்க','Enter the amount');return}
+      const d={kind,by:CL.phone,byName:String(S.name||'').slice(0,40),why:why.slice(0,500),status:'pending',createdAt:ts()};
+      if(b){d.bk=b._id;d.bkId=b.id;d.cur=b.fare}if(['fare','bill'].includes(kind))d.want=a;if(x.drv)d.drv=x.drv.id;if(x.cust)d.cust=String(x.cust).slice(0,20);
+      const btn=m.querySelector('#rqs');btn.disabled=true;
+      try{await F().addDoc(F().collection(CL.db,'staffReq'),d);audit('request',b?b.id:(x.drv?x.drv.id:''),L(RQK[kind][0],RQK[kind][1])+(d.want?' ₹'+d.want:'')+' · '+why);cl();toast(L('Owner-க்கு அனுப்பியாச்சு. அவர் approve பண்ணதும் மாறும்.','Sent to the owner. It changes once they approve.'))}
+      catch(e){btn.disabled=false;er.textContent=CL.errText(e,S.lang==='ta')}}});return close}
+ — they only fill the box; staff reads and presses Send */
 const WAQ=[['வணக்கம்','Hello','வணக்கம்! 🙏 Vellore Taxi. எப்படி உதவலாம்?','Hello! 🙏 This is Vellore Taxi. How can we help?'],
   ['Book link','Book link','Taxi book பண்ண: https://velloretaxi.app 🚖','To book a taxi: https://velloretaxi.app 🚖'],
   ['Driver வர்றார்','Driver coming','உங்க driver வந்துட்டு இருக்கார். சில நிமிஷத்துல வந்துடுவார். 🙏','Your driver is on the way and will reach you in a few minutes. 🙏'],
@@ -1988,7 +2095,9 @@ function settings(){
     <p class="muted" style="margin:0 0 10px;font-size:13px">${L('எல்லா booking, driver, customer, புகார், recharge, settings — ஒரே file-ஆ உங்க computer-ல சேமிக்கும். வாரம் ஒரு தடவை எடுத்து Google Drive-ல வச்சுக்கோங்க.','Saves every booking, driver, customer, ticket, recharge and setting to one file on your computer. Take one every week and keep it in Google Drive.')}</p>
     <button class="btn ghost" id="bkp" style="max-width:320px">⬇ ${L('முழு backup download','Download full backup')}</button></section>`:''}
    <section class="panel" style="margin-top:14px"><div class="ph"><h3>Staff</h3><button class="linkbtn" id="as">+ ${L('Staff சேர்','Add staff')}</button></div>
-    ${c.staff.map((s,i)=>`<div class="lrow"><div><b>${esc(s.name)}</b><small>+91 ${s.phone} · ${L('Bookings, drivers, support மட்டும்','Bookings, drivers and support only')}</small></div><button class="linkbtn" data-rs="${i}" style="color:var(--danger)">${L('நீக்கு','Remove')}</button></div>`).join('')}</section>
+    <p class="muted" style="margin:0 0 8px;font-size:12.5px">${L('Staff தங்க mobile நம்பர் + OTP வெச்சு velloretaxi.app/office-ல login பண்ணுவாங்க. Duty நேரத்துல மட்டும் வேலை செய்யும். கட்டணம், bill, wallet, block, விலை, settings — உங்க approval இல்லாம மாத்த முடியாது.','Staff log in at velloretaxi.app/office with their mobile number + OTP. It works only in their duty hours. Fares, bills, wallets, blocking, prices and settings need your approval.')}</p>
+    ${c.staff.length?c.staff.map((s,i)=>`<div class="lrow"><div><b>${esc(s.name)} ${s.active===false?`<em class="sst open">${L('நிறுத்தியது','Turned off')}</em>`:''}</b><small>+91 ${s.phone} · ${L('Duty','Duty')} ${shiftTxt(s)}</small></div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end"><button class="linkbtn" data-se="${i}">${L('திருத்து','Edit')}</button><a class="linkbtn" data-sl="${i}" target="_blank" rel="noopener" href="https://wa.me/91${s.phone}?text=${encodeURIComponent(L(`வணக்கம் ${s.name}! Vellore Taxi Office link: https://velloretaxi.app/office/ — உங்க நம்பர் (${s.phone}) + OTP வெச்சு login பண்ணுங்க. Duty நேரம்: ${shiftTxt(s)}. Chrome-ல ⋮ → "Install app" பண்ணா icon வந்துடும்.`,`Hello ${s.name}! Vellore Taxi office link: https://velloretaxi.app/office/ — log in with your number (${s.phone}) + OTP. Duty hours: ${shiftTxt(s)}. In Chrome, ⋮ → "Install app" adds an icon.`))}">📲 ${L('Link அனுப்பு','Send link')}</a><button class="linkbtn" data-sa="${i}">${s.active===false?L('ON பண்ணு','Turn on'):L('நிறுத்து','Turn off')}</button><button class="linkbtn" data-rs="${i}" style="color:var(--danger)">${L('நீக்கு','Remove')}</button></div></div>`).join(''):`<div class="muted">${L('இன்னும் staff இல்லை','No staff yet')}</div>`}</section>
    ${CL?'':`<section class="panel" style="margin-top:14px"><div class="ph"><h3>${L('Demo data','Demo data')}</h3></div><p class="muted" style="margin:0 0 10px">${L('Sample bookings, drivers எல்லாத்தையும் ஆரம்ப நிலைக்கு கொண்டு வரும்.','Resets all sample bookings and drivers.')}</p><button class="btn ghost" id="rst" style="max-width:260px">${L('Demo data reset','Reset demo data')}</button></section>`}`;
   app.querySelectorAll('[data-cb],.acfg').forEach(i=>i.oninput=()=>{i.value=i.value.replace(/\D/g,'').slice(0,4);if(i.dataset.cb){const [k,id]=i.dataset.cb.split('.');c.out.cb[k][id]=+i.value||0}});
   app.querySelectorAll('[data-o],[data-r],.ocfg').forEach(i=>i.oninput=()=>{i.value=i.value.replace(/\D/g,'').slice(0,5);
@@ -2044,11 +2153,13 @@ function settings(){
       const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([js],{type:'application/json'}));a.download='vct-backup-'+new Date().toISOString().slice(0,10)+'.json';document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},800);
       toast(L(`Backup ரெடி: ${Object.values(out.data).reduce((n,x)=>n+Object.keys(x).length,0)} பதிவுகள்`,`Backup ready: ${Object.values(out.data).reduce((n,x)=>n+Object.keys(x).length,0)} records`))}
     catch(e){toast(CL.errText(e,S.lang==='ta'))}bkp.disabled=false;bkp.textContent='⬇ '+L('முழு backup download','Download full backup')};
-  document.getElementById('as').onclick=()=>modal(`<h3>${L('Staff சேர்','Add staff')}</h3><div class="field" style="height:50px"><input id="sn" maxlength="30" placeholder="${L('பெயர்','Name')}"></div><div class="field" style="height:50px"><span class="cc">+91</span><input id="sp" inputmode="numeric" maxlength="10"></div><div class="err" id="se"></div><button class="btn" id="ss">${L('சேமி','Save')}</button>`,(m,close)=>{
-    m.querySelector('#ss').onclick=()=>{const n=m.querySelector('#sn').value.trim(),p=m.querySelector('#sp').value.replace(/\D/g,'');if(n.length<2||!/^[6-9]\d{9}$/.test(p)){m.querySelector('#se').textContent=L('பெயர், 10 இலக்க நம்பர் கொடுங்க','Enter a name and a 10-digit number');return}
-      if(CL){cw(F().setDoc(F().doc(CL.db,'staff','+91'+p),{name:n,role:'staff',createdAt:ts()}));close();setTimeout(settings,500);return}
-      c.staff.push({name:n,phone:p});saveDB();close();settings()}});
-  app.querySelectorAll('[data-rs]').forEach(b=>b.onclick=()=>{if(CL){const st=c.staff[+b.dataset.rs];cw(F().deleteDoc(F().doc(CL.db,'staff','+91'+st.phone)));setTimeout(settings,500);return}c.staff.splice(+b.dataset.rs,1);saveDB();settings()});
+  document.getElementById('as').onclick=()=>staffSheet(null);
+  app.querySelectorAll('[data-se]').forEach(b=>b.onclick=()=>staffSheet(c.staff[+b.dataset.se]));
+  app.querySelectorAll('[data-sa]').forEach(b=>b.onclick=()=>{const st=c.staff[+b.dataset.sa],on=st.active===false;
+    if(!on&&!confirm(L(`${st.name}-ஓட login-ஐ இப்பவே நிறுத்தவா? (பிறகு ON பண்ணலாம்)`,`Turn off ${st.name}'s login now? (You can turn it back on.)`)))return;
+    if(CL){cw(F().setDoc(F().doc(CL.db,'staff','+91'+st.phone),{active:on,updatedAt:ts()},{merge:true}).then(()=>{audit(on?'staff-on':'staff-off',st.phone,st.name);toast(on?L('ON ஆச்சு','Turned on'):L('நிறுத்தியாச்சு','Turned off'))}));return}st.active=on;saveDB();settings()});
+  app.querySelectorAll('[data-rs]').forEach(b=>b.onclick=()=>{const st=c.staff[+b.dataset.rs];if(!confirm(L(`${st.name}-ஐ staff list-ல இருந்து நீக்கவா? (விவரம், files-உம் போகும்)`,`Remove ${st.name} from staff? (Their details and files go too.)`)))return;
+    if(CL){const ref=F().doc(CL.db,'staff','+91'+st.phone);Promise.all(['profile','f_resume','f_id'].map(k=>F().deleteDoc(F().doc(CL.db,'staff','+91'+st.phone,'private',k)).catch(()=>{}))).then(()=>cw(F().deleteDoc(ref))).then(()=>{audit('staff-remove',st.phone,st.name);setTimeout(settings,500)});return}c.staff.splice(+b.dataset.rs,1);saveDB();settings()});
   const rstb=document.getElementById('rst');if(rstb)rstb.onclick=()=>modal(`<h3>${L('Demo data reset பண்ணவா?','Reset demo data?')}</h3><button class="btn ghost" id="y">${L('ஆமா','Yes, reset')}</button><button class="btn" id="n">${L('வேண்டாம்','Cancel')}</button>`,(m,close)=>{m.querySelector('#n').onclick=close;m.querySelector('#y').onclick=()=>{DB=null;DB=seedO();saveDB();close();show();toast('Reset')}});
 }
 
@@ -2072,15 +2183,17 @@ async function cloudBootO(){
 async function enterCloud(){
   let s=null;try{s=await F().getDoc(F().doc(CL.db,'staff',CL.phone))}catch(e){}
   if(!s||!s.exists()){cardScreen(L('அனுமதி இல்லை','No access'),L(`${CL.phone} இந்த panel-க்கு சேர்க்கப்படல. Owner-கிட்ட Settings → Staff-ல சேர்க்க சொல்லுங்க.`,`${CL.phone} is not added to this panel. Ask the owner to add you under Settings → Staff.`),L('வேற நம்பர்ல login','Log in with another number'),()=>CL.logout().then(login));return}
-  const d=s.data();S.role=d.role==='owner'?'owner':'staff';S.phone=CL.phone.replace('+91','');S.logged=true;S.name=d.name||'';save();
+  const d=s.data();S.role=d.role==='owner'?'owner':'staff';S.phone=CL.phone.replace('+91','');S.name=d.name||'';ME=d;
+  if(!dutyOk(d)){S.logged=false;save();offDuty(d);return}
+  S.logged=true;save();
   DB={cfg:{fares:{},comm:10,minbal:100,upi:'',office:'',staff:[]},drv:[],bk:[],rch:[],sup:[],act:[]};
   VEH.forEach(v=>DB.cfg.fares[v.id]={base:v.base,per:v.per});
-  watchAll();show();
+  watchAll();watchMe();show();
 }
 function mergeB(){const ids=new Set(RAWBL.map(b=>b._id));RAWB=[...RAWBL,...RAWBA.filter(b=>!ids.has(b._id))]}
 function oerr(e){console.warn(e);if(e&&e.code==='permission-denied')toast(L('அனுமதி இல்லை (rules)','Permission denied (rules)'))}
 function watchAll(){
-  OUNS.forEach(u=>u());OUNS=[];SEEN=null;CFGOK=false;WASEEN=null;BKSEEN=null;BKLD=false;WAU=[];
+  OUNS.forEach(u=>u());OUNS=[];SEEN=null;CFGOK=false;WASEEN=null;BKSEEN=null;BKLD=false;WAU=[];SREQ=[];RQSEEN=null;
   OUNS.push(F().onSnapshot(F().query(F().collection(CL.db,'bookings'),F().orderBy('createdAt','desc'),F().limit(400)),s=>{RAWBL=s.docs.map(d=>({_id:d.id,...d.data()}));BKLD=true;mergeB();remap()},oerr));
   // every open booking, even if older than the newest 400 (e.g. an outstation trip booked days ahead)
   OUNS.push(F().onSnapshot(F().query(F().collection(CL.db,'bookings'),F().where('status','in',['searching','scheduled','assigned','ontrip'])),s=>{RAWBA=s.docs.map(d=>({_id:d.id,...d.data()}));mergeB();remap()},oerr));
@@ -2097,10 +2210,12 @@ function watchAll(){
     if(d.fares)Object.keys(d.fares).forEach(k=>{DB.cfg.fares[k]={...(DB.cfg.fares[k]||{}),...d.fares[k]}})}remap();
     // Settings opened before the saved settings arrived (e.g. after a refresh): draw it again with the real values
     if(first&&S.sec==='set'&&!document.querySelector('.modal')&&!typing())show()},oerr));
+  // staff requests to the owner (owner: new ones alert; staff: their own decisions alert)
+  OUNS.push(F().onSnapshot(F().query(F().collection(CL.db,'staffReq'),F().orderBy('createdAt','desc'),F().limit(60)),s=>{reqSnap(s.docs.map(d=>({id:d.id,...d.data()})))},e=>{if(!(e&&e.code==='permission-denied'))oerr(e)}));
   // unread WhatsApp messages → corner button count + alert (staff only by the rules; quiet if not allowed)
   OUNS.push(F().onSnapshot(F().query(F().collection(CL.db,'waInbox'),F().where('seen','==',false)),s=>{waUnread(s.docs.map(d=>({id:d.id,...d.data()})))},e=>{if(!(e&&e.code==='permission-denied'))oerr(e)}));
   OUNS.push(F().onSnapshot(F().collection(CL.db,'blocked'),s=>{BLK=new Set(s.docs.map(d=>d.id));BLKOK=true;migrateBlocked()},()=>{BLKOK=false}));
-  OUNS.push(F().onSnapshot(F().collection(CL.db,'staff'),s=>{DB.cfg.staff=s.docs.filter(d=>(d.data().role||'staff')!=='owner').map(d=>({name:d.data().name||'',phone:d.id.replace('+91','')}));remap()},oerr));
+  OUNS.push(F().onSnapshot(F().collection(CL.db,'staff'),s=>{DB.cfg.staff=s.docs.filter(d=>(d.data().role||'staff')!=='owner').map(d=>({name:d.data().name||'',phone:d.id.replace('+91',''),active:d.data().active!==false,shift:d.data().shift||null}));remap()},oerr));
 }
 /* one-time move of the old public blocked list into the private blocked collection (owner, after rules v2) */
 let BLKMIG=false;function migrateBlocked(){const old=DB.cfg.blocked||[];if(BLKMIG||!BLKOK||S.role!=='owner'||!old.length||!CL)return;BLKMIG=true;
