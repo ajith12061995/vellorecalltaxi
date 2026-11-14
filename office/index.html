@@ -29,7 +29,7 @@
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('../vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV=window.VCT_V='92',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV=window.VCT_V='93',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('../version.json',location.href)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -498,6 +498,20 @@ details.faq p{margin:0;padding:0 14px 14px;color:var(--muted);font-size:14px;lin
 .sfoot{margin-top:auto;display:flex;gap:8px}
 .sfoot button{flex:1;height:36px;border-radius:10px;border:1px solid rgba(255,255,255,.22);color:#fff;font-size:12.5px;font-weight:600}
 .main{overflow:auto;padding-block:22px 48px;padding-left:max(24px,env(safe-area-inset-left,0px));padding-right:max(24px,env(safe-area-inset-right,0px));min-width:0}
+/* corner alerts (new booking / WhatsApp) + WhatsApp chats button */
+#ncards{position:fixed;top:14px;right:14px;z-index:998;display:flex;flex-direction:column;gap:10px;width:min(340px,calc(100vw - 28px));pointer-events:none}
+.ncard{pointer-events:auto;display:flex;gap:10px;align-items:flex-start;background:var(--surface);color:var(--fg);border:1px solid var(--line);border-left:5px solid var(--yellow);border-radius:14px;padding:11px 12px;box-shadow:var(--shadow);cursor:pointer;animation:nin .25s ease-out}
+.ncard.wa{border-left-color:#25D366}.ncard .ni{font-size:22px;line-height:1}.ncard b{display:block;font-size:14.5px}.ncard small{display:block;color:var(--muted);font-size:12.5px;margin-top:2px;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.ncard .nx{margin-left:auto;border:0;background:none;color:var(--muted);font-size:18px;cursor:pointer;padding:0 2px}
+@keyframes nin{from{transform:translateX(30px);opacity:0}to{transform:none;opacity:1}}
+@media (prefers-reduced-motion:reduce){.ncard{animation:none}}
+#wafab{position:fixed;right:max(18px,env(safe-area-inset-right,0px));bottom:18px;z-index:55;width:58px;height:58px;border-radius:50%;border:0;background:#25D366;color:#fff;box-shadow:var(--shadow);display:flex;align-items:center;justify-content:center;cursor:pointer}
+#wafab svg{width:30px;height:30px}#wafab em{position:absolute;top:-4px;right:-4px;min-width:22px;height:22px;padding:0 6px;border-radius:11px;background:#C23B3B;color:#fff;font:700 12.5px/22px system-ui;font-style:normal;text-align:center;box-shadow:0 0 0 2px var(--bg)}
+#wafab:focus-visible{outline:3px solid var(--yellow);outline-offset:3px}
+@media (max-width:860px){#wafab{bottom:calc(152px + env(safe-area-inset-bottom,0px));width:54px;height:54px}#ncards{top:70px;right:10px}}
+.waq{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}.waq button{border:1px solid var(--line);background:var(--surface-2);color:var(--fg);border-radius:999px;padding:5px 10px;font:inherit;font-size:12.5px;cursor:pointer}
+.wach{display:flex;gap:10px;align-items:center;width:100%;text-align:left;border:0;border-bottom:1px solid var(--line);background:none;color:var(--fg);padding:10px 2px;font:inherit;cursor:pointer}
+.wach.un b{font-weight:800}.wach .wn{margin-left:auto;background:#25D366;color:#fff;border-radius:11px;min-width:22px;padding:0 6px;font-size:12px;text-align:center;font-weight:700}
 .mob,.fab{display:none!important}
 @media (max-width:860px){.olay{grid-template-columns:1fr;grid-template-rows:minmax(0,1fr) auto}.side{display:none}.mob{display:grid!important}
   .fab{display:flex!important;position:fixed;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(84px + env(safe-area-inset-bottom,0px));width:58px;height:58px;border-radius:18px;background:#FFC21A;color:#0B4A36;font-size:32px;font-weight:700;align-items:center;justify-content:center;box-shadow:0 8px 20px rgba(19,40,79,.3);z-index:20}
@@ -701,13 +715,13 @@ details.faq p{margin:0;padding:0 14px 14px;color:var(--muted);font-size:14px;lin
 <div class="app" id="app"></div>
 <div class="toast" id="toast"></div>
 
-<script src="../core/report.js?v=92"></script>
-<script src="../core/geo.js?v=92"></script>
-<script src="../core/fare.js?v=92"></script>
-<script src="../core/driverchecks.js?v=92"></script>
-<script src="../core/map.js?v=92"></script>
-<script src="../core/otp.js?v=92"></script>
-<script src="../core/refer.js?v=92"></script>
+<script src="../core/report.js?v=93"></script>
+<script src="../core/geo.js?v=93"></script>
+<script src="../core/fare.js?v=93"></script>
+<script src="../core/driverchecks.js?v=93"></script>
+<script src="../core/map.js?v=93"></script>
+<script src="../core/otp.js?v=93"></script>
+<script src="../core/refer.js?v=93"></script>
 <script>
 /* shared with the customer app: icons, places, fares, map engine */
 const I = {
@@ -914,8 +928,8 @@ function moreSheet(){const rest=SECS().slice(4);
     m.querySelectorAll('[data-s2]').forEach(b=>b.onclick=()=>{close();S.sec=b.dataset.s2;save();show()});
     m.querySelector('#lg2').onclick=()=>{close();S.lang=S.lang==='ta'?'en':'ta';save();show()};m.querySelector('#lo2').onclick=()=>{close();logout()}});
 }
-function logout(){clearInterval(SIM);if(CL){OUNS.forEach(u=>u());OUNS=[];CL.logout()}S.logged=false;save();login()}
-function show(){cancelAnimationFrame(mapLoop);layout();({dash,book,drv:drivers,cust:customers,sup:support,appr:approvals,rep:reports,set:settings})[S.sec]()}
+function logout(){clearInterval(SIM);if(CL){OUNS.forEach(u=>u());OUNS=[];CL.logout()}S.logged=false;save();WAU=[];waFab();if(NTITLE!==null){document.title=NTITLE;NTITLE=null}const nc=document.getElementById('ncards');if(nc)nc.remove();login()}
+function show(){cancelAnimationFrame(mapLoop);layout();waFab();({dash,book,drv:drivers,cust:customers,sup:support,appr:approvals,rep:reports,set:settings})[S.sec]()}
 const main=()=>document.getElementById('main');
 const head=(t,sub,act='')=>`<div class="mhead"><div><h1>${t}</h1>${sub?`<p class="muted">${sub}</p>`:''}</div>${act}</div>`;
 const stPill=s=>`<em class="bst ${s}">${({searching:L('Driver தேடல்','Needs driver'),assigned:L('Pickup-க்கு போறாங்க','To pickup'),ontrip:L('பயணத்தில்','On trip'),done:L('முடிந்தது','Completed'),cancelled:L('ரத்து','Cancelled'),scheduled:L('முன்பதிவு','Scheduled')})[s]}</em>`;
@@ -1753,6 +1767,45 @@ function waPanel(){const el=document.getElementById('wab');if(!el||!CL)return;el
         <br>${esc(x.text||('['+x.type+']'))}<br><button class="btn sm" data-wth="${esc(g.from)}" style="margin-top:4px">💬 ${open?L('பதில் அனுப்பு','Reply'):L('பார்','View')}</button></div>`}).join(''):L('பதில் எதுவும் இல்லை','No replies');
       inb.querySelectorAll('[data-wth]').forEach(b=>b.onclick=()=>waThread(b.dataset.wth,by.get(b.dataset.wth).name))}).catch(e=>{inb.textContent=CL.errText(e,S.lang==='ta')});
   }).catch(e=>{el.textContent=e&&e.code==='permission-denied'?L('புது rules publish ஆன பிறகு தான் தெரியும்','Visible after the new rules are published'):CL.errText(e,S.lang==='ta')})}
+/* quick replies: [chip ta, chip en, text ta, text en] — they only fill the box; staff reads and presses Send */
+const WAQ=[['வணக்கம்','Hello','வணக்கம்! 🙏 Vellore Taxi. எப்படி உதவலாம்?','Hello! 🙏 This is Vellore Taxi. How can we help?'],
+  ['Book link','Book link','Taxi book பண்ண: https://velloretaxi.app 🚖','To book a taxi: https://velloretaxi.app 🚖'],
+  ['Driver வர்றார்','Driver coming','உங்க driver வந்துட்டு இருக்கார். சில நிமிஷத்துல வந்துடுவார். 🙏','Your driver is on the way and will reach you in a few minutes. 🙏'],
+  ['Call பண்ணுங்க','Please call','விவரமா பேச இந்த எண்ணுக்கு call பண்ணுங்க: 93446 40416','Please call us on 93446 40416 to talk it through.'],
+  ['நன்றி','Thanks','நன்றி! 🙏 Vellore Taxi-ஐ தேர்ந்தெடுத்ததுக்கு.','Thank you for choosing Vellore Taxi! 🙏']];
+/* corner alerts: new booking / new WhatsApp message. Sound + card; a Windows notification too when this tab is in the background. */
+let WAU=[],WASEEN=null,BKSEEN=null,BKLD=false,NTITLE=null;
+const WAICON='<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8s-.4-.1-.6.1-.7.8-.8 1-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.2-.4.2-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.7 11.8 11.8 0 0 0 4.5 4c1.7.7 2.3.8 3.2.6a2.7 2.7 0 0 0 1.8-1.2 2.2 2.2 0 0 0 .1-1.2c0-.1-.2-.2-.4-.3z"/></svg>';
+function ncard(kind,icon,title,sub,onOpen,ms){let box=document.getElementById('ncards');if(!box){box=document.createElement('div');box.id='ncards';box.setAttribute('role','status');box.setAttribute('aria-live','polite');document.body.appendChild(box)}
+  while(box.children.length>=4)box.firstChild.remove();
+  const c=document.createElement('div');c.className='ncard '+kind;c.innerHTML=`<span class="ni">${icon}</span><span><b>${esc(title)}</b><small>${esc(sub||'')}</small></span><button class="nx" aria-label="${L('மூடு','Close')}">×</button>`;
+  const done=()=>{c.remove()};c.querySelector('.nx').onclick=e=>{e.stopPropagation();done()};c.onclick=()=>{done();onOpen&&onOpen()};box.appendChild(c);setTimeout(done,ms||45000);
+  if(document.hidden&&'Notification' in window&&Notification.permission==='granted'){try{const n=new Notification(title,{body:sub||'',tag:kind+':'+title,icon:'../icon-192.png'});n.onclick=()=>{window.focus();n.close();onOpen&&onOpen()}}catch(e){}}}
+function waTitle(){const n=new Set(WAU.map(x=>x.from)).size;if(NTITLE===null)NTITLE=document.title.replace(/^\(\d+\) 💬 /,'');document.title=(n?`(${n}) 💬 `:'')+NTITLE}
+function waFab(){if(!S.logged){const f=document.getElementById('wafab');if(f)f.remove();return}
+  let f=document.getElementById('wafab');if(!f){f=document.createElement('button');f.id='wafab';f.onclick=waChats;document.body.appendChild(f)}
+  const n=new Set(WAU.map(x=>x.from)).size;f.setAttribute('aria-label',L('WhatsApp chats','WhatsApp chats')+(n?` · ${n} ${L('படிக்காதது','unread')}`:''));f.title=f.getAttribute('aria-label');
+  f.innerHTML=WAICON+(n?`<em>${n>9?'9+':n}</em>`:'');waTitle()}
+function waUnread(list){WAU=list;waFab();
+  if(WASEEN){list.filter(x=>!WASEEN.has(x.id)).forEach(x=>{const who=waWho(x.from);chime();
+    ncard('wa','💬',(who.drv?'🚖 ':'👤 ')+(who.name||x.name||'+'+x.from),x.text||('['+(x.type||'')+']'),()=>waThread(x.from,x.name||''))})}
+  WASEEN=new Set(list.map(x=>x.id))}
+async function waChats(){const close=modal(`<h3>💬 WhatsApp</h3><div class="muted" style="font-size:12.5px;margin-bottom:6px">${L('Customer / driver நம்ம 93446 40416-க்கு அனுப்பின message-கள். ஒன்றை தொட்டு பதில் அனுப்புங்க (அவங்க கடைசி message-ல இருந்து 24 மணி நேரத்துக்குள்).','Messages customers and drivers sent to our 93446 40416. Tap one to reply (within 24 hours of their last message).')}</div>
+    ${'Notification' in window&&Notification.permission==='default'?`<button class="btn ghost sm" id="wanp" style="margin-bottom:8px">🔔 ${L('Windows notification ON பண்ணு','Turn on Windows notifications')}</button>`:''}
+    <div id="wachl">…</div><div class="two" style="margin-top:10px"><button class="btn ghost" id="wacl">${L('மூடு','Close')}</button></div>`,(m,cl)=>{m.querySelector('#wacl').onclick=cl;
+    const np=m.querySelector('#wanp');if(np)np.onclick=()=>Notification.requestPermission().then(r=>{np.remove();toast(r==='granted'?L('Notification ON','Notifications on'):L('Browser அனுமதி கொடுக்கலை','The browser did not allow it'))})});
+  const el=document.getElementById('wachl');
+  try{const q=await F().getDocs(F().query(F().collection(CL.db,'waInbox'),F().orderBy('at','desc'),F().limit(80)));
+    const by=new Map();q.docs.forEach(d=>{const x=d.data();if(!by.has(x.from))by.set(x.from,{from:x.from,name:x.name||'',last:x,unseen:0});if(!x.seen)by.get(x.from).unseen++});
+    const g=[...by.values()].sort((a,b)=>(b.unseen>0)-(a.unseen>0)||waMs(b.last.at)-waMs(a.last.at));
+    el.innerHTML=g.length?g.map(c=>{const who=waWho(c.from);return `<button class="wach ${c.unseen?'un':''}" data-wf="${esc(c.from)}"><span>${who.drv?'🚖':'👤'}</span><span style="min-width:0"><b>${esc(who.name||c.name||'+'+c.from)}</b><small class="muted" style="display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:52vw">${esc(c.last.text||('['+(c.last.type||'')+']'))} · ${esc(new Date(waMs(c.last.at)).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'numeric',minute:'2-digit'}))}</small></span>${c.unseen?`<span class="wn">${c.unseen}</span>`:''}</button>`}).join(''):`<div class="muted">${L('இன்னும் message எதுவும் வரலை','No messages yet')}</div>`;
+    el.querySelectorAll('[data-wf]').forEach(b=>b.onclick=()=>{close();waThread(b.dataset.wf,by.get(b.dataset.wf).name)})}
+  catch(e){el.textContent=CL.errText(e,S.lang==='ta')}}
+function bkNotify(){const ids=RAWB.map(b=>b._id);
+  if(BKSEEN){RAWB.filter(b=>!BKSEEN.has(b._id)&&Date.now()-(CL.toMs(b.createdAt)||Date.now())<10*60e3).forEach(b=>{const x=DB.bk.find(y=>y._id===b._id);if(!x)return;if(b.status!=='searching')chime();
+    const KN={ride:['🚖','புது booking','New booking'],schedule:['🗓️','புது முன்பதிவு','New scheduled booking'],rental:['⏱️','புது Rental booking','New rental booking'],outstation:['🛣️','புது Outstation booking','New outstation booking']}[x.kind]||['🚖','புது booking','New booking'];
+    ncard('bk',KN[0],`${L(KN[1],KN[2])} · ${x.id}`,`${pnT(x.from)} → ${pnT(x.to)}${x.cust&&x.cust.name&&x.cust.name!=='—'?' · '+x.cust.name:''}`,()=>bookSheet(DB.bk.find(y=>y._id===b._id)),60000)})}
+  BKSEEN=new Set(ids)}
 /* Office reply to one person who messaged our WhatsApp (customer or driver). The server (waReply) checks staff,
    the 24-hour window and sends; this screen shows the conversation (their messages + our replies). */
 const WA_WIN=24*3600e3;
@@ -1765,9 +1818,11 @@ async function waThread(from,nm){const who=waWho(from);
     <div id="wtl" style="max-height:46vh;overflow:auto;display:flex;flex-direction:column;gap:6px;padding:4px 0">…</div>
     <div id="wtw" class="muted" style="font-size:12px;margin:8px 0 4px"></div>
     <textarea id="wtx" rows="3" maxlength="1000" style="width:100%;box-sizing:border-box;font:inherit;padding:8px;border-radius:10px;border:1px solid var(--line)" placeholder="${L('பதில் type பண்ணுங்க…','Type a reply…')}"></textarea>
+    <div class="waq" id="wtq">${WAQ.map((q,i)=>`<button type="button" data-q="${i}">${esc(L(q[0],q[1]))}</button>`).join('')}</div>
     <div class="err" id="wte"></div>
     <div class="two"><button class="btn" id="wts">${L('அனுப்பு','Send')}</button><button class="btn ghost" id="wtc">${L('மூடு','Close')}</button></div>`,(m,cl)=>{m.querySelector('#wtc').onclick=cl});
   const box=document.getElementById('wtl'),win=document.getElementById('wtw'),tx=document.getElementById('wtx'),sb=document.getElementById('wts'),er=document.getElementById('wte');
+  document.querySelectorAll('#wtq [data-q]').forEach(b=>b.onclick=()=>{if(tx.disabled)return;const q=WAQ[+b.dataset.q];tx.value=L(q[2],q[3]);tx.focus()});
   const load=async()=>{const[qi,qo]=await Promise.all([F().getDocs(F().query(F().collection(CL.db,'waInbox'),F().where('from','==',from))),F().getDocs(F().query(F().collection(CL.db,'waLog'),F().where('to','==',from)))]);
     const ins=qi.docs.map(d=>({id:d.id,...d.data(),dir:'in'})),outs=qo.docs.map(d=>({...d.data(),dir:'out'})).filter(x=>x.kind==='reply');
     const all=[...ins,...outs].sort((a,b)=>waMs(a.at)-waMs(b.at)).slice(-40);
@@ -2025,8 +2080,8 @@ async function enterCloud(){
 function mergeB(){const ids=new Set(RAWBL.map(b=>b._id));RAWB=[...RAWBL,...RAWBA.filter(b=>!ids.has(b._id))]}
 function oerr(e){console.warn(e);if(e&&e.code==='permission-denied')toast(L('அனுமதி இல்லை (rules)','Permission denied (rules)'))}
 function watchAll(){
-  OUNS.forEach(u=>u());OUNS=[];SEEN=null;CFGOK=false;
-  OUNS.push(F().onSnapshot(F().query(F().collection(CL.db,'bookings'),F().orderBy('createdAt','desc'),F().limit(400)),s=>{RAWBL=s.docs.map(d=>({_id:d.id,...d.data()}));mergeB();remap()},oerr));
+  OUNS.forEach(u=>u());OUNS=[];SEEN=null;CFGOK=false;WASEEN=null;BKSEEN=null;BKLD=false;WAU=[];
+  OUNS.push(F().onSnapshot(F().query(F().collection(CL.db,'bookings'),F().orderBy('createdAt','desc'),F().limit(400)),s=>{RAWBL=s.docs.map(d=>({_id:d.id,...d.data()}));BKLD=true;mergeB();remap()},oerr));
   // every open booking, even if older than the newest 400 (e.g. an outstation trip booked days ahead)
   OUNS.push(F().onSnapshot(F().query(F().collection(CL.db,'bookings'),F().where('status','in',['searching','scheduled','assigned','ontrip'])),s=>{RAWBA=s.docs.map(d=>({_id:d.id,...d.data()}));mergeB();remap()},oerr));
   OUNS.push(F().onSnapshot(F().collection(CL.db,'drivers'),s=>{RAWD=s.docs.map(d=>({_id:d.id,...d.data()}));remap()},oerr));
@@ -2042,6 +2097,8 @@ function watchAll(){
     if(d.fares)Object.keys(d.fares).forEach(k=>{DB.cfg.fares[k]={...(DB.cfg.fares[k]||{}),...d.fares[k]}})}remap();
     // Settings opened before the saved settings arrived (e.g. after a refresh): draw it again with the real values
     if(first&&S.sec==='set'&&!document.querySelector('.modal')&&!typing())show()},oerr));
+  // unread WhatsApp messages → corner button count + alert (staff only by the rules; quiet if not allowed)
+  OUNS.push(F().onSnapshot(F().query(F().collection(CL.db,'waInbox'),F().where('seen','==',false)),s=>{waUnread(s.docs.map(d=>({id:d.id,...d.data()})))},e=>{if(!(e&&e.code==='permission-denied'))oerr(e)}));
   OUNS.push(F().onSnapshot(F().collection(CL.db,'blocked'),s=>{BLK=new Set(s.docs.map(d=>d.id));BLKOK=true;migrateBlocked()},()=>{BLKOK=false}));
   OUNS.push(F().onSnapshot(F().collection(CL.db,'staff'),s=>{DB.cfg.staff=s.docs.filter(d=>(d.data().role||'staff')!=='owner').map(d=>({name:d.data().name||'',phone:d.id.replace('+91','')}));remap()},oerr));
 }
@@ -2074,7 +2131,8 @@ function remap(liveOnly){
   // alert the desk about new work
   const ids=new Set([...DB.bk.filter(b=>b.status==='searching').map(b=>'b'+b._id),...DB.sup.filter(s=>s.status==='open').map(s=>'t'+s._id)]);
   if(SEEN){const fresh=[...ids].filter(x=>!SEEN.has(x));if(fresh.length){chime();const sos=DB.sup.find(s=>s.type==='sos'&&s.status==='open'&&fresh.includes('t'+s._id));
-    toast(sos?'SOS: '+sos.cust:fresh.some(x=>x[0]==='b')?L('புது booking வந்திருக்கு','New booking'):L('புது உதவி request','New support request'))}}
+    if(sos||fresh.some(x=>x[0]==='t'))toast(sos?'SOS: '+sos.cust:L('புது உதவி request','New support request'))}}
+  if(BKLD)bkNotify();
   SEEN=ids;
   clearTimeout(RTIMER);RTIMER=setTimeout(()=>rerender(liveOnly),150);
 }
