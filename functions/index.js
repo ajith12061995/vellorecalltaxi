@@ -22,6 +22,7 @@ const admin = require('firebase-admin');
 const L = require('./lib/logic');
 const WX = require('./lib/weather');
 const W = require('./lib/wa');
+const ST = require('./lib/staff');
 
 admin.initializeApp();
 const db = admin.firestore();
@@ -336,6 +337,26 @@ exports.waDriverWelcome = onDocumentCreated({ document: 'drivers/{ph}', secrets:
   else logger.info('whatsapp driver welcome sent', { to });
 });
 
+// A staff member asked the owner for approval (fare / bill / block…) → WhatsApp to every owner number, once per owner.
+exports.waOwnerRequest = onDocumentCreated({ document: 'staffReq/{id}', secrets: [WA_TOKEN] }, async ev => {
+  const r = ev.data && ev.data.data(); if (!r || r.status !== 'pending') return;
+  const w = (await db.doc('waConfig/main').get()).data() || {};
+  if (w.ownerReq === false) return;
+  const owners = (await db.collection('staff').where('role', '==', 'owner').get()).docs.map(d => W.waPhone(d.id)).filter(Boolean);
+  const p = ST.ownerReqParams(r, true);
+  for (const to of owners) {
+    if (!W.waAllowed({ ...w, kinds: undefined, testTo: [] }, 'ownerreq', to)) continue;
+    const key = `req_${ev.params.id}_${to}`, lref = db.doc(`waLog/${key}`);
+    try { await lref.create({ req: ev.params.id, kind: 'ownerreq', to, status: 'sending', at: FV.serverTimestamp() }); }
+    catch (e) { if (e.code === 6 || /ALREADY_EXISTS/i.test(e.message || '')) continue; throw e; }
+    const msg = W.waOwnerReq(p, { to, lang: 'ta' });
+    const res = await waSend(w, msg);
+    await lref.update({ ...res, tpl: msg.template.name, lang: 'ta', updatedAt: FV.serverTimestamp() });
+    if (res.wamid) await db.doc(`waMsgs/${waKey(res.wamid)}`).set({ log: key, at: FV.serverTimestamp() });
+    if (res.status === 'failed') logger.warn('whatsapp owner request failed', { to, error: res.error });
+  }
+});
+
 // Office (owner or staff) replies to someone who messaged our WhatsApp number — a customer or a driver.
 // Free text is allowed by WhatsApp only within 24 h of their last message; the server checks that, not the app.
 // Each reply is logged in waLog (kind 'reply') so delivery receipts from the webhook update it.
@@ -343,7 +364,7 @@ exports.waReply = onCall({ secrets: [WA_TOKEN], enforceAppCheck: AC_ENFORCE }, a
   acLog('waReply', req);
   const me = req.auth && req.auth.token.phone_number, { to: to0, text: t0 } = req.data || {};
   if (!me) throw new HttpsError('unauthenticated', 'login first');
-  if (!(await db.doc(`staff/${me}`).get()).exists) throw new HttpsError('permission-denied', 'office only');
+  if (!ST.onDuty((await db.doc(`staff/${me}`).get()).data())) throw new HttpsError('permission-denied', 'office only (on duty)');
   const to = W.waPhone(to0), text = W.replyText(t0);
   if (!to || !text) throw new HttpsError('invalid-argument', 'bad request');
   const w = (await db.doc('waConfig/main').get()).data() || {};

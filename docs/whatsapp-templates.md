@@ -111,6 +111,25 @@ For help, call: {{2}}
 Wishing you a great first ride!
 ```
 
+## vct_owner_request — 1 staff name · 2 request · 3 booking / driver · 4 reason
+Sent to the OWNER (not a customer) when an office staff member asks for approval (fare / bill change, extra km, block).
+**ta**
+```
+வணக்கம்! Vellore Taxi Office-ல {{1}} உங்க அனுமதி கேட்டிருக்காங்க.
+கோரிக்கை: {{2}}
+விவரம்: {{3}}
+காரணம்: {{4}}
+Office app → Approvals-ல பார்த்து முடிவு பண்ணுங்க.
+```
+**en**
+```
+Hello! {{1}} at the Vellore Taxi office has asked for your approval.
+Request: {{2}}
+Details: {{3}}
+Reason: {{4}}
+Please open the Office app → Approvals to decide.
+```
+
 ## Cost (Meta, India, per delivered template — check the current rate card before going live)
 Utility messages are charged per message; a reply from the customer opens a free 24-hour window for utility templates.
 Message types can be turned off one by one in Office → Settings → WhatsApp to save cost (e.g. "trip started").

@@ -362,3 +362,64 @@ test('contact form: anyone sends a checked enquiry; only the office reads and ha
   await assertFails(deleteDoc(doc(as.staff(), 'enquiries', 'q1')));
   await assertSucceeds(deleteDoc(doc(as.owner(), 'enquiries', 'q1')));
 });
+
+// ---- office staff: duty hours, turned off, what staff may change, requests to the owner, activity log
+const ist = () => { const d = new Date(Date.now() + 330 * 60e3); return d.getUTCHours() * 60 + d.getUTCMinutes(); };
+const shiftNow = () => ({ from: (ist() + 1440 - 60) % 1440, to: (ist() + 60) % 1440 });       // started an hour ago, ends in an hour
+const shiftAway = () => ({ from: (ist() + 120) % 1440, to: (ist() + 240) % 1440 });           // starts in two hours
+test('staff on duty reads; off duty or turned off reads nothing; owner any time', async () => {
+  await seed(db => setDoc(doc(db, 'staff', STAFF), { role: 'staff', shift: shiftNow() }));
+  await assertSucceeds(getDoc(doc(as.staff(), 'bookings', 'b1')));
+  await seed(db => setDoc(doc(db, 'staff', STAFF), { role: 'staff', shift: shiftAway() }));
+  await assertFails(getDoc(doc(as.staff(), 'bookings', 'b1')));
+  await assertFails(updateDoc(doc(as.staff(), 'bookings', 'b1'), { status: 'cancelled', cancelReason: 'x' }));
+  await assertSucceeds(getDoc(doc(as.staff(), 'staff', STAFF)), 'can still read their own login record (to show the duty hours)');
+  await seed(db => setDoc(doc(db, 'staff', STAFF), { role: 'staff', shift: shiftNow(), active: false }));
+  await assertFails(getDoc(doc(as.staff(), 'bookings', 'b1')));
+  await seed(db => setDoc(doc(db, 'staff', OWNER), { role: 'owner', shift: shiftAway(), active: false }));
+  await assertSucceeds(getDoc(doc(as.owner(), 'bookings', 'b1')));
+});
+test('staff dispatch only: assign, start, cancel yes — fare, bill, commission, payment, done no', async () => {
+  await assertSucceeds(updateDoc(doc(as.staff(), 'bookings', 'b1'), { status: 'assigned', driverPhone: DRV, driverName: 'Test', plate: 'TN23', assignedAt: serverTimestamp(), updatedAt: serverTimestamp() }));
+  await assertSucceeds(updateDoc(doc(as.staff(), 'bookings', 'b2'), { status: 'ontrip', startedAt: serverTimestamp(), startedBy: 'office:' + STAFF }));
+  await assertSucceeds(updateDoc(doc(as.staff(), 'bookings', 'b1'), { 'dispatch.review': false }));
+  for (const bad of [{ fare: 999 }, { fareFinal: 999 }, { comm: 0 }, { billOk: { by: STAFF } }, { pay: 'upi' }, { tip: 50 }, { status: 'done' }, { customerUid: 'x' }])
+    await assertFails(updateDoc(doc(as.staff(), 'bookings', 'b4'.replace('4', bad.status ? '3' : '1')), bad), JSON.stringify(bad));
+  await assertSucceeds(updateDoc(doc(as.owner(), 'bookings', 'b1'), { fare: 250 }));
+  await assertSucceeds(updateDoc(doc(as.owner(), 'bookings', 'b4'), { fareFinal: 300, billEdit: { by: OWNER } }));
+  await assertFails(addDoc(collection(as.staff(), 'bookings'), booking({ customerUid: null, src: 'phone', fareFinal: 10 })));
+  await assertSucceeds(addDoc(collection(as.staff(), 'bookings'), booking({ customerUid: null, src: 'phone' })));
+});
+test('staff cannot block a driver or touch a wallet; owner can', async () => {
+  await assertFails(updateDoc(doc(as.staff(), 'drivers', DRV), { blocked: true }));
+  await assertFails(updateDoc(doc(as.staff(), 'drivers', DRV), { wallet: 1 }));
+  await assertSucceeds(updateDoc(doc(as.owner(), 'drivers', DRV), { blocked: true, wallet: 1 }));
+});
+test('requests to the owner: staff asks for themselves only; only the owner decides', async () => {
+  const R = { kind: 'fare', by: STAFF, byName: 'Kavya', bk: 'b1', bkId: 'AB', cur: 190, want: 250, why: '12 km extra', status: 'pending', createdAt: serverTimestamp() };
+  await assertSucceeds(setDoc(doc(as.staff(), 'staffReq', 'q1'), R));
+  await assertFails(setDoc(doc(as.staff(), 'staffReq', 'q2'), { ...R, by: OWNER }));
+  await assertFails(setDoc(doc(as.staff(), 'staffReq', 'q3'), { ...R, status: 'approved' }));
+  await assertFails(setDoc(doc(as.staff(), 'staffReq', 'q4'), { ...R, why: '' }));
+  await assertFails(setDoc(doc(as.drv(), 'staffReq', 'q5'), { ...R, by: DRV }));
+  await assertFails(updateDoc(doc(as.staff(), 'staffReq', 'q1'), { status: 'approved', decidedBy: STAFF, decidedAt: serverTimestamp() }));
+  await assertSucceeds(updateDoc(doc(as.owner(), 'staffReq', 'q1'), { status: 'approved', decidedBy: OWNER, decidedAt: serverTimestamp(), note: '' }));
+  await assertFails(updateDoc(doc(as.owner(), 'staffReq', 'q1'), { status: 'rejected', decidedBy: OWNER }), 'decided once');
+});
+test('activity log: staff write their own entries, only the owner reads, nobody edits', async () => {
+  await assertSucceeds(setDoc(doc(as.staff(), 'audit', 'a1'), { by: STAFF, byName: 'Kavya', act: 'assign', ref: 'AB', txt: 'Test', at: serverTimestamp() }));
+  await assertFails(setDoc(doc(as.staff(), 'audit', 'a2'), { by: OWNER, act: 'assign', txt: '', at: serverTimestamp() }));
+  await assertFails(getDoc(doc(as.staff(), 'audit', 'a1')));
+  await assertSucceeds(getDoc(doc(as.owner(), 'audit', 'a1')));
+  await assertFails(updateDoc(doc(as.owner(), 'audit', 'a1'), { txt: 'x' }));
+  await assertFails(deleteDoc(doc(as.owner(), 'audit', 'a1')));
+});
+test('staff personal details and files: owner only; owner cannot demote or delete themselves', async () => {
+  await assertSucceeds(setDoc(doc(as.owner(), 'staff', STAFF, 'private', 'profile'), { address: 'x' }));
+  await assertFails(getDoc(doc(as.staff(), 'staff', STAFF, 'private', 'profile')));
+  await assertSucceeds(setDoc(doc(as.owner(), 'staff', STAFF), { role: 'staff', shift: { from: 540, to: 1080 }, active: true }));
+  await assertFails(setDoc(doc(as.owner(), 'staff', STAFF), { role: 'staff', shift: { from: 540, to: 540 } }));
+  await assertFails(setDoc(doc(as.owner(), 'staff', OWNER), { role: 'staff' }));
+  await assertFails(deleteDoc(doc(as.owner(), 'staff', OWNER)));
+  await assertSucceeds(deleteDoc(doc(as.owner(), 'staff', STAFF)));
+});

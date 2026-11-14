@@ -11,8 +11,15 @@ service cloud.firestore {
 
     function signedIn() { return request.auth != null; }
     function phone()    { return request.auth.token.get('phone_number', ''); }
-    function isStaff()  { return signedIn() && phone() != '' && exists(/databases/$(database)/documents/staff/$(phone())); }
-    function isOwner()  { return isStaff() && get(/databases/$(database)/documents/staff/$(phone())).data.role == 'owner'; }
+    // Office logins. The owner works any time. A staff member works only while active and inside their own duty
+    // hours (staff/{ph}.shift = {from, to} in minutes after midnight, India time; a shift may cross midnight).
+    function staffDoc() { return get(/databases/$(database)/documents/staff/$(phone())).data; }
+    function hasStaff() { return signedIn() && phone() != '' && exists(/databases/$(database)/documents/staff/$(phone())); }
+    function istMin()   { return (request.time.hours() * 60 + request.time.minutes() + 330) % 1440; }
+    function inShift(sh) { return sh.from <= sh.to ? (istMin() >= sh.from && istMin() < sh.to) : (istMin() >= sh.from || istMin() < sh.to); }
+    function onDuty(st) { return st.get('active', true) != false && (!('shift' in st) || inShift(st.shift)); }
+    function isOwner()  { return hasStaff() && staffDoc().get('role', 'staff') == 'owner'; }
+    function isStaff()  { return hasStaff() && (staffDoc().get('role', 'staff') == 'owner' || onDuty(staffDoc())); }
     function isDriver() { return signedIn() && phone() != '' && exists(/databases/$(database)/documents/drivers/$(phone())); }
     function changes()  { return request.resource.data.diff(resource.data).affectedKeys(); }
     function newData()  { return request.resource.data; }
@@ -31,10 +38,38 @@ service cloud.firestore {
       allow write: if isOwner();
     }
 
-    // Office logins
+    // Office logins (name, role, active, shift). Personal details and resume / ID proof: owner only.
     match /staff/{ph} {
       allow read: if isStaff() || (signedIn() && phone() == ph);
-      allow write: if isOwner();
+      allow write: if isOwner() && (ph != phone() || newData().get('role', 'staff') == 'owner')   // the owner cannot demote themselves
+        && (!('shift' in newData()) || (num(newData().shift.from, 0, 1439) && num(newData().shift.to, 0, 1439) && newData().shift.from != newData().shift.to));
+      allow delete: if isOwner() && ph != phone();
+      match /private/{doc} {
+        allow read, write: if isOwner();
+      }
+    }
+
+    // A staff member asks the owner (fare / bill change, extra km, block, other); only the owner decides
+    match /staffReq/{id} {
+      allow read: if isStaff();
+      allow create: if isStaff() && newData().by == phone() && newData().status == 'pending'
+        && newData().kind in ['fare', 'bill', 'block', 'other']
+        && newData().keys().hasOnly(['kind', 'by', 'byName', 'bk', 'bkId', 'drv', 'cust', 'cur', 'want', 'why', 'status', 'createdAt'])
+        && newData().why is string && newData().why.size() > 0 && newData().why.size() <= 500
+        && (!('want' in newData()) || num(newData().want, 0, 200000))
+        && newData().createdAt == request.time;
+      allow update: if isOwner() && resource.data.status == 'pending' && newData().status in ['approved', 'rejected']
+        && changes().hasOnly(['status', 'decidedBy', 'decidedAt', 'note']) && newData().decidedBy == phone();
+    }
+
+    // What each office login did (who, what, when). Written by the office app, read by the owner, never edited.
+    match /audit/{id} {
+      allow read: if isOwner();
+      allow create: if isStaff() && newData().by == phone()
+        && newData().keys().hasOnly(['by', 'byName', 'act', 'ref', 'txt', 'at'])
+        && newData().act is string && newData().act.size() <= 40
+        && newData().txt is string && newData().txt.size() <= 300
+        && newData().at == request.time;
     }
 
     // Customer profile (name, emergency contacts, saved places)
@@ -47,7 +82,7 @@ service cloud.firestore {
     match /drivers/{ph} {
       allow read: if isStaff() || (signedIn() && phone() == ph);
       allow create, delete: if isOwner();
-      allow update: if (isStaff() && (!('wallet' in changes()) || isOwner()))
+      allow update: if isOwner() || (isStaff() && !changes().hasAny(['wallet', 'blocked']))
         || (signedIn() && phone() == ph
             && changes().hasOnly(['online', 'lat', 'lon', 'updatedAt', 'wallet', 'fcm', 'fcmAt', 'consent'])
             // the driver signs the agreement in the app: own name, server time, nothing else
@@ -97,7 +132,10 @@ service cloud.firestore {
         || (isDriver() && resource.data.driverPhone == phone())
         || (isDriver() && resource.data.status == 'searching');
 
-      allow create: if isStaff()
+      allow create: if isOwner()
+        // phone bookings by staff: no bill / commission / payment fields
+        || (isStaff() && newData().get('status', '') in ['searching', 'scheduled', 'assigned']
+            && !newData().keys().hasAny(['fareFinal', 'fx', 'comm', 'commLocal', 'billEdit', 'billOk', 'ledgerAt', 'doneAt', 'paidAt']))
         || (signedIn() && newData().customerUid == request.auth.uid
             && newData().get('src', '') == 'app'                 // so the server fare check and booking limits always apply
             && newData().status in ['searching', 'scheduled']
@@ -107,7 +145,11 @@ service cloud.firestore {
             && !newData().keys().hasAny(['driverPhone', 'driverName', 'assignedAt', 'startedAt', 'doneAt', 'fareFinal', 'fx', 'comm', 'commLocal', 'pinOk', 'ledgerAt',
                                              'fareFlag', 'fareWas', 'kmWas', 'limitWhy', 'cancelledBy', 'dispatchedBy', 'tariffFixed']));
 
-      allow update: if isStaff()
+      allow update: if isOwner()
+        // staff: dispatch work only (assign, re-open, start, cancel). Fare, bill, commission and payment: owner only.
+        || (isStaff() && changes().hasOnly(['status', 'cancelReason', 'cancelledBy', 'driverPhone', 'driverName', 'plate', 'vehModel', 'assignedAt', 'arrivedAt',
+                                            'startedAt', 'startedBy', 'pinTry', 'exclude', 'reopenedAt', 'dispatch', 'dispatchedAt', 'dispatchedBy', 'updatedAt'])
+            && newData().get('status', '') in ['searching', 'scheduled', 'assigned', 'arrived', 'ontrip', 'cancelled'])
         // customer: cancel (before the trip starts), rate, tip, switch payment, confirm the PIN the driver typed
         || (signedIn() && resource.data.customerUid == request.auth.uid
             && changes().hasOnly(['status', 'cancelReason', 'pay', 'rating', 'tip', 'startedAt', 'updatedAt'])

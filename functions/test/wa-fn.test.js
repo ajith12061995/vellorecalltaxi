@@ -3,7 +3,7 @@ const test = require('node:test'), assert = require('node:assert'), Module = req
 
 // ---- in-memory Firestore -------------------------------------------------------------------------------------
 const store = new Map();
-const snap = (path) => ({ exists: store.has(path), data: () => (store.has(path) ? JSON.parse(JSON.stringify(store.get(path))) : undefined), ref: docRef(path) });
+const snap = (path) => ({ id: path.split('/').pop(), exists: store.has(path), data: () => (store.has(path) ? JSON.parse(JSON.stringify(store.get(path))) : undefined), ref: docRef(path) });
 function docRef(path) {
   return {
     path, get: async () => snap(path),
@@ -242,4 +242,49 @@ test('office reply: closed after 24 h; Meta error is returned, not thrown', asyn
   assert.strictEqual(r.ok, false); assert.match(r.error, /131047/);
   store.delete('waConfig/main'); await assert.rejects(call('+918220201462', { to: '9944640416', text: 'hello' }), /not set up/);
   reply = () => ({ status: 200, body: { messages: [{ id: 'wamid.ok' }] } });
+});
+
+// ---- staff duty hours + owner approval alerts --------------------------------------------------------------------
+const ST = require('../lib/staff');
+test('duty hours: owner always; staff only active and inside the shift (India time, may cross midnight)', () => {
+  const at = (h, m) => Date.UTC(2026, 10, 14, h, m) - 330 * 60e3;   // h:m India time
+  assert.strictEqual(ST.istMin(at(9, 30)), 570);
+  assert.ok(ST.onDuty({ role: 'owner', active: false, shift: { from: 0, to: 1 } }, at(3, 0)));
+  const s = { role: 'staff', shift: { from: 9 * 60, to: 18 * 60 } };
+  assert.ok(ST.onDuty(s, at(9, 0)) && ST.onDuty(s, at(17, 59)));
+  assert.ok(!ST.onDuty(s, at(8, 59)) && !ST.onDuty(s, at(18, 0)) && !ST.onDuty(s, at(23, 0)));
+  assert.ok(!ST.onDuty({ ...s, active: false }, at(10, 0)), 'turned off');
+  const night = { role: 'staff', shift: { from: 22 * 60, to: 6 * 60 } };
+  assert.ok(ST.onDuty(night, at(23, 30)) && ST.onDuty(night, at(5, 0)) && !ST.onDuty(night, at(12, 0)));
+  assert.ok(ST.onDuty({ role: 'staff' }, at(3, 0)), 'old staff record without hours keeps working');
+  assert.ok(!ST.onDuty(null) && !ST.onDuty(undefined));
+});
+test('office reply: a staff member off duty or turned off cannot reply', async () => {
+  reset(); store.set('waConfig/main', { phoneId: '1' });
+  const now = ST.istMin(Date.now()), away = { from: (now + 120) % 1440, to: (now + 180) % 1440 };
+  store.set('staff/+919000000001', { role: 'staff', shift: away });
+  store.set('staff/+919000000002', { role: 'staff', active: false });
+  store.set('waInbox/m1', { from: '919944640416', text: 'hi', at: new Date(Date.now() - 60e3).toISOString() });
+  await assert.rejects(call('+919000000001', { to: '9944640416', text: 'hello' }), /on duty/);
+  await assert.rejects(call('+919000000002', { to: '9944640416', text: 'hello' }), /on duty/);
+  assert.strictEqual(sent.length, 0);
+});
+test('staff request → one WhatsApp template to each owner, once; switch off honoured', async () => {
+  reset(); store.set('waConfig/main', { on: true, phoneId: '55', testTo: ['9000000000'] });
+  store.set('staff/+918220201462', { role: 'owner' }); store.set('staff/+919000000001', { role: 'staff', name: 'Kavya' });
+  const R = { kind: 'fare', by: '+919000000001', byName: 'Kavya', bk: 'x1', bkId: 'AB12CD', cur: 350, want: 420, why: 'Customer went\n12 km extra', status: 'pending' };
+  const ev2 = (id, r) => ({ params: { id }, data: { data: () => r } });
+  reply = () => ({ status: 200, body: { messages: [{ id: 'wamid.own1' }] } });
+  await F.waOwnerRequest(ev2('q1', R));
+  assert.strictEqual(sent.length, 1, 'goes to the owner even while customer test numbers are set');
+  const b = sent[0].body;
+  assert.strictEqual(b.to, '918220201462'); assert.strictEqual(b.template.name, 'vct_owner_request'); assert.strictEqual(b.template.language.code, 'ta');
+  assert.deepStrictEqual(b.template.components[0].parameters.map(p => p.text), ['Kavya', 'கட்டணம் மாற்றம் / extra km ₹350 → ₹420', 'Booking AB12CD', 'Customer went 12 km extra']);
+  assert.strictEqual(store.get('waLog/req_q1_918220201462').status, 'accepted');
+  await F.waOwnerRequest(ev2('q1', R)); assert.strictEqual(sent.length, 1, 'retry of the same event does not send twice');
+  await F.waOwnerRequest(ev2('q2', { ...R, status: 'approved' })); assert.strictEqual(sent.length, 1, 'only new pending requests');
+  store.set('waConfig/main', { on: true, phoneId: '55', ownerReq: false });
+  await F.waOwnerRequest(ev2('q3', R)); assert.strictEqual(sent.length, 1, 'owner alerts can be switched off');
+  store.set('waConfig/main', { on: false, phoneId: '55' });
+  await F.waOwnerRequest(ev2('q4', R)); assert.strictEqual(sent.length, 1, 'WhatsApp off → nothing');
 });

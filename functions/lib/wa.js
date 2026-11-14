@@ -11,7 +11,8 @@ const TPL = {
   ontrip: 'vct_trip_started',              // 1 name · 2 number plate · 3 help phone
   done: 'vct_trip_completed',              // 1 name · 2 fare · 3 booking no.
   cancelled: 'vct_booking_cancelled',      // 1 name · 2 booking no. · 3 office phone
-  drvwelcome: 'vct_driver_welcome'         // to a new DRIVER when the office approves them: 1 name · 2 driver help phone
+  drvwelcome: 'vct_driver_welcome',        // to a new DRIVER when the office approves them: 1 name · 2 driver help phone
+  ownerreq: 'vct_owner_request'            // to the OWNER when a staff member asks for approval: 1 staff · 2 request · 3 booking / driver · 4 reason
 };
 const KINDS = ['confirmed', 'assigned', 'ontrip', 'done', 'cancelled'];
 const OFFER = ['outstation', 'rental'];
@@ -94,6 +95,13 @@ function waDriverWelcome(d, o) {
       components: [{ type: 'body', parameters: p.map(text => ({ type: 'text', text })) }] } };
 }
 
+/* "Approval needed" message to the owner. p = [staff name, request, booking / driver, reason] (lib/staff.ownerReqParams) */
+function waOwnerReq(p, o) {
+  return { messaging_product: 'whatsapp', to: o.to, type: 'template',
+    template: { name: TPL.ownerreq, language: { code: o.lang === 'en' ? 'en' : 'ta' },
+      components: [{ type: 'body', parameters: p.map((t, i) => ({ type: 'text', text: clean(t, i === 3 ? 300 : 80) })) }] } };
+}
+
 /* A typed reply from the office to someone who messaged us (customer or driver). WhatsApp allows free text only
    within 24 hours of that person's last message. lastIn = ms of their last message (0 = never). */
 const REPLY_WINDOW = 24 * 3600e3;
@@ -138,4 +146,4 @@ function waParse(body) {
 const RANK = { accepted: 0, sent: 1, delivered: 2, read: 3, failed: 4 };
 const newer = (oldS, newS) => (RANK[newS] ?? -1) > (RANK[oldS] ?? -1);
 
-module.exports = { TPL, KINDS, waEvents, waPhone, waMessage, waDriverWelcome, waAllowed, REPLY_WINDOW, replyOpen, replyText, waText, sigOk, waParse, newer, clean, istTime, ref6 };
+module.exports = { TPL, KINDS, waEvents, waPhone, waMessage, waDriverWelcome, waOwnerReq, waAllowed, REPLY_WINDOW, replyOpen, replyText, waText, sigOk, waParse, newer, clean, istTime, ref6 };

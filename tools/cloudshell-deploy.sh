@@ -58,7 +58,7 @@ echo "If it asks to DELETE anything → answer N.  If it asks about a cleanup po
 # each group is deployed only when all its secrets exist, so a missing secret never breaks the rest of the deploy.
 has() { for n in "$@"; do gcloud secrets describe "$n" >/dev/null 2>&1 || return 1; done; }
 FNS="functions:onBookingDone,functions:housekeeping,functions:weatherTick,functions:onBookingCreated,functions:onBookingCust,functions:onEnquiry,functions:deleteMyAccount,functions:purgeDriver,functions:verifyPin,functions:dailyBackup"
-if has WA_TOKEN WA_APP_SECRET WA_VERIFY_TOKEN; then FNS="$FNS,functions:waBooking,functions:waDriverWelcome,functions:waReply,functions:waWebhook"; else echo "(WhatsApp secrets not set yet — WhatsApp functions skipped)"; fi
+if has WA_TOKEN WA_APP_SECRET WA_VERIFY_TOKEN; then FNS="$FNS,functions:waBooking,functions:waDriverWelcome,functions:waOwnerRequest,functions:waReply,functions:waWebhook"; else echo "(WhatsApp secrets not set yet — WhatsApp functions skipped)"; fi
 if has RZP_KEY_ID RZP_KEY_SECRET RZP_WEBHOOK_SECRET; then FNS="$FNS,functions:rzpOrder,functions:rzpVerify,functions:rzpWebhook"; else echo "(Razorpay secrets not set yet — Razorpay functions skipped)"; fi
 npx --yes firebase-tools@13 deploy --only "firestore:rules,$FNS" --project "$PROJECT"
 say "DONE. Send Claude a screenshot of the last 15 lines. Do NOT turn on the switches yet."
