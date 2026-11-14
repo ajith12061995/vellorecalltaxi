@@ -24,7 +24,7 @@ async def main():
         await cf.evaluate("S.lang='ta';home()");await pg.wait_for_timeout(800)
         await cf.evaluate("document.querySelector('.pcards').scrollIntoView()")
         await pg.screenshot(path='shots/pcard3.png',clip={'x':0,'y':0,'width':400,'height':860})
-        check('6 place cards on home',n==6,n);check('4 photos load',imgs==[300,300,300,300],imgs);check('one tap on Katpadi card opens the fare screen',dest=='katpadi',dest);check('no page errors',not errs,errs[:3])
+        check('6 place cards on home',n==6,n);check('6 photos load',imgs==[300]*6,imgs);check('one tap on Katpadi card opens the fare screen',dest=='katpadi',dest);check('no page errors',not errs,errs[:3])
         await b.close()
 asyncio.run(main())
 print('RESULT','PASS' if all(res) else 'FAIL',f'{sum(res)}/{len(res)}')
