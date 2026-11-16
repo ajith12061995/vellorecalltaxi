@@ -61,7 +61,8 @@ if [ "$(node -p "try{require('$FBT_DIR/node_modules/firebase-tools/package.json'
 fi
 node tools/fbt-patch.js "$FBT_DIR" || stop "deploy tool check failed — nothing deployed"
 FB="$FBT_DIR/node_modules/.bin/firebase"
-"$FB" login --no-localhost || stop "Firebase sign-in failed — nothing deployed"
+# No `firebase login`: in Cloud Shell firebase-tools signs in by itself with the Cloud Shell account (requireAuth → autoAuth).
+echo "signing in as the Cloud Shell account: $(gcloud config get-value account 2>/dev/null)"
 
 say "6/6 Deploy: $ONLY"
 rm -f firebase-debug.log
@@ -70,6 +71,7 @@ RC=${PIPESTATUS[0]}
 if [ "$RC" != 0 ]; then
   echo; echo "---- what the server answered (no secrets) ----"
   grep -E '\[apiv2\]\[(status|body)\]' firebase-debug.log 2>/dev/null | grep -Ev ' 20[0-9]$' | grep -Ei 'status\] .* [45][0-9][0-9]|"error"' | tail -6 | cut -c1-400
+  grep -qiE "Failed to authenticate|firebase login" "$LOG" && echo "Sign-in problem: this Cloud Shell account cannot deploy to $PROJECT."
   stop "deploy failed (exit $RC). The functions that were live before are unchanged."
 fi
 
