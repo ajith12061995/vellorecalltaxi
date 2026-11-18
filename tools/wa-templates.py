@@ -21,7 +21,7 @@ SAMPLES = {   # example values Meta needs for review, in variable order
     'vct_trip_completed': ['Priya', '450', 'AB12CD'],
     'vct_booking_cancelled': ['Priya', 'AB12CD', '9344640416'],
     'vct_driver_welcome': ['Murugan', '9344039933'],
-    'vct_driver_welcome2': ['Murugan', 'https://velloretaxi.app/driver', '9344039933'],
+    'vct_driver_welcome3': ['Murugan', '9344039933'],
     'vct_owner_request': ['Kavya', 'Fare change ₹350 → ₹420', 'Booking AB12CD', 'Customer went 12 km extra and paid toll'],
 }
 
@@ -31,11 +31,13 @@ def parse(md):
         name = sec.split()[0]
         if not name.startswith('vct_'):
             continue
+        bm = re.search(r'^button: *(.+?) *\| *(https://\S+) *$', sec, re.M)
+        btn = (bm.group(1), bm.group(2)) if bm else None
         for lang in ('ta', 'en'):
             m = re.search(r'\*\*' + lang + r'\*\*\s*```\n(.*?)\n```', sec, re.S)
             if not m:
                 raise SystemExit(f'{name}/{lang}: text not found in docs/whatsapp-templates.md')
-            out.append((name, lang, m.group(1)))
+            out.append((name, lang, m.group(1), btn))
     return out
 
 def check(name, text):
@@ -48,13 +50,14 @@ def main():
     root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     items = parse(open(os.path.join(root, 'docs', 'whatsapp-templates.md'), encoding='utf-8').read())
     assert len(items) == 16, len(items)
-    for name, lang, text in items:
+    for name, lang, text, btn in items:
         check(name, text)
+        assert not btn or (len(btn[0]) <= 25 and '{{' not in btn[1]), f'{name}: bad button {btn}'
     send = '--send' in sys.argv
     print(f'WhatsApp account {WABA}: {len(items)} templates ({"SENDING" if send else "dry run — add --send to submit"})')
     if not send:
-        for name, lang, text in items:
-            print(f'  {name} [{lang}] {len(text)} chars')
+        for name, lang, text, btn in items:
+            print(f'  {name} [{lang}] {len(text)} chars' + (f' + button "{btn[0]}" {btn[1]}' if btn else ''))
         return
     token = subprocess.run(['gcloud', 'secrets', 'versions', 'access', 'latest', '--secret=WA_TOKEN', '--project', PROJECT],
                            capture_output=True, text=True, check=True).stdout.strip()
@@ -88,9 +91,11 @@ def main():
         raise SystemExit('No WhatsApp account with 93446 40416 is reachable with this token. Nothing sent.')
     print('using WhatsApp account', waba)
     ok = 0
-    for name, lang, text in items:
-        body = {'name': name, 'language': lang, 'category': 'UTILITY',
-                'components': [{'type': 'BODY', 'text': text, 'example': {'body_text': [SAMPLES[name]]}}]}
+    for name, lang, text, btn in items:
+        comps = [{'type': 'BODY', 'text': text, 'example': {'body_text': [SAMPLES[name]]}}]
+        if btn:
+            comps.append({'type': 'BUTTONS', 'buttons': [{'type': 'URL', 'text': btn[0], 'url': btn[1]}]})
+        body = {'name': name, 'language': lang, 'category': 'UTILITY', 'components': comps}
         req = urllib.request.Request(f'{GRAPH}/{waba}/message_templates', data=json.dumps(body).encode(),
                                      headers={'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json'})
         try:

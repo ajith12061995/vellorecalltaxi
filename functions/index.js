@@ -329,9 +329,9 @@ exports.waDriverWelcome = onDocumentCreated({ document: 'drivers/{ph}', secrets:
   catch (e) { if (e.code === 6 || /ALREADY_EXISTS/i.test(e.message || '')) return; throw e; }
   const c = await cfg();
   const lang = d.consent && d.consent.lang === 'en' ? 'en' : 'ta';
-  const o = { to, lang, help: c.driverHelp || c.office || '9344039933', link: c.driverAppUrl };
+  const o = { to, lang, help: c.driverHelp || c.office || '9344039933' };
   let msg = W.waDriverWelcome(d, o), r = await waSend(w, msg);
-  // vct_driver_welcome2 (with the app link) not approved yet → the older welcome, so the driver still hears from us
+  // vct_driver_welcome3 (with the app link button) not approved yet → the older welcome, so the driver still hears from us
   if (r.status === 'failed' && W.tplMissing(r.error)) {
     logger.info('driver welcome: link template not ready, sending the older one', { error: r.error });
     msg = W.waDriverWelcome(d, { ...o, v1: true }); r = await waSend(w, msg);

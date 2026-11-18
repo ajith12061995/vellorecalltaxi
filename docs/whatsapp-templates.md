@@ -112,29 +112,28 @@ Wishing you a great first ride!
 ```
 
 
-## vct_driver_welcome2 — 1 driver name · 2 driver app link · 3 driver help phone
-Replaces vct_driver_welcome (same moment: the office approves an app application) and adds the driver app link.
-The link is a variable (config/app.driverAppUrl, default https://velloretaxi.app/driver), so it can become the
-Play Store link later without a new template. Until Meta approves this one, the server falls back to vct_driver_welcome.
+## vct_driver_welcome3 — 1 driver name · 2 driver help phone · button "Driver app" → https://velloretaxi.app/driver
+Replaces vct_driver_welcome (same moment: the office approves an app application) and adds a "Driver app" link
+button. (vct_driver_welcome2 put the link in a variable; Meta rejected it on 18 Nov 2026.) Until Meta approves this
+one, the server falls back to vct_driver_welcome. When the driver app is on Play Store, make vct_driver_welcome4
+with the Play Store link in the button.
+button: Driver app | https://velloretaxi.app/driver
 **ta**
 ```
 வணக்கம் {{1}}, உங்க Vellore Taxi driver கணக்கு approve ஆகிவிட்டது 🎉
 Vellore Taxi குடும்பத்துக்கு உங்களை அன்புடன் வரவேற்கிறோம்!
-Driver app: {{2}}
-இந்த link-ல driver app-ஐ திறந்து, form-ல கொடுத்த அதே நம்பர்ல login செய்யுங்க. Wallet-ல பணம் இருந்தால், Online போனதும் ride-கள் வரத் தொடங்கும்.
-உதவிக்கு அழைக்க: {{3}}
+கீழே உள்ள "Driver app" button-ஐ அழுத்தி, form-ல கொடுத்த அதே நம்பர்ல login செய்யுங்க. Wallet-ல பணம் இருந்தால், Online போனதும் ride-கள் வரத் தொடங்கும்.
+உதவிக்கு அழைக்க: {{2}}
 உங்க முதல் சவாரி இனிதாக அமைய வாழ்த்துக்கள்!
 ```
 **en**
 ```
 Hello {{1}}, your Vellore Taxi driver account has been approved 🎉
 A warm welcome to the Vellore Taxi family!
-Driver app: {{2}}
-Open the driver app with this link and log in with the same number you gave in the form. With money in your wallet, go Online and rides will start coming.
-For help, call: {{3}}
+Tap the "Driver app" button below and log in with the same number you gave in the form. With money in your wallet, go Online and rides will start coming.
+For help, call: {{2}}
 Wishing you a great first ride!
 ```
-
 ## vct_owner_request — 1 staff name · 2 request · 3 booking / driver · 4 reason
 Sent to the OWNER (not a customer) when an office staff member asks for approval (fare / bill change, extra km, block).
 **ta**

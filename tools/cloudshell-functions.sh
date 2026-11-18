@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Vellore Taxi — deploy waDriverWelcome (approved driver gets the app link) and submit the
-# vct_driver_welcome2 WhatsApp template, from Google Cloud Shell. ONE command:
+# vct_driver_welcome3 WhatsApp template, from Google Cloud Shell. ONE command:
 #   cd ~/vellorecalltaxi && git fetch origin && git checkout -f main && git reset --hard origin/main && bash tools/cloudshell-functions.sh
 #
 # Why a separate script: `firebase deploy` kept stopping with "There was an error retrieving the Firestore
@@ -44,8 +44,8 @@ for f in $(echo "$ONLY" | tr ',' ' '); do n=${f#functions:}
   case "$R" in "") echo "  $n: new (or region not listed)" ;; "$REGION ") echo "  $n: $REGION" ;; *) stop "$n exists in region(s) $R, not $REGION" ;; esac
 done
 
-say "3/6 WhatsApp template vct_driver_welcome2 (existing templates are skipped)"
-if python3 tools/wa-templates.py --send > /tmp/vct-tpl.log 2>&1; then grep -E '^(OK|SKIP|FAIL) +vct_driver_welcome2|^DONE' /tmp/vct-tpl.log; TPL=ok
+say "3/6 WhatsApp template vct_driver_welcome3 (existing templates are skipped)"
+if python3 tools/wa-templates.py --send > /tmp/vct-tpl.log 2>&1; then grep -E '^(OK|SKIP|FAIL) +vct_driver_welcome3|^DONE' /tmp/vct-tpl.log; if grep -qE '^FAIL +vct_driver_welcome3' /tmp/vct-tpl.log; then TPL=failed; else TPL=ok; fi
 else tail -5 /tmp/vct-tpl.log; TPL=failed; echo "(template step failed — the deploy below still runs; it does not depend on it)"; fi
 
 say "4/6 Install + tests (deploy stops if any test fails)"

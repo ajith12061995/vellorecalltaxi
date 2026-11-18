@@ -188,9 +188,10 @@ test('driver welcome: sent once to an app-joined driver, in their language, with
   await F.waDriverWelcome(dev('+919876500001', { name: 'Murugan', fromApp: true, consent: { lang: 'en' } }));
   assert.strictEqual(sent.length, 1, 'booking message types do not block it');
   const t = sent[0].body.template;
-  assert.strictEqual(t.name, 'vct_driver_welcome2'); assert.strictEqual(t.language.code, 'en');
-  assert.deepStrictEqual(t.components[0].parameters.map(p => p.text), ['Murugan', 'https://velloretaxi.app/driver', '9344039933']);
-  assert.strictEqual(store.get('waLog/drv_919876500001_welcome').tpl, 'vct_driver_welcome2');
+  assert.strictEqual(t.name, 'vct_driver_welcome3'); assert.strictEqual(t.language.code, 'en');
+  assert.deepStrictEqual(t.components[0].parameters.map(p => p.text), ['Murugan', '9344039933']);
+  assert.strictEqual(t.components.length, 1, 'the link button is fixed in the template: no button parameter');
+  assert.strictEqual(store.get('waLog/drv_919876500001_welcome').tpl, 'vct_driver_welcome3');
   assert.strictEqual(sent[0].body.to, '919876500001');
   assert.strictEqual(store.get('waLog/drv_919876500001_welcome').status, 'accepted');
   await F.waDriverWelcome(dev('+919876500001', { name: 'Murugan', fromApp: true }));
@@ -297,24 +298,18 @@ test('driver welcome: link template not approved yet → the older welcome is se
     : { status: 200, body: { messages: [{ id: 'wamid.v1' }] } };
   await F.waDriverWelcome(dev('+919876500004', { name: 'Kumar', fromApp: true }));
   assert.strictEqual(sent.length, 2);
-  assert.strictEqual(sent[0].body.template.name, 'vct_driver_welcome2');
+  assert.strictEqual(sent[0].body.template.name, 'vct_driver_welcome3');
   assert.strictEqual(sent[1].body.template.name, 'vct_driver_welcome');
   assert.deepStrictEqual(sent[1].body.template.components[0].parameters.map(p => p.text), ['Kumar', '9344039933']);
   const lg = store.get('waLog/drv_919876500004_welcome');
   assert.strictEqual(lg.status, 'accepted'); assert.strictEqual(lg.tpl, 'vct_driver_welcome');
   reply = () => ({ status: 200, body: { messages: [{ id: 'wamid.ok' }] } });
 });
-test('driver welcome: other failures do not resend; the link comes from config/app.driverAppUrl when it is a clean https link', async () => {
+test('driver welcome: other failures do not resend', async () => {
   reset(); store.set('waConfig/main', { on: true, phoneId: '1' });
   reply = () => ({ status: 400, body: { error: { code: 131026, message: 'Message undeliverable' } } });
   await F.waDriverWelcome(dev('+919876500005', { name: 'A', fromApp: true }));
   assert.strictEqual(sent.length, 1, 'undeliverable is not a template problem: no second message');
   assert.strictEqual(store.get('waLog/drv_919876500005_welcome').status, 'failed');
   reply = () => ({ status: 200, body: { messages: [{ id: 'wamid.ok' }] } });
-  store.set('config/app', { driverAppUrl: 'https://play.google.com/store/apps/details?id=app.velloretaxi.driver' });
-  await F.waDriverWelcome(dev('+919876500006', { name: 'B', fromApp: true }));
-  assert.strictEqual(sent[1].body.template.components[0].parameters[1].text, 'https://play.google.com/store/apps/details?id=app.velloretaxi.driver');
-  store.set('config/app', { driverAppUrl: 'javascript:alert(1)' });
-  await F.waDriverWelcome(dev('+919876500007', { name: 'C', fromApp: true }));
-  assert.strictEqual(sent[2].body.template.components[0].parameters[1].text, 'https://velloretaxi.app/driver', 'anything odd → the web app');
 });

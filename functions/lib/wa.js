@@ -12,7 +12,7 @@ const TPL = {
   done: 'vct_trip_completed',              // 1 name · 2 fare · 3 booking no.
   cancelled: 'vct_booking_cancelled',      // 1 name · 2 booking no. · 3 office phone
   drvwelcome: 'vct_driver_welcome',        // to a new DRIVER when the office approves them: 1 name · 2 driver help phone (fallback)
-  drvwelcome2: 'vct_driver_welcome2',      // same, with the app link: 1 name · 2 driver app link · 3 driver help phone
+  drvwelcome3: 'vct_driver_welcome3',      // same + a static "Driver app" link button: 1 name · 2 driver help phone
   ownerreq: 'vct_owner_request'            // to the OWNER when a staff member asks for approval: 1 staff · 2 request · 3 booking / driver · 4 reason
 };
 const KINDS = ['confirmed', 'assigned', 'ontrip', 'done', 'cancelled'];
@@ -88,22 +88,16 @@ function waMessage(kind, b, id, o) {
 }
 
 /* Welcome message to a driver the office has just approved (joined through the app). d = drivers/{phone} doc. */
-const DRV_APP = 'https://velloretaxi.app/driver';
-// The driver app link put in the welcome: config/app.driverAppUrl when it is a plain https link, else the web app.
-function driverAppLink(u) {
-  const s = String(u || '').trim();
-  return /^https:\/\/[a-z0-9.-]+\.[a-z]{2,}(\/[A-Za-z0-9._~\/?=&%-]*)?$/i.test(s) && s.length <= 200 ? s : DRV_APP;
-}
-// o.v1 = the older template without the link (used while vct_driver_welcome2 is not approved yet)
+// o.v1 = the older template (used while vct_driver_welcome3 is not approved yet). Both take [name, help phone];
+// the newer one also has a fixed "Driver app" URL button, which needs no parameter.
 function waDriverWelcome(d, o) {
-  const ta = o.lang !== 'en', name = clean(d && d.name || 'Driver', 40);
-  const p = o.v1 ? [name, clean(o.help)] : [name, driverAppLink(o.link), clean(o.help)];
+  const ta = o.lang !== 'en', p = [clean(d && d.name || 'Driver', 40), clean(o.help)];
   return { messaging_product: 'whatsapp', to: o.to, type: 'template',
-    template: { name: o.v1 ? TPL.drvwelcome : TPL.drvwelcome2, language: { code: ta ? 'ta' : 'en' },
+    template: { name: o.v1 ? TPL.drvwelcome : TPL.drvwelcome3, language: { code: ta ? 'ta' : 'en' },
       components: [{ type: 'body', parameters: p.map(text => ({ type: 'text', text })) }] } };
 }
 // Meta's answer when a template is missing / not approved for that language (then try the older template)
-const tplMissing = err => /^(132001|132000|132015|132016)\b/.test(String(err || ''));
+const tplMissing = err => /^1320\d\d\b/.test(String(err || ''));
 
 /* "Approval needed" message to the owner. p = [staff name, request, booking / driver, reason] (lib/staff.ownerReqParams) */
 function waOwnerReq(p, o) {
@@ -156,4 +150,4 @@ function waParse(body) {
 const RANK = { accepted: 0, sent: 1, delivered: 2, read: 3, failed: 4 };
 const newer = (oldS, newS) => (RANK[newS] ?? -1) > (RANK[oldS] ?? -1);
 
-module.exports = { TPL, KINDS, waEvents, waPhone, waMessage, waDriverWelcome, driverAppLink, tplMissing, DRV_APP, waOwnerReq, waAllowed, REPLY_WINDOW, replyOpen, replyText, waText, sigOk, waParse, newer, clean, istTime, ref6 };
+module.exports = { TPL, KINDS, waEvents, waPhone, waMessage, waDriverWelcome, tplMissing, waOwnerReq, waAllowed, REPLY_WINDOW, replyOpen, replyText, waText, sigOk, waParse, newer, clean, istTime, ref6 };
