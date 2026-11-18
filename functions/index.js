@@ -329,8 +329,13 @@ exports.waDriverWelcome = onDocumentCreated({ document: 'drivers/{ph}', secrets:
   catch (e) { if (e.code === 6 || /ALREADY_EXISTS/i.test(e.message || '')) return; throw e; }
   const c = await cfg();
   const lang = d.consent && d.consent.lang === 'en' ? 'en' : 'ta';
-  const msg = W.waDriverWelcome(d, { to, lang, help: c.driverHelp || c.office || '9344039933' });
-  const r = await waSend(w, msg);
+  const o = { to, lang, help: c.driverHelp || c.office || '9344039933', link: c.driverAppUrl };
+  let msg = W.waDriverWelcome(d, o), r = await waSend(w, msg);
+  // vct_driver_welcome2 (with the app link) not approved yet → the older welcome, so the driver still hears from us
+  if (r.status === 'failed' && W.tplMissing(r.error)) {
+    logger.info('driver welcome: link template not ready, sending the older one', { error: r.error });
+    msg = W.waDriverWelcome(d, { ...o, v1: true }); r = await waSend(w, msg);
+  }
   await lref.update({ ...r, tpl: msg.template.name, lang, updatedAt: FV.serverTimestamp() });
   if (r.wamid) await db.doc(`waMsgs/${waKey(r.wamid)}`).set({ log: key, at: FV.serverTimestamp() });
   if (r.status === 'failed') logger.warn('whatsapp driver welcome failed', { to, error: r.error });
