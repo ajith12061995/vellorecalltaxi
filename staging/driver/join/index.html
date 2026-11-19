@@ -23,41 +23,41 @@ header{background:linear-gradient(160deg,var(--g),#073326);color:#fff;padding:20
 .brand{display:flex;gap:12px;align-items:center}.brand img{width:52px;height:52px;border-radius:14px}
 .brand b{font:800 20px 'Baloo Thambi 2',sans-serif;color:var(--y);display:block;line-height:1.1}.brand small{color:#cfe3da}
 h1{font:800 26px/1.15 'Baloo Thambi 2',sans-serif;margin:16px 0 4px}header p{margin:0;color:#d8eadf}
-.lang{float:right;background:rgba(255,255,255,.14);border:0;color:#fff;border-radius:999px;padding:6px 12px;font:600 13px inherit;cursor:pointer}
+.lang{float:right;background:rgba(255,255,255,.14);border:0;color:#fff;border-radius:999px;padding:6px 12px;font-weight:600;font-size:13px;font-family:inherit;cursor:pointer}
 main{padding:16px}
 .card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px;margin-bottom:14px}
 .card h2{font:700 18px 'Baloo Thambi 2',sans-serif;margin:0 0 10px;color:var(--g)}
 @media (prefers-color-scheme:dark){.card h2{color:var(--y)}}
 label{display:block;font-weight:600;font-size:14px;margin:12px 0 4px;color:var(--mut)}
-input[type=text],input[type=tel],input[type=date],input[inputmode],select{width:100%;height:50px;border:1.5px solid var(--line);border-radius:14px;padding:0 14px;font:500 17px inherit;background:var(--card);color:var(--fg)}
+input[type=text],input[type=tel],input[type=date],input[inputmode],select{width:100%;height:50px;border:1.5px solid var(--line);border-radius:14px;padding:0 14px;font-weight:500;font-size:17px;font-family:inherit;background:var(--card);color:var(--fg)}
 input:focus{outline:none;border-color:var(--g2)}
 .ph{display:flex;align-items:center;border:1.5px solid var(--line);border-radius:14px;height:50px;padding-left:14px;background:var(--card)}.ph b{color:var(--mut);margin-right:8px}.ph input{border:0;height:46px;padding-left:0}
-.chips{display:flex;flex-wrap:wrap;gap:8px}.chip{border:1.5px solid var(--line);background:var(--card);color:var(--fg);border-radius:999px;padding:8px 14px;font:600 14px inherit;cursor:pointer}
+.chips{display:flex;flex-wrap:wrap;gap:8px}.chip{border:1.5px solid var(--line);background:var(--card);color:var(--fg);border-radius:999px;padding:8px 14px;font-weight:600;font-size:14px;font-family:inherit;cursor:pointer}
 .chip.on{background:var(--g);border-color:var(--g);color:#fff}
-.btn{width:100%;height:54px;border:0;border-radius:16px;background:var(--g);color:#fff;font:700 17px inherit;cursor:pointer;margin-top:14px}
+.btn{width:100%;height:54px;border:0;border-radius:16px;background:var(--g);color:#fff;font-weight:700;font-size:17px;font-family:inherit;cursor:pointer;margin-top:14px}
 .btn.y{background:var(--y);color:#10241B}.btn.ghost{background:transparent;color:var(--g);border:1.5px solid var(--line)}
 .btn:disabled{opacity:.5}
 .err{color:var(--bad);font-size:14px;min-height:20px;margin-top:6px}
-.docs{display:grid;grid-template-columns:1fr 1fr;gap:10px}select{appearance:auto}select:disabled{opacity:.5}
+.docs{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}select{appearance:auto}select:disabled{opacity:.5}
 .doc{border:1.5px dashed var(--line);border-radius:14px;padding:10px;text-align:center;position:relative;cursor:pointer;background:var(--bg);min-height:126px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px}
 .doc.has{border-style:solid;border-color:var(--ok)}
 .doc img{width:100%;height:84px;object-fit:cover;border-radius:10px}
 .doc b{font-size:14px}.doc small{color:var(--mut);font-size:12px}
 .doc input{position:absolute;inset:0;opacity:0;cursor:pointer}
 .doc .req{color:var(--bad)}
-.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.row2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}.row2 input,.row2 select{min-width:0;max-width:100%}@media (max-width:399px){.row2{grid-template-columns:minmax(0,1fr)}}@media (max-width:419px){.row2.dates{grid-template-columns:minmax(0,1fr)}}
 .note{background:rgba(255,194,26,.16);border-left:4px solid var(--y);border-radius:10px;padding:10px 12px;font-size:14px}
 .chk{display:flex;gap:10px;align-items:flex-start;margin-top:14px;font-size:14px}.chk input{width:22px;height:22px;margin-top:2px;flex:none}
 .status{text-align:center;padding:26px 16px}.status .ic{font-size:54px}
 .status h2{font:800 22px 'Baloo Thambi 2',sans-serif;margin:8px 0}
-.otp{display:flex;gap:8px;justify-content:center}.otp input{width:48px;height:56px;text-align:center;font:700 24px inherit;padding:0;border:1.5px solid var(--line);border-radius:14px;background:var(--card);color:var(--fg)}
+.otp{display:flex;gap:clamp(5px,2vw,10px);justify-content:center}.otp input{flex:1 1 0;width:0;min-width:0;max-width:54px;height:56px;box-sizing:border-box;text-align:center;font-family:inherit;font-size:24px;font-weight:700;padding:0;border:1.5px solid var(--line);border-radius:14px;background:var(--card);color:var(--fg)}
 .prog{height:8px;background:var(--line);border-radius:6px;overflow:hidden;margin-top:12px}.prog i{display:block;height:100%;width:0;background:var(--y);transition:width .3s}
 footer{text-align:center;color:var(--mut);font-size:13px;padding:6px 16px 30px}
 a{color:inherit}
 .agr{margin:0;padding-left:20px;max-height:260px;overflow:auto;border:1.5px solid var(--line,#e5e5e5);border-radius:12px;padding:10px 10px 10px 30px;font-size:13.5px;line-height:1.55}.agr li{margin:0 0 6px}
 </style>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV=window.VCT_V='96',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV=window.VCT_V='97',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('../../version.json',location.href)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -71,11 +71,11 @@ setTimeout(chk,3000);setInterval(chk,5*60*1000);document.addEventListener('visib
 </div></header>
 <main class="wrap" id="app"></main>
 <footer><a href="../../privacy/#drivers" target="_blank" rel="noopener" id="plink"></a> · Vellore Taxi</footer>
-<script src="../../core/report.js?v=96"></script>
-<script src="../../core/driverchecks.js?v=96"></script>
-<script src="../../core/otp.js?v=96"></script>
-<script src="../../core/deskmode.js?v=96"></script>
-<script src="../../core/refer.js?v=96"></script>
+<script src="../../core/report.js?v=97"></script>
+<script src="../../core/driverchecks.js?v=97"></script>
+<script src="../../core/otp.js?v=97"></script>
+<script src="../../core/deskmode.js?v=97"></script>
+<script src="../../core/refer.js?v=97"></script>
 <script>
 const S={lang:'ta',phone:'',veh:'auto',files:{},data:{}};
 try{const s=JSON.parse(localStorage.getItem('vctj')||'{}');if(s.lang)S.lang=s.lang}catch(e){}
@@ -203,7 +203,7 @@ function form(){
       <p style="font-size:13px;color:var(--mut);margin:-4px 0 6px">${L('ஒவ்வொரு கட்டத்தையும் தொட்டு camera-ல photo எடுங்க, அல்லது gallery-ல இருந்து தேர்ந்தெடுங்க. எழுத்து தெளிவா தெரியணும்.','Tap each box to take a photo or pick one from your gallery. The text must be readable.')}</p>
       ${GROUPS.map(([ta,en,keys,hta,hen])=>`<label style="margin-top:14px">${S.lang==='ta'?ta:en}</label>${hta?`<small style="display:block;color:var(--mut);margin:-2px 0 6px">${S.lang==='ta'?hta:hen}</small>`:''}<div class="docs">${keys.map(tile).join('')}</div>`).join('')}
       <label style="margin-top:18px">${L('காலாவதி தேதிகள் (document முடியுற நாள்)','Expiry dates (when each document ends)')}</label>
-      <div class="row2">${EXP.map(([k,ta,en,req])=>`<div><label for="x_${k}" style="margin-top:4px">${S.lang==='ta'?ta:en}${req?' *':''}</label><input type="date" id="x_${k}" value="${dt(k)}"></div>`).join('')}</div></div>
+      <div class="row2 dates">${EXP.map(([k,ta,en,req])=>`<div><label for="x_${k}" style="margin-top:4px">${S.lang==='ta'?ta:en}${req?' *':''}</label><input type="date" id="x_${k}" value="${dt(k)}"></div>`).join('')}</div></div>
     <div class="card"><h2>${L('5. Driver ஒப்பந்தம்','5. Driver agreement')}</h2>
       <p style="font-size:13px;color:var(--mut);margin:-4px 0 8px">${L('முழுசா படிங்க. கீழே உங்க பெயரை type பண்றது தான் உங்க கையெழுத்து.','Read it fully. Typing your name below is your signature.')}</p>
       <ol class="agr">${VCTCHK.AGREEMENT[S.lang==='ta'?'ta':'en'].map(x=>`<li>${esc(x)}</li>`).join('')}</ol>
