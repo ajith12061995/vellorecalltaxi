@@ -43,7 +43,7 @@ async def main():
         PH=4 if km*2<=90 else 5
         check(f'Arani ({km} km) is category A round trip, {PH} hrs included, no extra by default',qq['ph']==PH and qq['hx']==0 and qq['plan']<=PH,q)
         check('customer sees "N hrs included" pill',(f'{PH} hrs included' in q['pill']) or (f'{PH} மணி விலையில் சேர்த்து' in q['pill']),q['pill'])
-        check('default price = up+down km × rate + allowance',qq['total']==round((km*2*q['rate']+q['bata'])/10)*10,qq)
+        check('default price = up+down km × rate + allowance × days',qq['total']==round((km*2*q['rate']+q['bata']*qq['days'])/10)*10,qq)  # an evening trip may run past midnight = 2 days
         # customer picks a 12-hour day
         # tomorrow 8:00 → 20:00 Indian time (same day)
         await cf.evaluate("(()=>{const d=new Date(Date.now()+864e5+19800000);const t=Date.UTC(d.getUTCFullYear(),d.getUTCMonth(),d.getUTCDate(),8,0)-19800000;OS.leave=t;OS.ret=t+12*36e5;outFare2()})();0");await pg.wait_for_timeout(600)
