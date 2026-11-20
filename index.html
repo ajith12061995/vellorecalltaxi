@@ -40,7 +40,7 @@
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('./vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV=window.VCT_V='99',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV=window.VCT_V='100',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('./version.json',location.href)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -100,6 +100,7 @@ h1,h2,h3{font-family:var(--display);margin:0;line-height:1.15;text-wrap:balance}
 /* splash */
 #splash{background:#0B4A36;color:#fff;align-items:center;justify-content:center;gap:22px}
 .roofsign{background:var(--yellow);color:#0B4A36;border-radius:14px 14px 6px 6px;padding:14px 22px 10px;text-align:center;box-shadow:0 14px 0 -6px #0b1a36, 0 0 0 4px rgba(255,216,77,.25);animation:pop .6s cubic-bezier(.2,1.4,.4,1) both}
+.tmwrap{position:relative;display:block;width:max-content;margin:0 auto 8px}.tmwrap .tm{position:absolute;top:2px;right:-16px;font-size:14px;font-weight:700;color:var(--fg);opacity:.75}
 .roofsign b{display:block;font-family:var(--display);font-size:30px;font-weight:800;letter-spacing:.06em}
 .roofsign span{font-family:var(--display);font-size:17px;font-weight:600}
 @keyframes pop{from{transform:scale(.6);opacity:0}}
@@ -545,16 +546,16 @@ details.faq p{margin:0;padding:0 14px 14px;color:var(--muted);font-size:14px;lin
 <div class="app" id="app"></div>
 <div class="toast" id="toast"></div>
 
-<script src="./core/report.js?v=99"></script>
-<script src="./core/geo.js?v=99"></script>
-<script src="./core/fare.js?v=99"></script>
-<script src="./core/pin.js?v=99"></script>
-<script src="./core/clock.js?v=99"></script>
-<script src="./core/map.js?v=99"></script>
-<script src="./core/chat.js?v=99"></script>
-<script src="./core/otp.js?v=99"></script>
-<script src="./core/deskmode.js?v=99"></script>
-<script src="./core/weather.js?v=99"></script>
+<script src="./core/report.js?v=100"></script>
+<script src="./core/geo.js?v=100"></script>
+<script src="./core/fare.js?v=100"></script>
+<script src="./core/pin.js?v=100"></script>
+<script src="./core/clock.js?v=100"></script>
+<script src="./core/map.js?v=100"></script>
+<script src="./core/chat.js?v=100"></script>
+<script src="./core/otp.js?v=100"></script>
+<script src="./core/deskmode.js?v=100"></script>
+<script src="./core/weather.js?v=100"></script>
 <script>
 /* ---------- icons ---------- */
 const I = {
@@ -725,7 +726,7 @@ function langScreen(){
   });
 }
 function login(){
-  go(`<section class="screen"><div class="hero pad"><img src="./brand/logo-main.png?v=9" alt="Vellore Taxi" style="height:150px;display:block;margin:0 auto 8px" onerror="this.remove()"><span class="mini">${t('tagline')}</span><h1>${t('loginH')}</h1><p>${t('loginP')}</p>
+  go(`<section class="screen"><div class="hero pad"><span class="tmwrap"><img src="./brand/logo-main.png?v=9" alt="Vellore Taxi" style="height:150px;display:block" onerror="this.parentNode.remove()"><span class="tm" aria-label="Trademark">™</span></span><span class="mini">${t('tagline')}</span><h1>${t('loginH')}</h1><p>${t('loginP')}</p>
     <div style="display:flex;gap:12px;margin-top:8px;flex-wrap:wrap">${I.bike}${I.auto}${I.mini}${I.car}${I.suv}</div></div>
   <div class="body pad"><label class="muted" for="ph" style="font-weight:600">${t('phone')}</label>
    <div class="field"><span class="cc">+91</span><input id="ph" inputmode="numeric" maxlength="10" autocomplete="tel" value="${S.phone}" placeholder="98765 43210"></div>

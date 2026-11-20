@@ -29,7 +29,7 @@
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('../vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV=window.VCT_V='99',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV=window.VCT_V='100',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('../version.json',location.href)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -601,6 +601,7 @@ details.faq p{margin:0;padding:0 14px 14px;color:var(--muted);font-size:14px;lin
 .tid{font-weight:700;font-variant-numeric:tabular-nums}
 .acts2{display:flex;gap:10px;align-items:center;justify-content:flex-end}
 .tr.t4{grid-template-columns:1.2fr 1fr 1fr 1fr;min-width:560px}
+.lastln{font-size:13px;color:var(--muted);margin:4px 0 2px}.lastln b{color:var(--fg)}.lastln small{opacity:.75}.lastln.on{color:var(--ok,#1E8A5A);font-weight:700}.lastln.never{color:#B7791F;font-weight:700}.lastln.old b{color:#C23B3B}
 .tr.tcf{grid-template-columns:1.2fr 1fr .8fr 1fr 1fr;min-width:620px}
 .tr.t5{grid-template-columns:1.6fr 1fr 1fr 1.3fr;min-width:560px}
 .tr.t8{grid-template-columns:1.6fr repeat(7,1fr);min-width:820px;gap:8px}
@@ -716,13 +717,13 @@ details.faq p{margin:0;padding:0 14px 14px;color:var(--muted);font-size:14px;lin
 <div class="app" id="app"></div>
 <div class="toast" id="toast"></div>
 
-<script src="../core/report.js?v=99"></script>
-<script src="../core/geo.js?v=99"></script>
-<script src="../core/fare.js?v=99"></script>
-<script src="../core/driverchecks.js?v=99"></script>
-<script src="../core/map.js?v=99"></script>
-<script src="../core/otp.js?v=99"></script>
-<script src="../core/refer.js?v=99"></script>
+<script src="../core/report.js?v=100"></script>
+<script src="../core/geo.js?v=100"></script>
+<script src="../core/fare.js?v=100"></script>
+<script src="../core/driverchecks.js?v=100"></script>
+<script src="../core/map.js?v=100"></script>
+<script src="../core/otp.js?v=100"></script>
+<script src="../core/refer.js?v=100"></script>
 <script>
 /* shared with the customer app: icons, places, fares, map engine */
 const I = {
@@ -1337,6 +1338,13 @@ function newBooking(){
 }
 
 /* ---------- drivers ---------- */
+/* when the driver app last showed this driver online: live/{phone}.updatedAt is written every 20 s while online and once on going offline */
+const lastOnMs=id=>{const l=(typeof LIVE!=='undefined'&&LIVE[id])||null;return l&&l.updatedAt&&CL?CL.toMs(l.updatedAt)||0:0};
+function agoTxt(ms){const m=Math.max(0,Math.round((Date.now()-ms)/60e3));if(m<2)return L('இப்போ','just now');if(m<60)return L(`${m} நிமி முன்`,`${m} min ago`);
+  const h=Math.round(m/60);if(h<24)return L(`${h} மணி முன்`,`${h} hr${h>1?'s':''} ago`);const dd=Math.round(h/24);return L(`${dd} நாள் முன்`,`${dd} day${dd>1?'s':''} ago`)}
+function lastOnLine(d){if(d.status!=='off')return `<div class="lastln on">🟢 ${L('இப்போ online-ல இருக்காரு','Online now')}</div>`;const t=lastOnMs(d.id);
+  if(!t)return `<div class="lastln never">🆕 ${L('App-ல இதுவரை online வரலை','Never been online in the app')}</div>`;
+  return `<div class="lastln ${Date.now()-t>3*DAY?'old':''}">🕒 ${L('கடைசியா online: ','Last online: ')}<b>${agoTxt(t)}</b> <small>${fmtD(t)}</small></div>`}
 function drivers(){
   const histOk=HIST.days>=30&&Date.now()-HIST.at<5*60e3;
   if(!histOk&&!drivers.loading){drivers.loading=true;loadHist(30).then(()=>{drivers.loading=false;if(S.sec==='drv'&&!document.querySelector('.modal'))drivers()}).catch(()=>{drivers.loading=false})}
@@ -1344,16 +1352,18 @@ function drivers(){
   const q=DQ.trim().toLowerCase(),nWarn=DB.drv.filter(d=>SX[d.id].flags.length).length;
   const wk=Date.now()-7*DAY,drove=new Set(DB.bk.filter(b=>b.status==='done'&&(b.done||b.when)>=wk).map(b=>b.driver));
   const DFF={all:()=>true,on:d=>d.status!=='off',off:d=>d.status==='off',warn:d=>SX[d.id].flags.length,blk:d=>d.blocked,
-    cant:d=>d.blocked||d.wallet<DB.cfg.minbal||Object.values(d.docs||{}).some(v=>v<0),idle:d=>d.status==='off'&&!drove.has(d.id)};
+    cant:d=>d.blocked||d.wallet<DB.cfg.minbal||Object.values(d.docs||{}).some(v=>v<0),idle:d=>d.status==='off'&&!drove.has(d.id),
+    nev:d=>!d.blocked&&d.status==='off'&&!lastOnMs(d.id),away:d=>!d.blocked&&d.status==='off'&&lastOnMs(d.id)&&Date.now()-lastOnMs(d.id)>3*DAY};
   const dl=DB.drv.filter(d=>!DV||d.veh===DV).filter(DFF[DF]||DFF.all).filter(d=>!q||(d.en+' '+d.phone+' '+d.plate+' '+d.model).toLowerCase().includes(q)).sort((a,b)=>(SX[b.id].flags.length-SX[a.id].flags.length)||((b.status!=='off')-(a.status!=='off')));
   main().innerHTML=`${head('Drivers',L(`${DB.drv.length} drivers · ${DB.drv.filter(d=>d.status!=='off').length} online`,`${DB.drv.length} drivers · ${DB.drv.filter(d=>d.status!=='off').length} online`),S.role==='owner'?`<button class="btn yellow hd" id="ad">+ ${L('Driver சேர்','Add driver')}</button>`:'')}
    <div class="srow"><input id="dq" class="sbox" placeholder="🔍 ${L('பெயர், நம்பர், வண்டி எண் தேடு','Search name, number or plate')}" value="${esc(DQ)}"></div>
    ${DV||DF==='cant'||DF==='idle'?`<div class="fchip">${DV?vname(DV):''}${DF==='cant'?'⛔ '+L('Online வர முடியாதவங்க','Can’t go online'):DF==='idle'?'😴 '+L('7 நாளா ஓட்டாதவங்க','Not driven in 7 days'):''} <button id="dvx">✕ ${L('எல்லா வண்டியும்','All vehicles')}</button></div>`:''}
-   <div class="tabs">${[['all',L('எல்லாம்','All'),DB.drv.length],['on','🟢 Online',DB.drv.filter(d=>d.status!=='off').length],['off','⚪ Offline',DB.drv.filter(d=>d.status==='off').length],['warn','⚠️ '+L('கவனிக்க','Watch'),nWarn],['blk','⛔ '+L('தடை','Blocked'),DB.drv.filter(d=>d.blocked).length]].map(([id,l,n])=>`<button class="${DF===id?'on':''}" data-df="${id}">${l} <em>${n}</em></button>`).join('')}</div>
+   <div class="tabs">${[['all',L('எல்லாம்','All'),DB.drv.length],['on','🟢 Online',DB.drv.filter(d=>d.status!=='off').length],['off','⚪ Offline',DB.drv.filter(d=>d.status==='off').length],['warn','⚠️ '+L('கவனிக்க','Watch'),nWarn],['nev','🆕 '+L('Online வராதவங்க','Never online'),DB.drv.filter(DFF.nev).length],['away','🕒 '+L('3 நாளா வரலை','Away 3+ days'),DB.drv.filter(DFF.away).length],['blk','⛔ '+L('தடை','Blocked'),DB.drv.filter(d=>d.blocked).length]].map(([id,l,n])=>`<button class="${DF===id?'on':''}" data-df="${id}">${l} <em>${n}</em></button>`).join('')}</div>
    ${histOk?'':`<p class="muted" style="margin:0 0 10px;font-size:12.5px">${L('30 நாள் கணக்கு ஏற்றுது…','Loading 30-day stats…')}</p>`}
    <div class="cards">${dl.map(d=>{const st=SX[d.id];const tdy=DB.bk.filter(b=>b.driver===d.id&&b.status==='done'&&isToday(b.done||b.when));const exp=Object.entries(d.docs).filter(([k,v])=>v<30);
     return `<div class="dcard ${d.blocked?'blk':''}"><div class="dtop"><span class="vi">${I[d.veh]}</span><div><b>${d[S.lang]}</b><small>+91 ${d.phone}</small></div>${d.blocked?`<em class="dst off">${L('தடை','Blocked')}</em>`:dPill(d.status)}</div>
      <div class="dmid"><span class="plate">${d.plate}</span><small>${vname(d.veh)} · ${d.model} · ★${d.rating}</small></div>
+     ${d.blocked?'':lastOnLine(d)}
      <div class="dnums"><div><b class="${d.wallet<DB.cfg.minbal?'neg':''}">${inr(d.wallet)}</b><small>Wallet</small></div><div><b>${tdy.length}</b><small>${L('இன்று ride','Rides today')}</small></div><div><b>${inr(tdy.reduce((a,b)=>a+b.fare,0))}</b><small>${L('இன்று வசூல்','Fares today')}</small></div></div>
      ${histOk?`<div class="dstat">${L('30 நாள்','30 days')}: <b>${st.done.length}</b> trips · ${L('ரத்து','cancels')} <b class="${st.cxRate>20?'neg':''}">${st.cx.length} (${st.cxRate}%)</b> · ${st.avg?'★'+st.avg.toFixed(1):'★—'} · ${L('புகார்','complaints')} <b class="${st.comp.length?'neg':''}">${st.comp.length}</b></div>`:''}
      ${st.flags.length?`<div class="alert amber">⚠️ ${esc(st.flags.join(' · '))}</div>`:''}
