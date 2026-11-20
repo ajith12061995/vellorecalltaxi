@@ -46,7 +46,7 @@
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('../vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV=window.VCT_V='97',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV=window.VCT_V='98',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('../version.json',location.href)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -653,19 +653,19 @@ a.btn{text-decoration:none}
 <div class="app" id="app"></div>
 <div class="toast" id="toast"></div>
 
-<script src="../core/report.js?v=97"></script>
-<script src="../core/geo.js?v=97"></script>
-<script src="../core/fare.js?v=97"></script>
-<script src="../core/pin.js?v=97"></script>
-<script src="../core/clock.js?v=97"></script>
-<script src="../core/map.js?v=97"></script>
-<script src="../core/chat.js?v=97"></script>
-<script src="../core/driverchecks.js?v=97"></script>
-<script src="../core/nav.js?v=97"></script>
-<script src="../core/otp.js?v=97"></script>
-<script src="../core/deskmode.js?v=97"></script>
-<script src="../core/refer.js?v=97"></script>
-<script src="../core/weather.js?v=97"></script>
+<script src="../core/report.js?v=98"></script>
+<script src="../core/geo.js?v=98"></script>
+<script src="../core/fare.js?v=98"></script>
+<script src="../core/pin.js?v=98"></script>
+<script src="../core/clock.js?v=98"></script>
+<script src="../core/map.js?v=98"></script>
+<script src="../core/chat.js?v=98"></script>
+<script src="../core/driverchecks.js?v=98"></script>
+<script src="../core/nav.js?v=98"></script>
+<script src="../core/otp.js?v=98"></script>
+<script src="../core/deskmode.js?v=98"></script>
+<script src="../core/refer.js?v=98"></script>
+<script src="../core/weather.js?v=98"></script>
 <script>
 /* shared with the customer app: icons, places, fares, map engine */
 const I = {
@@ -1030,7 +1030,7 @@ function renderReq(j){
    <div class="sheet pad reqsheet"><div class="grab"></div>
      <div class="reqtop"><div class="ring"><svg viewBox="0 0 44 44" width="64" height="64"><circle cx="22" cy="22" r="19" fill="none" stroke="var(--line)" stroke-width="4"/><circle id="rg" cx="22" cy="22" r="19" fill="none" stroke="var(--yellow)" stroke-width="4" stroke-linecap="round" stroke-dasharray="119.4" transform="rotate(-90 22 22)"/></svg><b id="sec">${SEC}</b></div>
        <div class="reqfare" id="rqf">${reqFareHtml()}</div></div>
-     ${J.b&&J.b.kind&&J.b.kind!=='ride'?`<div class="kband">${J.b.kind==='outstation'?'🛣️ Outstation':'⏱️ Rental'} · ${whenTxt(J.b.when||Date.now())}${J.b.kind==='outstation'&&S_TIER()?` · ${TIERN[S_TIER()][S.lang==='ta'?0:1]}`:''}</div>`:''}
+     ${J.b&&J.b.kind&&J.b.kind!=='ride'?`<div class="kband">${J.b.kind==='outstation'?'🛣️ Outstation':'⏱️ Rental'} · ${whenTxt(J.b.when||Date.now())}${J.b.kind==='outstation'&&S_TIER()?` · ${TIERN[S_TIER()][S.lang==='ta'?0:1]}`:''}${J.b.tariff&&+J.b.tariff.ph?` · ⏱ ${FARE.hrsTxt(Math.max(+J.b.tariff.ph,+J.b.tariff.plan||0),S.lang)} ${L('சேர்த்து, அதுக்கு மேல','incl., then')} ₹${+J.b.tariff.xh}/${L('மணி','hr')}`:''}</div>`:''}
      ${J.id&&MISS.get(J.id)?`<div class="kband rpt">🔁 ${L(`மறுபடி வந்திருக்கு (${MISS.get(J.id).n+1}/${MAXMISS})`,`Offered again (${MISS.get(J.id).n+1}/${MAXMISS})`)}${(J.tip||0)>(MISS.get(J.id).tip||0)?' · 💰 '+L('Tip கூடியிருக்கு','Tip increased'):''}</div>`:''}
      ${(J.b&&J.b.veh||myVeh())==='auto'?autoNoteD(true):''}
      <div class="reqdist"><div><b>${away.toFixed(1)} <em>${L('கி.மீ','km')}</em></b><small>📍 ${L('Pickup வரை','to pickup')}</small></div><i>→</i><div><b>${J.km.toFixed(1)} <em>${L('கி.மீ','km')}</em></b><small>🏁 ${L('பயணம்','trip')}</small></div></div>

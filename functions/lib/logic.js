@@ -121,6 +121,12 @@ const OUT0 = { min1: 80, mind: 250, daykm: 400, longKm: 400, longPct: 0 };
 const OUTCAT = { a: 100, b: 150 };
 const outCat = (km, cat) => { const c = cat || {}, a = +c.a > 0 ? +c.a : OUTCAT.a, b = Math.max(+c.b > 0 ? +c.b : OUTCAT.b, a); return n(km) <= a ? 'A' : n(km) <= b ? 'B' : 'C'; };
 const catBata = (cb, cat, id, dflt) => { const x = cb && cb[cat] && +cb[cat][id]; return x > 0 ? x : n(dflt); };
+// Category-A round trip: hours in the price by up + down km, ₹ per extra hour (= core/fare.js AHRS/AXH/aHours/planHours)
+const AHRS = [[30, 3], [90, 4], [140, 5], [180, 6], [200, 7]], AXH = { mini: 80, sedan: 90, suv: 120, psuv: 150, trav: 180 }, AGRACE = 15;
+const hrsTable = tbl => { const t = Array.isArray(tbl) ? tbl.map(r => Array.isArray(r) ? [+r[0], +r[1]] : [+(r && r.km), +(r && r.h)]) : [];
+  return t.length && t.every(r => r[0] > 0 && r[1] > 0) ? t.sort((x, y) => x[0] - y[0]) : AHRS; };
+function aHours(totKm, tbl) { const t = hrsTable(tbl), k = n(totKm); for (const [km, h] of t) if (k <= km) return h; const [lk, lh] = t[t.length - 1]; return lh + Math.ceil((k - lk) / 35); }
+const planHours = (leave, ret) => n(leave) && n(ret) > n(leave) ? Math.ceil(Math.max(0, n(ret) - n(leave) - AGRACE * 6e4) / 18e5) / 2 : 0;
 function tariffs(c) {            // = applyTariff() in the customer app
   const RENT = JSON.parse(JSON.stringify(RENT0)), XKM = { ...XKM0 }, XHR = { ...XHR0 };
   const R1 = { ...ORATE0 }, B1 = { ...OBATA0 }, R = { ...ORATE0 }, B = { ...OBATA0 }, O = { ...OUT0 };
@@ -183,12 +189,19 @@ function outCheck(b, c) {
   }
   const billed = one ? Math.max(km, O.min1) : Math.max(km * 2, mind * days);
   const extra = one && O.longPct > 0 && km > O.longKm ? Math.round((km - O.longKm) * rate * O.longPct / 100) : 0;
-  const want = Math.round((billed * rate + bata * days + extra) / 10) * 10;
-  const tar = { ...t, t: 'out', otype: one ? 'one' : 'round', km, days, rate, bata, min1: O.min1, mind, cat, daykm: O.daykm, longKm: O.longKm, longPct: O.longPct };
+  // category A (always round trip): hours in the price; time the customer booked beyond them is in the quote
+  let hrs = null;
+  if (A) {
+    const ph = aHours(km * 2, o.hrs), xh = o.xh && +o.xh[id] > 0 ? +o.xh[id] : n(AXH[id]), plan = planHours(b.when, b.retAt);
+    if (xh) hrs = { ph, xh, plan, hx: Math.round(Math.max(0, plan - ph) * xh) };
+  }
+  const want = Math.round((billed * rate + bata * days + extra + (hrs ? hrs.hx : 0)) / 10) * 10;
+  const tar = { ...t, t: 'out', otype: one ? 'one' : 'round', km, days, rate, bata, min1: O.min1, mind, cat, daykm: O.daykm, longKm: O.longKm, longPct: O.longPct, ...(hrs || {}) };
   const low = n(b.fare) < want - 10;
   const tlow = n(t.km) < km || n(t.days) < days || n(t.rate) < rate || n(t.bata) < bata || n(t.min1) < O.min1 || n(t.mind) < mind
     || (A && t.otype !== 'round')
-    || (t.daykm != null && n(t.daykm) > O.daykm) || n(t.longPct) < O.longPct;
+    || (t.daykm != null && n(t.daykm) > O.daykm) || n(t.longPct) < O.longPct
+    || (hrs && (n(t.ph) !== hrs.ph || n(t.xh) < hrs.xh || n(t.plan) < hrs.plan || n(t.hx) < hrs.hx));
   if (!low && !tlow) return null;
   return { fare: low ? want : n(b.fare), km: low ? billed : n(b.km), was: n(b.fare), wasKm: n(b.km), tariff: tar };
 }
@@ -208,4 +221,4 @@ function bookingLimit(lim, openNow, now) {
 const enquiryFlood = (same, all) => same > 3 ? 'auto: more than 3 from this number in an hour' : all > 40 ? 'auto: more than 40 in an hour' : null;
 const istStamp = ms => new Date(ms + 19800000).toISOString().slice(0, 16).replace('T', '_').replace(':', '');
 
-module.exports = { enquiryFlood, OUTCAT, outCat, catBata, AUTO_GOVT, AREA, autoFare, outsideArea, rentCheck, outCheck, tariffs, rentPrice, istStamp, commissionFor, settle, housekeeping, fareLooksWrong, liveStale, custPush, fareCheck, bookingLimit, nightPct, withNight, crowKm, LIMIT_OPEN, LIMIT_HOUR };
+module.exports = { enquiryFlood, OUTCAT, outCat, catBata, AHRS, AXH, aHours, planHours, hrsTable, AUTO_GOVT, AREA, autoFare, outsideArea, rentCheck, outCheck, tariffs, rentPrice, istStamp, commissionFor, settle, housekeeping, fareLooksWrong, liveStale, custPush, fareCheck, bookingLimit, nightPct, withNight, crowKm, LIMIT_OPEN, LIMIT_HOUR };

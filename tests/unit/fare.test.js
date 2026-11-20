@@ -47,4 +47,30 @@ ok('local area: Katpadi/VIT inside 18 km, Arcot/Gudiyatham outside',()=>{assert.
 ok('outstation categories: A ≤100, B ≤150, C beyond; owner limits; same as server',()=>{assert.equal(F.outCat(40),'A');assert.equal(F.outCat(100),'A');assert.equal(F.outCat(101),'B');assert.equal(F.outCat(151),'C');assert.equal(F.outCat(90,{a:80,b:120}),'B');
   for(const km of [19,80,99,100,101,150,151,400])for(const cat of [null,{a:80,b:120},{a:120,b:100}])assert.equal(F.outCat(km,cat),SL.outCat(km,cat));
   assert.equal(F.catBata({A:{mini:450}},'A','mini',300),450);assert.equal(F.catBata({A:{mini:0}},'A','mini',300),300);assert.equal(SL.catBata({B:{sedan:500}},'B','sedan',300),500)});
+
+// ---- Category-A round trip: hours in the price + extra time (Arani ~40 km each way)
+ok('A hours table: 30→3, 31–90→4, 91–140→5, 141–180→6, 181–200→7, then +1 per 35 km; same as server',()=>{
+  assert.deepEqual([20,30,31,80,90,91,140,141,180,181,200,201,235,236].map(k=>F.aHours(k)),[3,3,4,4,4,5,5,6,6,7,7,8,8,9]);
+  const own=[{km:50,h:2},{km:100,h:5}];assert.equal(F.aHours(40,own),2);assert.equal(F.aHours(60,own),5);assert.equal(F.aHours(101,own),6);
+  for(const k of [0,25,80,90,91,199,260])for(const t of [null,own,[[90,4]],[{km:0,h:1}],'x'])assert.equal(F.aHours(k,t),SL.aHours(k,t));
+  assert.deepStrictEqual(F.AXH,SL.AXH);assert.deepStrictEqual(F.AHRS,SL.AHRS)});
+ok('planned hours: 15 min free, then half hours; same as server',()=>{const H=36e5,w=1e12;
+  assert.deepEqual([4*H,4*H+15*6e4,4*H+16*6e4,4.5*H,12*H].map(d=>F.planHours(w,w+d)),[4,4,4.5,4.5,12]);assert.equal(F.planHours(w,0),0);assert.equal(F.planHours(0,w),0);
+  for(const d of [0,1,9e5,4*H+1,30*H])assert.equal(F.planHours(w,w+d),SL.planHours(w,w+d))});
+const aT={t:'out',otype:'round',km:40,days:1,rate:11,bata:100,min1:80,mind:0,cat:'A',ph:4,xh:80,plan:4,hx:0},aB={fare:980,tariff:aT};
+ok('A within 4 hrs + 15 min grace: booked fare only',()=>{assert.equal(F.final(aB,{km:80,mins:240}).trip,980);assert.equal(F.final(aB,{km:80,mins:255}).trip,980)});
+ok('A late: per started half hour at half the hourly price',()=>{assert.equal(F.final(aB,{km:80,mins:256}).trip,1020);assert.equal(F.final(aB,{km:80,mins:285}).trip,1020);assert.equal(F.final(aB,{km:80,mins:286}).trip,1060);
+  const r=F.final(aB,{km:80,mins:720,toll:60});assert.equal(r.trip,1620);assert.equal(r.pass,60);assert.ok(r.lines.some(l=>l.k==='xhr'&&l.amt===640&&/8 hrs/.test(l.en)))});
+ok('A booked 12 hrs: hours already in the quote, nothing extra until past 12 h 15 m',()=>{const b={fare:1620,tariff:{...aT,plan:12,hx:640}};
+  assert.equal(F.final(b,{km:80,mins:735}).trip,1620);assert.equal(F.final(b,{km:80,mins:736}).trip,1660);assert.equal(F.final(b,{km:85,mins:700}).trip,F.r10(85*11+100+640))});
+ok('old bookings without hours: unchanged',()=>{const b={fare:980,tariff:{...aT,ph:undefined,xh:undefined}};assert.equal(F.final(b,{km:80,mins:720}).trip,980)});
+ok('hours text',()=>{assert.equal(F.hrsTxt(1.5,'ta'),'1 மணி 30 நிமி');assert.equal(F.hrsTxt(8,'en'),'8 hrs');assert.equal(F.hrsTxt(1,'en'),'1 hr');assert.equal(F.hrsTxt(0.5,'en'),'30 min')});
+ok('server: A quote with planned hours accepted; missing hours corrected; tampered ph/xh corrected',()=>{const H=36e5,w=Date.parse('2026-11-25T02:30:00Z'),c={out:{rate:{mini:11},bata:{mini:100}}};
+  const base={kind:'outstation',veh:'mini',from:{lat:12.9165,lon:79.1325},to:{lat:12.6693,lon:79.2856},when:w,otype:'round',retAt:w+4*H,fare:980,tariff:aT};
+  assert.equal(SL.outCheck(base,c),null);
+  const late=SL.outCheck({...base,retAt:w+12*H},c);assert.equal(late.fare,1620);assert.equal(late.tariff.plan,12);assert.equal(late.tariff.hx,640);
+  assert.equal(SL.outCheck({...base,retAt:w+12*H,fare:1620,tariff:{...aT,plan:12,hx:640}},c),null);
+  const cheat=SL.outCheck({...base,tariff:{...aT,ph:9,xh:1}},c);assert.equal(cheat.tariff.ph,4);assert.equal(cheat.tariff.xh,80);
+  const own=SL.outCheck(base,{out:{...c.out,xh:{mini:100},hrs:[{km:60,h:2},{km:200,h:6}]}});assert.equal(own.tariff.ph,6);assert.equal(own.tariff.xh,100);
+  const old={...base,tariff:{...aT}};delete old.tariff.ph;delete old.tariff.xh;delete old.tariff.plan;delete old.tariff.hx;const fx=SL.outCheck(old,c);assert.equal(fx.fare,980);assert.equal(fx.tariff.ph,4);assert.equal(fx.tariff.xh,80)});
 console.log(n,'fare tests passed');

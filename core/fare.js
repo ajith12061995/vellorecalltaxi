@@ -7,6 +7,7 @@
      'local' : {wait: ₹ per minute after the free wait, free: free minutes}         (wait 0 = no waiting charge)
      'rent'  : {h, km, price, xkm, xhr}    package hours / km, price, ₹ per extra km, ₹ per extra hour
      'out'   : {otype:'one'|'round', km, days, rate, bata, min1, mind, daykm, longKm, longPct}
+               same-day category-A round trip also: ph = hours included, xh = ₹ per extra hour, plan = hours the customer booked, hx = ₹ for (plan − ph) hours in the quote
    actual (from the driver): {km, mins, waitMin, toll, parking, permit}
    Result: {trip, pass, total, comm, lines:[{k, ta, en, amt}]}
      trip  = what the ride itself costs (commission is taken on this)
@@ -33,9 +34,15 @@ const FARE = (() => {
       const days = Math.max(n(t.days) || 1, Math.ceil(km / (n(t.daykm) || 400)), n(a.days));
       const billed = t.otype === 'one' ? Math.max(km, n(t.min1)) : Math.max(km, n(t.mind) * days);
       const extra = t.otype === 'one' && n(t.longPct) > 0 && n(t.km) > n(t.longKm) ? (n(t.km) - n(t.longKm)) * n(t.rate) * n(t.longPct) / 100 : 0;
-      const calc = r10(billed * n(t.rate) + n(t.bata) * days + extra);
+      const calc = r10(billed * n(t.rate) + n(t.bata) * days + extra + n(t.hx));
       trip += add('quote', 'முன்பதிவு கட்டணம்', 'Booked fare', quoted || calc);
       if (calc > (quoted || calc)) trip += add('xout', `கூடுதல் (${Math.round(km)} கி.மீ, ${days} நாள்)`, `Extra (${Math.round(km)} km, ${days} day${days > 1 ? 's' : ''})`, calc - quoted);
+      // same-day short round trip: time beyond the hours in the price (+ 15 min grace), charged per started half hour
+      if (n(t.ph) && n(t.xh)) {
+        const over = n(a.mins) - Math.max(n(t.ph), n(t.plan)) * 60 - AGRACE;
+        const blocks = over > 0 ? Math.ceil(over / 30) : 0;
+        if (blocks) trip += add('xhr', `கூடுதல் நேரம் ${hrsTxt(blocks / 2, 'ta')} × ₹${n(t.xh)}`, `Extra time ${hrsTxt(blocks / 2, 'en')} × ₹${n(t.xh)}`, blocks * n(t.xh) / 2);
+      }
     } else {
       const nt = n(t.nightAmt) < quoted ? n(t.nightAmt) : 0;   // night charge is inside the quoted fare; shown on its own line
       trip += add('fare', 'பயணக் கட்டணம்', 'Ride fare', quoted - nt);
@@ -79,6 +86,22 @@ const FARE = (() => {
   // city fare before the night charge. v = {id, base, per}
   const cityFare = (v, km) => v && v.id === 'auto' ? Math.round(AUTO_GOVT.base + AUTO_GOVT.per * Math.max(0, n(km) - AUTO_GOVT.incl))
     : Math.round((n(v && v.base) + n(v && v.per) * Math.max(0, n(km) - 1.5)) / 5) * 5;
+  // Same-day category-A round trip: hours included in the price, by total (up + down) km. [up to km, hours]; owner can
+  // replace the table (config/app.out.hrs); past the last row, 1 more hour per 35 km. Extra time: ₹/hour per vehicle.
+  const AHRS = [[30, 3], [90, 4], [140, 5], [180, 6], [200, 7]];
+  const AXH = { mini: 80, sedan: 90, suv: 120, psuv: 150, trav: 180 };
+  const AGRACE = 15;                                              // minutes free after the included / booked hours
+  // Settings keep the table as [{km, h}] (Firestore can't store arrays inside arrays); [km, h] pairs are accepted too
+  const hrsTable = tbl => { const t = Array.isArray(tbl) ? tbl.map(r => Array.isArray(r) ? [+r[0], +r[1]] : [+(r && r.km), +(r && r.h)]) : [];
+    return t.length && t.every(r => r[0] > 0 && r[1] > 0) ? t.sort((x, y) => x[0] - y[0]) : AHRS; };
+  function aHours(totKm, tbl) {
+    const t = hrsTable(tbl), k = n(totKm);
+    for (const [km, h] of t) if (k <= km) return h;
+    const [lk, lh] = t[t.length - 1]; return lh + Math.ceil((k - lk) / 35);
+  }
+  // hours the customer booked (leave → return): the first 15 minutes over a half hour are free, then the next half hour counts
+  const planHours = (leave, ret) => n(leave) && n(ret) > n(leave) ? Math.ceil(Math.max(0, n(ret) - n(leave) - AGRACE * 6e4) / 18e5) / 2 : 0;
+  const hrsTxt = (h, lang) => { const w = Math.floor(h), half = h - w >= 0.5; return lang === 'ta' ? `${w ? w + ' மணி' : ''}${w && half ? ' ' : ''}${half ? '30 நிமி' : ''}` : `${w ? w + ' hr' + (w > 1 ? 's' : '') : ''}${w && half ? ' ' : ''}${half ? '30 min' : ''}`; };
   // night % for this vehicle (auto: Government night window, whatever the office night switch says)
   const nightFor = (vid, cfg, at) => nightPct(vid === 'auto' ? AUTO_GOVT.night : cfg, at);
   const withNightV = (vid, f, pct) => vid === 'auto' ? (pct ? Math.round(n(f) * (1 + pct / 100)) : n(f)) : withNight(f, pct);
@@ -86,6 +109,6 @@ const FARE = (() => {
   // the amount a finished booking really cost (old bookings have no fareFinal)
   const billOf = b => b && b.fareFinal != null ? +b.fareFinal : +(b && b.fare) || 0;
   const tripOf = b => b && b.fx && b.fx.trip != null ? +b.fx.trip : billOf(b);
-  return { final, comm, billOf, tripOf, r10, nightPct, withNight, hm, AUTO_GOVT, AREA, crow, fromCentre, areaKm, cityFare, nightFor, withNightV, OUTCAT, outCat, catBata };
+  return { final, comm, billOf, tripOf, r10, nightPct, withNight, hm, AUTO_GOVT, AREA, crow, fromCentre, areaKm, cityFare, nightFor, withNightV, OUTCAT, outCat, catBata, AHRS, AXH, AGRACE, aHours, planHours, hrsTable, hrsTxt };
 })();
 if (typeof module !== 'undefined') module.exports = FARE;

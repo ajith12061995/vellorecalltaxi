@@ -186,10 +186,12 @@ test('outstation category A: round trip only, up + down km, no per-day minimum, 
   const kanchi = { lat: 12.8342, lon: 79.7036 }, A0 = { lat: 12.9165, lon: 79.1325 };
   const leave = Date.UTC(2026, 10, 10, 3, 30);
   const c = { out: { rate: { sedan: 12 }, bata: { sedan: 300 }, rate1: { sedan: 12 }, bata1: { sedan: 300 }, cat: { a: 100, b: 150 }, cb: { A: { sedan: 450 } } } };
-  const ok = { src: 'app', kind: 'outstation', veh: 'sedan', from: A0, to: kanchi, when: leave, retAt: leave + 8 * 3600e3, km: 140,
-    tariff: { t: 'out', otype: 'round', km: 70, days: 1, rate: 12, bata: 450, min1: 80, mind: 0, cat: 'A', daykm: 400, longKm: 400, longPct: 0 } };
-  ok.fare = Math.round((140 * 12 + 450) / 10) * 10;                                  // 2130
+  const ok = { src: 'app', kind: 'outstation', veh: 'sedan', from: A0, to: kanchi, when: leave, retAt: leave + 5 * 3600e3, km: 140,
+    tariff: { t: 'out', otype: 'round', km: 70, days: 1, rate: 12, bata: 450, min1: 80, mind: 0, cat: 'A', daykm: 400, longKm: 400, longPct: 0, ph: 5, xh: 90, plan: 5, hx: 0 } };
+  ok.fare = Math.round((140 * 12 + 450) / 10) * 10;                                  // 2130 (140 km up + down → 5 hours included)
   assert.equal(L.outCheck(ok, c), null, 'honest A round trip is not changed');
+  const long = L.outCheck({ ...ok, retAt: leave + 8 * 3600e3 }, c);                  // back after 8 hours: 3 hours × ₹90 more
+  assert.equal(long.fare, 2400); assert.equal(long.tariff.plan, 8); assert.equal(long.tariff.hx, 270);
   const oneWay = { ...ok, otype: 'one', fare: Math.round((80 * 12 + 300) / 10) * 10, tariff: { ...ok.tariff, otype: 'one', bata: 300, mind: 250 } };
   const r = L.outCheck(oneWay, c);
   assert.equal(r.tariff.otype, 'round'); assert.equal(r.tariff.mind, 0); assert.equal(r.tariff.bata, 450); assert.equal(r.fare, ok.fare);
