@@ -19,7 +19,7 @@ const SITEQ = (() => {
   function city(fares) {
     return VEH.map(v => {
       const f = fares && fares[v.id];
-      return v.govt ? { ...v, base: F.AUTO_GOVT.base, per: F.AUTO_GOVT.per } : { ...v, base: f && n(f.base) ? +f.base : v.base, per: f && n(f.per) ? +f.per : v.per };
+      return v.govt ? { ...v, base: F.AUTO_GOVT.base, per: F.AUTO_GOVT.per } : { ...v, base: f && n(f.base) ? +f.base : v.base, per: f && n(f.per) ? +f.per : v.per, incl: F.inclKm(f) };
     });
   }
   // outstation price table = tariffs() in functions/lib/logic.js

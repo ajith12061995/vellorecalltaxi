@@ -83,9 +83,11 @@ const FARE = (() => {
   const outCat = (km, cat) => { const c = cat || {}, a = +c.a > 0 ? +c.a : OUTCAT.a, b = Math.max(+c.b > 0 ? +c.b : OUTCAT.b, a); return n(km) <= a ? 'A' : n(km) <= b ? 'B' : 'C'; };
   // driver allowance per day for a category (0 / blank in Settings = the normal outstation allowance)
   const catBata = (cb, cat, id, dflt) => { const x = cb && cb[cat] && +cb[cat][id]; return x > 0 ? x : n(dflt); };
-  // city fare before the night charge. v = {id, base, per}
+  // km covered by the base fare (office Settings fares[id].incl; 1.5 km when not set)
+  const INCL = 1.5, inclKm = v => { const x = +(v && v.incl); return isFinite(x) && x > 0 && x <= 10 ? x : INCL; };
+  // city fare before the night charge. v = {id, base, per, incl}
   const cityFare = (v, km) => v && v.id === 'auto' ? Math.round(AUTO_GOVT.base + AUTO_GOVT.per * Math.max(0, n(km) - AUTO_GOVT.incl))
-    : Math.round((n(v && v.base) + n(v && v.per) * Math.max(0, n(km) - 1.5)) / 5) * 5;
+    : Math.round((n(v && v.base) + n(v && v.per) * Math.max(0, n(km) - inclKm(v))) / 5) * 5;
   // Same-day category-A round trip: hours included in the price, by total (up + down) km. [up to km, hours]; owner can
   // replace the table (config/app.out.hrs); past the last row, 1 more hour per 35 km. Extra time: ₹/hour per vehicle.
   const AHRS = [[30, 3], [90, 4], [140, 5], [180, 6], [200, 7]];
@@ -109,6 +111,6 @@ const FARE = (() => {
   // the amount a finished booking really cost (old bookings have no fareFinal)
   const billOf = b => b && b.fareFinal != null ? +b.fareFinal : +(b && b.fare) || 0;
   const tripOf = b => b && b.fx && b.fx.trip != null ? +b.fx.trip : billOf(b);
-  return { final, comm, billOf, tripOf, r10, nightPct, withNight, hm, AUTO_GOVT, AREA, crow, fromCentre, areaKm, cityFare, nightFor, withNightV, OUTCAT, outCat, catBata, AHRS, AXH, AGRACE, aHours, planHours, hrsTable, hrsTxt };
+  return { final, comm, billOf, tripOf, r10, nightPct, withNight, hm, AUTO_GOVT, AREA, crow, fromCentre, areaKm, cityFare, nightFor, withNightV, OUTCAT, outCat, catBata, INCL, inclKm, AHRS, AXH, AGRACE, aHours, planHours, hrsTable, hrsTxt };
 })();
 if (typeof module !== 'undefined') module.exports = FARE;

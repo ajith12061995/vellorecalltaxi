@@ -73,4 +73,13 @@ ok('server: A quote with planned hours accepted; missing hours corrected; tamper
   const cheat=SL.outCheck({...base,tariff:{...aT,ph:9,xh:1}},c);assert.equal(cheat.tariff.ph,4);assert.equal(cheat.tariff.xh,80);
   const own=SL.outCheck(base,{out:{...c.out,xh:{mini:100},hrs:[{km:60,h:2},{km:200,h:6}]}});assert.equal(own.tariff.ph,6);assert.equal(own.tariff.xh,100);
   const old={...base,tariff:{...aT}};delete old.tariff.ph;delete old.tariff.xh;delete old.tariff.plan;delete old.tariff.hx;const fx=SL.outCheck(old,c);assert.equal(fx.fare,980);assert.equal(fx.tariff.ph,4);assert.equal(fx.tariff.xh,80)});
+ok('km in base: office incl (0.5–10), else 1.5; same as server',()=>{
+  assert.equal(F.cityFare({id:'mini',base:110,per:20,incl:3},2),110);assert.equal(F.cityFare({id:'mini',base:110,per:20,incl:3},5),150);assert.equal(F.cityFare({id:'mini',base:110,per:20,incl:3},10),250);
+  assert.equal(F.cityFare({id:'mini',base:105,per:19},5),170);for(const bad of [0,-1,11,'x',null])assert.equal(F.inclKm({incl:bad}),1.5);
+  assert.equal(F.cityFare({id:'auto',base:1,per:1,incl:5},5),130,'auto ignores incl');
+  for(const v of [{incl:3},{incl:0.5},{incl:10},{},{incl:'abc'},{incl:20}])assert.equal(F.inclKm(v),SL.inclKm(v));
+  const c={fares:{mini:{base:110,per:20,incl:3}}},b={src:'app',kind:'ride',veh:'mini',km:5,from:{lat:12.9165,lon:79.1325},to:{lat:12.9165,lon:79.1325}};
+  assert.equal(SL.fareCheck({...b,fare:150},c,Date.UTC(2026,10,20,6,0)),null,'server accepts the 3 km base price');
+  assert.ok(SL.fareCheck({...b,fare:100},c,Date.UTC(2026,10,20,6,0)),'server corrects a too-low fare');
+  assert.equal(SL.fareLooksWrong({...b,fare:150},c.fares),false)});
 console.log(n,'fare tests passed');

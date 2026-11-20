@@ -34,11 +34,13 @@ function housekeeping(b, now) {
   return null;
 }
 
+// km covered by the base fare (= core/fare.js inclKm): office fares[id].incl, else 1.5 km (auto: Government 1.8 km)
+const inclKm = f => { const x = +(f && f.incl); return isFinite(x) && x > 0 && x <= 10 ? x : 1.5; };
 // Expected local fare from office prices; flag bookings that look tampered (far below the price list)
 function fareLooksWrong(b, fares) {
   if (!b || b.src !== 'app' || (b.kind && b.kind !== 'ride' && b.kind !== 'schedule')) return false;
   const f = b.veh === 'auto' ? AUTO_GOVT : fares && fares[b.veh]; if (!f) return false;
-  const expected = n(f.base) + n(f.per) * Math.max(0, n(b.km) - (f.incl != null ? n(f.incl) : 1.5));
+  const expected = n(f.base) + n(f.per) * Math.max(0, n(b.km) - inclKm(f));
   return expected > 0 && n(b.fare) < expected * 0.6;
 }
 
@@ -100,7 +102,7 @@ function fareCheck(b, c, now) {
   const isAuto = b.veh === 'auto';
   const f = c && c.fares && c.fares[b.veh]; if (!isAuto && (!f || !(n(f.base) > 0))) return null;
   const minKm = crowKm(b.from, b.to) * 1.2, km = Math.max(n(b.km), minKm);
-  const base = isAuto ? autoFare(km) : r5(n(f.base) + n(f.per) * Math.max(0, km - 1.5));
+  const base = isAuto ? autoFare(km) : r5(n(f.base) + n(f.per) * Math.max(0, km - inclKm(f)));
   const at = b.kind === 'schedule' && n(b.when) ? n(b.when) : now, nc = isAuto ? AUTO_GOVT.night : c && c.night;
   const np = Math.min(nightPct(nc, at), nightPct(nc, at - 15 * MIN));
   const want = isAuto ? (np ? Math.round(base * (1 + np / 100)) : base) : withNight(base, np);
@@ -221,4 +223,4 @@ function bookingLimit(lim, openNow, now) {
 const enquiryFlood = (same, all) => same > 3 ? 'auto: more than 3 from this number in an hour' : all > 40 ? 'auto: more than 40 in an hour' : null;
 const istStamp = ms => new Date(ms + 19800000).toISOString().slice(0, 16).replace('T', '_').replace(':', '');
 
-module.exports = { enquiryFlood, OUTCAT, outCat, catBata, AHRS, AXH, aHours, planHours, hrsTable, AUTO_GOVT, AREA, autoFare, outsideArea, rentCheck, outCheck, tariffs, rentPrice, istStamp, commissionFor, settle, housekeeping, fareLooksWrong, liveStale, custPush, fareCheck, bookingLimit, nightPct, withNight, crowKm, LIMIT_OPEN, LIMIT_HOUR };
+module.exports = { inclKm, enquiryFlood, OUTCAT, outCat, catBata, AHRS, AXH, aHours, planHours, hrsTable, AUTO_GOVT, AREA, autoFare, outsideArea, rentCheck, outCheck, tariffs, rentPrice, istStamp, commissionFor, settle, housekeeping, fareLooksWrong, liveStale, custPush, fareCheck, bookingLimit, nightPct, withNight, crowKm, LIMIT_OPEN, LIMIT_HOUR };

@@ -67,7 +67,7 @@
       <img src="/vehicles/${v.id}.jpg" alt="" loading="lazy" width="92" height="62">
       <div><h3><span class="ta">${esc(v.ta)}</span><span class="en">${esc(v.en)}</span></h3>
         <small><span class="ta">${v.seats} பேர்${v.models ? ' · ' + esc(v.models) : ''}</span><span class="en">${v.seats} seats${v.models ? ' · ' + esc(v.models) : ''}</span></small></div>
-      <div class="price">₹${money(v.base)}<small><span class="ta"> முதல் ${v.govt ? '1.8' : '1.5'} கி.மீ., பிறகு ₹${money(v.per)}/கி.மீ.</span><span class="en"> first ${v.govt ? '1.8' : '1.5'} km, then ₹${money(v.per)}/km</span></small></div></div>`).join('');
+      <div class="price">₹${money(v.base)}<small><span class="ta"> முதல் ${v.govt ? '1.8' : v.incl || 1.5} கி.மீ., பிறகு ₹${money(v.per)}/கி.மீ.</span><span class="en"> first ${v.govt ? '1.8' : v.incl || 1.5} km, then ₹${money(v.per)}/km</span></small></div></div>`).join('');
     const mini = vs.find(v => v.id === 'mini'), T = SITEQ.outTable(PRICES);
     $$('[data-show=mini]').forEach(el => el.textContent = money(mini.base));
     $$('[data-show=oround]').forEach(el => el.textContent = money(Math.min(...Object.values(T.R))));

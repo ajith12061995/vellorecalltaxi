@@ -29,7 +29,7 @@
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('../vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV=window.VCT_V='98',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV=window.VCT_V='99',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('../version.json',location.href)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -601,6 +601,7 @@ details.faq p{margin:0;padding:0 14px 14px;color:var(--muted);font-size:14px;lin
 .tid{font-weight:700;font-variant-numeric:tabular-nums}
 .acts2{display:flex;gap:10px;align-items:center;justify-content:flex-end}
 .tr.t4{grid-template-columns:1.2fr 1fr 1fr 1fr;min-width:560px}
+.tr.tcf{grid-template-columns:1.2fr 1fr .8fr 1fr 1fr;min-width:620px}
 .tr.t5{grid-template-columns:1.6fr 1fr 1fr 1.3fr;min-width:560px}
 .tr.t8{grid-template-columns:1.6fr repeat(7,1fr);min-width:820px;gap:8px}
 .tr.t8 .cell,.tr.t5 .cell{width:78px}
@@ -715,13 +716,13 @@ details.faq p{margin:0;padding:0 14px 14px;color:var(--muted);font-size:14px;lin
 <div class="app" id="app"></div>
 <div class="toast" id="toast"></div>
 
-<script src="../core/report.js?v=98"></script>
-<script src="../core/geo.js?v=98"></script>
-<script src="../core/fare.js?v=98"></script>
-<script src="../core/driverchecks.js?v=98"></script>
-<script src="../core/map.js?v=98"></script>
-<script src="../core/otp.js?v=98"></script>
-<script src="../core/refer.js?v=98"></script>
+<script src="../core/report.js?v=99"></script>
+<script src="../core/geo.js?v=99"></script>
+<script src="../core/fare.js?v=99"></script>
+<script src="../core/driverchecks.js?v=99"></script>
+<script src="../core/map.js?v=99"></script>
+<script src="../core/otp.js?v=99"></script>
+<script src="../core/refer.js?v=99"></script>
 <script>
 /* shared with the customer app: icons, places, fares, map engine */
 const I = {
@@ -883,7 +884,7 @@ function seedO(){
     {id:'R5E6F',type:'complaint',cust:'கீதா / Geetha',phone:'9840077788',title:{ta:'அதிக கட்டணம் கேட்டாங்க',en:'Charged extra'},trip:'B1009',date:now-3*36e5,status:'open'}];
   return{cfg,drv:D,bk,rch,sup,act:[]};
 }
-function fareO(veh,km,at){const f=(DB&&DB.cfg&&DB.cfg.fares[veh])||VEH.find(v=>v.id===veh);const b=FARE.cityFare({id:veh,base:f.base,per:f.per},km);
+function fareO(veh,km,at){const f=(DB&&DB.cfg&&DB.cfg.fares[veh])||VEH.find(v=>v.id===veh);const b=FARE.cityFare({id:veh,base:f.base,per:f.per,incl:f.incl},km);
   return at==null?b:FARE.withNightV(veh,b,FARE.nightFor(veh,DB&&DB.cfg&&DB.cfg.night,at))} // `at` = pickup time → adds the night charge
 let DB=null;try{DB=JSON.parse(localStorage.getItem('vcto_db')||'null')}catch(e){}
 if(!DB||!DB.drv)DB=seedO();
@@ -2044,8 +2045,8 @@ function settings(){
      <div class="table" style="margin-top:8px"><div class="tr th t4"><span>${L('வண்டி','Vehicle')}</span><span>${L('கூடுதல் மணி ₹','Extra hour ₹')}</span><span>${L('ஆரணி 80 கி.மீ, 12 மணி','Arani 80 km, 12 hrs')}</span><span></span></div>
      ${OUTV.map(id=>{const v=VEH.find(x=>x.id===id);return `<div class="tr t4"><span><b>${v[S.lang]}</b></span><span><input class="cell" data-xh="${id}" inputmode="numeric" value="${o.xh[id]}"></span><span class="pv" data-xpv="${id}">${xhPv(o,id)}</span><span></span></div>`}).join('')}</div></section>`})()}
    <section class="panel"><div class="ph"><h3>${L('கட்டணம் (நகரத்துக்குள்)','City fares')}</h3></div>
-    <div class="table">${`<div class="tr th t4"><span>${L('வண்டி','Vehicle')}</span><span>${L('அடிப்படை (முதல் 1.5 கி.மீ)','Base (first 1.5 km)')}</span><span>${L('ஒரு கி.மீ','Per km')}</span><span>${L('5 கி.மீ ride','5 km ride')}</span></div>`+VEH.map(v=>v.id==='auto'?`<div class="tr t4"><span><b>${v[S.lang]}</b></span><span>₹50 · 1.8 ${L('கி.மீ','km')}</span><span>₹25</span><span class="pv">${inr(fareO('auto',5))}</span></div><div class="tr"><span class="muted" style="font-size:12px">🛺 ${L('ஆட்டோ: தமிழ்நாடு அரசு 2026 கட்டணம் (G.O. Ms. No. 366, 27.10.2026). மாற்ற முடியாது. இரவு 10–5 1.5 மடங்கு, காத்திருப்பு ₹1/நிமி.','Auto: Tamil Nadu Government 2026 fare (G.O. Ms. No. 366, 27.10.2026). Not editable. Night 10 pm–5 am 1.5×, waiting ₹1/min.')}</span></div>`:`<div class="tr t4"><span><b>${v[S.lang]}</b></span>
-      <span><input class="cell" data-f="${v.id}.base" inputmode="numeric" value="${c.fares[v.id].base}" aria-label="${v.en} base"></span><span><input class="cell" data-f="${v.id}.per" inputmode="numeric" value="${c.fares[v.id].per}" aria-label="${v.en} per km"></span><span class="pv" data-pv="${v.id}">${inr(fareO(v.id,5))}</span></div>`).join('')}</div></section>
+    <div class="table">${`<div class="tr th tcf"><span>${L('வண்டி','Vehicle')}</span><span>${L('அடிப்படை ₹','Base ₹')}</span><span>${L('அடிப்படையில் கி.மீ','Km in base')}</span><span>${L('அதுக்கு மேல ஒரு கி.மீ','Per km after')}</span><span>${L('5 கி.மீ ride','5 km ride')}</span></div>`+VEH.map(v=>v.id==='auto'?`<div class="tr tcf"><span><b>${v[S.lang]}</b></span><span>₹50</span><span>1.8</span><span>₹25</span><span class="pv">${inr(fareO('auto',5))}</span></div><div class="tr"><span class="muted" style="font-size:12px">🛺 ${L('ஆட்டோ: தமிழ்நாடு அரசு 2026 கட்டணம் (G.O. Ms. No. 366, 27.10.2026). மாற்ற முடியாது. இரவு 10–5 1.5 மடங்கு, காத்திருப்பு ₹1/நிமி.','Auto: Tamil Nadu Government 2026 fare (G.O. Ms. No. 366, 27.10.2026). Not editable. Night 10 pm–5 am 1.5×, waiting ₹1/min.')}</span></div>`:`<div class="tr tcf"><span><b>${v[S.lang]}</b></span>
+      <span><input class="cell" data-f="${v.id}.base" inputmode="numeric" value="${c.fares[v.id].base}" aria-label="${v.en} base"></span><span><input class="cell" data-fi="${v.id}" inputmode="decimal" value="${FARE.inclKm(c.fares[v.id])}" aria-label="${v.en} km in base"></span><span><input class="cell" data-f="${v.id}.per" inputmode="numeric" value="${c.fares[v.id].per}" aria-label="${v.en} per km"></span><span class="pv" data-pv="${v.id}">${inr(fareO(v.id,5))}</span></div>`).join('')}</div></section>
    ${(()=>{c.out=mergeOut(c.out);c.rent=mergeRent(c.rent);const o=c.out,r=c.rent;
     const num=(id,v,lbl,suf)=>`<label class="lrow2"><span>${lbl}</span><span class="field sm">${suf==='₹'?'<span class="cc">₹</span>':''}<input id="${id}" class="ocfg" inputmode="numeric" value="${v}">${suf&&suf!=='₹'?`<span class="cc r">${suf}</span>`:''}</span></label>`;
     return `<section class="panel" style="margin-top:14px"><div class="ph"><h3>${L('Outstation கட்டணம்','Outstation fares')}</h3></div>
@@ -2118,12 +2119,15 @@ function settings(){
     if(i.dataset.o){const [k,id]=i.dataset.o.split('.');c.out[k][id]=+i.value||0;const el=app.querySelector(`[data-ov="${id}"]`);if(el)el.innerHTML=outPv(c.out,id)}
     if(i.dataset.r){const [k,id,ix]=i.dataset.r.split('.');if(k==='price')c.rent.price[id][+ix]=+i.value||0;else c.rent[k][id]=+i.value||0}
     if(i.classList.contains('ocfg'))c.out[i.id.slice(2)]=+i.value||0});
+  app.querySelectorAll('.cell[data-fi]').forEach(i=>i.oninput=()=>{i.value=i.value.replace(/[^\d.]/g,'').replace(/(\..*)\./g,'$1').slice(0,4);const v=i.dataset.fi,x=parseFloat(i.value);if(x>0&&x<=10)c.fares[v].incl=x;else delete c.fares[v].incl;app.querySelector(`[data-pv="${v}"]`).textContent=inr(fareO(v,5))});
   app.querySelectorAll('.cell[data-f]').forEach(i=>i.oninput=()=>{i.value=i.value.replace(/\D/g,'').slice(0,5);const [v,k]=i.dataset.f.split('.');c.fares[v][k]=+i.value||0;app.querySelector(`[data-pv="${v}"]`).textContent=inr(fareO(v,5))});
   if(CL&&!CFGOK){['sv','ssv'].forEach(i=>{const b=document.getElementById(i);if(b){b.disabled=true;b.textContent=L('Settings ஏறுது…','Loading settings…')}})} // never save defaults over the real prices
   document.getElementById('sv').onclick=()=>{if(CL&&!CFGOK)return;
     // a config update from Firebase while this screen is open swaps the fare objects underneath the inputs,
     // so take every price from what is on screen right now, not from what was typed into the old objects
-    app.querySelectorAll('.cell[data-f],[data-o],[data-r],[data-cb],[data-xh],.ocfg').forEach(i=>{if(i.oninput)i.oninput()});
+    app.querySelectorAll('.cell[data-f],.cell[data-fi],[data-o],[data-r],[data-cb],[data-xh],.ocfg').forEach(i=>{if(i.oninput)i.oninput()});
+    const badI=[...app.querySelectorAll('.cell[data-fi]')].find(i=>{const x=parseFloat(i.value);return !(x>=0.5&&x<=10)});
+    if(badI){toast(L('அடிப்படையில் கி.மீ 0.5 முதல் 10 வரை','Km in base must be 0.5–10'));badI.focus();return}
     const cm=+document.getElementById('cm').value,mb=+document.getElementById('mb').value,of=document.getElementById('of').value.replace(/\D/g,''),dh=document.getElementById('dh').value.replace(/\D/g,''),up=document.getElementById('up').value.trim();
     if(!(cm>=0&&cm<=40)){toast(L('Commission 0 முதல் 40% வரை','Commission must be 0–40%'));return}
     if(up&&!/^[\w.\-]{2,}@[a-zA-Z]{2,}$/.test(up)){toast(L('UPI ID சரியா இல்லை (name@bank)','UPI ID looks wrong (name@bank)'));return}

@@ -7,7 +7,7 @@ let n = 0; const ok = (name, fn) => { fn(); n++; console.log('PASS', name); };
 const LIVE = { fares: { mini: { base: 105, per: 16 }, sedan: { base: 120, per: 19 }, suv: { base: 180, per: 22 }, psuv: { base: 250, per: 26 }, trav: { base: 600, per: 28 } },
   out: { rate: { mini: 11, sedan: 12, suv: 16, psuv: 20, trav: 24 }, rate1: { mini: 16, sedan: 17, suv: 19, psuv: 24, trav: 29 },
     bata: { mini: 300, sedan: 300, suv: 350, psuv: 400, trav: 500 }, bata1: { mini: 300, sedan: 300, suv: 350, psuv: 400, trav: 500 }, min1: 80, mind: 250, daykm: 400 } };
-const OTHER = { fares: { mini: { base: 99, per: 15 } }, out: { rate1: { sedan: 18 }, min1: 120, mind: 300, daykm: 350, longKm: 300, longPct: 10,
+const OTHER = { fares: { mini: { base: 110, per: 20, incl: 3 } }, out: { rate1: { sedan: 18 }, min1: 120, mind: 300, daykm: 350, longKm: 300, longPct: 10,
   cat: { a: 90, b: 160 }, cb: { B: { mini: 450 }, C: { suv: 600 } } } };
 const NEWBUS = { lat: 12.9341, lon: 79.1377 }, CHENNAI_AIRPORT = { lat: 12.9941, lon: 80.1709 }, CMC = { lat: 12.9249, lon: 79.1353 }, VIT = { lat: 12.9692, lon: 79.1559 };
 
