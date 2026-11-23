@@ -36,11 +36,12 @@
 .wxline{display:flex;align-items:center;gap:8px;margin:8px 0 4px;padding:8px 12px;border-radius:12px;background:#EEF4FF;color:#1F3A5F;font-size:13px;font-weight:600;line-height:1.35}.wxline span{flex:1}.wxline small{flex:none;font-weight:400;font-size:9.5px;opacity:.6}.wxline.wx-hot{background:#FFF1DC;color:#6B3D00}
 .nightnote{margin:6px 0 2px;padding:7px 11px;border-radius:12px;background:#EEF0FF;color:#2B2F6B;font-size:12.5px;font-weight:600}
 .pushask{display:flex;align-items:center;gap:10px;margin:10px 0;padding:10px 12px;border-radius:14px;background:#FFF7DB;border:1px solid #F2D27A;font-size:13.5px}.pushask span{flex:1}
+.agcard{display:grid;grid-template-columns:1fr auto;align-items:start;gap:8px 6px;background:#FFF6D6;border:1.5px solid #FFC21A;border-radius:16px;padding:10px 10px 10px 14px;margin:10px 0;color:#0B4A36}.agtxt{flex:1;min-width:0}.agtxt b{display:block;font-size:15px}.agtxt small{display:block;font-size:12.5px;color:#4b5a54;line-height:1.35}.agbtn{grid-column:1/-1;grid-row:2;justify-self:start;background:#0B4A36;color:#FFC21A;border:0;border-radius:12px;padding:9px 12px;font:inherit;font-weight:700;font-size:14px;text-decoration:none;white-space:nowrap;cursor:pointer}.agx{grid-column:2;grid-row:1;background:none;border:0;font-size:22px;line-height:1;color:#6b7a73;padding:4px 6px;cursor:pointer}
 </style>
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('./vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV=window.VCT_V='100',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV=window.VCT_V='101',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('./version.json',location.href)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -546,16 +547,17 @@ details.faq p{margin:0;padding:0 14px 14px;color:var(--muted);font-size:14px;lin
 <div class="app" id="app"></div>
 <div class="toast" id="toast"></div>
 
-<script src="./core/report.js?v=100"></script>
-<script src="./core/geo.js?v=100"></script>
-<script src="./core/fare.js?v=100"></script>
-<script src="./core/pin.js?v=100"></script>
-<script src="./core/clock.js?v=100"></script>
-<script src="./core/map.js?v=100"></script>
-<script src="./core/chat.js?v=100"></script>
-<script src="./core/otp.js?v=100"></script>
-<script src="./core/deskmode.js?v=100"></script>
-<script src="./core/weather.js?v=100"></script>
+<script src="./core/report.js?v=101"></script>
+<script src="./core/geo.js?v=101"></script>
+<script src="./core/fare.js?v=101"></script>
+<script src="./core/appget.js?v=101"></script>
+<script src="./core/pin.js?v=101"></script>
+<script src="./core/clock.js?v=101"></script>
+<script src="./core/map.js?v=101"></script>
+<script src="./core/chat.js?v=101"></script>
+<script src="./core/otp.js?v=101"></script>
+<script src="./core/deskmode.js?v=101"></script>
+<script src="./core/weather.js?v=101"></script>
 <script>
 /* ---------- icons ---------- */
 const I = {
@@ -674,13 +676,14 @@ setBike(false);
 
 /* ---------- state ---------- */
 const S={lang:'en',from:'home',phone:'',name:'',logged:false,tab:'home',dest:null,veh:'auto',pay:'upi'};
+if(window.APPGET)APPGET.init('cust',()=>S.lang);
 try{const s=JSON.parse(localStorage.getItem('vct')||'{}');Object.assign(S,s)}catch(e){}
 function save(){try{localStorage.setItem('vct',JSON.stringify({lang:S.lang,phone:S.phone,name:S.name,logged:S.logged,uid:S.logged?S.uid||'':''}))}catch(e){}}
 const t=k=>T[S.lang][k]||k;
 const pn=k=>P[k][S.lang];
 const app=document.getElementById('app');
 let mapLoop=null;
-function go(html,after){cancelAnimationFrame(mapLoop);clearInterval(rideTimer);app.innerHTML=html;after&&after()}
+function go(html,after){cancelAnimationFrame(mapLoop);clearInterval(rideTimer);app.innerHTML=html;after&&after();if(window.APPGET)APPGET.paint()}
 function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(toast.h);toast.h=setTimeout(()=>el.classList.remove('show'),2400)}
 
 /* ---------- screens ---------- */
@@ -856,6 +859,7 @@ function home(mode){
    <div class="sheet pad"><div class="grab"></div>
      ${RENTM?vrowHtml('rent')+rentHomeHtml():OUTM?vrowHtml('out')+outHomeHtml():`<div class="wherewrap"><button class="where" id="wh"><span>${t('where')}</span><i>${I.search}</i></button><button class="micbig" id="vmic" aria-label="${L('பேசி book பண்ணு','Book by voice')}">${I.mic.replace('stroke="#0B4A36"','stroke="#FFC21A"')}</button></div>
      ${upNextHtml()}
+     <div id="appget" hidden></div>
      ${vrowHtml()}
      <div class="chips"><button class="chip" id="pinchip" style="background:var(--yellow);border-color:var(--yellow);color:#0B4A36">${I.pin}${t('pinChip')}</button></div>
      ${placeCardsHtml()}
@@ -1963,7 +1967,7 @@ function watchConfig(){
   if(CFGUNSUB)return;
   CFGUNSUB=F().onSnapshot(F().doc(CL.db,'config','app'),s=>{if(!s.exists())return;const d=s.data();
     if(d.fares)VEH.forEach(v=>{const f=d.fares[v.id];if(f&&v.id!=='auto'){if(f.base!=null)v.base=+f.base;if(f.per!=null)v.per=+f.per;v.incl=+f.incl>0?+f.incl:undefined}});
-    CFG.area=d.area||null;CFG.upi=d.upi||'';CFG.office=d.office||'';CFG.push=d.push||null;CFG.night=d.night||null;CFG.privPhone=!!d.privPhone;CFG.serverPin=!!d.serverPin;CFG.comm=d.comm!=null?+d.comm:10;CFG.wait=d.wait||null;CFG.blocked=Array.isArray(d.blocked)?d.blocked:[];{const had=VEH.includes(BIKE);setBike(!!d.showBike);if(had!==VEH.includes(BIKE)&&S.tab==='home'&&document.querySelector('.vrow')&&!document.querySelector('.modal'))home(S.mode||undefined)}if(d.dispatch)Object.assign(DISPC,d.dispatch);applyTariff(d);
+    if(window.APPGET)APPGET.setPlay(d.play);CFG.area=d.area||null;CFG.upi=d.upi||'';CFG.office=d.office||'';CFG.push=d.push||null;CFG.night=d.night||null;CFG.privPhone=!!d.privPhone;CFG.serverPin=!!d.serverPin;CFG.comm=d.comm!=null?+d.comm:10;CFG.wait=d.wait||null;CFG.blocked=Array.isArray(d.blocked)?d.blocked:[];{const had=VEH.includes(BIKE);setBike(!!d.showBike);if(had!==VEH.includes(BIKE)&&S.tab==='home'&&document.querySelector('.vrow')&&!document.querySelector('.modal'))home(S.mode||undefined)}if(d.dispatch)Object.assign(DISPC,d.dispatch);applyTariff(d);
     // refresh the browser push token last: Android WebView has no window.Notification (the app uses native push),
     // and reading it there used to throw before the outstation prices and settings above were applied
     try{if(CUID&&!NATIVEC()&&pushReadyC()&&typeof Notification!=='undefined'&&Notification.permission==='granted')enablePushC(false)}catch(e){}},()=>{});

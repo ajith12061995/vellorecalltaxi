@@ -42,11 +42,12 @@
 .nmenu[hidden]{display:none}
 .nmenu a,.nmenu button{padding:12px;border:0;background:none;text-align:left;font:inherit;font-weight:700;color:inherit;text-decoration:none}
 .nmenu small{padding:0 12px 8px;color:var(--muted);font-size:11px}
+.agcard{display:grid;grid-template-columns:1fr auto;align-items:start;gap:8px 6px;background:#FFF6D6;border:1.5px solid #FFC21A;border-radius:16px;padding:10px 10px 10px 14px;margin:10px 0;color:#0B4A36}.agtxt{flex:1;min-width:0}.agtxt b{display:block;font-size:15px}.agtxt small{display:block;font-size:12.5px;color:#4b5a54;line-height:1.35}.agbtn{grid-column:1/-1;grid-row:2;justify-self:start;background:#0B4A36;color:#FFC21A;border:0;border-radius:12px;padding:9px 12px;font:inherit;font-weight:700;font-size:14px;text-decoration:none;white-space:nowrap;cursor:pointer}.agx{grid-column:2;grid-row:1;background:none;border:0;font-size:22px;line-height:1;color:#6b7a73;padding:4px 6px;cursor:pointer}
 </style>
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('../vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV=window.VCT_V='100',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV=window.VCT_V='101',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('../version.json',location.href)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -653,19 +654,20 @@ a.btn{text-decoration:none}
 <div class="app" id="app"></div>
 <div class="toast" id="toast"></div>
 
-<script src="../core/report.js?v=100"></script>
-<script src="../core/geo.js?v=100"></script>
-<script src="../core/fare.js?v=100"></script>
-<script src="../core/pin.js?v=100"></script>
-<script src="../core/clock.js?v=100"></script>
-<script src="../core/map.js?v=100"></script>
-<script src="../core/chat.js?v=100"></script>
-<script src="../core/driverchecks.js?v=100"></script>
-<script src="../core/nav.js?v=100"></script>
-<script src="../core/otp.js?v=100"></script>
-<script src="../core/deskmode.js?v=100"></script>
-<script src="../core/refer.js?v=100"></script>
-<script src="../core/weather.js?v=100"></script>
+<script src="../core/report.js?v=101"></script>
+<script src="../core/geo.js?v=101"></script>
+<script src="../core/fare.js?v=101"></script>
+<script src="../core/appget.js?v=101"></script>
+<script src="../core/pin.js?v=101"></script>
+<script src="../core/clock.js?v=101"></script>
+<script src="../core/map.js?v=101"></script>
+<script src="../core/chat.js?v=101"></script>
+<script src="../core/driverchecks.js?v=101"></script>
+<script src="../core/nav.js?v=101"></script>
+<script src="../core/otp.js?v=101"></script>
+<script src="../core/deskmode.js?v=101"></script>
+<script src="../core/refer.js?v=101"></script>
+<script src="../core/weather.js?v=101"></script>
 <script>
 /* shared with the customer app: icons, places, fares, map engine */
 const I = {
@@ -771,6 +773,7 @@ const T={ta:{km:'கி.மீ',m:'மீ',near:'அருகில்',from:'�
 const CUSTOM=['pick','drop'];
 let mapLoop=null,TK=null,REQ=null;
 const S={lang:'ta',phone:'',logged:false,pid:null,tab:'home',online:false,onSince:0};
+if(window.APPGET)APPGET.init('drv',()=>S.lang);
 try{Object.assign(S,JSON.parse(localStorage.getItem('vctd')||'{}'),{online:false,tab:'home'})}catch(e){}
 const save=()=>{try{localStorage.setItem('vctd',JSON.stringify({lang:S.lang,phone:S.phone,logged:S.logged,pid:S.pid}))}catch(e){}};
 const L=(ta,en)=>S.lang==='ta'?ta:en;
@@ -800,7 +803,7 @@ let POS={lat:P.home.lat+.003,lon:P.home.lon-.002};
 let J=null; // active job
 
 const app=document.getElementById('app');
-function go(html,after){cancelAnimationFrame(mapLoop);clearInterval(TK);clearTimeout(REQ);app.innerHTML=html;after&&after()}
+function go(html,after){cancelAnimationFrame(mapLoop);clearInterval(TK);clearTimeout(REQ);app.innerHTML=html;after&&after();if(window.APPGET)APPGET.paint()}
 function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(toast.h);toast.h=setTimeout(()=>el.classList.remove('show'),2600)}
 const isToday=ts=>new Date(ts).toDateString()===new Date().toDateString();
 const onMinutes=()=>Math.round((DS.onMs+(S.online?Date.now()-S.onSince:0))/6e4);
@@ -986,6 +989,7 @@ function home(){
         ${CL?'':`<button class="demo" id="dreq">${L('Demo: ride request கொண்டு வா','Demo: send a ride request')}</button>`}`
       :`${signCard()}${dutyBtn(false)}`}
      ${pushReady()&&(CL.nativePush&&CL.nativePush()?!lsGet('vct_fcm'):Notification.permission==='default')?`<button class="warn" id="pushon" style="text-align:left;border:0;width:100%">🔔 ${L('Phone lock ஆனாலும் ride alert வரணுமா? இங்கே தொட்டு Allow கொடுங்க','Get ride alerts even when the phone is locked: tap and Allow')}</button>`:''}
+     <div id="appget" hidden></div>
      ${upcHtml()}
      ${SHOW_SMGR?smgrHtml():''}
      ${wxHtmlD()}
@@ -1423,7 +1427,7 @@ let WXD=null;
 function wxHtmlD(){return CL?VCTWX.html(WXD,Date.now(),'driver',S.lang):''}
 function watchWxD(){UNS.push(F().onSnapshot(F().doc(CL.db,'config','weather'),s=>{WXD=s.exists()?s.data():null;const el=document.getElementById('wx');if(el)el.outerHTML=wxHtmlD()},()=>{}))}
 function watchCfgD(){UNS.push(F().onSnapshot(F().doc(CL.db,'config','app'),s=>{if(!s.exists())return;const d=s.data();
-  if(d.comm!=null)COMM=+d.comm;if(d.minbal!=null)MINBAL=+d.minbal;CFGD.upi=d.upi||'';CFGD.office=d.driverHelp||d.office||''; /* drivers call the driver help line when the office has set one */CFGD.serverComm=!!d.serverComm;CFGD.serverPin=!!d.serverPin;CFGD.reqConsent=!!d.reqConsent;CFGD.extNav=!!d.extNav;CFGD.rzp=!!d.rzp&&(!Array.isArray(d.rzpTesters)||!d.rzpTesters.length||d.rzpTesters.includes(CL&&CL.phone));CFGD.showFee=!!d.showFee;CFGD.wait=d.wait||null;CFGD.push=d.push||null;
+  if(window.APPGET)APPGET.setPlay(d.play);if(d.comm!=null)COMM=+d.comm;if(d.minbal!=null)MINBAL=+d.minbal;CFGD.upi=d.upi||'';CFGD.office=d.driverHelp||d.office||''; /* drivers call the driver help line when the office has set one */CFGD.serverComm=!!d.serverComm;CFGD.serverPin=!!d.serverPin;CFGD.reqConsent=!!d.reqConsent;CFGD.extNav=!!d.extNav;CFGD.rzp=!!d.rzp&&(!Array.isArray(d.rzpTesters)||!d.rzpTesters.length||d.rzpTesters.includes(CL&&CL.phone));CFGD.showFee=!!d.showFee;CFGD.wait=d.wait||null;CFGD.push=d.push||null;
   {const na=Array.isArray(d.announce)?d.announce:[],top=na[0];const fresh=top&&(!ANN[0]||ANN[0].id!==top.id)&&top.t>seenAt();ANN=na;
    if(fresh&&ANN.length&&!J&&!document.querySelector('.modal')){beep();toast('📢 '+(top.title||L('Office அறிவிப்பு','Office notice')));if(S.tab==='home'&&document.getElementById('menu'))home()}}if(d.dispatch)Object.assign(DISP,d.dispatch);
   if(d.fares)VEH.forEach(v=>{const f=d.fares[v.id];if(f&&v.id!=='auto'){if(f.base!=null)v.base=+f.base;if(f.per!=null)v.per=+f.per;v.incl=+f.incl>0?+f.incl:undefined}})},()=>{}))}

@@ -29,7 +29,7 @@
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('../vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV=window.VCT_V='100',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV=window.VCT_V='101',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('../version.json',location.href)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -717,13 +717,13 @@ details.faq p{margin:0;padding:0 14px 14px;color:var(--muted);font-size:14px;lin
 <div class="app" id="app"></div>
 <div class="toast" id="toast"></div>
 
-<script src="../core/report.js?v=100"></script>
-<script src="../core/geo.js?v=100"></script>
-<script src="../core/fare.js?v=100"></script>
-<script src="../core/driverchecks.js?v=100"></script>
-<script src="../core/map.js?v=100"></script>
-<script src="../core/otp.js?v=100"></script>
-<script src="../core/refer.js?v=100"></script>
+<script src="../core/report.js?v=101"></script>
+<script src="../core/geo.js?v=101"></script>
+<script src="../core/fare.js?v=101"></script>
+<script src="../core/driverchecks.js?v=101"></script>
+<script src="../core/map.js?v=101"></script>
+<script src="../core/otp.js?v=101"></script>
+<script src="../core/refer.js?v=101"></script>
 <script>
 /* shared with the customer app: icons, places, fares, map engine */
 const I = {
@@ -2037,6 +2037,13 @@ function siteDraw(){const el=document.getElementById('wsb');if(!el||!WS)return;c
       w.places=places;WS.imgs={};toast(L('Website-ல சேமிச்சாச்சு','Saved to the website'));siteDraw()
     }catch(e){oerr(e);toast(CL.errText(e,S.lang==='ta'))}finally{const b=document.getElementById('wssv');if(b)b.disabled=false}};
 }
+const PLAYC='https://play.google.com/store/apps/details?id=app.velloretaxi',PLAYD='https://play.google.com/store/apps/details?id=app.velloretaxi.driver';
+const okPlay=u=>/^https:\/\/play\.google\.com\/store\/apps\/details\?id=[\w.]+$/.test(u);
+function savePlay(){const cu=document.getElementById('plcu').value.trim(),du=document.getElementById('pldu').value.trim(),oc=document.getElementById('plc').checked,od=document.getElementById('pld').checked;
+  if(!okPlay(cu)||!okPlay(du)){toast(L('Link சரியில்லை. https://play.google.com/store/apps/details?id=… மாதிரி இருக்கணும்','Link looks wrong. It must look like https://play.google.com/store/apps/details?id=…'));return}
+  const play={on:oc||od,cust:oc?cu:'',drv:od?du:'',custUrl:cu,drvUrl:du};
+  if(CL){cw(F().setDoc(F().doc(CL.db,'config','app'),{play,updatedAt:ts()},{merge:true}).then(()=>{DB.cfg.play=play;log('Play Store அறிவிப்பு: '+(oc?'customer ON ':'customer OFF ')+(od?'driver ON':'driver OFF'),'Play Store notice changed');toast(L('சேமிச்சாச்சு. எல்லா app-லயும் உடனே மாறும்','Saved. All apps update right away'))}));return}
+  DB.cfg.play=play;saveDB();toast(L('சேமிச்சாச்சு','Saved'))}
 function settings(){
   const c=DB.cfg;
   main().innerHTML=`${head('Settings',L('இங்கே மாத்தினது Customer, Driver app-ல Firebase connect ஆனதும் தெரியும்','Changes reach the customer and driver apps once Firebase is connected'),`<button class="btn yellow hd" id="sv">${L('சேமி','Save')}</button>`)}
@@ -2080,6 +2087,13 @@ function settings(){
      <label class="lrow2 col"><span>${L('உங்க UPI ID (customer QR, driver recharge-க்கு)','Your UPI ID (customer QR and driver recharge)')}</span><span class="field"><input id="up" maxlength="50" placeholder="name@bank" value="${esc(c.upi)}"></span></label>
      <label class="lrow2 col"><span>${L('Office phone (customer app "எங்களை அழை")','Office phone (customer app "Call us")')}</span><span class="field"><span class="cc">+91</span><input id="of" inputmode="numeric" maxlength="10" value="${esc(c.office)}"></span></label>
      <label class="lrow2 col"><span>${L('ஓட்டுநர் உதவி எண் (driver app "Office-ஐ அழை" · காலியா விட்டா மேல உள்ள office எண்)','Driver help phone (driver app "Call the office" · empty = the office phone above)')}</span><span class="field"><span class="cc">+91</span><input id="dh" inputmode="numeric" maxlength="10" value="${esc(c.driverHelp||'')}"></span></label></section></div>
+   <section class="panel" style="margin-top:14px" id="playp"><div class="ph"><h3>📲 ${L('Play Store app வந்துடுச்சுன்னு அறிவிப்பு','Tell people the Play Store app is out')}</h3></div>
+    <p class="muted" style="margin:0 0 8px;font-size:13px">${L('ON பண்ணினா, Chrome / website-ல app பயன்படுத்தற Android customer, driver-க்கு "Play Store-ல Download" card காட்டும் (Play Store app-க்குள்ள காட்டாது). App Google approve ஆகி Play Store-ல எல்லாருக்கும் கிடைச்ச பிறகு தான் ON பண்ணுங்க.','When ON, Android customers and drivers using the app in Chrome / the website see a "Get it on Play Store" card (not inside the Play Store app). Switch it on only after Google approves the app and it is live for everyone.')}</p>
+    <label class="lrow2"><span>${L('Customer app (Vellore Taxi) அறிவிப்பு ON','Customer app (Vellore Taxi) notice ON')}</span><input type="checkbox" id="plc" ${DB.cfg.play&&DB.cfg.play.on&&DB.cfg.play.cust?'checked':''}></label>
+    <label class="lrow2 col"><span>${L('Customer app Play Store link','Customer app Play Store link')}</span><span class="field"><input id="plcu" value="${esc((DB.cfg.play&&DB.cfg.play.custUrl)||PLAYC)}"></span></label>
+    <label class="lrow2"><span>${L('Driver app (VCT Driver) அறிவிப்பு ON','Driver app (VCT Driver) notice ON')}</span><input type="checkbox" id="pld" ${DB.cfg.play&&DB.cfg.play.on&&DB.cfg.play.drv?'checked':''}></label>
+    <label class="lrow2 col"><span>${L('Driver app Play Store link','Driver app Play Store link')}</span><span class="field"><input id="pldu" value="${esc((DB.cfg.play&&DB.cfg.play.drvUrl)||PLAYD)}"></span></label>
+    <button class="btn" id="plsv" style="margin-top:8px">${L('Play Store அறிவிப்பு சேமி','Save Play Store notice')}</button></section>
    <section class="panel" style="margin-top:14px"><div class="ph"><h3>${L('Outstation / Rental: Office முதல்','Outstation / rental: office first')}</h3></div>
     <p class="muted" style="margin:0 0 8px;font-size:13px">${L('புது Outstation / Rental booking முதல்ல office-க்கு வரும். இந்த நேரத்துக்குள்ள யாரும் assign பண்ணலைன்னா தானா drivers-க்கு போகும்: Outstation-க்கு 🏆 Top driver → 🆕 புது வண்டி (5 வருஷத்துக்குள்) → ⭐ மற்ற outstation drivers → 🚕 எல்லாரும். Top driver = ★4.5+ & 7 நாள்ல 35+ trips.','New outstation and rental bookings come to the office first. If nobody assigns in time, they go to drivers automatically. Outstation order: 🏆 top drivers → 🆕 new vehicles (≤5 yrs) → ⭐ other outstation drivers → 🚕 everyone. Top driver = ★4.5+ and 35+ trips in 7 days.')}</p>
     ${(()=>{const dp={...DISPD,...(c.dispatch||{})};const opt=(arr,v)=>arr.map(([x,l])=>`<option value="${x}" ${+v===x?'selected':''}>${l}</option>`).join('');
@@ -2132,6 +2146,7 @@ function settings(){
   app.querySelectorAll('.cell[data-fi]').forEach(i=>i.oninput=()=>{i.value=i.value.replace(/[^\d.]/g,'').replace(/(\..*)\./g,'$1').slice(0,4);const v=i.dataset.fi,x=parseFloat(i.value);if(x>0&&x<=10)c.fares[v].incl=x;else delete c.fares[v].incl;app.querySelector(`[data-pv="${v}"]`).textContent=inr(fareO(v,5))});
   app.querySelectorAll('.cell[data-f]').forEach(i=>i.oninput=()=>{i.value=i.value.replace(/\D/g,'').slice(0,5);const [v,k]=i.dataset.f.split('.');c.fares[v][k]=+i.value||0;app.querySelector(`[data-pv="${v}"]`).textContent=inr(fareO(v,5))});
   if(CL&&!CFGOK){['sv','ssv'].forEach(i=>{const b=document.getElementById(i);if(b){b.disabled=true;b.textContent=L('Settings ஏறுது…','Loading settings…')}})} // never save defaults over the real prices
+  {const pls=document.getElementById('plsv');if(pls)pls.onclick=()=>{if(CL&&!CFGOK)return;savePlay()}}
   document.getElementById('sv').onclick=()=>{if(CL&&!CFGOK)return;
     // a config update from Firebase while this screen is open swaps the fare objects underneath the inputs,
     // so take every price from what is on screen right now, not from what was typed into the old objects
@@ -2236,7 +2251,7 @@ function watchAll(){
   // website contact form (velloretaxi.app/vellore/) — shown with the support requests; quiet until the new rules are published
   OUNS.push(F().onSnapshot(F().query(F().collection(CL.db,'enquiries'),F().orderBy('createdAt','desc'),F().limit(200)),s=>{RAWE=s.docs.map(d=>({_id:d.id,...d.data()}));remap()},e=>{if(!(e&&e.code==='permission-denied'))oerr(e)}));
   OUNS.push(F().onSnapshot(F().doc(CL.db,'config','app'),s=>{const first=!CFGOK;CFGOK=true;if(s.exists()){const d=s.data();
-    Object.assign(DB.cfg,{comm:d.comm!=null?+d.comm:10,minbal:d.minbal!=null?+d.minbal:100,upi:d.upi||'',office:d.office||'',driverHelp:d.driverHelp||'',dispatch:{...DISPD,...(d.dispatch||{})},wait:d.wait||null,serverComm:!!d.serverComm,serverOps:!!d.serverOps,privPhone:!!d.privPhone,serverPin:!!d.serverPin,reqConsent:!!d.reqConsent,extNav:!!d.extNav,push:d.push||null,night:d.night||null,out:mergeOut(d.out),area:d.area||null,rent:mergeRent(d.rent),blocked:Array.isArray(d.blocked)?d.blocked:[],showBike:!!d.showBike,showFee:!!d.showFee,announce:Array.isArray(d.announce)?d.announce:[]});
+    Object.assign(DB.cfg,{comm:d.comm!=null?+d.comm:10,minbal:d.minbal!=null?+d.minbal:100,upi:d.upi||'',office:d.office||'',driverHelp:d.driverHelp||'',dispatch:{...DISPD,...(d.dispatch||{})},wait:d.wait||null,serverComm:!!d.serverComm,serverOps:!!d.serverOps,privPhone:!!d.privPhone,serverPin:!!d.serverPin,reqConsent:!!d.reqConsent,extNav:!!d.extNav,push:d.push||null,play:d.play||null,night:d.night||null,out:mergeOut(d.out),area:d.area||null,rent:mergeRent(d.rent),blocked:Array.isArray(d.blocked)?d.blocked:[],showBike:!!d.showBike,showFee:!!d.showFee,announce:Array.isArray(d.announce)?d.announce:[]});
     if(d.fares)Object.keys(d.fares).forEach(k=>{DB.cfg.fares[k]={...(DB.cfg.fares[k]||{}),...d.fares[k]}})}remap();
     // Settings opened before the saved settings arrived (e.g. after a refresh): draw it again with the real values
     if(first&&S.sec==='set'&&!document.querySelector('.modal')&&!typing())show()},oerr));
