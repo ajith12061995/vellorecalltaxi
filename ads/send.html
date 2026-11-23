@@ -1,0 +1,11 @@
+<!doctype html><meta charset="utf-8"><title>VCT ad posters</title>
+<p id="s">Sending posters…</p>
+<script>
+/* Helper for uploading the ad posters into Meta Ads Manager: opened from the Ads Manager tab, it sends the
+   two public poster images back to that tab (only to the Meta origin). Nothing else is sent. */
+(async()=>{const s=document.getElementById('s');
+  try{if(!window.opener)throw new Error('no opener');
+    const f=[];for(const n of ['vct-customer-ta.jpg','vct-customer-en.jpg']){const r=await fetch('./'+n,{cache:'no-store'});const b=await r.blob();f.push(new File([b],n,{type:'image/jpeg'}))}
+    for(const o of ['https://adsmanager.facebook.com','https://business.facebook.com'])try{window.opener.postMessage({vctPosters:f},o)}catch(e){}
+    s.textContent='Sent '+f.length+' posters. You can close this tab.'}catch(e){s.textContent='Error: '+e.message}})();
+</script>
