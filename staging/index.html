@@ -41,7 +41,7 @@
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('./vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV=window.VCT_V='103',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV=window.VCT_V='104',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('./version.json',location.href)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -506,6 +506,12 @@ details.faq summary::after{content:"+";position:absolute;right:14px;top:50%;tran
 details.faq[open] summary::after{transform:translateY(-50%) rotate(45deg)}
 details.faq[open]{border-color:var(--navy)}
 details.faq p{margin:0;padding:0 14px 14px;color:var(--muted);font-size:14px;line-height:1.5}
+.fbcard{display:flex;flex-direction:column;gap:10px;padding:16px;border-radius:20px;border:1.5px solid var(--line)}
+.fbcard b{font-family:var(--display);font-size:18px;display:block}
+.fbcard small{display:block;color:var(--muted);font-size:13px;margin-top:2px}
+.fbstars{display:flex;gap:6px;justify-content:center}
+.fbstars button{width:48px;height:48px;border-radius:14px;font-size:28px;line-height:1;color:#C9C4B8;background:transparent;border:1.5px solid var(--line)}
+.fbstars button.on{color:#F5B301;border-color:#F5B301}
 .helpcta{display:flex;flex-direction:column;gap:12px;padding:16px;border-radius:20px;background:var(--navy-soft)}
 .helpcta b{font-family:var(--display);font-size:18px;display:block}
 .helpcta small{color:var(--muted);font-size:13px}
@@ -547,17 +553,17 @@ details.faq p{margin:0;padding:0 14px 14px;color:var(--muted);font-size:14px;lin
 <div class="app" id="app"></div>
 <div class="toast" id="toast"></div>
 
-<script src="./core/report.js?v=103"></script>
-<script src="./core/geo.js?v=103"></script>
-<script src="./core/fare.js?v=103"></script>
-<script src="./core/appget.js?v=103"></script>
-<script src="./core/pin.js?v=103"></script>
-<script src="./core/clock.js?v=103"></script>
-<script src="./core/map.js?v=103"></script>
-<script src="./core/chat.js?v=103"></script>
-<script src="./core/otp.js?v=103"></script>
-<script src="./core/deskmode.js?v=103"></script>
-<script src="./core/weather.js?v=103"></script>
+<script src="./core/report.js?v=104"></script>
+<script src="./core/geo.js?v=104"></script>
+<script src="./core/fare.js?v=104"></script>
+<script src="./core/appget.js?v=104"></script>
+<script src="./core/pin.js?v=104"></script>
+<script src="./core/clock.js?v=104"></script>
+<script src="./core/map.js?v=104"></script>
+<script src="./core/chat.js?v=104"></script>
+<script src="./core/otp.js?v=104"></script>
+<script src="./core/deskmode.js?v=104"></script>
+<script src="./core/weather.js?v=104"></script>
 <script>
 /* ---------- icons ---------- */
 const I = {
@@ -1843,7 +1849,7 @@ const FAQ=[
 const FCAT={booking:['Booking','Booking'],pay:['கட்டணம் & பணம்','Fares & payment'],safety:['பாதுகாப்பு','Safety'],account:['கணக்கு','Account']};
 const ISSUES=[['fare','அதிக கட்டணம் கேட்டாங்க','Charged extra'],['lost','பொருள் மறந்துட்டேன்','Lost item'],['behaviour','Driver நடத்தை சரியில்லை','Driver behaviour'],
   ['clean','வண்டி சுத்தமில்லை','Vehicle not clean'],['route','தவறான வழியில போனாங்க','Took a wrong route'],['other','வேற பிரச்சனை','Something else']];
-const tixName=x=>x.type==='callback'?'Call me back':x.type==='lost'?L('பொருள் மறந்தது','Lost item'):L('Complaint','Complaint');
+const tixName=x=>x.type==='callback'?'Call me back':x.type==='lost'?L('பொருள் மறந்தது','Lost item'):x.type==='feedback'?'Feedback':L('Complaint','Complaint');
 
 function helpTab(){
   const last=TRIPS.find(isDone);
@@ -1857,7 +1863,9 @@ function helpTab(){
     <div id="faq">${Object.keys(FCAT).map(c=>`<div class="fgrp" data-c="${c}"><span class="kind">${FCAT[c][S.lang==='ta'?0:1]}</span>${FAQ.filter(f=>f[0]===c).map(f=>`<details class="faq" data-s="${esc((f[1]+' '+f[2]+' '+f[3]+' '+f[4]).toLowerCase())}"><summary>${S.lang==='ta'?f[1]:f[2]}</summary><p>${S.lang==='ta'?f[3]:f[4]}</p></details>`).join('')}</div>`).join('')}</div>
     <p class="muted" id="nofaq" hidden>${L('இதுக்கு பதில் கிடைக்கல. கீழே Call me back அழுத்துங்க.','No answer found. Use Call me back below.')}</p>
     ${TIX.length?`<div class="sec"><h3>${L('என் requests','My requests')}</h3><span class="sample">${TIX.length}</span></div>
-      <div class="recent">${TIX.slice(0,5).map(x=>`<div class="row"><span class="ic">${x.type==='callback'?I.phone:I.chat}</span><div><b>${tixName(x)}${x.trip?' · '+x.trip:''}</b><small>${esc(x.title?x.title[S.lang]:'')} · ${when(x.date)}</small></div><em class="st up">${L('Staff பார்க்கிறாங்க','In progress')}</em></div>`).join('')}</div>`:''}
+      <div class="recent">${TIX.slice(0,5).map(x=>`<div class="row"><span class="ic">${x.type==='callback'?I.phone:I.chat}</span><div><b>${tixName(x)}${x.trip?' · '+x.trip:''}</b><small>${esc(x.title?x.title[S.lang]:'')} · ${when(x.date)}</small></div><em class="st up">${x.type==='feedback'?L('அனுப்பியாச்சு','Sent'):L('Staff பார்க்கிறாங்க','In progress')}</em></div>`).join('')}</div>`:''}
+    <div class="fbcard"><div><b>${L('App எப்படி இருக்கு?','How is the app?')}</b><small>${L('உங்க கருத்து எங்களுக்கு app-ஐ சரி பண்ண உதவும்.','Your feedback helps us improve the app.')}</small></div>
+      <button class="btn yellow" id="fbk">💬 ${L('Feedback சொல்லுங்க','Send feedback')}</button></div>
     <div class="helpcta"><div><b>${L('இன்னும் உதவி வேணுமா?','Still need help?')}</b><small>${L('எங்க staff உங்களை திரும்ப கூப்பிடுவாங்க. Call charge இல்லை.','Our staff will call you back, free of charge.')}</small></div>
       <div class="two"><button class="btn yellow" id="cb">${I.phone}Call me back</button><button class="btn" id="cu">${L('எங்களை அழை','Call us')}</button></div></div>
   </div>`),()=>{
@@ -1869,6 +1877,7 @@ function helpTab(){
       document.getElementById('nofaq').hidden=!!any};
     app.querySelectorAll('[data-iq]').forEach(b=>b.onclick=()=>issueSheet(last,b.dataset.iq));
     document.getElementById('cb').onclick=()=>callbackSheet();
+    document.getElementById('fbk').onclick=()=>feedbackSheet();
     document.getElementById('cu').onclick=()=>(CL&&CFG.office)?modal(`<h3>${L('எங்களை அழைக்க','Call us')}</h3><p style="margin:0;font-family:var(--display);font-size:28px">+91 ${CFG.office}</p><a class="btn" href="tel:+91${CFG.office}">${L('Call பண்ணு','Call now')}</a>`):modal(`<h3>${L('எங்களை அழைக்க','Call us')}</h3>
       <div class="note">${L('உங்க office phone number Owner app-ல set பண்ணதும் இங்கே வரும், tap பண்ணா call போகும்.','Your office phone number shows here once it is set in the Owner app. Tapping it places the call.')}</div>
       <p class="muted" style="margin:0">${L('அதுவரை Call me back பயன்படுத்துங்க.','Until then, use Call me back.')}</p><button class="btn" id="ok2">${L('சரி','OK')}</button>`,(m,close)=>m.querySelector('#ok2').onclick=close);
@@ -1897,6 +1906,30 @@ function callbackSheet(reason){
       addTicket({type:'callback',title:{ta:`${RS3[r][0]} · ${WH3[w][0]}`,en:`${RS3[r][1]} · ${WH3[w][1]}`},phone:ph.value,note:m.querySelector('#cbn').value.trim()});
       close();if(S.tab==='help')helpTab();
       toast(L(`Request அனுப்பியாச்சு. Staff +91 ${ph.value}-க்கு கூப்பிடுவாங்க`,`Request sent. Our staff will call +91 ${ph.value}`));
+    };
+  });
+}
+
+/* App feedback (stars + words) → a 'feedback' ticket the office reads in Support */
+const FBT=[['app','App பயன்பாடு','Using the app'],['booking','Booking','Booking'],['fare','கட்டணம்','Fares'],['driver','Driver / வண்டி','Driver / vehicle'],['idea','புது யோசனை','New idea'],['other','வேற','Other']];
+function feedbackSheet(){
+  let st=0,k='app';
+  modal(`<h3>${L('உங்க Feedback','Your feedback')}</h3><p class="muted" style="margin:0">${L('நல்லதோ, குறையோ — எதுவானாலும் சொல்லுங்க. எங்க team படிச்சு app-ஐ சரி பண்ணும்.','Good or bad, tell us. Our team reads every note and improves the app.')}</p>
+    <div class="fbstars" role="radiogroup" aria-label="${L('மதிப்பீடு','Rating')}">${[1,2,3,4,5].map(n=>`<button type="button" data-fs="${n}" role="radio" aria-checked="false" aria-label="${n}">★</button>`).join('')}</div>
+    <span class="kind">${L('எதைப் பற்றி?','About')}</span>
+    <div class="tags" style="justify-content:flex-start">${FBT.map(([id,ta,en])=>`<button class="chip ${id===k?'sel':''}" data-fk="${id}">${S.lang==='ta'?ta:en}</button>`).join('')}</div>
+    <textarea id="fbn" maxlength="800" placeholder="${L('என்ன பிடிச்சது? என்ன சரியில்லை? என்ன வேணும்?','What did you like? What is not right? What do you want?')}"></textarea>
+    <div class="err" id="fbe"></div><button class="btn" id="fbs">${L('Feedback அனுப்பு','Send feedback')}</button>`,(m,close)=>{
+    const paint=()=>m.querySelectorAll('[data-fs]').forEach(b=>{const on=+b.dataset.fs<=st;b.classList.toggle('on',on);b.setAttribute('aria-checked',String(+b.dataset.fs===st))});
+    m.querySelectorAll('[data-fs]').forEach(b=>b.onclick=()=>{st=+b.dataset.fs;paint();m.querySelector('#fbe').textContent=''});
+    m.querySelectorAll('[data-fk]').forEach(b=>b.onclick=()=>{k=b.dataset.fk;m.querySelectorAll('[data-fk]').forEach(x=>x.classList.toggle('sel',x===b))});
+    m.querySelector('#fbs').onclick=()=>{
+      const note=m.querySelector('#fbn').value.trim();
+      if(!st&&note.length<3){m.querySelector('#fbe').textContent=L('Star கொடுங்க அல்லது கொஞ்சம் எழுதுங்க','Pick a star rating or write a few words');return}
+      const c=FBT.find(x=>x[0]===k),sr=st?' · '+'★'.repeat(st):'';
+      addTicket({type:'feedback',title:{ta:`Feedback: ${c[1]}${sr}`,en:`Feedback: ${c[2]}${sr}`},note});
+      close();if(S.tab==='help')helpTab();
+      toast(L('நன்றி! உங்க feedback எங்களுக்கு வந்துடுச்சு 🙏','Thank you! We got your feedback 🙏'));
     };
   });
 }

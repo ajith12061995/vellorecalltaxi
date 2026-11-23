@@ -423,3 +423,16 @@ test('staff personal details and files: owner only; owner cannot demote or delet
   await assertFails(deleteDoc(doc(as.owner(), 'staff', OWNER)));
   await assertSucceeds(deleteDoc(doc(as.owner(), 'staff', STAFF)));
 });
+test('app feedback: customer and driver send a feedback ticket as themselves; only staff read it', async () => {
+  const fb = (uid, o) => ({ uid, type: 'feedback', title: { ta: 'Feedback: App · ★★★★', en: 'Feedback: App · ★★★★' }, phone: '9999900001', cust: 'Priya', trip: '', note: 'nice', lat: null, lon: null, status: 'open', date: Date.now(), createdAt: serverTimestamp(), ...o });
+  const r = await assertSucceeds(addDoc(collection(as.cust(), 'tickets'), fb(CUST)));
+  await assertSucceeds(addDoc(collection(as.drv(), 'tickets'), fb('u-drv', { cust: 'Driver · Test', phone: '9999900002' })));
+  await assertFails(addDoc(collection(as.cust(), 'tickets'), fb('u-drv')), 'not as someone else');
+  await assertFails(addDoc(collection(as.anon(), 'tickets'), fb(CUST)), 'needs sign-in');
+  await assertFails(addDoc(collection(as.cust(), 'tickets'), fb(CUST, { note: 'x'.repeat(1001) })), 'note too long');
+  await assertSucceeds(getDoc(doc(as.cust(), 'tickets', r.id)));
+  await assertFails(getDoc(doc(as.other(), 'tickets', r.id)));
+  await assertSucceeds(getDoc(doc(as.staff(), 'tickets', r.id)));
+  await assertSucceeds(updateDoc(doc(as.staff(), 'tickets', r.id), { status: 'closed' }));
+  await assertFails(updateDoc(doc(as.cust(), 'tickets', r.id), { status: 'closed' }));
+});

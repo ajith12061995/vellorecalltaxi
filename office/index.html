@@ -29,7 +29,7 @@
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('../vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV=window.VCT_V='103',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV=window.VCT_V='104',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('../version.json',location.href)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -560,6 +560,7 @@ details.faq p{margin:0;padding:0 14px 14px;color:var(--muted);font-size:14px;lin
 .bst.cancelled,.dst.off{background:var(--surface-2);color:var(--muted);border:1px solid var(--line)}
 .bst.scheduled{background:var(--surface-2);color:var(--navy);border:1px solid var(--line)}
 .sst.open{background:rgba(194,59,59,.12);color:var(--danger)}
+.stype.feedback{background:#E8F3EE;color:#0B4A36}
 .stype.sos{background:#C23B3B;color:#fff}
 .act{display:flex;align-items:center;gap:10px;font-size:13.5px;padding:6px 0}
 .asum{display:flex;align-items:center;gap:8px;margin:-2px 0 10px}.asum span{font-weight:800;font-size:13px;padding:5px 10px;border-radius:999px}.asum small{color:var(--muted);font-size:12px}
@@ -717,13 +718,13 @@ details.faq p{margin:0;padding:0 14px 14px;color:var(--muted);font-size:14px;lin
 <div class="app" id="app"></div>
 <div class="toast" id="toast"></div>
 
-<script src="../core/report.js?v=103"></script>
-<script src="../core/geo.js?v=103"></script>
-<script src="../core/fare.js?v=103"></script>
-<script src="../core/driverchecks.js?v=103"></script>
-<script src="../core/map.js?v=103"></script>
-<script src="../core/otp.js?v=103"></script>
-<script src="../core/refer.js?v=103"></script>
+<script src="../core/report.js?v=104"></script>
+<script src="../core/geo.js?v=104"></script>
+<script src="../core/fare.js?v=104"></script>
+<script src="../core/driverchecks.js?v=104"></script>
+<script src="../core/map.js?v=104"></script>
+<script src="../core/otp.js?v=104"></script>
+<script src="../core/refer.js?v=104"></script>
 <script>
 /* shared with the customer app: icons, places, fares, map engine */
 const I = {
@@ -1431,12 +1432,12 @@ let ST='open';
 const ENQK={ride:['City ride','City ride'],outstation:['Outstation','Outstation'],rental:['Rental','Rental'],event:['கல்யாணம் / நிகழ்ச்சி','Wedding / event'],corporate:['Corporate','Corporate'],driver:['Driver-ஆக சேர','Driver joining'],other:['மற்றவை','Other']};
 function support(){
   const list=DB.sup.filter(s=>ST==='all'||(ST==='open'?s.status!=='closed':s.status==='closed'));
-  const TN={sos:'SOS',callback:'Call me back',complaint:'Complaint',lost:L('பொருள் மறந்தது','Lost item'),enquiry:L('Website enquiry','Website enquiry')};
-  main().innerHTML=`${head(L('உதவி requests','Support'),L('Customer call-back, complaint, lost item, SOS','Call-backs, complaints, lost items and SOS'))}
+  const TN={sos:'SOS',callback:'Call me back',complaint:'Complaint',lost:L('பொருள் மறந்தது','Lost item'),feedback:'💬 Feedback',enquiry:L('Website enquiry','Website enquiry')};
+  main().innerHTML=`${head(L('உதவி requests','Support'),L('Customer call-back, complaint, lost item, SOS, feedback','Call-backs, complaints, lost items, SOS and feedback'))}
    <div class="tabs">${[['open',L('திறந்தவை','Open')],['closed',L('முடிந்தவை','Closed')],['all',L('எல்லாம்','All')]].map(([k,l])=>`<button class="${ST===k?'on':''}" data-st="${k}">${l}</button>`).join('')}</div>
    <div class="cards">${list.length?list.map(s=>`<div class="scard ${s.type}"><div class="dtop"><em class="stype ${s.type}">${TN[s.type]}</em><small class="muted">${s.id} · ${ago(s.date)}</small><em class="sst ${s.status}">${({open:L('புதுசு','New'),progress:L('பார்த்துகிட்டு இருக்கோம்','In progress'),closed:L('முடிந்தது','Closed')})[s.status]}</em></div>
      <b>${esc(s.title[S.lang])}</b><small>${esc(s.cust)} · +91 ${s.phone}${s.trip?' · '+s.trip:''}</small>${s.lat?`<a class="linkbtn" href="https://www.google.com/maps?q=${s.lat},${s.lon}" target="_blank" rel="noopener">${L('Location பார்','Open location')} ↗</a>`:''}${s.note?`<p class="snote">${esc(s.note)}</p>`:''}
-     <div class="dact">${s.status!=='closed'?`<button class="btn sm" data-sp="${s.id}">${s.status==='open'?L('கூப்பிட்டாச்சு','Called them'):L('குறிப்பு சேர்','Add note')}</button><button class="linkbtn" data-sc="${s.id}">${L('முடிச்சாச்சு','Close')}</button>`:`<button class="linkbtn" data-so="${s.id}">${L('மறுபடி திற','Reopen')}</button>`}</div></div>`).join('')
+     <div class="dact">${s.status!=='closed'?`<button class="btn sm" data-sp="${s.id}">${s.status==='open'&&s.type!=='feedback'?L('கூப்பிட்டாச்சு','Called them'):L('குறிப்பு சேர்','Add note')}</button><button class="linkbtn" data-sc="${s.id}">${L('முடிச்சாச்சு','Close')}</button>`:`<button class="linkbtn" data-so="${s.id}">${L('மறுபடி திற','Reopen')}</button>`}</div></div>`).join('')
      :`<div class="empty"><h3>${L('எதுவும் இல்லை','Nothing here')}</h3><p class="muted">${L('எல்லா request-உம் முடிஞ்சாச்சு','All requests are handled')}</p></div>`}</div>`;
   app.querySelectorAll('[data-st]').forEach(b=>b.onclick=()=>{ST=b.dataset.st;support()});
   app.querySelectorAll('[data-sp]').forEach(b=>b.onclick=()=>{const s=DB.sup.find(x=>x.id===b.dataset.sp);
@@ -1663,7 +1664,7 @@ function drvStats(d,hist){
   const in7=b=>(b.done||b.created)>=now-7*DAY;
   const done=mine.filter(b=>b.status==='done'),cx=mine.filter(isDrvCx),rated=done.filter(b=>b.rating>0);
   const keys=new Set(mine.flatMap(b=>[b.id,b._id.slice(0,6).toUpperCase(),b._id]));
-  const comp=DB.sup.filter(t=>t.type!=='callback'&&(keys.has(t.trip)||(t.phone&&t.phone.replace('+91','')===d.phone&&t.type!=='sos')));
+  const comp=DB.sup.filter(t=>t.type!=='callback'&&t.type!=='feedback'&&(keys.has(t.trip)||(t.phone&&t.phone.replace('+91','')===d.phone&&t.type!=='sos')));
   const avg=rated.length?rated.reduce((a,b)=>a+b.rating,0)/rated.length:0,taken=done.length+cx.length;
   const flags=[];
   if(taken>=5&&pct(cx.length,taken)>20)flags.push(L(`ரத்து ${pct(cx.length,taken)}%`,`Cancels ${pct(cx.length,taken)}%`));
@@ -2296,7 +2297,8 @@ function remap(liveOnly){
   // alert the desk about new work
   const ids=new Set([...DB.bk.filter(b=>b.status==='searching').map(b=>'b'+b._id),...DB.sup.filter(s=>s.status==='open').map(s=>'t'+s._id)]);
   if(SEEN){const fresh=[...ids].filter(x=>!SEEN.has(x));if(fresh.length){chime();const sos=DB.sup.find(s=>s.type==='sos'&&s.status==='open'&&fresh.includes('t'+s._id));
-    if(sos||fresh.some(x=>x[0]==='t'))toast(sos?'SOS: '+sos.cust:L('புது உதவி request','New support request'))}}
+    const fb=!sos&&DB.sup.find(s=>s.type==='feedback'&&fresh.includes('t'+s._id));
+    if(sos||fresh.some(x=>x[0]==='t'))toast(sos?'SOS: '+sos.cust:fb?L('புது Feedback','New feedback')+' · '+fb.cust:L('புது உதவி request','New support request'))}}
   if(BKLD)bkNotify();
   SEEN=ids;
   clearTimeout(RTIMER);RTIMER=setTimeout(()=>rerender(liveOnly),150);
