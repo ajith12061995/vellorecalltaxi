@@ -1,5 +1,6 @@
-# "Book" on the website opens the customer app as /#book=<base64 JSON>. After the customer signs in, the fare screen
-# opens with the same pickup, drop and vehicle (city) or the outstation screen (one way / round trip). Bad or
+# "Book" on the website opens the customer app as /#book=<base64 JSON>. The fare screen opens at once (even before
+# signing in); after the customer signs in (asked on Book), the fare screen
+# opens again with the same pickup, drop and vehicle (city) or the outstation screen (one way / round trip). Bad or
 # hostile links are ignored or cleaned (names can't inject HTML).
 import asyncio, json, base64
 from playwright.async_api import async_playwright
@@ -17,7 +18,10 @@ async def main():
         # a link opened before signing in is kept until the sign-in is done
         await cf.evaluate(f"history.replaceState(null,'','#book={enc({'f':KAT,'t':CMC,'v':'sedan','k':'local','o':'one'})}');BOOKLINK=readBookLink()")
         check('link read and removed from the address bar',await cf.evaluate("!!BOOKLINK&&!location.hash"))
-        await C.locator('#go').click();await pg.wait_for_timeout(300)
+        await C.locator('#go').click();await pg.wait_for_timeout(1200)
+        st=await cf.evaluate("({logged:S.logged,from:S.from,dest:S.dest,veh:S.veh,book:!!document.getElementById('bookb')})")
+        check('guest (not signed in): the website trip opens right away with prices',st=={'logged':False,'from':'pick','dest':'drop','veh':'sedan','book':True},st)
+        await C.locator('#bookb').click();await pg.wait_for_timeout(500)  # Book → sign in
         await C.locator('#ph').fill('9999900001');await C.locator('#go').click();await pg.wait_for_timeout(500)
         for i,d in enumerate('123456'):await C.locator(f'#o{i}').fill(d)
         await pg.wait_for_timeout(800);await C.locator('#nm').fill('Priya');await C.locator('#go').click();await pg.wait_for_timeout(2500)

@@ -10,6 +10,7 @@ async def main():
         C=pg.frame_locator('#c');cf=pg.frame(url='http://localhost:8765/tests/e2e/out/c2.html')
         cf.page.on('pageerror',lambda e:errs.append('f:'+str(e)))
         await C.locator('#go').click();await pg.wait_for_timeout(300)
+        if not await C.locator('#ph').count() and await C.locator('.nav button[data-tab="me"]').count():await C.locator('.nav button[data-tab="me"]').click();await pg.wait_for_timeout(400)  # guest home → sign in
         await C.locator('#ph').fill('9999900001');await C.locator('#go').click();await pg.wait_for_timeout(500)
         for i,d in enumerate('123456'):await C.locator(f'#o{i}').fill(d)
         await pg.wait_for_timeout(800)

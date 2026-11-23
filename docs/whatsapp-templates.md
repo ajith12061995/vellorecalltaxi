@@ -92,6 +92,24 @@ To book again, call: {{3}}
 Sorry for the trouble.
 ```
 
+## vct_no_driver — 1 name · 2 office phone
+Sent instead of vct_booking_cancelled when a ride was cancelled because no driver took it (cancelReason "nodriver").
+Until Meta approves it, the server sends vct_booking_cancelled instead (so the customer always gets a message).
+**ta**
+```
+வணக்கம் {{1}}, மன்னிக்கவும்! இப்போ உங்க பகுதியில வண்டி கிடைக்கலை, அதனால உங்க booking ரத்து ஆயிடுச்சு. கட்டணம் எதுவும் இல்லை.
+Vellore Taxi இப்போ தான் ஆரம்பிச்சிருக்கோம். தினமும் புது வண்டிகள் சேர்ந்துகிட்டு இருக்கு, இனிமே கண்டிப்பா நல்லா கிடைக்கும்.
+கொஞ்ச நேரம் கழிச்சு மறுபடி book பண்ணுங்க, அல்லது எங்களை அழைங்க: {{2}}
+உங்க பொறுமைக்கு நன்றி.
+```
+**en**
+```
+Hello {{1}}, we are sorry! No vehicle was free near you, so your booking was cancelled. There is no charge.
+Vellore Taxi has only just started. New vehicles join every day, and it will get much better soon.
+Please book again in a little while, or call us: {{2}}
+Thank you for your patience.
+```
+
 ## vct_driver_welcome — 1 driver name · 2 driver help phone
 Sent to a NEW DRIVER (not a customer) once, when the office approves their app application.
 **ta**

@@ -10,6 +10,9 @@ async def main():
     async with async_playwright() as p:
         b=await p.chromium.launch();ctx=await b.new_context(viewport={'width':1900,'height':880},geolocation={'latitude':12.99413,'longitude':80.17087},permissions=['geolocation'])
         pg=await ctx.new_page();errs=[];pg.on('pageerror',lambda e:errs.append(str(e)))
+        # the sandbox has no internet: a failed street-name lookup is logged (errors/ write), and the mock fires every
+        # listener on any write — that would re-open the live listener during the "denied read" check below
+        await ctx.route('**/nominatim.openstreetmap.org/**',lambda r:r.fulfill(status=200,content_type='application/json',body='{}'))
         await pg.goto(B+'harness_x.html');await pg.wait_for_timeout(2500)
         C=pg.frame_locator('#c');D=pg.frame_locator('#d');cf=pg.frame(url=B+'c2.html');df=pg.frame(url=B+'d2.html')
         await D.locator('#ph').fill('9999900002');await D.locator('#go').click();await pg.wait_for_timeout(300)
@@ -26,6 +29,7 @@ async def main():
         lv=await pg.evaluate("MOCK.store.get('live/+919999900002')")
         check('live keeps exact position, bk empty while free',lv and abs(lv['lat']-12.99413)<1e-6 and lv.get('bk')=='' and lv.get('busy') is False,lv)
         await C.locator('#go').click();await pg.wait_for_timeout(300)
+        if not await C.locator('#ph').count() and await C.locator('.nav button[data-tab="me"]').count():await C.locator('.nav button[data-tab="me"]').click();await pg.wait_for_timeout(400)  # guest home → sign in
         await C.locator('#ph').fill('9999900001');await C.locator('#go').click();await pg.wait_for_timeout(500)
         for i,d in enumerate('123456'):await C.locator(f'#o{i}').fill(d)
         await pg.wait_for_timeout(800);await C.locator('#nm').fill('Priya');await C.locator('#go').click();await pg.wait_for_timeout(2500)

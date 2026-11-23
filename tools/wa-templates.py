@@ -20,6 +20,7 @@ SAMPLES = {   # example values Meta needs for review, in variable order
     'vct_trip_started': ['Priya', 'TN23AB1234', '9344640416'],
     'vct_trip_completed': ['Priya', '450', 'AB12CD'],
     'vct_booking_cancelled': ['Priya', 'AB12CD', '9344640416'],
+    'vct_no_driver': ['Priya', '9344640416'],
     'vct_driver_welcome': ['Murugan', '9344039933'],
     'vct_driver_welcome3': ['Murugan', '9344039933'],
     'vct_owner_request': ['Kavya', 'Fare change ₹350 → ₹420', 'Booking AB12CD', 'Customer went 12 km extra and paid toll'],
@@ -49,7 +50,7 @@ def check(name, text):
 def main():
     root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     items = parse(open(os.path.join(root, 'docs', 'whatsapp-templates.md'), encoding='utf-8').read())
-    assert len(items) == 16, len(items)
+    assert len(items) == 18, len(items)
     for name, lang, text, btn in items:
         check(name, text)
         assert not btn or (len(btn[0]) <= 25 and '{{' not in btn[1]), f'{name}: bad button {btn}'

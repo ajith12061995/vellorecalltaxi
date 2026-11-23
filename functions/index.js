@@ -306,8 +306,13 @@ exports.waBooking = onDocumentWritten({ document: 'bookings/{id}', secrets: [WA_
     const lref = db.doc(`waLog/${key}`);
     try { await lref.create({ bookingId: id, kind, to, status: 'sending', at: FV.serverTimestamp() }); }
     catch (e) { if (e.code === 6 || /ALREADY_EXISTS/i.test(e.message || '')) continue; throw e; }
-    const msg = W.waMessage(kind, after, id, { to, lang, office: c.office || '', now: Date.now() });
-    const r = await waSend(w, msg);
+    const mo = { to, lang, office: c.office || '', now: Date.now() };
+    let msg = W.waMessage(kind, after, id, mo), r = await waSend(w, msg);
+    // vct_no_driver (the warm "no vehicle yet" apology) not approved yet → the plain cancelled message, so the customer still hears from us
+    if (r.status === 'failed' && msg.template.name === W.TPL.nodriver && W.tplMissing(r.error)) {
+      logger.info('no-driver template not ready, sending the plain cancelled one', { error: r.error });
+      msg = W.waMessage(kind, after, id, { ...mo, v1: true }); r = await waSend(w, msg);
+    }
     await lref.update({ ...r, tpl: msg.template.name, lang, updatedAt: FV.serverTimestamp() });
     if (r.wamid) await db.doc(`waMsgs/${waKey(r.wamid)}`).set({ log: key, at: FV.serverTimestamp() });
     if (r.status === 'failed') logger.warn('whatsapp failed', { id, kind, error: r.error });

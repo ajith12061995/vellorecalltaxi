@@ -13,6 +13,7 @@ FAKECAP="""([code,delay,ok])=>{window.__nat=[];window.Capacitor={isNativePlatfor
   if(m==='stop')return Promise.resolve({});return new Promise(r=>setTimeout(()=>r({code}),delay))}}}"""
 async def custLogin(pg,C,cf,phone):
     await cf.evaluate("S.logged=false;S.name='';save();login()");await pg.wait_for_timeout(400)
+    if not await C.locator('#ph').count() and await C.locator('.nav button[data-tab="me"]').count():await C.locator('.nav button[data-tab="me"]').click();await pg.wait_for_timeout(400)  # guest home → sign in
     await C.locator('#ph').fill(phone);await C.locator('#go').click();await pg.wait_for_timeout(500)
 async def main():
     async with async_playwright() as p:
@@ -23,6 +24,7 @@ async def main():
         # ---- customer: keyboard suggestion into the first box
         await cf.evaluate("S.logged=false;S.name='';save();login()");await pg.wait_for_timeout(400)
         check('customer: security check prepared on the login screen',await pg.evaluate("window.PREP||0")>=1)
+        if not await C.locator('#ph').count() and await C.locator('.nav button[data-tab="me"]').count():await C.locator('.nav button[data-tab="me"]').click();await pg.wait_for_timeout(400)  # guest home → sign in
         await C.locator('#ph').fill('9999900011');await C.locator('#go').click();await pg.wait_for_timeout(500)
         await C.locator('#o0').fill('123456');await pg.wait_for_timeout(1200)
         check('customer: whole code in one box → all six filled, signed in by itself (name screen)',await C.locator('#nm').count()==1,await C.locator('body').inner_text())

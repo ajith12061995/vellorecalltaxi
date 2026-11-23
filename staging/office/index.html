@@ -29,7 +29,7 @@
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('../vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV=window.VCT_V='101',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV=window.VCT_V='102',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('../version.json',location.href)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -501,7 +501,7 @@ details.faq p{margin:0;padding:0 14px 14px;color:var(--muted);font-size:14px;lin
 /* corner alerts (new booking / WhatsApp) + WhatsApp chats button */
 #ncards{position:fixed;bottom:90px;right:14px;z-index:998;display:flex;flex-direction:column-reverse;gap:10px;width:min(340px,calc(100vw - 28px));pointer-events:none}
 .ncard{pointer-events:auto;display:flex;gap:10px;align-items:flex-start;background:var(--surface);color:var(--fg);border:1px solid var(--line);border-left:5px solid var(--yellow);border-radius:14px;padding:11px 12px;box-shadow:var(--shadow);cursor:pointer;animation:nin .25s ease-out}
-.ncard.wa{border-left-color:#25D366}.ncard .ni{font-size:22px;line-height:1}.ncard b{display:block;font-size:14.5px}.ncard small{display:block;color:var(--muted);font-size:12.5px;margin-top:2px;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.ncard.wa{border-left-color:#25D366}.ncard.nod{border-left-color:#E5484D}.ncard .ni{font-size:22px;line-height:1}.ncard b{display:block;font-size:14.5px}.ncard small{display:block;color:var(--muted);font-size:12.5px;margin-top:2px;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
 .ncard .nx{margin-left:auto;border:0;background:none;color:var(--muted);font-size:18px;cursor:pointer;padding:0 2px}
 @keyframes nin{from{transform:translateY(16px);opacity:0}to{transform:none;opacity:1}}
 @media (prefers-reduced-motion:reduce){.ncard{animation:none}}
@@ -717,13 +717,13 @@ details.faq p{margin:0;padding:0 14px 14px;color:var(--muted);font-size:14px;lin
 <div class="app" id="app"></div>
 <div class="toast" id="toast"></div>
 
-<script src="../core/report.js?v=101"></script>
-<script src="../core/geo.js?v=101"></script>
-<script src="../core/fare.js?v=101"></script>
-<script src="../core/driverchecks.js?v=101"></script>
-<script src="../core/map.js?v=101"></script>
-<script src="../core/otp.js?v=101"></script>
-<script src="../core/refer.js?v=101"></script>
+<script src="../core/report.js?v=102"></script>
+<script src="../core/geo.js?v=102"></script>
+<script src="../core/fare.js?v=102"></script>
+<script src="../core/driverchecks.js?v=102"></script>
+<script src="../core/map.js?v=102"></script>
+<script src="../core/otp.js?v=102"></script>
+<script src="../core/refer.js?v=102"></script>
 <script>
 /* shared with the customer app: icons, places, fares, map engine */
 const I = {
@@ -1900,7 +1900,7 @@ const WAQ=[['வணக்கம்','Hello','வணக்கம்! 🙏 Vellore
   ['Call பண்ணுங்க','Please call','விவரமா பேச இந்த எண்ணுக்கு call பண்ணுங்க: 93446 40416','Please call us on 93446 40416 to talk it through.'],
   ['நன்றி','Thanks','நன்றி! 🙏 Vellore Taxi-ஐ தேர்ந்தெடுத்ததுக்கு.','Thank you for choosing Vellore Taxi! 🙏']];
 /* corner alerts: new booking / new WhatsApp message. Sound + card; a Windows notification too when this tab is in the background. */
-let WAU=[],WASEEN=null,BKSEEN=null,BKLD=false,NTITLE=null;
+let WAU=[],WASEEN=null,BKSEEN=null,BKST=null,BKLD=false,NTITLE=null;
 const WAICON='<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8s-.4-.1-.6.1-.7.8-.8 1-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.2-.4.2-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.7 11.8 11.8 0 0 0 4.5 4c1.7.7 2.3.8 3.2.6a2.7 2.7 0 0 0 1.8-1.2 2.2 2.2 0 0 0 .1-1.2c0-.1-.2-.2-.4-.3z"/></svg>';
 function ncard(kind,icon,title,sub,onOpen,ms){let box=document.getElementById('ncards');if(!box){box=document.createElement('div');box.id='ncards';box.setAttribute('role','status');box.setAttribute('aria-live','polite');document.body.appendChild(box)}
   while(box.children.length>=4)box.firstChild.remove();
@@ -1931,6 +1931,11 @@ function bkNotify(){const ids=RAWB.map(b=>b._id);
   if(BKSEEN){RAWB.filter(b=>!BKSEEN.has(b._id)&&Date.now()-(CL.toMs(b.createdAt)||Date.now())<10*60e3).forEach(b=>{const x=DB.bk.find(y=>y._id===b._id);if(!x)return;if(b.status!=='searching')chime();
     const KN={ride:['🚖','புது booking','New booking'],schedule:['🗓️','புது முன்பதிவு','New scheduled booking'],rental:['⏱️','புது Rental booking','New rental booking'],outstation:['🛣️','புது Outstation booking','New outstation booking']}[x.kind]||['🚖','புது booking','New booking'];
     ncard('bk',KN[0],`${L(KN[1],KN[2])} · ${x.id}`,`${pnT(x.from)} → ${pnT(x.to)}${x.cust&&x.cust.name&&x.cust.name!=='—'?' · '+x.cust.name:''}`,()=>bookSheet(DB.bk.find(y=>y._id===b._id)),60000)})}
+  /* A ride whose search ran out (no driver took it, cancelReason 'nodriver'): sound + a card that stays 10 minutes,
+     so the office can call the customer and arrange a vehicle. Only for changes seen while this page is open. */
+  if(BKST)RAWB.forEach(b=>{const was=BKST.get(b._id);if(was&&was!=='cancelled'&&b.status==='cancelled'&&b.cancelReason==='nodriver'){const x=DB.bk.find(y=>y._id===b._id);if(!x)return;chime();setTimeout(chime,900);
+    ncard('nod','😔',`${L('வண்டி கிடைக்கலை — customer-ஐ அழைங்க','No driver found — call the customer')} · ${x.id}`,`${pnT(x.from)} → ${pnT(x.to)}${x.cust&&x.cust.name&&x.cust.name!=='—'?' · '+x.cust.name:''}${x.cust&&x.cust.phone?' · '+x.cust.phone:''}`,()=>bookSheet(DB.bk.find(y=>y._id===b._id)),600000)}});
+  BKST=new Map(RAWB.map(b=>[b._id,b.status||'searching']));
   BKSEEN=new Set(ids)}
 /* Office reply to one person who messaged our WhatsApp (customer or driver). The server (waReply) checks staff,
    the 24-hour window and sends; this screen shows the conversation (their messages + our replies). */
@@ -2238,7 +2243,7 @@ async function enterCloud(){
 function mergeB(){const ids=new Set(RAWBL.map(b=>b._id));RAWB=[...RAWBL,...RAWBA.filter(b=>!ids.has(b._id))]}
 function oerr(e){console.warn(e);if(e&&e.code==='permission-denied')toast(L('அனுமதி இல்லை (rules)','Permission denied (rules)'))}
 function watchAll(){
-  OUNS.forEach(u=>u());OUNS=[];SEEN=null;CFGOK=false;WASEEN=null;BKSEEN=null;BKLD=false;WAU=[];SREQ=[];RQSEEN=null;
+  OUNS.forEach(u=>u());OUNS=[];SEEN=null;CFGOK=false;WASEEN=null;BKSEEN=null;BKST=null;BKLD=false;WAU=[];SREQ=[];RQSEEN=null;
   OUNS.push(F().onSnapshot(F().query(F().collection(CL.db,'bookings'),F().orderBy('createdAt','desc'),F().limit(400)),s=>{RAWBL=s.docs.map(d=>({_id:d.id,...d.data()}));BKLD=true;mergeB();remap()},oerr));
   // every open booking, even if older than the newest 400 (e.g. an outstation trip booked days ahead)
   OUNS.push(F().onSnapshot(F().query(F().collection(CL.db,'bookings'),F().where('status','in',['searching','scheduled','assigned','ontrip'])),s=>{RAWBA=s.docs.map(d=>({_id:d.id,...d.data()}));mergeB();remap()},oerr));

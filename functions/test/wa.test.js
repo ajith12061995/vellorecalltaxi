@@ -61,6 +61,16 @@ test('waMessage: templates and values', () => {
   assert.deepStrictEqual(params(m), ['Priya', '2,410', 'ABCDEF']);
   m = W.waMessage('cancelled', B, 'abcdef', { to: '1', office: '7200730416' });
   assert.deepStrictEqual(params(m), ['Priya', 'ABCDEF', '7200730416']);
+  assert.strictEqual(m.template.name, 'vct_booking_cancelled');
+  m = W.waMessage('cancelled', { ...B, cancelReason: 'nodriver' }, 'abcdef', { to: '1', office: '7200730416', lang: 'ta' });
+  assert.strictEqual(m.template.name, 'vct_no_driver', 'no driver found: the warm apology');
+  assert.strictEqual(m.template.language.code, 'ta');
+  assert.deepStrictEqual(params(m), ['Priya', '7200730416']);
+  m = W.waMessage('cancelled', { ...B, cancelReason: 'nodriver' }, 'abcdef', { to: '1', office: '7200730416', v1: true });
+  assert.strictEqual(m.template.name, 'vct_booking_cancelled', 'fallback while vct_no_driver is not approved');
+  assert.deepStrictEqual(params(m), ['Priya', 'ABCDEF', '7200730416']);
+  m = W.waMessage('cancelled', { ...B, cancelReason: 'novehicle' }, 'abcdef', { to: '1', office: '7200730416' });
+  assert.strictEqual(m.template.name, 'vct_booking_cancelled', 'office cancels: the plain message');
   assert.strictEqual(W.waMessage('other', B, 'x', { to: '1' }), null);
 });
 

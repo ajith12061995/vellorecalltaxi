@@ -11,6 +11,7 @@ const TPL = {
   ontrip: 'vct_trip_started',              // 1 name · 2 number plate · 3 help phone
   done: 'vct_trip_completed',              // 1 name · 2 fare · 3 booking no.
   cancelled: 'vct_booking_cancelled',      // 1 name · 2 booking no. · 3 office phone
+  nodriver: 'vct_no_driver',               // a ride cancelled because no driver took it (warm apology): 1 name · 2 office phone
   drvwelcome: 'vct_driver_welcome',        // to a new DRIVER when the office approves them: 1 name · 2 driver help phone (fallback)
   drvwelcome3: 'vct_driver_welcome3',      // same + a static "Driver app" link button: 1 name · 2 driver help phone
   ownerreq: 'vct_owner_request'            // to the OWNER when a staff member asks for approval: 1 staff · 2 request · 3 booking / driver · 4 reason
@@ -65,7 +66,8 @@ const place = (p, ta) => p ? ((ta ? p.ta || p.en : p.en || p.ta) || p.name || ''
 const money = v => { const x = Math.round(+v || 0); return x > 0 ? x.toLocaleString('en-IN') : '-'; };
 
 /* The message body for Graph API POST /{phone-number-id}/messages.
-   b = booking, id = booking id, o = { to, lang, office, now } */
+   b = booking, id = booking id, o = { to, lang, office, now, v1 } — v1: the plain "cancelled" template instead of vct_no_driver
+   (used while vct_no_driver is not approved yet) */
 function waMessage(kind, b, id, o) {
   const ta = o.lang !== 'en', name = clean(b.custName || (ta ? 'வாடிக்கையாளர்' : 'Customer'), 40), ref = ref6(id);
   const veh = clean(ta ? (b.vehTa || b.vehEn || b.veh) : (b.vehEn || b.vehTa || b.veh));
@@ -80,6 +82,7 @@ function waMessage(kind, b, id, o) {
     tpl = TPL.assigned; p = [name, clean(b.driverName, 40), car, ref];
   } else if (kind === 'ontrip') { tpl = TPL.ontrip; p = [name, clean(b.plate), clean(o.help || o.office)]; }
   else if (kind === 'done') { tpl = TPL.done; p = [name, money(b.fareFinal || b.fare), ref]; }
+  else if (kind === 'cancelled' && b.cancelReason === 'nodriver' && !o.v1) { tpl = TPL.nodriver; p = [name, clean(o.office)]; }
   else if (kind === 'cancelled') { tpl = TPL.cancelled; p = [name, ref, clean(o.office)]; }
   else return null;
   return { messaging_product: 'whatsapp', to: o.to, type: 'template',

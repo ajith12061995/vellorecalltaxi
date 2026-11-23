@@ -1,0 +1,88 @@
+# Guests (e.g. from a Facebook/Instagram ad) see the app and real prices without signing in; sign-in is asked
+# only when they press Book, and afterwards the same fare screen comes back for a one-tap Book.
+# ?l=ta / ?l=en in the link skips the language screen. When no driver takes the ride: the warm apology in the app
+# and a sound + corner card in the office.
+import asyncio
+from playwright.async_api import async_playwright
+B='http://localhost:8765/tests/e2e/out/'
+res=[]
+def check(n,c,i=''):res.append(bool(c));print(('PASS ' if c else 'FAIL ')+n,i)
+PRICES="MOCK.store.set('public/prices',{fares:{mini:{base:111,per:20,incl:3},sedan:{base:122,per:21,incl:3}},out:{},rent:{},updatedAt:Date.now()})"
+async def main():
+    async with async_playwright() as p:
+        b=await p.chromium.launch()
+        # 1) ad link with ?l=ta → no language screen, straight to home as a guest (Tamil), prices from public/prices
+        ctx=await b.new_context(viewport={'width':1900,'height':880},geolocation={'latitude':12.955,'longitude':79.139},permissions=['geolocation'])
+        pg=await ctx.new_page();errs=[];pg.on('pageerror',lambda e:errs.append(str(e)))
+        await pg.goto(B+'harness_x.html');await pg.wait_for_timeout(600)
+        await pg.evaluate(PRICES)
+        await pg.evaluate("document.getElementById('c').src='c2.html?l=ta'");await pg.wait_for_timeout(2600)
+        C=pg.frame_locator('#c');cf=pg.frame(url=B+'c2.html?l=ta')
+        st=await cf.evaluate("({lang:S.lang,logged:S.logged,lang1:!!document.querySelector('.langcard'),home:!!document.getElementById('wh'),login:!!document.getElementById('ph')})")
+        check('ad link ?l=ta: home in Tamil, no language screen, no sign-in',st=={'lang':'ta','logged':False,'lang1':False,'home':True,'login':False},st)
+        mini=await cf.evaluate("({b:VEH.find(v=>v.id==='mini').base,i:VEH.find(v=>v.id==='mini').incl})")
+        check('guest gets the office prices (public/prices)',mini=={'b':111,'i':3},mini)
+        await pg.screenshot(path='shots/guest_home.png',clip={'x':0,'y':0,'width':400,'height':860})
+        # other tabs need sign-in
+        await C.locator('.nav button[data-tab="trips"]').click();await pg.wait_for_timeout(400)
+        check('Trips tab as a guest → sign-in screen',await C.locator('#ph').count()==1)
+        await C.locator('#gback').click();await pg.wait_for_timeout(600)
+        check('sign-in has a way back to home',await C.locator('#wh').count()==1)
+        # pick a place → fare screen; Book works without a nearby car
+        await cf.evaluate("S.dest='cmc';S.veh='mini';fareScreen()");await pg.wait_for_timeout(900)
+        bb=C.locator('#bookb')
+        check('guest fare screen: Book enabled, real price shown',await bb.is_enabled() and '₹' in await bb.inner_text(),await bb.inner_text())
+        sub=await C.locator('.veh[data-v="mini"] small').inner_text()
+        check('guest sees no made-up "min away"','நிமிட பயணம்' in sub,sub)
+        await pg.screenshot(path='shots/guest_fare.png',clip={'x':0,'y':0,'width':400,'height':860})
+        await bb.click();await pg.wait_for_timeout(500)
+        check('Book as a guest → sign-in (OTP) screen',await C.locator('#ph').count()==1 and await C.locator('#gback').count()==1)
+        await C.locator('#gback').click();await pg.wait_for_timeout(800)
+        back=await cf.evaluate("({dest:S.dest,veh:S.veh,fare:!!document.getElementById('bookb')})")
+        check('"back to the fare" keeps the trip',back=={'dest':'cmc','veh':'mini','fare':True},back)
+        await C.locator('#bookb').click();await pg.wait_for_timeout(500)
+        await C.locator('#ph').fill('9999900011');await C.locator('#go').click();await pg.wait_for_timeout(600)
+        for i,d in enumerate('123456'):await C.locator(f'#o{i}').fill(d)
+        await pg.wait_for_timeout(900);await C.locator('#nm').fill('Guest Priya');await C.locator('#go').click();await pg.wait_for_timeout(1500)
+        st=await cf.evaluate("({logged:S.logged,dest:S.dest,veh:S.veh,fare:!!document.getElementById('bookb'),pend:sessionStorage.getItem('vct-pending')})")
+        check('after sign-up: same fare screen comes back (CMC, Mini), signed in',st=={'logged':True,'dest':'cmc','veh':'mini','fare':True,'pend':None},st)
+        bb=C.locator('#bookb')
+        check('signed in, no car nearby: Book still possible (search + office take over)',await bb.is_enabled(),await bb.inner_text())
+        await bb.click();await pg.wait_for_timeout(1500)
+        bks=await pg.evaluate("Object.entries(MOCK.dump()).filter(([k,v])=>k.startsWith('bookings/')&&k.split('/').length===2&&v.custName==='Guest Priya').map(([k,v])=>[k,v.status,v.veh])")
+        check('one tap → booking created',len(bks)==1 and bks[0][1]=='searching' and bks[0][2]=='mini',bks)
+        # 2) office logs in, then the search runs out → office alert; customer sees the warm apology
+        O=pg.frame_locator('#o');of=pg.frame(url=B+'o2.html')
+        await O.locator('#ph').fill('8220201462');await O.locator('#lgn').click();await pg.wait_for_timeout(300)
+        await O.locator('#otp').fill('123456');await pg.wait_for_timeout(2200)
+        check('no "no driver" card before anything happens',await O.locator('.ncard.nod').count()==0)
+        k=bks[0][0]
+        await pg.evaluate(f"MOCK.fs.updateDoc(MOCK.fs.doc(null,'{k}'),{{status:'cancelled',cancelReason:'nodriver',updatedAt:Date.now()}})")
+        await pg.wait_for_timeout(1500)
+        nc=O.locator('.ncard.nod');t=await nc.inner_text() if await nc.count() else ''
+        check('office: corner card "no driver found — call the customer" with the number',await nc.count()==1 and 'customer' in t.lower() and '9999900011' in t,t)
+        await pg.screenshot(path='shots/guest_office.png',clip={'x':800,'y':0,'width':1100,'height':880})
+        s=await cf.evaluate("(document.getElementById('sorry')&&document.querySelector('.modal').innerText)||''")
+        check('customer: warm apology (just started, forgive us)','ஆரம்பம்' in s and 'மன்னிச்சிருங்க' in s and 'கட்டணம் எதுவும் இல்லை' in s,s[:120])
+        await pg.screenshot(path='shots/guest_sorry.png',clip={'x':0,'y':0,'width':400,'height':860})
+        await nc.click();await pg.wait_for_timeout(800)
+        check('card opens that booking',await of.evaluate("!!document.querySelector('.modal')"))
+        check('no page errors',not errs,errs[:3])
+        await ctx.close()
+        # 3) ?l=en, and a plain first visit still asks the language (then a guest home, not a sign-in)
+        ctx=await b.new_context(viewport={'width':1900,'height':880})
+        pg=await ctx.new_page();errs=[];pg.on('pageerror',lambda e:errs.append(str(e)))
+        await pg.goto(B+'harness_x.html');await pg.wait_for_timeout(2600)
+        cf=pg.frame(url=B+'c2.html');C=pg.frame_locator('#c')
+        check('plain first visit: language screen',await C.locator('.langcard').count()==2)
+        await C.locator('.langcard[data-l="ta"]').click();await pg.wait_for_timeout(200);await C.locator('#go').click();await pg.wait_for_timeout(900)
+        st=await cf.evaluate("({lang:S.lang,logged:S.logged,home:!!document.getElementById('wh')})")
+        check('language chosen → guest home (no sign-in yet)',st=={'lang':'ta','logged':False,'home':True},st)
+        await pg.evaluate("document.getElementById('c').src='c2.html?l=en'");await pg.wait_for_timeout(2400)
+        cf=pg.frame(url=B+'c2.html?l=en')
+        st=await cf.evaluate("({lang:S.lang,home:!!document.getElementById('wh')})")
+        check('?l=en: English home',st=={'lang':'en','home':True},st)
+        check('no page errors (2)',not errs,errs[:3])
+        await b.close()
+    print('RESULT','PASS' if all(res) else 'FAIL',f'{sum(res)}/{len(res)}')
+asyncio.run(main())

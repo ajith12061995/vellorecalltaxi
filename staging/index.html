@@ -41,7 +41,7 @@
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('./vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV=window.VCT_V='101',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV=window.VCT_V='102',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('./version.json',location.href)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -547,17 +547,17 @@ details.faq p{margin:0;padding:0 14px 14px;color:var(--muted);font-size:14px;lin
 <div class="app" id="app"></div>
 <div class="toast" id="toast"></div>
 
-<script src="./core/report.js?v=101"></script>
-<script src="./core/geo.js?v=101"></script>
-<script src="./core/fare.js?v=101"></script>
-<script src="./core/appget.js?v=101"></script>
-<script src="./core/pin.js?v=101"></script>
-<script src="./core/clock.js?v=101"></script>
-<script src="./core/map.js?v=101"></script>
-<script src="./core/chat.js?v=101"></script>
-<script src="./core/otp.js?v=101"></script>
-<script src="./core/deskmode.js?v=101"></script>
-<script src="./core/weather.js?v=101"></script>
+<script src="./core/report.js?v=102"></script>
+<script src="./core/geo.js?v=102"></script>
+<script src="./core/fare.js?v=102"></script>
+<script src="./core/appget.js?v=102"></script>
+<script src="./core/pin.js?v=102"></script>
+<script src="./core/clock.js?v=102"></script>
+<script src="./core/map.js?v=102"></script>
+<script src="./core/chat.js?v=102"></script>
+<script src="./core/otp.js?v=102"></script>
+<script src="./core/deskmode.js?v=102"></script>
+<script src="./core/weather.js?v=102"></script>
 <script>
 /* ---------- icons ---------- */
 const I = {
@@ -677,7 +677,9 @@ setBike(false);
 /* ---------- state ---------- */
 const S={lang:'en',from:'home',phone:'',name:'',logged:false,tab:'home',dest:null,veh:'auto',pay:'upi'};
 if(window.APPGET)APPGET.init('cust',()=>S.lang);
-try{const s=JSON.parse(localStorage.getItem('vct')||'{}');Object.assign(S,s)}catch(e){}
+let LANGSET=false;
+try{const s=JSON.parse(localStorage.getItem('vct')||'{}');Object.assign(S,s);LANGSET=!!s.lang}catch(e){}
+try{const l=new URLSearchParams(location.search).get('l');if(l==='ta'||l==='en'){S.lang=l;LANGSET=true}}catch(e){}
 function save(){try{localStorage.setItem('vct',JSON.stringify({lang:S.lang,phone:S.phone,name:S.name,logged:S.logged,uid:S.logged?S.uid||'':''}))}catch(e){}}
 const t=k=>T[S.lang][k]||k;
 const pn=k=>P[k][S.lang];
@@ -708,6 +710,25 @@ function useBookLink(){
   if(x.k==='out'&&x.v!=='auto'){S.mode='out';if(x.v)OS.veh=x.v;OS.type=x.o;return outFare2()}
   S.mode='';if(x.v)S.veh=x.v;fareScreen();
 }
+/* Guests (not signed in, e.g. from an ad) can look around and see real prices. Sign-in is asked only when they press Book.
+   What they chose is kept here (also in sessionStorage, so it survives a reload) and the same fare screen comes back after sign-in. */
+let PENDING=null;
+try{const x=JSON.parse(sessionStorage.getItem('vct-pending')||'null');if(x&&Date.now()-x.at<30*60e3)PENDING=x}catch(e){}
+function needLogin(){if(S.logged)return false;
+  const pt=k=>P[k]&&P[k].lat!=null?{ta:P[k].ta,en:P[k].en,sub:P[k].sub||'',lat:P[k].lat,lon:P[k].lon,ic:P[k].ic||'pin'}:null;
+  PENDING={at:Date.now(),mode:S.mode||'',from:S.from,dest:S.dest,veh:S.veh,when:S.when,tip0:S.tip0||0,pay:S.pay,autoFor:S.autoFor||'',
+    pick:pt('pick'),drop:pt('drop'),home:pt('home'),RS:{...RS},OS:{...OS}};
+  try{sessionStorage.setItem('vct-pending',JSON.stringify(PENDING))}catch(e){}
+  login();return true}
+function resumePending(){const x=PENDING;PENDING=null;try{sessionStorage.removeItem('vct-pending')}catch(e){}
+  if(!x)return home();
+  try{['pick','drop','home'].forEach(k=>{if(x[k])P[k]=Object.assign(P[k]||{},x[k])});
+    if(!P[x.from]||!P[x.dest]&&!(x.mode==='rent'))return home(x.mode||undefined);
+    Object.assign(RS,x.RS||{});Object.assign(OS,x.OS||{});
+    S.mode=x.mode;S.from=x.from;S.dest=x.dest;S.veh=x.veh;S.when=x.when&&x.when>Date.now()?x.when:null;S.tip0=x.tip0||0;S.pay=x.pay||'cash';S.autoFor=x.autoFor;S.tab='home';
+    if(S.mode==='rent')RS.atFare=true;
+    if(S.logged)setTimeout(()=>toast(L('தயார்! இப்போ Book அழுத்துங்க','All set! Now tap Book')),400);
+    return fareScreen()}catch(e){return home()}}
 function splash(){
   if(/^#track-/.test(location.hash)){trackView(location.hash.slice(7));return}
   go(`<section class="screen" id="splash"><div class="roofsign"><b>TAXI</b><span>வேலூர் டாக்ஸி</span></div>
@@ -724,8 +745,8 @@ function langScreen(){
    <button class="langcard ${S.lang==='en'?'sel':''}" data-l="en"><span><b>English</b><br><small class="muted">ஆங்கிலம்</small></span><i class="radio"></i></button>
    <button class="langcard ${S.lang==='ta'?'sel':''}" data-l="ta"><span><b>தமிழ்</b><br><small class="muted">Tamil</small></span><i class="radio"></i></button>
    <div style="flex:1"></div><button class="btn" id="go">${t('cont')}</button></div></section>`,()=>{
-    app.querySelectorAll('.langcard').forEach(b=>b.onclick=()=>{S.lang=b.dataset.l;save();langScreen()});
-    document.getElementById('go').onclick=login;
+    app.querySelectorAll('.langcard').forEach(b=>b.onclick=()=>{S.lang=b.dataset.l;LANGSET=true;save();langScreen()});
+    document.getElementById('go').onclick=()=>{LANGSET=true;save();CL&&!S.logged?home():login()};
   });
 }
 function login(){
@@ -734,12 +755,13 @@ function login(){
   <div class="body pad"><label class="muted" for="ph" style="font-weight:600">${t('phone')}</label>
    <div class="field"><span class="cc">+91</span><input id="ph" inputmode="numeric" maxlength="10" autocomplete="tel" value="${S.phone}" placeholder="98765 43210"></div>
    <div class="err" id="e"></div><div style="flex:1"></div>
-   <button class="btn" id="go" ${S.phone.length===10?'':'disabled'}>${t('getOtp')}</button>${CL&&!inApp()?`<div class="ordiv"><span>${L('அல்லது','or')}</span></div><button class="btn gbtn" id="gg"><svg width="20" height="20" viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34.1 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34.1 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>${L('Google மூலம் login (OTP தேவையில்லை)','Continue with Google (no OTP)')}</button>`:''}<p class="fine muted"><a href="./privacy/" target="_blank" rel="noopener" style="color:inherit">${t('terms')}</a></p></div></section>`,()=>{
+   <button class="btn" id="go" ${S.phone.length===10?'':'disabled'}>${t('getOtp')}</button>${!S.logged?`<button class="btn ghost" id="gback" style="margin-top:8px">${PENDING?L('← விலைக்கு திரும்பு','← Back to the fare'):L('← முதல் பக்கம்','← Back')}</button>`:''}${CL&&!inApp()?`<div class="ordiv"><span>${L('அல்லது','or')}</span></div><button class="btn gbtn" id="gg"><svg width="20" height="20" viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34.1 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34.1 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>${L('Google மூலம் login (OTP தேவையில்லை)','Continue with Google (no OTP)')}</button>`:''}<p class="fine muted"><a href="./privacy/" target="_blank" rel="noopener" style="color:inherit">${t('terms')}</a></p></div></section>`,()=>{
     const ph=document.getElementById('ph'),b=document.getElementById('go');
     ph.oninput=()=>{ph.value=ph.value.replace(/\D/g,'').slice(0,10);b.disabled=ph.value.length!==10;document.getElementById('e').textContent=''};
     b.onclick=()=>{if(!/^[6-9]\d{9}$/.test(ph.value)){document.getElementById('e').textContent=t('phoneErr');return}S.phone=ph.value;save();
       if(CL){b.disabled=true;b.textContent=L('OTP அனுப்புது…','Sending OTP…');const nat=VCTOTP.native();CL.sendOtp(ph.value).then(()=>otp(nat)).catch(e=>{VCTOTP.stop();b.disabled=false;b.textContent=t('getOtp');document.getElementById('e').textContent=CL.errText(e,S.lang==='ta')});return}otp()};
     const gg=document.getElementById('gg');if(gg)gg.onclick=googleIn;
+    const gb=document.getElementById('gback');if(gb)gb.onclick=()=>{VCTOTP.stop();PENDING?resumePending():home()};
     if(CL&&CL.prepOtp)CL.prepOtp();
     setTimeout(()=>ph.focus(),300);
   });
@@ -760,7 +782,7 @@ function otp(nat){
     const box=VCTOTP.bind(ins,CL?6:4,()=>{if(!b.disabled)b.click()},v=>{b.disabled=v.length!==(CL?6:4);document.getElementById('e').textContent=''});
     const val=box.val;
     if(nat)nat.then(c=>{if(c&&document.body.contains(ins[0])&&!val())VCTOTP.fill(ins,c)});
-    b.onclick=()=>{if(CL){if(b.disabled&&val().length!==6)return;b.disabled=true;CL.verifyOtp(val()).then(async u=>{CUID=u.uid;S.uid=u.uid;await loadProfile();watchConfig();if(S.name){S.logged=true;save();saveProfile({lastLogin:F().serverTimestamp()});resumeActive()||home()}else nameScreen()}).catch(e=>{b.disabled=false;document.getElementById('e').textContent=CL.errText(e,S.lang==='ta');box.reset()});return}
+    b.onclick=()=>{if(CL){if(b.disabled&&val().length!==6)return;b.disabled=true;CL.verifyOtp(val()).then(async u=>{CUID=u.uid;S.uid=u.uid;await loadProfile();watchConfig();if(S.name){S.logged=true;save();saveProfile({lastLogin:F().serverTimestamp()});if(resumeActive()){PENDING=null;try{sessionStorage.removeItem('vct-pending')}catch(e){}}else home()}else nameScreen()}).catch(e=>{b.disabled=false;document.getElementById('e').textContent=CL.errText(e,S.lang==='ta');box.reset()});return}
       if(val()==='1234'){S.name?(S.logged=true,save(),home()):nameScreen()}else{document.getElementById('e').textContent=t('otpErr');box.reset();b.disabled=true}};
     document.getElementById('bk').onclick=()=>{VCTOTP.stop();login()};document.getElementById('ch').onclick=document.getElementById('bk').onclick;
     let n=30;const rs=document.getElementById('rs');const tick=()=>{if(!document.body.contains(rs))return;rs.innerHTML=n>0?`${t('resend')} 0:${String(n).padStart(2,'0')}`:`<button class="linkbtn" id="rsb">${t('resend')}</button>`;if(n===0){document.getElementById('rsb').onclick=()=>{if(CL){const n2=VCTOTP.native();if(n2)n2.then(c=>{if(c&&document.body.contains(ins[0])&&val().length!==6)VCTOTP.fill(ins,c)});CL.sendOtp(S.phone).then(()=>toast(L('OTP மறுபடி அனுப்பியாச்சு','OTP sent again'))).catch(e=>toast(CL.errText(e,S.lang==='ta')))}else toast('OTP: 1234');n=30;tick()};return}n--;setTimeout(tick,1000)};tick();
@@ -787,7 +809,7 @@ function shell(content){
   const tabs=[['home','navHome','nHome'],['trips','navTrips','nTrips'],['wallet','navWallet','nWallet'],['help','navHelp','nHelp'],['me','navMe','nMe']];
   return `<section class="screen">${content}<nav class="nav">${tabs.map(([k,ic,l])=>`<button data-tab="${k}" class="${S.tab===k?'on':''}">${I[ic]}${t(l)}</button>`).join('')}</nav></section>`;
 }
-function bindNav(){app.querySelectorAll('.nav button').forEach(b=>b.onclick=()=>{S.tab=b.dataset.tab;({home,trips:tripsTab,wallet:walletTab,help:helpTab,me:profile})[S.tab]()})}
+function bindNav(){app.querySelectorAll('.nav button').forEach(b=>b.onclick=()=>{if(!S.logged&&b.dataset.tab!=='home'){PENDING=null;try{sessionStorage.removeItem('vct-pending')}catch(e){}login();return}S.tab=b.dataset.tab;({home,trips:tripsTab,wallet:walletTab,help:helpTab,me:profile})[S.tab]()})}
 
 const CUSTOM=['pick','drop'];
 const pinSvg=col=>`<svg width="46" height="60" viewBox="0 0 46 60" aria-hidden="true"><path d="M23 58C23 58 4 36 4 22a19 19 0 0138 0c0 14-19 36-19 36z" fill="${col}" stroke="#fff" stroke-width="3"/><circle cx="23" cy="22" r="8" fill="#FFC21A"/></svg>`;
@@ -836,7 +858,7 @@ function vrowHtml(on='now'){
 }
 let NEAR=[],NEARUNSUB=null,NEARKEY='';
 /* only drivers in the 3x3 block of ~5 km map cells around the pickup are read (not every driver everywhere) */
-function watchNear(){if(!CL)return;const c=P[S.from]||P.home;if(!c||c.lat==null)return;
+function watchNear(){if(!CL||!S.logged)return;const c=P[S.from]||P.home;if(!c||c.lat==null)return;
   const cells=VGEO.cells(c.lat,c.lon),key=cells.join(',');if(key===NEARKEY&&NEARUNSUB)return;
   if(NEARUNSUB)NEARUNSUB();NEARKEY=key;const per={};
   const draw=()=>{const now=Date.now();
@@ -847,7 +869,8 @@ function watchNear(){if(!CL)return;const c=P[S.from]||P.home;if(!c||c.lat==null)
     s=>{per[cell]=s.docs.map(d=>({id:d.id,...d.data()}));draw()},()=>{}));
   NEARUNSUB=()=>{uns.forEach(u=>{try{u()}catch(e){}});NEARUNSUB=null;NEARKEY=''};}
 function home(mode){
-  if(BOOKLINK&&S.logged&&!mode){try{return useBookLink()}catch(e){BOOKLINK=null}}
+  if(PENDING&&S.logged&&!mode)return resumePending();
+  if(BOOKLINK&&!mode){try{return useBookLink()}catch(e){BOOKLINK=null}}
   const RENTM=mode==='rent',OUTM=mode==='out';S.mode=RENTM?'rent':OUTM?'out':'';
   S.tab='home';S.dest=null;if(!RENTM&&!OUTM)S.from='home';S.when=null;S.rider=null;
   const h=new Date().getHours();const g=h<12?t('morning'):h<17?t('afternoon'):t('evening');
@@ -946,15 +969,16 @@ function picker(mode){
 const NEARKM=4; // drivers within 4 km (first 3 km, then up to 4 km)
 function vAvail(v){
   if(!CL||S.when||ADV.includes(v.id))return{ok:true,eta:v.eta,live:false};
+  if(!S.logged)return{ok:true,eta:null,live:false};
   const pu=P[S.from];const ds=NEAR.filter(n=>n.veh===v.id).map(n=>hav(n,pu)).filter(d=>d<=NEARKM);
-  if(!ds.length)return{ok:false};
+  if(!ds.length)return{ok:true,eta:null,live:false};
   return{ok:true,eta:Math.max(1,Math.round(Math.min(...ds)*1.35/20*60)+1),live:true};
 }
 function vehRows(r,mins){
   const VL=vlist(),av={};VL.forEach(v=>av[v.id]=vAvail(v));
   const live=VL.filter(v=>av[v.id].ok&&av[v.id].live),fast=live.length?live.reduce((a,v)=>av[v.id].eta<av[a.id].eta?v:a,live[0]).id:null;
   return VL.map(v=>{const f=fare(v,r.km),a=av[v.id];
-    const sub=a.ok?`${a.eta} ${t('away')} · Drop ${timeLabel(Date.now()+(a.eta+mins)*6e4)}`:`<span class="na">${L(`இப்போ அருகில் ${v.ta} இல்லை`,`No ${v.en} nearby right now`)}</span>`;
+    const sub=a.ok&&a.eta==null?`<span class="seek">${S.logged?L('Book பண்ணா அருகில் உள்ள driver-ஐ தேடுவோம்','Book and we’ll find a nearby driver'):L('~'+mins+' நிமிட பயணம்','~'+mins+' min ride')}</span>`:a.ok?`${a.eta} ${t('away')} · Drop ${timeLabel(Date.now()+(a.eta+mins)*6e4)}`:`<span class="na">${L(`இப்போ அருகில் ${v.ta} இல்லை`,`No ${v.en} nearby right now`)}</span>`;
     return `<button class="veh ${S.veh===v.id?'sel':''} ${a.ok?'':'off'}" data-v="${v.id}"><span class="vi">${I[v.id]}</span>
      <div><b>${v[S.lang]} <span class="muted" style="font-family:var(--body);font-size:13px;font-weight:600">· ${v.seats} ${t('seats')}</span></b><small>${sub}</small>${v.id===fast?`<span class="vtag">⚡ ${L('வேகமா வரும்','Fastest')}</span>`:''}</div>
      <span class="price"><b>₹${f}</b></span></button>`}).join('');
@@ -992,7 +1016,7 @@ function fareScreen(){
     app.querySelectorAll('[data-tip0]').forEach(b=>b.onclick=()=>{S.tip0=+b.dataset.tip0;app.querySelectorAll('[data-tip0]').forEach(x=>x.classList.toggle('sel',x===b));upd()});
     const cpb=document.getElementById('cp');if(cpb)cpb.onclick=()=>toast('FIRST20 · AUTO15 · REFER');
     document.getElementById('edit').onclick=search;
-    document.getElementById('bk').onclick=search;document.getElementById('bookb').onclick=()=>{const v=VEH.find(x=>x.id===S.veh);
+    document.getElementById('bk').onclick=search;document.getElementById('bookb').onclick=()=>{if(needLogin())return;const v=VEH.find(x=>x.id===S.veh);
       if(ADV.includes(v.id)&&(!S.when||S.when<Date.now()+3*36e5)){pickWhen(180,ts=>{S.when=ts;fareScreen()},L('Tempo Traveller / Maxi Cab-க்கு குறைந்தது 3 மணி நேரம் முன்னாடி book பண்ணணும்','Tempo Travellers and maxi cabs need at least 3 hours\u2019 notice'));return}
       if(S.when){if(S.pay==='wallet')S.pay='upi';confirmSchedule();return}if(CL)return cloudBook();startBooking()};
     document.getElementById('whenb').onclick=()=>pickWhen(ADV.includes(S.veh)?180:30,ts=>{S.when=ts;fareScreen()});
@@ -1480,7 +1504,7 @@ function pickWhen(minM,cb,note){
   });
 }
 
-function saveUpcoming(rec){if(blockedStop())return;
+function saveUpcoming(rec){if(needLogin()||blockedStop())return;
   const full={id:Date.now().toString(36).toUpperCase(),status:'upcoming',date:Date.now(),pin:String(1000+Math.floor(Math.random()*9000)),...rec};
   TRIPS.unshift(full);saveTrips();bookedScreen(full);if(CL)cloudSchedule(full).then(id=>{if(id){full.cid=id;saveTrips()}});
 }
@@ -1591,7 +1615,7 @@ function rentFare(){
       <div class="row"><div><b>${L('கூடுதல் நேரம்','Extra time')}</b><small>${L('ஒவ்வொரு மணிக்கும் (30 நிமி-க்கு பாதி)','Per hour (half for 30 min)')}</small></div><b>${inr(XHR[v.id])}/${L('மணி','hr')}</b></div></div>
       <p class="muted" style="font-size:13px;margin:0">${L('Toll, parking, மாநில permit இருந்தா தனி. Driver-க்கு சாப்பாட்டு இடைவேளை கொடுங்க. கட்டணம் பயணம் முடிஞ்சதும் meter படி.','Tolls, parking and state permits are extra. Allow the driver a meal break. Final fare is settled at the end of the trip.')}</p>
       <button class="btn" id="ok">${L('சரி','OK')}</button>`,(mm,close)=>mm.querySelector('#ok').onclick=close)};
-    document.getElementById('bookb').onclick=()=>{const v=VEH.find(x=>x.id===RS.veh),price=rentPrice(v.id,pk.h);
+    document.getElementById('bookb').onclick=()=>{if(needLogin())return;const v=VEH.find(x=>x.id===RS.veh),price=rentPrice(v.id,pk.h);
       if(ADV.includes(v.id)&&(!RS.when||RS.when<Date.now()+3*36e5)){pickWhen(180,ts=>{RS.when=ts;rentFare()},L('Tempo Traveller / Maxi Cab-க்கு குறைந்தது 3 மணி நேரம் முன்னாடி book பண்ணணும்','Tempo Travellers and maxi cabs need at least 3 hours’ notice'));return}
       const pkt={ta:`${pk.h} மணி / ${pk.km} கி.மீ package`,en:`${pk.h} hr / ${pk.km} km package`};
       saveUpcoming({kind:'rental',when:RS.when||Date.now()+10*60e3,from:{ta:P[S.from].ta,en:P[S.from].en},fromC:{lat:P[S.from].lat,lon:P[S.from].lon},
@@ -1673,7 +1697,7 @@ function outFare2(){
     document.getElementById('bk').onclick=document.getElementById('edit').onclick=()=>search();
     const gl=document.getElementById('golocal');if(gl)gl.onclick=()=>{S.mode='';fareScreen()};
     const ga=document.getElementById('goauto');if(ga)ga.onclick=()=>{S.autoFor=areaSig();S.veh='auto';S.mode='';fareScreen()};
-    document.getElementById('bookb').onclick=()=>outReview(km,mins);bindRider(outFare2);
+    document.getElementById('bookb').onclick=()=>{if(needLogin())return;outReview(km,mins)};bindRider(outFare2);
   });
 }
 function outWhen(mins,tab){
@@ -1948,7 +1972,7 @@ async function cloudBoot(){
   if(!c){if(ON_PAGES){await SPLASH_MIN;offlineScreen();return true}return false}
   const u=await CL.waitUser();
   await SPLASH_MIN;
-  if(!u){S.logged=false;save();langScreen();return true}
+  if(!u){S.logged=false;watchPublic();if(!LANGSET){langScreen();return true}await mapsWait();save();home();return true}
   // same person as last time, name and number already on this phone → open home now, refresh the profile in the background
   const fast=S.logged&&!!S.uid&&S.uid===u.uid&&!!S.name&&/^[6-9]\d{9}$/.test(S.phone)&&(!u.phoneNumber||u.phoneNumber==='+91'+S.phone);
   CUID=u.uid;S.uid=u.uid;if(u.phoneNumber)S.phone=u.phoneNumber.replace('+91','');else if(!fast)S.phone='';
@@ -1963,7 +1987,16 @@ async function loadProfile(){
 function saveProfile(extra={}){if(!CL||!CUID)return;F().setDoc(F().doc(CL.db,'users',CUID),{name:S.name,phone:'+91'+S.phone,ec:EC,lang:S.lang==='en'?'en':'ta',updatedAt:F().serverTimestamp(),...extra},{merge:true}).catch(()=>{})}
 /* the customer's language also decides the language of their WhatsApp messages (server reads users/{uid}.lang) */
 function saveLang(){if(CL&&CUID&&S.logged)F().setDoc(F().doc(CL.db,'users',CUID),{lang:S.lang==='en'?'en':'ta'},{merge:true}).catch(()=>{})}
+/* Not signed in yet (e.g. came from an ad): read the public price copy (public/prices) so home and the fare screen show
+   real prices. Signing in switches to the full settings (watchConfig). */
+let PUBUNSUB=null;
+function watchPublic(){if(PUBUNSUB||CFGUNSUB||!CL)return;
+  PUBUNSUB=F().onSnapshot(F().doc(CL.db,'public','prices'),s=>{if(!s.exists()||CFGUNSUB)return;const d=s.data();
+    if(d.fares)VEH.forEach(v=>{const f=d.fares[v.id];if(f&&v.id!=='auto'){if(f.base!=null)v.base=+f.base;if(f.per!=null)v.per=+f.per;v.incl=+f.incl>0?+f.incl:undefined}});
+    CFG.area=d.area||null;CFG.night=d.night||null;try{applyTariff(d)}catch(e){}
+    if(S.tab==='home'&&!S.logged&&!document.querySelector('.modal')&&document.getElementById('vs'))fareScreen()},()=>{})}
 function watchConfig(){
+  if(PUBUNSUB){try{PUBUNSUB()}catch(e){}PUBUNSUB=null}
   if(CFGUNSUB)return;
   CFGUNSUB=F().onSnapshot(F().doc(CL.db,'config','app'),s=>{if(!s.exists())return;const d=s.data();
     if(d.fares)VEH.forEach(v=>{const f=d.fares[v.id];if(f&&v.id!=='auto'){if(f.base!=null)v.base=+f.base;if(f.per!=null)v.per=+f.per;v.incl=+f.incl>0?+f.incl:undefined}});
@@ -2034,7 +2067,7 @@ function takeContact(d){const c={custPhone:d.custPhone||null,riderPhone:d.rider&
   delete d.custPhone;if(d.rider)d.rider={name:String(d.rider.name||'')};return c}
 const saveContact=(id,c)=>F().setDoc(F().doc(CL.db,'bookings',id,'private','contact'),c);
 function localTar(v,km){const w=CFG.wait||{},np=nightV(v),o={t:'local',wait:v&&v.id==='auto'?FARE.AUTO_GOVT.wait:+w.rate||0,free:w.free!=null?+w.free:3};if(v&&v.id==='auto')o.govt='TN-GO366-2026';if(np&&v){o.night=np;o.nightAmt=fare(v,km)-fare0(v,km)}return o} // prices saved in the booking for the final bill
-async function cloudBook(){if(blockedStop())return;
+async function cloudBook(){if(needLogin()||blockedStop())return;
   {const ar=localArea();if(ar.far&&!(ar.autoOk&&autoOnly()&&S.veh==='auto'))return areaAsk(ar)}
   const r=route(S.from,S.dest),v=VEH.find(x=>x.id===S.veh),f=fare(v,r.km);
   if(S.pay==='wallet')S.pay='upi';
@@ -2235,8 +2268,9 @@ const SORRY={ta:'மன்னிக்கவும்! இந்த நேரத
   en:'We are sorry! No vehicle is available right now, so we had to cancel your booking. Thank you for choosing Vellore Taxi — we look forward to serving you next time 🙏'};
 function sorrySheet(reason){if(document.getElementById('sorry'))return;
   if(reason==='nodriver'){const nb=NODRV;
-    modal(`<div id="sorry" style="text-align:center;font-size:40px">🙏</div><h3 style="text-align:center">${L('இப்போ driver கிடைக்கல','No driver available right now')}</h3>
-      <p style="margin:0;line-height:1.55">${L('மன்னிக்கவும்! 3 முறை தேடியும் அருகில் driver யாரும் எடுக்கல. உங்க booking தானா ரத்து ஆயிடுச்சு, கட்டணம் எதுவும் இல்லை. எங்க office-க்கும் தகவல் போயிருக்கு, அவங்க உங்களை அழைப்பாங்க.','Sorry! We searched 3 times but no nearby driver accepted. Your booking was cancelled automatically, at no charge. Our office has been told and will call you.')}</p>
+    modal(`<div id="sorry" style="text-align:center;font-size:40px">🙏</div><h3 style="text-align:center">${L('மன்னிச்சிருங்க','We’re really sorry')}</h3>
+      <p style="margin:0;line-height:1.55">${L('இப்போ உங்க பகுதியில வண்டி கிடைக்கலை. Vellore Taxi இப்போ தான் ஆரம்பிச்சிருக்கோம் — இது ஆரம்பம் தான். தினமும் புது வண்டிகள் சேர்ந்துகிட்டு இருக்கு, இனிமே கண்டிப்பா நல்லா கிடைக்கும். இப்போதைக்கு எங்களை மன்னிச்சிருங்க.','No vehicle is free near you right now. Vellore Taxi has only just started — this is just the beginning. New vehicles are joining every day, and it will get much better soon. Please forgive us for now.')}</p>
+      <p class="muted" style="margin:0;line-height:1.5;font-size:13.5px">${L('உங்க booking ரத்து ஆயிடுச்சு, கட்டணம் எதுவும் இல்லை. எங்க office-க்கு தகவல் போயிருக்கு — வண்டி ஏற்பாடு பண்ண முடிஞ்சா உங்களை அழைப்பாங்க.','Your booking was cancelled at no charge. Our office has been told and will call you if they can arrange a vehicle.')}</p>
       ${nb?`<button class="btn yellow" id="srb">🔁 ${L('மறுபடி தேடு','Search again')}${nb.tip?` · ₹${nb.tip} tip`:''}</button>`:''}
       ${CFG.office?`<a class="btn ghost" href="tel:+91${CFG.office}">📞 ${L('Office-ஐ அழை','Call our office')}</a>`:''}<button class="btn ghost" id="sok">${L('சரி','OK')}</button>`,(m,close)=>{
       m.querySelector('#sok').onclick=()=>{close();if(S.tab==='home'&&!R)home()};

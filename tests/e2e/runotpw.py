@@ -18,6 +18,7 @@ async def main():
             await pg.evaluate(f"['c','d'].forEach(i=>document.getElementById(i).style.width='{W}px')");await pg.wait_for_timeout(300)
             cf=pg.frame(url=B+'c2.html');df=pg.frame(url=B+'d2.html');C=pg.frame_locator('#c');D=pg.frame_locator('#d')
             await cf.evaluate("S.logged=false;S.name='';save();login()");await pg.wait_for_timeout(400)
+            if not await C.locator('#ph').count() and await C.locator('.nav button[data-tab="me"]').count():await C.locator('.nav button[data-tab="me"]').click();await pg.wait_for_timeout(400)  # guest home → sign in
             await C.locator('#ph').fill('9999900011');await C.locator('#go').click();await pg.wait_for_timeout(600)
             m=await cf.evaluate(M);ok=m['n']==6 and m['inside'] and len(set(m['ws']))==1 and min(m['fs'])>=20 and m['sw']<=m['W'] and not m['overlap']
             check(f'customer {W}px: 6 boxes inside, equal, readable',ok,m)
