@@ -41,7 +41,7 @@
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('./vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV=window.VCT_V='102',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV=window.VCT_V='103',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('./version.json',location.href)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -547,17 +547,17 @@ details.faq p{margin:0;padding:0 14px 14px;color:var(--muted);font-size:14px;lin
 <div class="app" id="app"></div>
 <div class="toast" id="toast"></div>
 
-<script src="./core/report.js?v=102"></script>
-<script src="./core/geo.js?v=102"></script>
-<script src="./core/fare.js?v=102"></script>
-<script src="./core/appget.js?v=102"></script>
-<script src="./core/pin.js?v=102"></script>
-<script src="./core/clock.js?v=102"></script>
-<script src="./core/map.js?v=102"></script>
-<script src="./core/chat.js?v=102"></script>
-<script src="./core/otp.js?v=102"></script>
-<script src="./core/deskmode.js?v=102"></script>
-<script src="./core/weather.js?v=102"></script>
+<script src="./core/report.js?v=103"></script>
+<script src="./core/geo.js?v=103"></script>
+<script src="./core/fare.js?v=103"></script>
+<script src="./core/appget.js?v=103"></script>
+<script src="./core/pin.js?v=103"></script>
+<script src="./core/clock.js?v=103"></script>
+<script src="./core/map.js?v=103"></script>
+<script src="./core/chat.js?v=103"></script>
+<script src="./core/otp.js?v=103"></script>
+<script src="./core/deskmode.js?v=103"></script>
+<script src="./core/weather.js?v=103"></script>
 <script>
 /* ---------- icons ---------- */
 const I = {
@@ -677,6 +677,9 @@ setBike(false);
 /* ---------- state ---------- */
 const S={lang:'en',from:'home',phone:'',name:'',logged:false,tab:'home',dest:null,veh:'auto',pay:'upi'};
 if(window.APPGET)APPGET.init('cust',()=>S.lang);
+/* Facebook / Instagram open ad links in their own built-in browser. Google refuses sign-in there ("disallowed_useragent"),
+   so the Google button is hidden in it; mobile-number OTP works. */
+const IAB=/FBAN|FBAV|FB_IAB|FBIOS|Instagram/i.test(navigator.userAgent||'');
 let LANGSET=false;
 try{const s=JSON.parse(localStorage.getItem('vct')||'{}');Object.assign(S,s);LANGSET=!!s.lang}catch(e){}
 try{const l=new URLSearchParams(location.search).get('l');if(l==='ta'||l==='en'){S.lang=l;LANGSET=true}}catch(e){}
@@ -760,6 +763,7 @@ function login(){
     ph.oninput=()=>{ph.value=ph.value.replace(/\D/g,'').slice(0,10);b.disabled=ph.value.length!==10;document.getElementById('e').textContent=''};
     b.onclick=()=>{if(!/^[6-9]\d{9}$/.test(ph.value)){document.getElementById('e').textContent=t('phoneErr');return}S.phone=ph.value;save();
       if(CL){b.disabled=true;b.textContent=L('OTP அனுப்புது…','Sending OTP…');const nat=VCTOTP.native();CL.sendOtp(ph.value).then(()=>otp(nat)).catch(e=>{VCTOTP.stop();b.disabled=false;b.textContent=t('getOtp');document.getElementById('e').textContent=CL.errText(e,S.lang==='ta')});return}otp()};
+    if(IAB){const g=document.getElementById('gg');if(g){g.remove();const o=app.querySelector('.ordiv');if(o)o.remove()}}
     const gg=document.getElementById('gg');if(gg)gg.onclick=googleIn;
     const gb=document.getElementById('gback');if(gb)gb.onclick=()=>{VCTOTP.stop();PENDING?resumePending():home()};
     if(CL&&CL.prepOtp)CL.prepOtp();
@@ -786,6 +790,7 @@ function otp(nat){
       if(val()==='1234'){S.name?(S.logged=true,save(),home()):nameScreen()}else{document.getElementById('e').textContent=t('otpErr');box.reset();b.disabled=true}};
     document.getElementById('bk').onclick=()=>{VCTOTP.stop();login()};document.getElementById('ch').onclick=document.getElementById('bk').onclick;
     let n=30;const rs=document.getElementById('rs');const tick=()=>{if(!document.body.contains(rs))return;rs.innerHTML=n>0?`${t('resend')} 0:${String(n).padStart(2,'0')}`:`<button class="linkbtn" id="rsb">${t('resend')}</button>`;if(n===0){document.getElementById('rsb').onclick=()=>{if(CL){const n2=VCTOTP.native();if(n2)n2.then(c=>{if(c&&document.body.contains(ins[0])&&val().length!==6)VCTOTP.fill(ins,c)});CL.sendOtp(S.phone).then(()=>toast(L('OTP மறுபடி அனுப்பியாச்சு','OTP sent again'))).catch(e=>toast(CL.errText(e,S.lang==='ta')))}else toast('OTP: 1234');n=30;tick()};return}n--;setTimeout(tick,1000)};tick();
+    if(IAB){const n=document.getElementById('nootp');if(n)n.remove()}
     const gg=document.getElementById('gg');if(gg){gg.onclick=googleIn;setTimeout(()=>{const n=document.getElementById('nootp');if(n)n.hidden=false},25000)}
     setTimeout(()=>ins[0].focus(),300);
   });
