@@ -233,6 +233,20 @@ test('error reports: small, write-only for the public', async () => {
   await assertFails(addDoc(collection(as.anon(), 'errors'), { app: 'c', msg: 'x'.repeat(2000) }));
   await assertFails(getDoc(doc(as.cust(), 'errors', 'x')));
 });
+test('booking funnel rows: anonymous, fixed shape, staff-only read', async () => {
+  const ok = { app: 'customer', v: '116', step: 'open', sid: 'abc123xyz', src: 'facebook', at: Date.now() };
+  await assertSucceeds(addDoc(collection(as.anon(), 'events'), ok));
+  await assertSucceeds(addDoc(collection(as.cust(), 'events'), { ...ok, step: 'booked' }));
+  await assertFails(addDoc(collection(as.anon(), 'events'), { ...ok, step: 'hacked' }));
+  await assertFails(addDoc(collection(as.anon(), 'events'), { ...ok, phone: '9999900001' }));
+  await assertFails(addDoc(collection(as.anon(), 'events'), { ...ok, app: 'driver' }));
+  await assertFails(addDoc(collection(as.anon(), 'events'), { ...ok, sid: 'x'.repeat(40) }));
+  await assertFails(addDoc(collection(as.anon(), 'events'), { ...ok, src: 'y'.repeat(30) }));
+  await assertFails(addDoc(collection(as.anon(), 'events'), { ...ok, at: 'now' }));
+  await assertFails(getDocs(collection(as.cust(), 'events')));
+  await assertFails(getDocs(collection(as.anon(), 'events')));
+  await assertSucceeds(getDocs(collection(as.staff(), 'events')));
+});
 test('signed-out users read nothing', async () => {
   await assertFails(getDoc(doc(as.anon(), 'config', 'app')));
   await assertFails(getDoc(doc(as.anon(), 'bookings', 'b1')));

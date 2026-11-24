@@ -952,7 +952,7 @@ function moreSheet(){const rest=SECS().slice(4);
     m.querySelector('#lg2').onclick=()=>{close();S.lang=S.lang==='ta'?'en':'ta';save();show()};m.querySelector('#lo2').onclick=()=>{close();logout()}});
 }
 function logout(){clearInterval(SIM);clearInterval(DUTYT);if(MEUN){MEUN();MEUN=null}ME=null;if(CL){OUNS.forEach(u=>u());OUNS=[];CL.logout()}S.logged=false;save();WAU=[];waFab();if(NTITLE!==null){document.title=NTITLE;NTITLE=null}const nc=document.getElementById('ncards');if(nc)nc.remove();login()}
-function show(){cancelAnimationFrame(mapLoop);layout();waFab();({dash,book,drv:drivers,cust:customers,sup:support,appr:approvals,rep:()=>reports().then(()=>{if(S.sec==='rep'&&S.role==='owner')auditPanel()}),set:settings})[S.sec]()}
+function show(){cancelAnimationFrame(mapLoop);layout();waFab();({dash,book,drv:drivers,cust:customers,sup:support,appr:approvals,rep:()=>reports().then(()=>{if(S.sec==='rep')funnelPanel()}).then(()=>{if(S.sec==='rep'&&S.role==='owner')auditPanel()}),set:settings})[S.sec]()}
 const main=()=>document.getElementById('main');
 const head=(t,sub,act='')=>`<div class="mhead"><div><h1>${t}</h1>${sub?`<p class="muted">${sub}</p>`:''}</div>${act}</div>`;
 const stPill=s=>`<em class="bst ${s}">${({searching:L('Driver தேடல்','Needs driver'),assigned:L('Pickup-க்கு போறாங்க','To pickup'),ontrip:L('பயணத்தில்','On trip'),done:L('முடிந்தது','Completed'),cancelled:L('ரத்து','Cancelled'),scheduled:L('முன்பதிவு','Scheduled')})[s]}</em>`;
@@ -1915,6 +1915,26 @@ function bindReq(){const A=main();if(!A)return;
 function myReqHtml(){if(S.role==='owner'||!CL)return '';const mine=SREQ.filter(r=>r.by===CL.phone).slice(0,6);if(!mine.length)return '';
   const ST={pending:['காத்திருக்கு','Waiting'],approved:['Approve ஆச்சு','Approved'],rejected:['மறுத்தார்','Declined']};
   return `<section class="panel" style="margin-top:14px"><div class="ph"><h3>${X('user')} ${L('என் கோரிக்கைகள்','My requests to the owner')}</h3></div>${mine.map(r=>`<div class="lrow"><div><b>${esc(L(RQK[r.kind]?RQK[r.kind][0]:r.kind,RQK[r.kind]?RQK[r.kind][1]:r.kind))}${r.want?' · '+inr(r.want):''}${r.bkId?' · '+esc(r.bkId):''}</b><small>${esc(r.why||'')}${r.note?' · '+L('Owner: ','Owner: ')+esc(r.note):''}</small></div><span>${L((ST[r.status]||ST.pending)[0],(ST[r.status]||ST.pending)[1])}</span></div>`).join('')}</section>`}
+/* Customer booking funnel (core/funnel.js writes one anonymous row per step of a visit): where do visitors stop? */
+let FUN_D=1;
+const FUN_STEPS=[['open','App திறந்தவங்க','Opened the app'],['home','Home பார்த்தவங்க','Reached the home screen'],['fare','விலை பார்த்தவங்க','Saw a fare'],['book','Book அழுத்தினவங்க','Pressed Book'],['booked','Booking ஆனது','Booked'],['driver','Driver கிடைச்சது','Driver found'],['done','பயணம் முடிஞ்சது','Trip completed']];
+function funnelCount(rows){const by={};rows.forEach(r=>{if(!r||!r.step||!r.sid)return;(by[r.step]=by[r.step]||new Set()).add(r.sid)});
+  const n=k=>by[k]?by[k].size:0,src={};rows.forEach(r=>{if(r&&r.step==='open'&&r.sid)src[r.src||'direct']=(src[r.src||'direct']||new Set()).add(r.sid)});
+  return {steps:FUN_STEPS.map(([k,ta,en])=>({k,ta,en,n:n(k)})),login:n('login'),nodriver:n('nodriver'),src:Object.entries(src).map(([k,v])=>[k,v.size]).sort((a,b)=>b[1]-a[1])}}
+async function funnelPanel(){const A=main();if(!A||!CL)return;let box=document.getElementById('funp');if(!box){box=document.createElement('section');box.className='panel';box.id='funp';box.style.marginTop='14px';A.appendChild(box)}
+  const head=`<div class="ph"><h3>${X('chart')} ${L('Customer app: எங்க நிக்கிறாங்க?','Customer app: where do visitors stop?')}</h3><div class="tabs" style="margin:0">${[[1,L('இன்று','Today')],[7,L('7 நாள்','7 days')]].map(([d,l])=>`<button class="${FUN_D===d?'on':''}" data-fnd="${d}">${l}</button>`).join('')}</div></div>`;
+  const bind=()=>box.querySelectorAll('[data-fnd]').forEach(b=>b.onclick=()=>{FUN_D=+b.dataset.fnd;funnelPanel()});
+  box.innerHTML=head+'<div class="muted">…</div>';bind();
+  try{const d0=new Date();d0.setHours(0,0,0,0);const since=d0.getTime()-(FUN_D-1)*864e5;
+    const q=await F().getDocs(F().query(F().collection(CL.db,'events'),F().where('at','>=',since),F().orderBy('at','desc'),F().limit(5000)));
+    const c=funnelCount(q.docs.map(d=>d.data())),top=c.steps[0].n;
+    if(!top){box.innerHTML=head+`<p class="muted" style="margin:0">${L('இந்த காலத்துல இன்னும் பதிவு இல்லை.','Nothing recorded for this period yet.')}</p>`;bind();return}
+    box.innerHTML=head+`<div id="funrows">${c.steps.map((x,i)=>{const p=Math.round(x.n/top*100),prev=i?c.steps[i-1].n:0,drop=i&&prev?Math.round((1-x.n/prev)*100):0;
+      return `<div class="lrow" data-fs="${x.k}"><div style="flex:1;min-width:0"><b>${L(x.ta,x.en)}</b><div style="height:8px;border-radius:6px;background:var(--surface-2);margin-top:6px;overflow:hidden"><i style="display:block;height:100%;width:${Math.min(100,p)}%;background:#12664A;border-radius:6px"></i></div></div><div style="text-align:right;min-width:92px"><b>${x.n}</b> <span class="muted">(${p}%)</span>${i&&drop>0?`<small class="neg" style="display:block">−${drop}% ${L('விட்டுட்டாங்க','left here')}</small>`:''}</div></div>`}).join('')}</div>
+      <p class="muted" style="margin:10px 0 0;font-size:13px">${L(`Login கேட்கப்பட்டவங்க: ${c.login} · Driver கிடைக்காம போனது: ${c.nodriver}`,`Asked to log in: ${c.login} · No driver found: ${c.nodriver}`)}</p>
+      <p class="muted" style="margin:6px 0 0;font-size:13px" id="funsrc">${L('எங்கிருந்து வந்தாங்க','Where they came from')}: ${c.src.map(([k,n])=>`${esc(k)} <b>${n}</b>`).join(' · ')}</p>
+      <p class="muted" style="margin:6px 0 0;font-size:12px">${L('ஒரு visit-க்கு ஒரு எண்ணிக்கை. பெயர், phone எதுவும் சேமிக்கப்படாது.','Counted once per visit. No name or phone number is stored.')}${q.docs.length>=5000?' '+L('(முதல் 5000 பதிவு மட்டும்)','(first 5000 rows only)'):''}</p>`;bind();
+  }catch(e){box.innerHTML=head+`<p class="muted" style="margin:0">${esc(CL.errText?CL.errText(e,S.lang==='ta'):String(e))}</p>`;bind()}}
 async function auditPanel(){const A=main();if(!A||!CL)return;const box=document.createElement('section');box.className='panel';box.style.marginTop='14px';
   box.innerHTML=`<div class="ph"><h3>${X('receipt')} ${L('யார் என்ன பண்ணாங்க (Activity log)','Activity log (who did what)')}</h3></div><div id="audl" class="muted">…</div>`;A.appendChild(box);
   try{const q=await F().getDocs(F().query(F().collection(CL.db,'audit'),F().orderBy('at','desc'),F().limit(100)));const rows=q.docs.map(d=>d.data());

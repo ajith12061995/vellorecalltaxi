@@ -555,6 +555,7 @@ details.faq p{margin:0;padding:0 14px 14px;color:var(--muted);font-size:14px;lin
 <div class="toast" id="toast"></div>
 
 <script src="./core/report.js?v=115"></script>
+<script src="./core/funnel.js?v=115"></script>
 <script src="./core/geo.js?v=115"></script>
 <script src="./core/fare.js?v=115"></script>
 <script src="./core/appget.js?v=115"></script>
@@ -765,6 +766,7 @@ function langScreen(){
   });
 }
 function login(){
+  try{window.VCTF&&VCTF('login')}catch(e){}
   go(`<section class="screen"><div class="hero pad"><span class="tmwrap"><img src="./brand/logo-main.png?v=9" alt="Vellore Taxi" style="height:150px;display:block" onerror="this.parentNode.remove()"><span class="tm" aria-label="Trademark">™</span></span><span class="mini">${t('tagline')}</span><h1>${t('loginH')}</h1><p>${t('loginP')}</p>
     <div style="display:flex;gap:12px;margin-top:8px;flex-wrap:wrap">${I.bike}${I.auto}${I.mini}${I.car}${I.suv}</div></div>
   <div class="body pad"><label class="muted" for="ph" style="font-weight:600">${t('phone')}</label>
@@ -886,6 +888,7 @@ function watchNear(){if(!CL||!S.logged)return;const c=P[S.from]||P.home;if(!c||c
     s=>{per[cell]=s.docs.map(d=>({id:d.id,...d.data()}));draw()},()=>{}));
   NEARUNSUB=()=>{uns.forEach(u=>{try{u()}catch(e){}});NEARUNSUB=null;NEARKEY=''};}
 function home(mode){
+  try{window.VCTF&&VCTF('home')}catch(e){}
   if(PENDING&&S.logged&&!mode)return resumePending();
   if(BOOKLINK&&!mode){try{return useBookLink()}catch(e){BOOKLINK=null}}
   const RENTM=mode==='rent',OUTM=mode==='out';S.mode=RENTM?'rent':OUTM?'out':'';
@@ -1001,6 +1004,7 @@ function vehRows(r,mins){
      <span class="price"><b>₹${f}</b></span></button>`}).join('');
 }
 function fareScreen(){
+  try{window.VCTF&&VCTF('fare')}catch(e){}
   if(S.mode==='rent')return rentFare();
   if(S.mode==='out')return outFare2();
   {const ar=localArea();if(ar.far&&!(ar.autoOk&&autoOnly()))return areaAsk(ar);if(!ar.far)S.autoFor=''}
@@ -1595,6 +1599,7 @@ function rentEta(id){const v=VEH.find(x=>x.id===id),pu=P[S.from];
   return ds.length?Math.max(2,Math.round(Math.min(...ds)*1.35/20*60)+2):v.eta}
 function rentalScreen(){home('rent')}
 function rentFare(){
+  try{window.VCTF&&VCTF('fare')}catch(e){}
   RS.atFare=true;
   const pk=PKG[RS.pkg],vs=rentVeh().filter(v=>rentPrice(v.id,pk.h)!=null);
   if(!vs.some(v=>v.id===RS.veh))RS.veh=(vs.find(v=>v.id==='sedan')||vs[0]).id;
@@ -1689,6 +1694,7 @@ function oQuote(id,km){const days=oDays(km),billed=OS.type==='one'?Math.max(km,O
 const fmtD=ts=>new Date(ts).toLocaleString(S.lang==='ta'?'ta-IN':'en-IN',{day:'numeric',month:'short',hour:'numeric',minute:'2-digit'});
 const hm=m=>m>=60?`${Math.floor(m/60)} ${L('மணி','hr')} ${m%60?m%60+' '+t('min'):''}`:`${m} ${t('min')}`;
 function outFare2(){
+  try{window.VCTF&&VCTF('fare')}catch(e){}
   if(!S.dest||!P[S.dest])return home('out');
   if(!ORATE[OS.veh])OS.veh='sedan';
   const {r,km,mins}=oInfo();const onlyRound=oA(km);if(onlyRound&&OS.type==='one')OS.type='round';oDefaults(mins);
@@ -2113,7 +2119,7 @@ function takeContact(d){const c={custPhone:d.custPhone||null,riderPhone:d.rider&
   delete d.custPhone;if(d.rider)d.rider={name:String(d.rider.name||'')};return c}
 const saveContact=(id,c)=>F().setDoc(F().doc(CL.db,'bookings',id,'private','contact'),c);
 function localTar(v,km){const w=CFG.wait||{},np=nightV(v),o={t:'local',wait:v&&v.id==='auto'?FARE.AUTO_GOVT.wait:+w.rate||0,free:w.free!=null?+w.free:3};if(v&&v.id==='auto')o.govt='TN-GO366-2026';if(np&&v){o.night=np;o.nightAmt=fare(v,km)-fare0(v,km)}return o} // prices saved in the booking for the final bill
-async function cloudBook(){if(needLogin()||blockedStop())return;
+async function cloudBook(){try{window.VCTF&&VCTF('book')}catch(e){};if(needLogin()||blockedStop())return;
   {const ar=localArea();if(ar.far&&!(ar.autoOk&&autoOnly()&&S.veh==='auto'))return areaAsk(ar)}
   const r=route(S.from,S.dest),v=VEH.find(x=>x.id===S.veh),f=fare(v,r.km);
   if(S.pay==='wallet')S.pay='upi';
@@ -2126,7 +2132,7 @@ async function cloudBook(){if(needLogin()||blockedStop())return;
   try{
     if(!CFG.serverPin)try{Object.assign(data,await VCTPIN.fields(pin))}catch(e){} // lets the driver check the PIN even if this phone goes offline
     const ct=takeContact(data);
-    const ref=await F().addDoc(F().collection(CL.db,'bookings'),data);
+    const ref=await F().addDoc(F().collection(CL.db,'bookings'),data);try{window.VCTF&&VCTF('booked')}catch(e){}
     await F().setDoc(F().doc(CL.db,'bookings',ref.id,'private','pin'),{pin});
     await saveContact(ref.id,ct);
     R={id:ref.id,v,km:r.km,path:r.path,fare:f,pay:S.pay,from:S.from,dest:S.dest,fromName:{ta:P[S.from].ta,en:P[S.from].en},destName:{ta:P[S.dest].ta,en:P[S.dest].en},
@@ -2160,7 +2166,7 @@ R.lastTry=b.pinTry;
     if(R.phase!=='ride'||!document.getElementById('stB'))rideCloud();else rideCloudUpdate(true);
     return;
   }
-  if(b.status==='done'){stopWatch();forgetRide();R.fare=FARE.billOf(b);R.fx=b.fx||null;R.boost=+b.tip||0;R.pay=b.pay||R.pay;doneScreen();return}
+  if(b.status==='done'){try{window.VCTF&&VCTF('done')}catch(e){};stopWatch();forgetRide();R.fare=FARE.billOf(b);R.fx=b.fx||null;R.boost=+b.tip||0;R.pay=b.pay||R.pay;doneScreen();return}
   if(b.status==='cancelled'&&!R.selfCancel&&/^driver/.test(b.cancelReason||'')&&!b.startedAt&&!OFK.includes(b.kind)&&(R.rebookN||0)<3){autoRebook(b);return}
   if(b.status==='cancelled'){stopWatch();forgetRide();if(!R.selfCancel){if(b.cancelReason&&b.cancelReason!=='customer'&&!/^(driver|noshow|custask)/.test(b.cancelReason))setTimeout(()=>sorrySheet(b.cancelReason),400);else toast(L('இந்த ride ரத்து ஆயிடுச்சு. மறுபடி book பண்ணுங்க','This ride was cancelled. Please book again'));recordTrip('cancelled',{reason:b.cancelReason||''})}R=null;home()}
 }
@@ -2215,6 +2221,7 @@ function searchingCloud(){
   });
 }
 function rideCloud(){
+  try{window.VCTF&&VCTF('driver')}catch(e){}
   R.phase='ride';saveActive();
   const b=R.b,pu={lat:b.from.lat,lon:b.from.lon},dp={lat:b.to.lat,lon:b.to.lon};
   go(`<section class="screen"><div class="mapwrap"><canvas class="map" id="map"></canvas>
@@ -2312,7 +2319,7 @@ function applyTariff(d){
 /* polite note when the office cancels (both languages, always) */
 const SORRY={ta:'மன்னிக்கவும்! இந்த நேரத்தில் எங்களிடம் வண்டி இல்லாததால் உங்க booking-ஐ ரத்து செய்ய வேண்டியதாயிற்று. Vellore Taxi-ஐ தேர்ந்தெடுத்ததற்கு நன்றி — அடுத்த முறை கண்டிப்பா உங்களுக்கு சேவை செய்வோம்',
   en:'We are sorry! No vehicle is available right now, so we had to cancel your booking. Thank you for choosing Vellore Taxi — we look forward to serving you next time'};
-function sorrySheet(reason){if(document.getElementById('sorry'))return;
+function sorrySheet(reason){if(document.getElementById('sorry'))return;if(reason==='nodriver')try{window.VCTF&&VCTF('nodriver')}catch(e){};
   if(reason==='nodriver'){const nb=NODRV;
     modal(`<div id="sorry" class="xbig">${X('info',34)}</div><h3 style="text-align:center">${L('மன்னிச்சிருங்க','We’re really sorry')}</h3>
       <p style="margin:0;line-height:1.55">${L('இப்போ உங்க பகுதியில வண்டி கிடைக்கலை. Vellore Taxi இப்போ தான் ஆரம்பிச்சிருக்கோம் — இது ஆரம்பம் தான். தினமும் புது வண்டிகள் சேர்ந்துகிட்டு இருக்கு, இனிமே கண்டிப்பா நல்லா கிடைக்கும். இப்போதைக்கு எங்களை மன்னிச்சிருங்க.','No vehicle is free near you right now. Vellore Taxi has only just started — this is just the beginning. New vehicles are joining every day, and it will get much better soon. Please forgive us for now.')}</p>
@@ -2330,7 +2337,7 @@ function sorrySheet(reason){if(document.getElementById('sorry'))return;
       :`<p style="margin:0">எங்க office உங்க booking-ஐ ரத்து செய்தது. சந்தேகம் இருந்தா எங்களை அழைங்க.</p><p class="muted" style="margin:0">Our office cancelled your booking. Please call us if you have any questions.</p>`}
     ${CFG.office?`<a class="btn ghost" href="tel:+91${CFG.office}">${L('Office-ஐ அழை','Call our office')}</a>`:''}<button class="btn yellow" id="sok">${L('சரி','OK')}</button>`,(m,close)=>{m.querySelector('#sok').onclick=()=>{close();if(S.tab==='home'&&!R)home()}});
 }
-async function cloudSchedule(rec){
+async function cloudSchedule(rec){try{window.VCTF&&VCTF('book')}catch(e){};
   if(!CL||!CUID)return null;
   const v=VEH.find(x=>x.id===rec.veh.id)||VEH.find(x=>x.id==='auto');
   const to=(rec.kind==='schedule'||OFK.includes(rec.kind)&&rec.hasDrop)&&S.dest&&P[S.dest]?placeOf(S.dest):{key:null,ta:rec.to.ta,en:rec.to.en,lat:null,lon:null};
@@ -2339,6 +2346,7 @@ async function cloudSchedule(rec){
       from:placeOf(S.from),to,path:[],veh:v.id,vehTa:v.ta,vehEn:v.en,km:rec.km||0,hrs:rec.hrs||null,otype:rec.otype||null,retAt:rec.ret||null,rider:S.rider?(CFG.privPhone?{name:String(S.rider.name||'')}:S.rider):null,base:v.base,fare:rec.fare,pay:rec.pay||'cash',note:rec.note||null,tariff:rec.tar||null,
       ...(OFK.includes(rec.kind)?{status:'searching',dispatch:rec.kind==='outstation'&&rec.otype==='one'?{review:true,openAt:null,reviewUntil:Date.now()+(DISPC.review||10)*60e3,gap:DISPC.gap,fall:DISPC.fall}:{openAt:Date.now()+DISPC.win*1000,gap:DISPC.gap,fall:DISPC.fall}}:{status:'scheduled'}),
       when:rec.when,createdAt:F().serverTimestamp(),updatedAt:F().serverTimestamp()});
+    try{window.VCTF&&VCTF('booked')}catch(e){}
     if(rec.pin)F().setDoc(F().doc(CL.db,'bookings',ref.id,'private','pin'),{pin:rec.pin}).catch(()=>{});
     await saveContact(ref.id,{custPhone:'+91'+S.phone,riderPhone:S.rider&&S.rider.phone?String(S.rider.phone):null});
     return ref.id}catch(e){toast(CL.errText(e,S.lang==='ta'));return null}

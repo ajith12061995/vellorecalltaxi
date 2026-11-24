@@ -302,6 +302,19 @@ service cloud.firestore {
     match /deletionRequests/{ph} {
       allow read, update: if isStaff();
     }
+    // Booking funnel (customer app): one small anonymous row per step of a visit — no name, phone or uid
+    match /events/{id} {
+      allow create: if newData().keys().hasOnly(['app', 'v', 'step', 'sid', 'src', 'at'])
+        && newData().app == 'customer'
+        && newData().step in ['open', 'home', 'fare', 'login', 'book', 'booked', 'driver', 'done', 'nodriver']
+        && newData().sid is string && newData().sid.size() >= 6 && newData().sid.size() <= 24
+        && newData().src is string && newData().src.size() <= 20
+        && newData().v is string && newData().v.size() <= 8
+        && newData().at is number;
+      allow read: if isStaff();
+      allow delete: if isOwner();
+    }
+
     match /errors/{id} {
       allow create: if newData().keys().hasOnly(['app', 'v', 'msg', 'src', 'line', 'ua', 'at', 'who'])
         && newData().msg is string && newData().msg.size() <= 1000;
