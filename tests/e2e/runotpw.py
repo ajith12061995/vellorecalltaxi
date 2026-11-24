@@ -43,14 +43,14 @@ async def main():
             if W in (320,360,412,430):
                 await J.locator('[data-v=sedan]').click();await pg.wait_for_timeout(200)
                 await J.locator('#nm').fill('Murugan K');await J.locator('#ecp').fill('9840011122')
-                await J.locator('#pl').fill('TN 23 CK 4455')
+                await J.locator('#br').select_option('Maruti Suzuki');await pg.wait_for_timeout(200);await J.locator('#mo').select_option('Dzire');await J.locator('#pl').fill('TN 23 CK 4455')
                 cut=await jf.evaluate("""[...document.querySelectorAll('input:not([type=checkbox]):not([type=file]):not([type=date]),select')].filter(i=>i.offsetParent&&i.value).map(i=>{const c=document.createElement('canvas').getContext('2d');const cs=getComputedStyle(i);c.font=cs.fontWeight+' '+cs.fontSize+' '+cs.fontFamily;const t=i.tagName=='SELECT'?i.options[i.selectedIndex].text:i.value;return [i.id,t,c.measureText(t).width,i.clientWidth-parseFloat(cs.paddingLeft)-parseFloat(cs.paddingRight)-(i.tagName=='SELECT'?20:0)]}).filter(x=>x[2]>x[3])""")
-                check(f'join {W}px: typed name, phone, plate fully visible (not cut)',not cut,cut)
+                check(f'join {W}px: typed name, phone, car brand, plate fully visible (not cut)',not cut,cut)
                 for k in ['photo','dlF','dlB','rcF','rcB','aadhaarF','aadhaarB','ins','permit']:
                     await J.locator(f'[data-f={k}]').set_input_files('fixtures/doc.jpg');await pg.wait_for_timeout(300)
                 sw=await jf.evaluate("[document.documentElement.scrollWidth,document.documentElement.clientWidth]")
                 check(f'join {W}px: filled form (photos) has no sideways scroll',sw[0]<=sw[1],sw)
-                check(f'join {W}px: short form — no number / date boxes to type',await jf.evaluate("document.querySelectorAll('input[type=date],#dln,#br,#mo,#yr,#sig,#upi').length")==0)
+                check(f'join {W}px: short form — no number / date boxes to type',await jf.evaluate("document.querySelectorAll('input[type=date],#dln,#yr,#sig,#upi').length")==0)
                 await jf.evaluate("document.getElementById('sb').scrollIntoView({block:'center'})");await pg.locator('#c').screenshot(path=f'shots/otpw_form_{W}.png')
             await pg.close()
         check('no page errors',not errs,errs)

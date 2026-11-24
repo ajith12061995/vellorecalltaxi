@@ -15,11 +15,20 @@ async def main():
         await J.locator('#o0').fill('123456'); await pg.wait_for_timeout(800)
         # ---- short join form (24 Nov 2026): name, family number, vehicle type, plate, 7 photos, agreement tick. Nothing else to type.
         e=lambda: jf.evaluate("document.getElementById('e').textContent")
-        check('short form: no licence number / brand / year / date / UPI / signature boxes',await jf.evaluate("document.querySelectorAll('#dln,#br,#mo,#yr,#exp,#area,#ecn,#upi,#sig,#own,input[type=date]').length")==0)
+        check('short form: no licence number / brand / year / date / UPI / signature boxes',await jf.evaluate("document.querySelectorAll('#dln,#yr,#exp,#area,#ecn,#upi,#sig,#own,input[type=date]').length")==0)
         check('short form: 9 photo boxes (7 needed + insurance, permit)',await J.locator('[data-f]').count()==9,await J.locator('[data-f]').count())
         await J.locator('#nm').fill('Murugan K'); await J.locator('#ecp').fill('9840011122')
         await J.locator('[data-v=sedan]').click(); await pg.wait_for_timeout(200)
+        bl=await jf.evaluate("[...document.querySelectorAll('#br option')].map(o=>o.textContent)")
+        check('sedan brands to pick (no typing)',all(x in bl for x in ['Maruti Suzuki','Hyundai','Honda','Toyota','Tata']),bl)
         await J.locator('#pl').fill('TN 23 CK 4455')
+        await J.locator('#sb').click(); await pg.wait_for_timeout(300)
+        t=await e(); check('brand and model are asked for',('brand' in t.lower() or 'Brand' in t) and 'Model' in t,t)
+        await J.locator('#br').select_option('Maruti Suzuki'); await pg.wait_for_timeout(300)
+        ml=await jf.evaluate("[...document.querySelectorAll('#mo option')].map(o=>o.textContent)")
+        check('Maruti sedan models listed',all(x in ml for x in ['Dzire','Dzire Tour S','Ciaz']),ml)
+        await J.locator('#mo').select_option('Dzire'); await pg.wait_for_timeout(300)
+        check('name and plate survive picking the car',await J.locator('#nm').input_value()=='Murugan K' and await J.locator('#pl').input_value()=='TN 23 CK 4455')
         await J.locator('#sb').click(); await pg.wait_for_timeout(300)
         t=await e(); check('photos are asked for before sending',('Missing' in t or 'இது இல்லை' in t) and await pg.evaluate("!MOCK.dump()['driverApps/+919876512345']"),t)
         for k in ['photo','dlF','dlB','rcF','rcB','aadhaarF','aadhaarB']:
@@ -36,8 +45,8 @@ async def main():
         await J.locator('#pl').fill('TN 23 CK 4455'); await J.locator('#sb').click(); await pg.wait_for_timeout(3000)
         await pg.screenshot(path='shots/j2.png')
         a=(await pg.evaluate('MOCK.dump()')).get('driverApps/+919876512345') or {}
-        check('application sent: pending, 7 photos, agreement recorded with the name',a.get('status')=='pending' and sorted(a.get('files',[]))==sorted(['photo','dlF','dlB','rcF','rcB','aadhaarF','aadhaarB']) and (a.get('consent') or {}).get('name')=='Murugan K' and a.get('veh')=='sedan' and a.get('plate')=='TN 23 CK 4455' and a.get('ecPhone')=='+919840011122',a)
-        check('no undefined / junk fields: untyped ones are empty',a.get('dlNo')=='' and a.get('brand')=='' and a.get('year') is None and a.get('exp')=={} and a.get('upi')=='',{k:a.get(k) for k in ('dlNo','brand','year','exp','upi')})
+        check('application sent: pending, 7 photos, agreement recorded with the name',a.get('status')=='pending' and sorted(a.get('files',[]))==sorted(['photo','dlF','dlB','rcF','rcB','aadhaarF','aadhaarB']) and (a.get('consent') or {}).get('name')=='Murugan K' and a.get('veh')=='sedan' and a.get('brand')=='Maruti Suzuki' and a.get('model')=='Dzire' and a.get('plate')=='TN 23 CK 4455' and a.get('ecPhone')=='+919840011122',a)
+        check('no undefined / junk fields: untyped ones are empty',a.get('dlNo')=='' and a.get('year') is None and a.get('exp')=={} and a.get('upi')=='',{k:a.get(k) for k in ('dlNo','brand','year','exp','upi')})
         await of.evaluate("S.sec='appr';show()"); await pg.wait_for_timeout(600)
         badge=await of.evaluate("(document.querySelector('.chkbadge')||{}).textContent")
         check('office: application shows with nothing to fix (only notes)',await of.evaluate("badge('appr')")>=1 and '⛔' not in (badge or ''),badge)
@@ -47,7 +56,7 @@ async def main():
         check('office shows the 7 photos',await O.locator('[id^="im_"]').count()==7)
         await O.locator('#apok').click(); await pg.wait_for_timeout(1200)
         dump=await pg.evaluate('MOCK.dump()'); d=dump.get('drivers/+919876512345') or {}
-        check('approve creates the driver (vehicle name as model, no dates yet, agreement kept)',d.get('name')=='Murugan K' and d.get('veh')=='sedan' and d.get('plate')=='TN 23 CK 4455' and bool(d.get('model')) and d.get('docs')=={'dl':None,'ins':None,'permit':None,'fc':None} and (d.get('consent') or {}).get('name')=='Murugan K' and dump['driverApps/+919876512345']['status']=='approved',d)
+        check('approve creates the driver: car name = brand + model, no dates yet, agreement kept',d.get('name')=='Murugan K' and d.get('veh')=='sedan' and d.get('plate')=='TN 23 CK 4455' and d.get('model')=='Maruti Suzuki Dzire' and d.get('docs')=={'dl':None,'ins':None,'permit':None,'fc':None} and (d.get('consent') or {}).get('name')=='Murugan K' and dump['driverApps/+919876512345']['status']=='approved',d)
         st=await jf.evaluate("(document.querySelector('.status')||{}).textContent||''")
         check('join page shows the approved screen',bool(st.strip()),st[:80])
         errs=[x for x in errs if 'favicon' not in x]

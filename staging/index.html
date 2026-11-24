@@ -41,7 +41,7 @@
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('./vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV=window.VCT_V='107',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV=window.VCT_V='108',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('./version.json',location.href)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -553,17 +553,17 @@ details.faq p{margin:0;padding:0 14px 14px;color:var(--muted);font-size:14px;lin
 <div class="app" id="app"></div>
 <div class="toast" id="toast"></div>
 
-<script src="./core/report.js?v=107"></script>
-<script src="./core/geo.js?v=107"></script>
-<script src="./core/fare.js?v=107"></script>
-<script src="./core/appget.js?v=107"></script>
-<script src="./core/pin.js?v=107"></script>
-<script src="./core/clock.js?v=107"></script>
-<script src="./core/map.js?v=107"></script>
-<script src="./core/chat.js?v=107"></script>
-<script src="./core/otp.js?v=107"></script>
-<script src="./core/deskmode.js?v=107"></script>
-<script src="./core/weather.js?v=107"></script>
+<script src="./core/report.js?v=108"></script>
+<script src="./core/geo.js?v=108"></script>
+<script src="./core/fare.js?v=108"></script>
+<script src="./core/appget.js?v=108"></script>
+<script src="./core/pin.js?v=108"></script>
+<script src="./core/clock.js?v=108"></script>
+<script src="./core/map.js?v=108"></script>
+<script src="./core/chat.js?v=108"></script>
+<script src="./core/otp.js?v=108"></script>
+<script src="./core/deskmode.js?v=108"></script>
+<script src="./core/weather.js?v=108"></script>
 <script>
 /* ---------- icons ---------- */
 const I = {
@@ -1234,9 +1234,11 @@ function chatSheet(){if(CL&&R&&R.id&&R.b&&R.b.driverPhone){chatStart(R.id);chatO
     const inp=m.querySelector('#msg');m.querySelector('#snd').onclick=()=>{send(inp.value);inp.value=''};inp.onkeydown=e=>{if(e.key==='Enter'){send(inp.value);inp.value=''}};draw();
   });
 }
+/* the car as the customer should look for it on the road: "Maruti Suzuki Swift" (falls back to the vehicle type) */
+const carName=l=>(R&&R.drv&&R.drv.model&&String(R.drv.model).trim())||(R&&R.v?R.v[l||S.lang]:'');
 function shareTrip(){
-  const txt=L(`நான் Vellore Taxi-ல பயணம் பண்றேன்: ${R.drv.ta}, ${R.drv.plate} (${R.v.ta}). ${R.fromName.ta} → ${R.destName.ta}.`,
-              `I'm riding with Vellore Taxi: ${R.drv.en}, ${R.drv.plate} (${R.v.en}). ${R.fromName.en} → ${R.destName.en}.`);
+  const txt=L(`நான் Vellore Taxi-ல பயணம் பண்றேன்: ${R.drv.ta}, ${R.drv.plate} (${carName('ta')}). ${R.fromName.ta} → ${R.destName.ta}.`,
+              `I'm riding with Vellore Taxi: ${R.drv.en}, ${R.drv.plate} (${carName('en')}). ${R.fromName.en} → ${R.destName.en}.`);
   const link=`${APP_URL}#track-${R.trackId}`,txt2=txt+'\n'+L('Live location','Live location')+': '+link;
   modal(`<h3>${L('பயண விவரத்தை share பண்ணு','Share trip details')}</h3><div class="note" id="stx"></div>
     <p class="muted" style="margin:0;font-size:13px">${L('Link-ஐ திறக்கிறவங்க உங்க வண்டி எங்கே இருக்குன்னு பார்க்கலாம். Live map Firebase connect ஆனதும் வேலை செய்யும்.','Anyone with the link can follow your ride. The live map works once Firebase is connected.')}</p>
@@ -2216,7 +2218,7 @@ function rideCloud(){
      <div class="pinbox" id="pinbox"><span>${R.b&&R.b.rider?L(`இந்த PIN-ஐ ${esc(R.b.rider.name)}-க்கு அனுப்புங்க`,`Send this PIN to ${esc(R.b.rider.name)}`):L('இந்த PIN-ஐ driver-கிட்ட சொல்லுங்க','Tell this PIN to your driver')}</span><b>${R.pin.split('').map(d=>`<i>${d}</i>`).join('')}</b></div>
      ${R.b&&R.b.rider?`<a class="btn ghost" id="rshare" target="_blank" rel="noopener" href="https://wa.me/${(R.riderPh||R.b.rider.phone)?'91'+(R.riderPh||R.b.rider.phone):''}?text=${encodeURIComponent(`🚖 Vellore Taxi
 ${L('உங்களுக்காக taxi book பண்ணியிருக்கோம்','A taxi is booked for you')}.
-Driver: ${R.drv.en} · ${R.drv.plate} · ${R.v.en}
+Driver: ${R.drv.en} · ${R.drv.plate} · ${carName('en')}
 PIN: ${R.pin}
 ${L('Driver-கிட்ட இந்த PIN-ஐ சொல்லுங்க','Tell this PIN to the driver')}.`)}">💬 ${L(`PIN, driver விவரத்தை ${esc(R.b.rider.name)}-க்கு WhatsApp-ல அனுப்பு`,`Send PIN and driver details to ${esc(R.b.rider.name)} on WhatsApp`)}</a>`:''}
      <div class="drv"><span class="avatar">${esc((R.drv.en||'D')[0])}</span><div><b>${esc(R.drv[S.lang])}</b><small>${esc(R.drv.model)}</small></div>
