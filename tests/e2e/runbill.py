@@ -56,7 +56,7 @@ async def main():
         await of.evaluate("remap();ringCheck()");await pg.wait_for_timeout(500)
         bar=await of.evaluate("(document.getElementById('ringbar')||{}).innerText||''")
         check('office rings: 💰 High bill',('Bill அதிகம்' in bar) or ('High bill' in bar),bar[:120].replace('\n',' '))
-        check('normal ride not in the alert',bar.count('💰')==1)
+        check('normal ride not in the alert',(bar.count('Bill அதிகம்')+bar.count('High bill'))==1)
         await O.locator('#rgo').click();await pg.wait_for_timeout(900)
         sh=await of.evaluate("(document.querySelector('.modal')||{}).innerText||''")
         check('booking shows quote → bill (+%)',('Bill அதிகம்' in sh or 'High bill' in sh) and '%' in sh,[l for l in sh.split('\n') if '→' in l][:1])

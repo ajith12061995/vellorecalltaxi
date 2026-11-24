@@ -39,7 +39,7 @@ async def main():
         check('now goes online',await df.evaluate("S.online"))
         await of.evaluate("S.sec='drv';show()");await pg.wait_for_timeout(800)
         line=await of.evaluate("[...document.querySelectorAll('.agrline')].map(x=>x.innerText).join(' | ')")
-        check('office card: signed with name',('✅' in line) and (nm.lower() in line),line[:160])
+        check('office card: signed with name',('signed: ' in line or 'கையெழுத்து: ' in line) and ('not signed' not in line and 'கையெழுத்து இல்லை' not in line) and (nm.lower() in line),line[:160])
         box=await pg.evaluate("(()=>{const r=document.getElementById('o').getBoundingClientRect();return [r.x,r.y,r.width,r.height]})()")
         await pg.screenshot(path='shots/agree_office.png',clip={'x':box[0],'y':box[1],'width':box[2],'height':box[3]})
         check('no page errors',not errs,errs[:3])

@@ -51,7 +51,7 @@ async def main():
           MOCK.store.set('waInbox/m3',{from:'919876500009',name:'Old',text:'hello',type:'text',seen:false,at:new Date(t-26*3600e3).toISOString()});})()""")
         await O.locator('#wal').click();await pg.wait_for_timeout(1200)
         inb=await O.locator('#wain').inner_text()
-        check('sender tagged: registered driver vs customer',('🚖 Driver' in inb) and ('👤 Customer' in inb),inb[:300])
+        check('sender tagged: registered driver vs customer',('Driver' in inb) and ('Customer' in inb),inb[:300])
         await O.locator('[data-wth="919944640416"]').click();await pg.wait_for_timeout(1000)
         th=await of.evaluate("document.getElementById('wtl').innerText")
         check('conversation shows their message',('driver எங்கே?' in th),th[:120])
