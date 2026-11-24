@@ -47,7 +47,7 @@
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('../vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV=window.VCT_V='114',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV=window.VCT_V='115',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('../version.json',location.href)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -658,20 +658,20 @@ a.btn{text-decoration:none}
 <div class="app" id="app"></div>
 <div class="toast" id="toast"></div>
 
-<script src="../core/report.js?v=114"></script>
-<script src="../core/geo.js?v=114"></script>
-<script src="../core/fare.js?v=114"></script>
-<script src="../core/appget.js?v=114"></script>
-<script src="../core/pin.js?v=114"></script>
-<script src="../core/clock.js?v=114"></script>
-<script src="../core/map.js?v=114"></script>
-<script src="../core/chat.js?v=114"></script>
-<script src="../core/driverchecks.js?v=114"></script>
-<script src="../core/nav.js?v=114"></script>
-<script src="../core/otp.js?v=114"></script>
-<script src="../core/deskmode.js?v=114"></script>
-<script src="../core/refer.js?v=114"></script>
-<script src="../core/weather.js?v=114"></script>
+<script src="../core/report.js?v=115"></script>
+<script src="../core/geo.js?v=115"></script>
+<script src="../core/fare.js?v=115"></script>
+<script src="../core/appget.js?v=115"></script>
+<script src="../core/pin.js?v=115"></script>
+<script src="../core/clock.js?v=115"></script>
+<script src="../core/map.js?v=115"></script>
+<script src="../core/chat.js?v=115"></script>
+<script src="../core/driverchecks.js?v=115"></script>
+<script src="../core/nav.js?v=115"></script>
+<script src="../core/otp.js?v=115"></script>
+<script src="../core/deskmode.js?v=115"></script>
+<script src="../core/refer.js?v=115"></script>
+<script src="../core/weather.js?v=115"></script>
 <script>
 /* shared with the customer app: icons, places, fares, map engine */
 /* small line icons (one stroke style everywhere; no emoji in the interface) */
@@ -1319,7 +1319,7 @@ function recharge(){
     <div class="err" id="rze"></div><div class="muted" style="font-size:12.5px;margin:6px 0 12px">${L('பணம் கட்டின உடனே wallet-ல தானா சேரும். Approval தேவையில்லை.','Added to your wallet right after payment. No approval needed.')}</div>
     <div class="sec"><h3 style="font-size:14px">${L('அல்லது: UPI-ல அனுப்பி UTR போடுங்க','Or: send by UPI and enter the UTR')}</h3></div>`:''}
     <div class="steps"><div><i>1</i>${L('கீழே உள்ள amount-ஐ Owner UPI-க்கு அனுப்புங்க','Send the amount to the owner’s UPI')}</div><div><i>2</i>${L('UPI app-ல வர்ற 12 இலக்க UTR / Transaction ID-ஐ போடுங்க','Enter the 12-digit UTR / transaction ID from your UPI app')}</div><div><i>3</i>${L('Owner சரிபார்த்ததும் wallet-ல சேரும்','It is added once the owner verifies it')}</div></div>
-    ${CFGD&&CFGD.upi?`<div class="note" style="font-size:15px">UPI ID: <b>${esc(CFGD.upi)}</b></div>`:`<div class="note">${L('Owner UPI ID, Owner app-ல set பண்ணதும் இங்கே காட்டும்.','The owner’s UPI ID shows here once set in the Owner app.')}</div>`}
+    ${CFGD&&CFGD.upi?`<div class="note" style="font-size:15px">UPI ID: <b>${esc(CFGD.upi)}</b></div>`:`<div class="note">${L('Office UPI ID இன்னும் சேர்க்கப்படல. Office-ஐ அழைங்க.','The office UPI ID is not added yet. Please call the office.')}</div>`}
     <div class="tags" style="justify-content:flex-start">${[200,500,1000,2000].map(a=>`<button class="chip ${a===500?'sel':''}" data-a="${a}">₹${a}</button>`).join('')}</div>
     <div class="field" style="height:52px"><span class="cc">UTR</span><input id="utr" inputmode="numeric" maxlength="12" placeholder="123456789012"></div>
     <div class="err" id="re"></div><button class="btn" id="rs">${L('Approval-க்கு அனுப்பு','Send for approval')}</button>`,(m,close)=>{
@@ -1349,7 +1349,7 @@ function profileTab(){
       ${CL?'':`<button class="row" id="sw"><span class="ic">${I.navHome}</span><div><b>${L('வேற வண்டி (demo)','Switch vehicle (demo)')}</b><small>${L('Owner assign பண்றது','Assigned by owner')}</small></div></button>`}
       <button class="row" id="lo"><span class="ic" style="color:var(--danger)">${X('power',20)}</span><div><b style="color:var(--danger)">Logout</b><small>+91 ${S.phone}</small></div></button>
       ${CL?`<button class="row" id="delacc"><span class="ic" style="color:var(--danger)">${X('trash',20)}</span><div><b style="color:var(--danger)">${L('Account நீக்க கோரிக்கை','Request account deletion')}</b><small>${L('Office wallet பணத்தை settle பண்ணிட்டு நீக்கும்','The office settles your wallet, then deletes it')}</small></div></button>`:''}</div>
-    <p class="fine muted"><a href="../privacy/#drivers" target="_blank" rel="noopener" style="color:inherit">${L('தனியுரிமை & விதிமுறைகள்','Privacy & Terms')}</a> · Vellore Taxi · Driver app v0.1</p></div>`),()=>{
+    <p class="fine muted"><a href="../privacy/#drivers" target="_blank" rel="noopener" style="color:inherit">${L('தனியுரிமை & விதிமுறைகள்','Privacy & Terms')}</a> · Vellore Taxi Driver · v${window.VCT_V||''}</p></div>`),()=>{
     bindNav();
     document.getElementById('lg').onclick=()=>{S.lang=S.lang==='ta'?'en':'ta';save();profileTab()};
     document.getElementById('th').onclick=()=>{const r=document.documentElement;r.dataset.theme=r.dataset.theme==='dark'?'light':'dark';profileTab()};
