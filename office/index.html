@@ -560,6 +560,13 @@ details.faq p{margin:0;padding:0 14px 14px;color:var(--muted);font-size:14px;lin
 .bst.cancelled,.dst.off{background:var(--surface-2);color:var(--muted);border:1px solid var(--line)}
 .bst.scheduled{background:var(--surface-2);color:var(--navy);border:1px solid var(--line)}
 .sst.open{background:rgba(194,59,59,.12);color:var(--danger)}
+.upgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0}
+.uptile{display:flex;flex-direction:column;align-items:center;gap:1px;padding:6px;border:1.5px dashed var(--line);border-radius:12px;cursor:pointer;text-align:center;min-height:78px;justify-content:center}
+.uptile:first-child{grid-column:1/-1}
+.uptile.has{border-style:solid;border-color:#0B4A36;background:#E8F3EE}
+.uptile.busy{opacity:.6;pointer-events:none}
+.uptile .upic{font-size:22px;line-height:1}.uptile .upic img{width:56px;height:38px;object-fit:cover;border-radius:6px;display:block}
+.uptile b{font-size:13px}.uptile small{font-size:11px;color:var(--muted)}
 .stype.feedback{background:#E8F3EE;color:#0B4A36}
 .stype.sos{background:#C23B3B;color:#fff}
 .act{display:flex;align-items:center;gap:10px;font-size:13.5px;padding:6px 0}
@@ -1374,7 +1381,7 @@ function drivers(){
      ${exp.length?`<div class="alert amber">${exp.map(([k,v])=>`${k.toUpperCase()}: ${v} ${L('நாள்','days')}`).join(' · ')}</div>`:''}
      ${CL?(()=>{const r=RAWD.find(x=>x._id===d.id)||{},c=r.consent,ok=c&&c.v===VCTCHK.AGREEMENT.v;return `<div class="agrline ${ok?'ok':'no'}"><span>📄 ${ok?L('ஒப்பந்தம் ✅ கையெழுத்து: ','Agreement ✅ signed: ')+esc(c.name||'')+' · '+fmtD(CL.toMs(c.at)||+c.at||0):c?L('ஒப்பந்தம் ⚠️ பழைய version','Agreement ⚠️ old version'):L('ஒப்பந்தம் ⛔ கையெழுத்து இல்லை','Agreement ⛔ not signed')}</span><button class="linkbtn" data-agp="${d.id}">${L('பார் / Print','View / print')}</button></div>`})():''}
      <div class="dact"><button class="linkbtn" data-dv="${d.id}" style="font-weight:800">📊 ${L('விவரம் / குறிப்பு','Details / notes')}</button></div>
-     ${S.role==='owner'?`<div class="dact"><button class="linkbtn" data-blk="${d.id}">${d.blocked?L('தடையை நீக்கு','Unblock'):L('தடை செய்','Block')}</button><button class="linkbtn" data-dw="${d.id}">${L('Wallet சரிசெய்','Adjust wallet')}</button>${CL?`<button class="linkbtn" data-dd="${d.id}">${L('Document தேதி','Document dates')}</button><button class="linkbtn" data-dph="${d.id}">📷 ${L('Documents பார்','View documents')}</button>`:''}</div>`:CL?`<div class="dact"><button class="linkbtn" data-rqd="${d.id}">🙋 ${L('Block / wallet → Owner-கிட்ட கேள்','Block / wallet → ask the owner')}</button><button class="linkbtn" data-dph="${d.id}">📷 ${L('Documents பார்','View documents')}</button></div>`:''}</div>`}).join('')}</div>`;
+     ${S.role==='owner'?`<div class="dact"><button class="linkbtn" data-blk="${d.id}">${d.blocked?L('தடையை நீக்கு','Unblock'):L('தடை செய்','Block')}</button><button class="linkbtn" data-dw="${d.id}">${L('Wallet சரிசெய்','Adjust wallet')}</button>${CL?`<button class="linkbtn" data-dd="${d.id}">${L('Document தேதி','Document dates')}</button><button class="linkbtn" data-dph="${d.id}">📷 ${L('Documents பார்','View documents')}</button><button class="linkbtn" data-dup="${d.id}">⬆ ${L('Documents upload','Upload documents')}</button>`:''}</div>`:CL?`<div class="dact"><button class="linkbtn" data-rqd="${d.id}">🙋 ${L('Block / wallet → Owner-கிட்ட கேள்','Block / wallet → ask the owner')}</button><button class="linkbtn" data-dph="${d.id}">📷 ${L('Documents பார்','View documents')}</button></div>`:''}</div>`}).join('')}</div>`;
   const ad=document.getElementById('ad');if(ad)ad.onclick=addDriver;
   const dq=document.getElementById('dq');dq.oninput=()=>{DQ=dq.value;clearTimeout(dq.t);dq.t=setTimeout(()=>{drivers();const n=document.getElementById('dq');if(n){n.focus();n.setSelectionRange(n.value.length,n.value.length)}},250)};
   app.querySelectorAll('[data-df]').forEach(b=>b.onclick=()=>{DF=b.dataset.df;drivers()});
@@ -1388,9 +1395,10 @@ function drivers(){
   app.querySelectorAll('[data-blk]').forEach(b=>b.onclick=()=>{const d=drvById(b.dataset.blk);if(CL){cw(F().updateDoc(F().doc(CL.db,'drivers',d.id),{blocked:!d.blocked,...(!d.blocked?{online:false}:{}),updatedAt:ts()}));toast(d.blocked?L('தடை நீக்கப்பட்டது','Unblocked'):L('தடை செய்யப்பட்டது','Blocked'));return}d.blocked=!d.blocked;if(d.blocked&&d.status==='avail')d.status='off';log(`${d.ta} ${d.blocked?'தடை':'தடை நீக்கம்'}`,`${d.en} ${d.blocked?'blocked':'unblocked'}`);saveDB();drivers()});
   app.querySelectorAll('[data-agp]').forEach(b=>b.onclick=()=>{const r=RAWD.find(x=>x._id===b.dataset.agp)||{};
     printAgreement({...r,id:r._id,consent:r.consent?{...r.consent,at:CL.toMs(r.consent.at)||r.consent.at}:null})});
+  app.querySelectorAll('[data-dup]').forEach(b=>b.onclick=()=>docUpload(drvById(b.dataset.dup)));
   app.querySelectorAll('[data-dph]').forEach(b=>b.onclick=()=>{const d=drvById(b.dataset.dph),a=(DB.apps||[]).find(x=>x.id===d.id),files=okFiles(a&&a.files);
     modal(`<h3>📷 ${esc(d[S.lang])} · ${L('Documents','Documents')}</h3>${files.length?`<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">${files.map(k=>`<a id="dp_${k}" href="#" style="display:block;border:1px solid var(--line);border-radius:10px;overflow:hidden;text-decoration:none;color:inherit"><div style="height:110px;display:grid;place-items:center;background:var(--surface-2)"><small class="muted">${L('ஏத்துது…','Loading…')}</small></div><small style="display:block;padding:4px 8px">${esc((DOCN[k]||[k,k])[S.lang==='ta'?0:1])}</small></a>`).join('')}</div><p class="muted" style="margin:6px 0 0;font-size:12px">${L('Photo-வை தொட்டா பெருசா திறக்கும். தேதியை பார்த்து "Document dates"-ல போடுங்க.','Tap a photo to open it full size. Read the dates and enter them under "Document dates".')}</p>`
-      :`<p class="muted">${L('இந்த driver-ஓட documents app-ல இல்லை (join form வழியா வரல — WhatsApp / நேர்ல வாங்கினது). அவரை join link-ல upload பண்ண சொல்லலாம், அல்லது WhatsApp photo-வில தேதி பார்த்து "Document dates"-ல போடுங்க.','No documents in the app for this driver (not sent through the join form). Ask them to upload through the join link, or read the dates from the WhatsApp photos and enter them under "Document dates".')}</p>`}`,(m)=>{
+      :`<p class="muted">${L('இந்த driver-ஓட documents app-ல இல்லை (join form வழியா வரல — WhatsApp / நேர்ல வாங்கினது). "⬆ Documents upload" அழுத்தி WhatsApp-ல வந்த photo-க்களை நீங்களே சேர்க்கலாம்.','No documents in the app for this driver (not sent through the join form). Use "⬆ Upload documents" to add the photos they sent on WhatsApp.')}</p>`}`,(m)=>{
       files.forEach(k=>F().getDoc(F().doc(CL.db,'driverApps',d.id,'files',k)).then(s=>{const el=m.querySelector('#dp_'+k);if(!el||!s.exists())return;const im=safeImg(s.data().data);
         if(!im){el.firstChild.innerHTML=`<small style="color:var(--danger)">${L('Photo சரியில்ல','Not a valid photo')}</small>`;return}
         el.firstChild.innerHTML=`<img src="${im}" alt="" style="width:100%;height:110px;object-fit:cover">`;el.onclick=e=>{e.preventDefault();openImg(im,k)}}).catch(oerr))})});
@@ -1415,15 +1423,48 @@ function addDriver(){
     <div class="field" style="height:50px"><span class="cc">+91</span><input id="ap" inputmode="numeric" maxlength="10" placeholder="${L('மொபைல்','Mobile')}"></div>
     <span class="kind">${L('வண்டி','Vehicle')}</span><div class="tags" style="justify-content:flex-start">${VEH.map(v=>`<button class="chip ${v.id===veh?'sel':''}" data-v="${v.id}">${v[S.lang]}</button>`).join('')}</div>
     <div class="frow"><div class="field" style="height:50px"><input id="apl" maxlength="14" placeholder="TN 23 AB 1234" style="text-transform:uppercase"></div><div class="field" style="height:50px"><input id="am" maxlength="24" placeholder="${L('Model','Model')}"></div></div>
-    <div class="note">${L('இந்த நம்பர்ல driver app-ல login பண்ணலாம். ஆவணங்களை அப்புறம் upload பண்ணலாம்.','The driver logs in to the driver app with this number. Documents can be added later.')}</div>
+    <div class="note">${L('Save பண்ணினதும் documents (photo, DL, ஆதார், RC, permit) upload பண்ற திரை வரும். அப்புறம் driver இந்த நம்பர்ல Driver app-ல OTP போட்டு login பண்ணலாம்.','After saving you can upload the documents (photo, licence, Aadhaar, RC, permit). The driver then logs in to the driver app with this number and an OTP.')}</div>
     <div class="err" id="ae"></div><button class="btn" id="as">${L('சேமி','Save')}</button>`,(m,close)=>{
     m.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>{veh=b.dataset.v;m.querySelectorAll('[data-v]').forEach(x=>x.classList.toggle('sel',x===b))});
     m.querySelector('#as').onclick=()=>{const n=m.querySelector('#an').value.trim(),p=m.querySelector('#ap').value.replace(/\D/g,''),pl=m.querySelector('#apl').value.trim().toUpperCase();
       if(n.length<2||!/^[6-9]\d{9}$/.test(p)||pl.length<6){m.querySelector('#ae').textContent=L('பெயர், 10 இலக்க நம்பர், வண்டி எண் கொடுங்க','Enter name, 10-digit number and plate');return}
       if(DB.drv.some(d=>d.phone===p)){m.querySelector('#ae').textContent=L('இந்த நம்பர் ஏற்கனவே இருக்கு','This number is already added');return}
-      if(CL){const D=365*864e5,n0=Date.now();cw(F().setDoc(F().doc(CL.db,'drivers','+91'+p),{name:n,veh,plate:pl,model:m.querySelector('#am').value.trim()||VEH.find(v=>v.id===veh).en,wallet:0,rating:5,online:false,blocked:false,docs:{dl:n0+D,rc:n0+D,ins:n0+D,permit:n0+D,fc:n0+D},createdAt:ts(),updatedAt:ts()}));close();toast(L(`${n} சேர்க்கப்பட்டார். இந்த நம்பர்ல Driver app-ல login பண்ணலாம்`,`${n} added. They can log in to the driver app now`));return}
+      if(CL){const D=365*864e5,n0=Date.now();cw(F().setDoc(F().doc(CL.db,'drivers','+91'+p),{name:n,veh,plate:pl,model:m.querySelector('#am').value.trim()||VEH.find(v=>v.id===veh).en,wallet:0,rating:5,online:false,blocked:false,docs:{dl:n0+D,rc:n0+D,ins:n0+D,permit:n0+D,fc:n0+D},createdAt:ts(),updatedAt:ts()}));close();toast(L(`${n} சேர்க்கப்பட்டார். இந்த நம்பர்ல Driver app-ல login பண்ணலாம்`,`${n} added. They can log in to the driver app now`));
+        if(S.role==='owner')setTimeout(()=>docUpload({id:'+91'+p,ta:n,en:n,veh,plate:pl,model:m.querySelector('#am').value.trim()}),350);return}
       DB.drv.push({id:'d'+Date.now().toString(36),ta:n,en:n,phone:p,veh,plate:pl,model:m.querySelector('#am').value.trim()||vname(veh),status:'off',lat:P.home.lat,lon:P.home.lon,wallet:0,rating:5,docs:{dl:365,rc:365,ins:365,permit:365,fc:365},blocked:false});
       log(`புது driver: ${n}`,`New driver: ${n}`);saveDB();close();drivers();toast(L(`${n} சேர்க்கப்பட்டார்`,`${n} added`))};
+  });
+}
+
+/* Office uploads a driver's documents for them: drivers who cannot read / use the join form send the photos on WhatsApp.
+   Saved in the same place as the join form (driverApps/{phone}/files/{slot}) so "View documents" shows them. Owner only (rules). */
+const OFFDOCS=[['photo'],['dlF','dlB'],['aadhaarF','aadhaarB'],['rcF','rcB'],['permit','permitB'],['ins','agreeDoc']];
+function shrinkImg(file){return new Promise((res,rej)=>{
+  if(!file||!/^image\//.test(file.type)){rej(new Error('type'));return}
+  const url=URL.createObjectURL(file),img=new Image();
+  img.onload=()=>{const k=Math.min(1,1280/Math.max(img.width,img.height)),c=document.createElement('canvas');c.width=Math.round(img.width*k);c.height=Math.round(img.height*k);
+    c.getContext('2d').drawImage(img,0,0,c.width,c.height);URL.revokeObjectURL(url);let q=.72,d=c.toDataURL('image/jpeg',q);while(d.length>700000&&q>.35){q-=.1;d=c.toDataURL('image/jpeg',q)}
+    d.length>900000?rej(new Error('big')):res(d)};
+  img.onerror=()=>{URL.revokeObjectURL(url);rej(new Error('read'))};img.src=url})}
+function docUpload(d){
+  if(!CL||!d)return;
+  const app0=(DB.apps||[]).find(x=>x.id===d.id);let made=!!app0;const have=new Set(Array.isArray(app0&&app0.files)?app0.files.filter(k=>typeof k==='string'):[]);
+  const tile=k=>`<label class="uptile ${have.has(k)?'has':''}" id="ut_${k}"><span class="upic">${have.has(k)?'✅':'📷'}</span><b>${esc(DOCN[k][S.lang==='ta'?0:1])}</b><small>${have.has(k)?L('மாத்த தொடுங்க','Tap to replace'):L('Photo தேர்வு','Choose photo')}</small><input type="file" accept="image/*" data-uf="${k}" hidden></label>`;
+  modal(`<h3>⬆ ${esc(d[S.lang]||d.en||'')} · Documents</h3><p class="muted" style="margin:0;font-size:13px">${L('Driver WhatsApp-ல அனுப்பின photo-க்களை இங்கே தேர்வு பண்ணுங்க. ஒவ்வொண்ணும் தேர்வு பண்ணினதும் தானா save ஆகும். Permit, Insurance, ஒப்பந்தம் இல்லைன்னா விட்டுடலாம்.','Choose the photos the driver sent on WhatsApp. Each one is saved as soon as you choose it. Skip permit, insurance or the signed agreement if there is none.')}</p>
+    <div class="upgrid">${OFFDOCS.map(g=>g.map(tile).join('')).join('')}</div><div class="err" id="ue"></div><button class="btn" id="ud">${L('முடிஞ்சது','Done')}</button>`,(m,close)=>{
+    m.querySelector('#ud').onclick=()=>close();
+    m.querySelectorAll('[data-uf]').forEach(inp=>inp.onchange=async()=>{
+      const k=inp.dataset.uf,f=inp.files&&inp.files[0],t=m.querySelector('#ut_'+k),er=m.querySelector('#ue');if(!f)return;er.textContent='';
+      t.classList.add('busy');t.querySelector('small').textContent=L('ஏத்துது…','Uploading…');
+      try{const data=await shrinkImg(f);
+        await F().setDoc(F().doc(CL.db,'driverApps',d.id,'files',k),{data,at:Date.now(),by:CL.phone});
+        have.add(k);const files=[...have];
+        await F().setDoc(F().doc(CL.db,'driverApps',d.id),made?{files,updatedAt:ts()}:{name:d.en||d.ta||'',phone:d.id,veh:d.veh||'',plate:d.plate||'',model:d.model||'',files,status:'approved',src:'office',note:'',submittedAt:ts(),decidedAt:ts(),decidedBy:CL.phone,updatedAt:ts()},{merge:true});
+        made=true;t.classList.remove('busy');t.classList.add('has');t.querySelector('.upic').innerHTML=`<img src="${safeImg(data)}" alt="">`;t.querySelector('small').textContent=L('Save ஆச்சு · மாத்த தொடுங்க','Saved · tap to replace');
+      }catch(e){t.classList.remove('busy');t.querySelector('small').textContent=have.has(k)?L('மாத்த தொடுங்க','Tap to replace'):L('Photo தேர்வு','Choose photo');
+        er.textContent=e.message==='type'?L('Photo file (JPG / PNG) மட்டும்','Photos only (JPG / PNG)'):e.message==='big'?L('Photo ரொம்ப பெருசு. வேற photo எடுங்க','Photo is too large. Try another'):e.message==='read'?L('இந்த photo-வை படிக்க முடியல','Could not read this photo'):CL.errText(e,S.lang==='ta')}
+      inp.value='';
+    });
   });
 }
 
@@ -1452,7 +1493,7 @@ function support(){
 const safeImg=d=>typeof d==='string'&&/^data:image\/(jpeg|jpg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(d)?d:'';
 function openImg(d,k){const w=window.open('');if(w){w.document.title=k;const i=w.document.createElement('img');i.src=d;i.style.maxWidth='100%';w.document.body.appendChild(i)}}
 const okFiles=f=>(Array.isArray(f)?f:[]).filter(k=>typeof k==='string'&&Object.prototype.hasOwnProperty.call(DOCN,k)); // only known photo slots
-const DOCN={photo:['Photo','Photo'],aadhaarF:['ஆதார் முன்','Aadhaar front'],aadhaarB:['ஆதார் பின்','Aadhaar back'],panF:['PAN','PAN'],dlF:['DL முன்','Licence front'],dlB:['DL பின்','Licence back'],dl:['ஓட்டுநர் உரிமம்','Driving licence'],rcF:['RC முன்','RC front'],rcB:['RC பின்','RC back'],rc:['RC','RC book'],ins:['Insurance','Insurance'],permit:['Permit','Permit'],fc:['FC','Fitness cert.'],vehF:['வண்டி முன்','Vehicle front'],vehIn:['வண்டி உள்','Vehicle inside'],pcc:['Police சான்று','Police verification'],agreeDoc:['கையெழுத்திட்ட ஒப்பந்தம்','Signed agreement']};
+const DOCN={photo:['Photo','Photo'],aadhaarF:['ஆதார் முன்','Aadhaar front'],aadhaarB:['ஆதார் பின்','Aadhaar back'],panF:['PAN','PAN'],dlF:['DL முன்','Licence front'],dlB:['DL பின்','Licence back'],dl:['ஓட்டுநர் உரிமம்','Driving licence'],rcF:['RC முன்','RC front'],rcB:['RC பின்','RC back'],rc:['RC','RC book'],ins:['Insurance','Insurance'],permit:['Permit','Permit'],permitB:['Permit பின்','Permit back'],fc:['FC','Fitness cert.'],vehF:['வண்டி முன்','Vehicle front'],vehIn:['வண்டி உள்','Vehicle inside'],pcc:['Police சான்று','Police verification'],agreeDoc:['கையெழுத்திட்ட ஒப்பந்தம்','Signed agreement']};
 function appsHtml(){const A=(DB.apps||[]).filter(a=>a.status==='pending');if(!CL)return '';
   return `<div class="sec"><h3>${L('புது Driver விண்ணப்பங்கள்','New driver applications')}</h3><span class="sample">${A.length}</span></div>
    <div class="cards" style="margin-bottom:18px">${A.length?A.map(a=>`<div class="scard"><div class="dtop"><span class="vi sm">${I[a.veh]||''}</span><div style="flex:1;min-width:0"><b>${esc(a.name||'')}</b><small>${esc(a.id)} · ${esc(a.plate||'')} · ${vname(a.veh)}</small></div><small class="muted">${ago(CL.toMs(a.submittedAt)||Date.now())}</small></div>

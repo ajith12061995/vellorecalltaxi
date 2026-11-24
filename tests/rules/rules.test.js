@@ -436,3 +436,21 @@ test('app feedback: customer and driver send a feedback ticket as themselves; on
   await assertSucceeds(updateDoc(doc(as.staff(), 'tickets', r.id), { status: 'closed' }));
   await assertFails(updateDoc(doc(as.cust(), 'tickets', r.id), { status: 'closed' }));
 });
+test('office files a driver\'s documents: only the owner, only known slots, only as an approved office record', async () => {
+  const PH = '+919777700001';
+  const rec = o => ({ name: 'Mani', phone: PH, veh: 'auto', plate: 'TN23A1', files: ['dlF'], status: 'approved', src: 'office', ...o });
+  await assertFails(setDoc(doc(as.staff(), 'driverApps', PH), rec()), 'staff cannot create it');
+  await assertFails(setDoc(doc(as.other(), 'driverApps', PH), rec()), 'strangers cannot');
+  await assertFails(setDoc(doc(as.owner(), 'driverApps', PH), rec({ status: 'pending' })), 'owner record must be approved');
+  await assertFails(setDoc(doc(as.owner(), 'driverApps', PH), rec({ src: 'join' })), 'must be marked office');
+  await assertSucceeds(setDoc(doc(as.owner(), 'driverApps', PH), rec()));
+  await assertSucceeds(setDoc(doc(as.owner(), 'driverApps', PH), { files: ['dlF', 'dlB'] }, { merge: true }));
+  for (const k of ['photo', 'dlF', 'dlB', 'aadhaarF', 'aadhaarB', 'rcF', 'rcB', 'permit', 'permitB'])
+    await assertSucceeds(setDoc(doc(as.owner(), 'driverApps', PH, 'files', k), { data: 'data:image/jpeg;base64,xx', at: 1, by: OWNER }));
+  await assertFails(setDoc(doc(as.owner(), 'driverApps', PH, 'files', 'junk'), { data: 'x' }), 'unknown slot');
+  await assertFails(setDoc(doc(as.owner(), 'driverApps', PH, 'files', 'photo'), { data: 'x'.repeat(1000001) }), 'too big');
+  await assertFails(setDoc(doc(as.staff(), 'driverApps', PH, 'files', 'photo'), { data: 'x' }), 'staff cannot upload');
+  await assertFails(setDoc(doc(as.other(), 'driverApps', PH, 'files', 'photo'), { data: 'x' }));
+  await assertFails(getDoc(doc(as.other(), 'driverApps', PH, 'files', 'photo')), 'strangers cannot read');
+  await assertSucceeds(getDoc(doc(as.owner(), 'driverApps', PH, 'files', 'photo')));
+});
