@@ -1,5 +1,7 @@
 /* VCT core · driver application: automatic checks + the driver agreement.
    Used by the join form (blocks only what a taxi business really needs) and by the office (full checklist).
+   24 Nov 2026 — short join form: the driver gives name, family number, vehicle type, plate and photos only.
+   Licence number, year, expiry dates and UPI are no longer asked; missing ones are notes for the office, not blockers.
    level: 'bad'  = must be fixed before sending (join form) / approving needs an owner override (office)
           'warn' = the office should look at it; does not block
           'info' = just for information (optional item missing), not counted
@@ -12,7 +14,7 @@ const VCTCHK = (() => {
   // Driving licence: 2 letters (state) + 13–14 more letters/digits, e.g. TN2320190001234 (spaces and dashes ignored)
   const dlOk = d => /^[A-Z]{2}\d{2}[A-Z0-9]{9,12}$/.test(clean(d));
   const upiOk = u => /^[\w.\-]{2,}@[a-zA-Z]{2,}$/.test(String(u || '').trim());
-  const REQ_PHOTOS = ['photo', 'aadhaarF', 'aadhaarB', 'dlF', 'dlB', 'rcF', 'rcB', 'ins', 'vehF'];
+  const REQ_PHOTOS = ['photo', 'aadhaarF', 'aadhaarB', 'dlF', 'dlB', 'rcF', 'rcB'];
 
   // a = the application (driverApps doc shape), others = existing drivers [{id, plate, dlNo}], now = time
   function check(a, others, now) {
@@ -20,29 +22,34 @@ const VCTCHK = (() => {
     const add = (k, level, ta, en) => out.push({ k, level, ta, en });
     // who
     (a.name || '').trim().length >= 3 ? add('name', 'ok', 'பெயர்', 'Name') : add('name', 'bad', 'பெயர் இல்லை', 'Name missing');
-    dlOk(a.dlNo) ? add('dlNo', 'ok', 'உரிம எண் சரியான format', 'Licence number format OK') : add('dlNo', 'bad', 'உரிம எண் சரியா இல்லை (உதா: TN23 20190001234)', 'Licence number looks wrong (e.g. TN23 20190001234)');
+    !String(a.dlNo || '').trim() ? add('dlNo', 'info', 'உரிம எண் கொடுக்கலை — DL photo-ல பாருங்க', 'Licence number not given — read it from the licence photo')
+      : dlOk(a.dlNo) ? add('dlNo', 'ok', 'உரிம எண் சரியான format', 'Licence number format OK') : add('dlNo', 'warn', 'உரிம எண் சரியா இல்லை (உதா: TN23 20190001234)', 'Licence number looks wrong (e.g. TN23 20190001234)');
     /^\+?9?1?[6-9]\d{9}$/.test(String(a.ecPhone || '').replace(/\D/g, '').replace(/^91(?=\d{10}$)/, '')) && String(a.ecPhone || '').replace(/\D/g, '').slice(-10) !== String(a.phone || '').replace(/\D/g, '').slice(-10)
       ? add('ec', 'ok', 'அவசர தொடர்பு', 'Emergency contact') : add('ec', 'bad', 'அவசர தொடர்பு (வேற ஒருத்தர் நம்பர்) வேணும்', 'An emergency contact (someone else\'s number) is needed');
     // vehicle
     plateOk(a.plate) ? add('plate', 'ok', 'வண்டி எண் format', 'Number plate format OK') : add('plate', 'bad', 'வண்டி எண் சரியா இல்லை (உதா: TN 23 AB 1234)', 'Number plate looks wrong (e.g. TN 23 AB 1234)');
     const age = a.year ? new Date(now).getFullYear() - +a.year : null;
-    age == null ? add('year', 'bad', 'தயாரிப்பு வருஷம் இல்லை', 'Year of manufacture missing')
+    age == null ? add('year', 'info', 'தயாரிப்பு வருஷம் கொடுக்கலை — RC photo-ல பாருங்க', 'Year of manufacture not given — read it from the RC photo')
       : age > 12 ? add('year', 'warn', `வண்டி ${age} வருஷம் பழசு — நேர்ல பாருங்க`, `Vehicle is ${age} years old — inspect it`)
       : add('year', 'ok', `வண்டி ${age} வருஷம்`, `Vehicle ${age} years old`);
     if (a.ownVehicle === false) add('own', 'warn', 'சொந்த வண்டி இல்லை — வண்டி owner ஒப்புதல் வாங்குங்க', 'Not their own vehicle — get the owner\'s consent');
     // documents
     const missing = REQ_PHOTOS.filter(k => !files.includes(k));
     missing.length ? add('photos', 'bad', `Photo இல்லை: ${missing.length}`, `Photos missing: ${missing.length}`) : add('photos', 'ok', 'கட்டாய photo எல்லாம் இருக்கு', 'All required photos present');
-    [['dl', 'DL', 'Licence', true], ['ins', 'Insurance', 'Insurance', true], ['permit', 'Permit', 'Permit', false], ['fc', 'FC', 'FC', false]].forEach(([k, ta, en, req]) => {
+    const noDate = [];
+    [['dl', 'DL', 'Licence'], ['ins', 'Insurance', 'Insurance'], ['permit', 'Permit', 'Permit'], ['fc', 'FC', 'FC']].forEach(([k, ta, en]) => {
       const t = +exp[k] || 0;
-      if (!t) add('x_' + k, req ? 'bad' : 'warn', `${ta} காலாவதி தேதி இல்லை`, `${en} expiry date missing`);
+      if (!t) noDate.push([ta, en]);
       else if (t < now) add('x_' + k, 'bad', `${ta} காலாவதி ஆயிடுச்சு`, `${en} has expired`);
       else if (t - now < 30 * DAY) add('x_' + k, 'warn', `${ta} ${Math.ceil((t - now) / DAY)} நாள்ல முடியுது`, `${en} ends in ${Math.ceil((t - now) / DAY)} days`);
       else add('x_' + k, 'ok', `${ta} செல்லுபடி`, `${en} valid`);
     });
-    if (!files.includes('permit') || !files.includes('fc')) add('pf', 'warn', 'Permit / FC photo இல்லை (வணிக வண்டிக்கு வேணும்)', 'Permit / FC photo missing (needed for commercial vehicles)');
+    // dates are not asked in the join form: one reminder for the office to read them from the photos
+    if (noDate.length) add('x_none', 'warn', `காலாவதி தேதி இல்லை: ${noDate.map(x => x[0]).join(', ')} — photo பார்த்து "Document தேதி"-ல போடுங்க`, `No expiry date: ${noDate.map(x => x[1]).join(', ')} — read the photos and enter them under "Document dates"`);
+    const noPh = [['ins', 'Insurance'], ['permit', 'Permit'], ['fc', 'FC']].filter(x => !files.includes(x[0])).map(x => x[1]);
+    if (noPh.length) add('pf', 'warn', `${noPh.join(' / ')} photo இல்லை — நேர்ல / WhatsApp-ல வாங்குங்க`, `${noPh.join(' / ')} photo missing — collect it in person or on WhatsApp`);
     files.includes('pcc') ? add('pcc', 'ok', 'Police verification இருக்கு', 'Police verification provided') : add('pcc', 'info', 'Police verification இல்லை (இப்போதைக்கு விருப்பம்)', 'No police verification (optional for now)');
-    upiOk(a.upi) ? add('upi', 'ok', 'UPI ID', 'UPI ID') : add('upi', 'warn', 'UPI ID இல்லை / தப்பு — customer QR வராது', 'UPI ID missing or wrong — no customer QR');
+    upiOk(a.upi) ? add('upi', 'ok', 'UPI ID', 'UPI ID') : add('upi', String(a.upi || '').trim() ? 'warn' : 'info', 'UPI ID இல்லை / தப்பு — customer QR வராது', 'UPI ID missing or wrong — no customer QR');
     // agreement
     const c = a.consent;
     c && c.v === AGREEMENT.v && c.name && c.at ? add('consent', 'ok', `ஒப்பந்தம் கையெழுத்து: ${c.name}`, `Agreement signed: ${c.name}`)
