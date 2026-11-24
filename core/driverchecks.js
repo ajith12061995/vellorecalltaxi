@@ -14,7 +14,7 @@ const VCTCHK = (() => {
   // Driving licence: 2 letters (state) + 13–14 more letters/digits, e.g. TN2320190001234 (spaces and dashes ignored)
   const dlOk = d => /^[A-Z]{2}\d{2}[A-Z0-9]{9,12}$/.test(clean(d));
   const upiOk = u => /^[\w.\-]{2,}@[a-zA-Z]{2,}$/.test(String(u || '').trim());
-  const REQ_PHOTOS = ['photo', 'aadhaarF', 'aadhaarB', 'dlF', 'dlB', 'rcF', 'rcB'];
+  const REQ_PHOTOS = ['photo', 'aadhaarF', 'aadhaarB', 'dlF', 'dlB', 'rcF', 'rcB', 'vehF'];
 
   // a = the application (driverApps doc shape), others = existing drivers [{id, plate, dlNo}], now = time
   function check(a, others, now) {

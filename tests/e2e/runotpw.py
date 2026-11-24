@@ -46,7 +46,7 @@ async def main():
                 await J.locator('#br').select_option('Maruti Suzuki');await pg.wait_for_timeout(200);await J.locator('#mo').select_option('Dzire');await J.locator('#pl').fill('TN 23 CK 4455')
                 cut=await jf.evaluate("""[...document.querySelectorAll('input:not([type=checkbox]):not([type=file]):not([type=date]),select')].filter(i=>i.offsetParent&&i.value).map(i=>{const c=document.createElement('canvas').getContext('2d');const cs=getComputedStyle(i);c.font=cs.fontWeight+' '+cs.fontSize+' '+cs.fontFamily;const t=i.tagName=='SELECT'?i.options[i.selectedIndex].text:i.value;return [i.id,t,c.measureText(t).width,i.clientWidth-parseFloat(cs.paddingLeft)-parseFloat(cs.paddingRight)-(i.tagName=='SELECT'?20:0)]}).filter(x=>x[2]>x[3])""")
                 check(f'join {W}px: typed name, phone, car brand, plate fully visible (not cut)',not cut,cut)
-                for k in ['photo','dlF','dlB','rcF','rcB','aadhaarF','aadhaarB','ins','permit']:
+                for k in ['photo','dlF','dlB','rcF','rcB','aadhaarF','aadhaarB','vehF','ins','permit']:
                     await J.locator(f'[data-f={k}]').set_input_files('fixtures/doc.jpg');await pg.wait_for_timeout(300)
                 sw=await jf.evaluate("[document.documentElement.scrollWidth,document.documentElement.clientWidth]")
                 check(f'join {W}px: filled form (photos) has no sideways scroll',sw[0]<=sw[1],sw)

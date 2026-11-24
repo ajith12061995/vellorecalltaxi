@@ -21,7 +21,7 @@ async def main():
         await O.locator('#as').click();await pg.wait_for_timeout(1200)
         d=await st('drivers/+919777700001')
         check('driver saved (can log in with OTP)',d and d.get('name')=='Mani' and d.get('veh')=='auto' and d.get('blocked') is False,d)
-        check('upload sheet opens with 11 slots',await O.locator('.uptile').count()==11,await O.locator('.uptile').count())
+        check('upload sheet opens with 12 slots',await O.locator('.uptile').count()==12,await O.locator('.uptile').count())
         check('no office record before the first photo',await st('driverApps/+919777700001') is None)
         for k in ['photo','dlF','dlB']:
             await O.locator(f'[data-uf="{k}"]').set_input_files('fixtures/doc.jpg');await pg.wait_for_timeout(900)

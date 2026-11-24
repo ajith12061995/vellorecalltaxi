@@ -57,7 +57,7 @@ a{color:inherit}
 .agr{margin:0;padding-left:20px;max-height:260px;overflow:auto;border:1.5px solid var(--line,#e5e5e5);border-radius:12px;padding:10px 10px 10px 30px;font-size:13.5px;line-height:1.55}.agr li{margin:0 0 6px}
 </style>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV=window.VCT_V='109',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV=window.VCT_V='110',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('../../version.json',location.href)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -71,11 +71,11 @@ setTimeout(chk,3000);setInterval(chk,5*60*1000);document.addEventListener('visib
 </div></header>
 <main class="wrap" id="app"></main>
 <footer><a href="../../privacy/#drivers" target="_blank" rel="noopener" id="plink"></a> · Vellore Taxi</footer>
-<script src="../../core/report.js?v=109"></script>
-<script src="../../core/driverchecks.js?v=109"></script>
-<script src="../../core/otp.js?v=109"></script>
-<script src="../../core/deskmode.js?v=109"></script>
-<script src="../../core/refer.js?v=109"></script>
+<script src="../../core/report.js?v=110"></script>
+<script src="../../core/driverchecks.js?v=110"></script>
+<script src="../../core/otp.js?v=110"></script>
+<script src="../../core/deskmode.js?v=110"></script>
+<script src="../../core/refer.js?v=110"></script>
 <script>
 const S={lang:'ta',phone:'',veh:'auto',files:{},data:{}};
 try{const s=JSON.parse(localStorage.getItem('vctj')||'{}');if(s.lang)S.lang=s.lang}catch(e){}
@@ -145,13 +145,14 @@ function shrink(file){return new Promise((res,rej)=>{
 const SLOTS={photo:['உங்க photo','Your photo',1],aadhaarF:['முன் பக்கம்','Front',1],aadhaarB:['பின் பக்கம்','Back',1],panF:['முன் பக்கம்','Front',0],
   dlF:['முன் பக்கம்','Front',1],dlB:['பின் பக்கம்','Back',1],rcF:['முன் பக்கம்','Front',1],rcB:['பின் பக்கம்','Back',1],
   ins:['Insurance','Insurance',0],permit:['Permit','Permit',0],fc:['FC','FC',0],
-  vehF:['முன் பக்கம் (number plate)','Front (number plate)',0],vehIn:['உள் பக்கம் (seat)','Inside (seats)',0],pcc:['சான்று','Certificate',0],agreeDoc:['கையெழுத்திட்ட copy','Signed copy',0]};
+  vehF:['வண்டி முன் பக்கம்','Vehicle front',1],vehIn:['உள் பக்கம் (seat)','Inside (seats)',0],pcc:['சான்று','Certificate',0],agreeDoc:['கையெழுத்திட்ட copy','Signed copy',0]};
 /* Short form (24 Nov 2026): only what the office really needs — photo, licence, RC, Aadhaar; insurance / permit if they have it.
    No numbers or dates to type: the office reads them from the photos. */
 const GROUPS=[['உங்க photo','Your photo',['photo'],'முகம் தெளிவா தெரியணும்','Face clearly visible'],
   ['ஓட்டுநர் உரிமம் (DL)','Driving licence',['dlF','dlB'],'',''],
   ['RC (வண்டி பதிவு)','RC (registration)',['rcF','rcB'],'',''],
   ['ஆதார் கார்டு','Aadhaar card',['aadhaarF','aadhaarB'],'',''],
+  ['வண்டி photo','Vehicle photo',['vehF'],'வண்டியை முன்னாடி இருந்து எடுங்க. Number plate தெளிவா தெரியணும்.','Take it from the front. The number plate must be readable.'],
   ['Insurance · Permit (இருந்தா)','Insurance · Permit (if you have them)',['ins','permit'],'இப்போ இல்லைன்னா விட்டுடலாம். அப்புறம் office-க்கு கொடுக்கலாம்.','Skip if you do not have them now. You can give them to the office later.']];
 const OLDKEYS={dl:'dlF',rc:'rcF'};
 // brands and models per vehicle type: the cars, autos and vans commonly run as taxis in Tamil Nadu (pick, no typing)
