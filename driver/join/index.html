@@ -79,6 +79,8 @@ setTimeout(chk,3000);setInterval(chk,5*60*1000);document.addEventListener('visib
 <script>
 const S={lang:'ta',phone:'',veh:'auto',files:{},data:{}};
 try{const s=JSON.parse(localStorage.getItem('vctj')||'{}');if(s.lang)S.lang=s.lang}catch(e){}
+const XP={camera:'<path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/>',check:'<circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/>',clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>'};
+const X=(n,z=16)=>`<svg class="xi" width="${z}" height="${z}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${XP[n]||''}</svg>`;
 const L=(ta,en)=>S.lang==='ta'?ta:en;
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const VEH=[['bike','பைக்','Bike'],['auto','ஆட்டோ','Auto'],['mini','Mini கார்','Mini car'],['sedan','Sedan கார்','Sedan'],['suv','MPV (Ertiga/Rumion)','MPV (Ertiga/Rumion)'],['psuv','Premium MPV (Innova)','Premium MPV (Innova)'],['trav','Tempo Traveller / Maxi Cab','Tempo Traveller / Maxi Cab']];
@@ -173,7 +175,7 @@ function form(){
        rej?L('Office குறிப்பு: ','Office note: ')+(S.app.note||'—'):L(`+91 ${S.phone} · * கட்டம் எல்லாம் கட்டாயம்`,`+91 ${S.phone} · fields marked * are required`));
   const had=k=>!!S.files[k]||(D.files||[]).includes(k);
   const B=BRANDS[S.veh]||{},brand=D.brand||'',bOther=brand&&!B[brand],models=B[brand]||[],mOther=D.model&&!models.includes(D.model);
-  const tile=k=>{const s=SLOTS[k];return `<div class="doc ${had(k)?'has':''}" id="d_${k}">${S.files[k]?`<img src="${S.files[k]}" alt="">`:had(k)?'<span style="font-size:28px">✅</span>':'<span style="font-size:28px">📷</span>'}
+  const tile=k=>{const s=SLOTS[k];return `<div class="doc ${had(k)?'has':''}" id="d_${k}">${S.files[k]?`<img src="${S.files[k]}" alt="">`:had(k)?`<span style="color:#12664A">${X('check',30)}</span>`:`<span style="opacity:.6">${X('camera',30)}</span>`}
         <b>${S.lang==='ta'?s[0]:s[1]}${s[2]?' <span class="req">*</span>':''}</b><small>${had(k)?L('மாத்த தொடுங்க','Tap to change'):L('Photo எடுங்க','Take a photo')}</small>
         <input type="file" accept="image/*" data-f="${k}" aria-label="${s[1]}"></div>`};
   app.innerHTML=`<div class="card"><h2>${L('2. நீங்க','2. About you')}</h2>
@@ -246,11 +248,11 @@ function watchStatus(){if(WATCH||!CL)return;
   WATCH=()=>{u1();u2()}}
 function status(){
   const st=(S.app&&S.app.status)||'pending';
-  if(st==='approved'){head(L('வாழ்த்துக்கள்! 🎉','Welcome aboard! 🎉'),L('நீங்க இப்போ Vellore Taxi driver','You are now a Vellore Taxi driver'));
-    app.innerHTML=`<div class="card status"><div class="ic">✅</div><h2>${L('Approve ஆயிடுச்சு','Approved')}</h2><p>${L('Driver screen திறக்குது… Wallet recharge பண்ணிட்டு Online போங்க. ⋮ → "Add to Home screen" பண்ணிக்கோங்க.','Opening the driver screen… Recharge your wallet, then go online. Use ⋮ → "Add to Home screen".')}</p>
+  if(st==='approved'){head(L('வாழ்த்துக்கள்!','Welcome aboard!'),L('நீங்க இப்போ Vellore Taxi driver','You are now a Vellore Taxi driver'));
+    app.innerHTML=`<div class="card status"><div class="ic" style="color:#12664A">${X('check',52)}</div><h2>${L('Approve ஆயிடுச்சு','Approved')}</h2><p>${L('Driver screen திறக்குது… Wallet recharge பண்ணிட்டு Online போங்க. ⋮ → "Add to Home screen" பண்ணிக்கோங்க.','Opening the driver screen… Recharge your wallet, then go online. Use ⋮ → "Add to Home screen".')}</p>
       <a class="btn" style="display:flex;align-items:center;justify-content:center;text-decoration:none" href="../">${L('Driver app திற','Open the driver app')}</a></div>`;setTimeout(()=>{location.href='../'},2500);return}
   watchStatus();head(L('விண்ணப்பம் அனுப்பியாச்சு','Application sent'),L('Office பார்த்து approve பண்ணுவாங்க','Our office will review it'));
-  app.innerHTML=`<div class="card status"><div class="ic">⏳</div><h2>${L('Approval-க்கு காத்திருக்கு','Waiting for approval')}</h2>
+  app.innerHTML=`<div class="card status"><div class="ic" style="color:#B57A00">${X('clock',52)}</div><h2>${L('Approval-க்கு காத்திருக்கு','Waiting for approval')}</h2>
     <p>${L('பொதுவா 1 நாளுக்குள்ள approve பண்ணுவோம். Approve ஆனதும் இந்த app தானா driver screen-க்கு மாறிடும். App-ஐ மூடிட்டு பின்னாடி திறந்தாலும் பரவாயில்லை. தேவைப்பட்டா office உங்களை அழைக்கும்.','We usually review within a day. When approved, this app switches to the driver screen by itself — you can close it and come back later. Our office may call you.')}</p>
     <button class="btn ghost" id="rf">${L('நிலையை பார்','Check status')}</button><button class="btn ghost" id="ed">${L('விவரத்தை மாத்து','Edit details')}</button><button class="btn ghost" id="lo" style="border:0;font-size:14px">${L('வேற நம்பர்ல login','Use another number')}</button></div>`;
   document.getElementById('lo').onclick=()=>{if(WATCH){WATCH();WATCH=null}CL.logout().then(()=>go('login'))};
