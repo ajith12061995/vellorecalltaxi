@@ -1083,7 +1083,7 @@ function profile(){
     <button class="row" id="rq"><span class="ic">${I.chat}</span><div><b>${L('என் requests & உதவி','My requests & help')}</b><small>${TIX.length} ${L('requests','requests')}</small></div></button>
     <button class="row" id="lo"><span class="ic" style="color:var(--danger)">${X('power',20)}</span><div><b style="color:var(--danger)">${t('logout')}</b><small>+91 ${S.phone}</small></div></button>
     ${CL?`<button class="row" id="delacc"><span class="ic" style="color:var(--danger)">${X('trash',20)}</span><div><b style="color:var(--danger)">${L('என் account-ஐ நீக்கு','Delete my account')}</b><small>${L('Profile, login, தொடர்பு விவரம் நிரந்தரமா நீங்கும்','Removes your profile, login and contact details')}</small></div></button>`:''}</div>
-    <p class="fine muted"><a href="./privacy/" target="_blank" rel="noopener" style="color:inherit">${L('தனியுரிமை & விதிமுறைகள்','Privacy & Terms')}</a> · Vellore Taxi · Customer app v0.5</p></div>`),()=>{
+    <p class="fine muted"><a href="./privacy/" target="_blank" rel="noopener" style="color:inherit">${L('தனியுரிமை & விதிமுறைகள்','Privacy & Terms')}</a> · Vellore Taxi · v${window.VCT_V||''}</p></div>`),()=>{
     bindNav();
     document.getElementById('lg').onclick=()=>{S.lang=S.lang==='ta'?'en':'ta';save();saveLang();profile()};
     document.getElementById('th').onclick=()=>{document.documentElement.dataset.theme=dark?'light':'dark';profile()};
@@ -1244,9 +1244,9 @@ const carName=l=>(R&&R.drv&&R.drv.model&&String(R.drv.model).trim())||(R&&R.v?R.
 function shareTrip(){
   const txt=L(`நான் Vellore Taxi-ல பயணம் பண்றேன்: ${R.drv.ta}, ${R.drv.plate} (${carName('ta')}). ${R.fromName.ta} → ${R.destName.ta}.`,
               `I'm riding with Vellore Taxi: ${R.drv.en}, ${R.drv.plate} (${carName('en')}). ${R.fromName.en} → ${R.destName.en}.`);
-  const link=`${APP_URL}#track-${R.trackId}`,txt2=txt+'\n'+L('Live location','Live location')+': '+link;
+  const txt2=txt;
   modal(`<h3>${L('பயண விவரத்தை share பண்ணு','Share trip details')}</h3><div class="note" id="stx"></div>
-    <p class="muted" style="margin:0;font-size:13px">${L('Link-ஐ திறக்கிறவங்க உங்க வண்டி எங்கே இருக்குன்னு பார்க்கலாம். Live map Firebase connect ஆனதும் வேலை செய்யும்.','Anyone with the link can follow your ride. The live map works once Firebase is connected.')}</p>
+    <p class="muted" style="margin:0;font-size:13px">${L('Driver பெயர், வண்டி எண், போகும் இடம் — குடும்பத்தினருக்கு அனுப்புங்க.','Send your driver, vehicle number and route to family or a friend.')}</p>
     <div class="two"><button class="btn" id="cpy">${L('Copy பண்ணு','Copy')}</button><a class="btn wa" href="https://wa.me/?text=${encodeURIComponent(txt2)}" target="_blank" rel="noopener">WhatsApp</a></div>`,(m,close)=>{
     m.querySelector('#stx').textContent=txt2;
     m.querySelector('#cpy').onclick=()=>{navigator.clipboard.writeText(txt2).then(()=>{toast(L('Copy ஆயிடுச்சு — WhatsApp-ல paste பண்ணுங்க','Copied. Paste it in WhatsApp'));close()}).catch(()=>{const r=document.createRange();r.selectNodeContents(m.querySelector('#stx'));const s=getSelection();s.removeAllRanges();s.addRange(r);toast(L('Text select ஆயிருக்கு, copy பண்ணுங்க','Text selected, copy it now'))})};
@@ -1887,7 +1887,7 @@ function helpTab(){
     document.getElementById('cb').onclick=()=>callbackSheet();
     document.getElementById('fbk').onclick=()=>feedbackSheet();
     document.getElementById('cu').onclick=()=>(CL&&CFG.office)?modal(`<h3>${L('எங்களை அழைக்க','Call us')}</h3><p style="margin:0;font-family:var(--display);font-size:28px">+91 ${CFG.office}</p><a class="btn" href="tel:+91${CFG.office}">${L('Call பண்ணு','Call now')}</a>`):modal(`<h3>${L('எங்களை அழைக்க','Call us')}</h3>
-      <div class="note">${L('உங்க office phone number Owner app-ல set பண்ணதும் இங்கே வரும், tap பண்ணா call போகும்.','Your office phone number shows here once it is set in the Owner app. Tapping it places the call.')}</div>
+      <div class="note">${L('Office எண் இப்போ கிடைக்கல. கொஞ்ச நேரம் கழிச்சு பாருங்க.','Our office number is not available right now. Please try again shortly.')}</div>
       <p class="muted" style="margin:0">${L('அதுவரை Call me back பயன்படுத்துங்க.','Until then, use Call me back.')}</p><button class="btn" id="ok2">${L('சரி','OK')}</button>`,(m,close)=>m.querySelector('#ok2').onclick=close);
   });
 }
@@ -1994,7 +1994,7 @@ function trackView(code){
   go(`<section class="screen"><div class="hero pad"><span class="mini">VCT · VELLORE TAXI</span><h1>${L('பயண tracking','Trip tracking')}</h1><p>${ok?L(`${a.name||''} பயணம் பண்றாங்க`,`${a.name||'Your contact'} is on a ride`):L('Shared trip link','Shared trip link')}</p></div>
    <div class="body pad">${ok?`<div class="drv"><span class="avatar">${a.drv.en[0]}</span><div><b>${a.drv[S.lang]}</b><small>${a.veh[S.lang]} · ${a.model}</small></div><div class="vehbox"><span class="plate">${a.plate}</span></div></div>
       <div class="tripcard"><div class="rail"><i class="a"></i><i class="l"></i><i class="b"></i></div><div class="stops"><div><small>${t('pickup')}</small><b>${a.from[S.lang]}</b></div><div><small>${t('dropLbl')}</small><b>${a.to[S.lang]}</b></div></div></div>`:''}
-    <div class="note">${L('Live map tracking Firebase connect பண்ணதும் இந்த link-லயே வேலை செய்யும்.','Live map tracking works on this same link once Firebase is connected.')}</div>
+    <div class="note">${L('Driver, வண்டி விவரம் உங்களுக்கு வந்த message-ல இருக்கு.','The driver and vehicle details are in the message you received.')}</div>
     <button class="btn" id="gohome">${L('App-ஐ திற','Open the app')}</button></div></section>`,()=>{
     document.getElementById('gohome').onclick=()=>{try{history.replaceState(null,'',location.pathname)}catch(e){}S.logged?home():langScreen()};
   });
