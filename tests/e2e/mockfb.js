@@ -32,7 +32,7 @@
     async getDocs(q){return runQuery(q.type==='coll'?{path:q.path}:q)},
     async setDoc(r,d,o){write(r.path,d,o&&o.merge);notify()},
     async updateDoc(r,d){if(!store.has(r.path))throw{code:'not-found'};if(window.MOCK&&MOCK.denyUpdate&&MOCK.denyUpdate(r.path,d))throw{code:'permission-denied'};write(r.path,d,true);notify()},
-    async addDoc(c,d){const id='d'+(++seq).toString(36)+Math.random().toString(36).slice(2,8);write(c.path+'/'+id,d,false);notify();return docRef(c.path+'/'+id)},
+    async addDoc(c,d){const id='d'+(++seq).toString(36)+Math.random().toString(36).slice(2,8);write(c.path+'/'+id,d,false);if(c.path!=='events')notify(); /* real Firestore wakes only listeners of the changed collection; nothing listens to the funnel rows */return docRef(c.path+'/'+id)},
     async deleteDoc(r){store.delete(r.path);notify()},
     onSnapshot(target,cb,err){
       const s={fire:()=>cb(target.type==='doc'?snapDoc(target.path):runQuery(target.type==='coll'?{path:target.path}:target))};
