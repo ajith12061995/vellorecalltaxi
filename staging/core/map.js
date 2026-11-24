@@ -150,10 +150,12 @@ const zFromS=s=>Math.max(3,Math.min(19,Math.log2(s*360/256)));
 const sFromZ=z=>256*Math.pow(2,z)/360;
 function makeMap(cv,o={}){return GMAP()?makeGoogleMap(cv,o):(LF&&REALMAP)?makeLeafletMap(cv,o):makeCanvasMap(cv,o)}
 /* top-view vehicle markers for the live map */
-const TOPI={car:`<ellipse cx="12" cy="23" rx="11" ry="20" fill="#000" opacity=".2"/><path d="M5 4 Q12 0 19 4 Q22 6 22 12 L22 36 Q22 42 16 42 L8 42 Q2 42 2 36 L2 12 Q2 6 5 4 Z" fill="#FFFFFF" stroke="#9aa7a0" stroke-width=".8"/><path d="M5 12 Q12 9 19 12 L18 17 Q12 15 6 17 Z" fill="#2b3a44"/><rect x="5.5" y="17" width="13" height="15" rx="2" fill="#0B4A36"/><rect x="9" y="22" width="6" height="4" rx="1" fill="#FFC21A"/><path d="M6 32 Q12 34 18 32 L18 36 Q12 37 6 36 Z" fill="#2b3a44"/><rect x="3" y="4.5" width="4" height="2" rx="1" fill="#FFF7C2"/><rect x="17" y="4.5" width="4" height="2" rx="1" fill="#FFF7C2"/>`,auto:`<ellipse cx="13" cy="19" rx="11" ry="16" fill="#000" opacity=".18"/><path d="M13 2 L22 9 L22 31 Q22 34 19 34 L7 34 Q4 34 4 31 L4 9 Z" fill="#FFC21A" stroke="#8a6a00" stroke-width=".8"/><rect x="5.5" y="12" width="15" height="18" rx="3" fill="#0B4A36"/><path d="M8 8 L18 8 L20 11 L6 11 Z" fill="#2b3a44"/>`,bike:`<ellipse cx="8" cy="19" rx="6" ry="16" fill="#000" opacity=".18"/><rect x="6" y="2" width="4" height="9" rx="2" fill="#20262A"/><rect x="6" y="25" width="4" height="9" rx="2" fill="#20262A"/><rect x="3.5" y="9" width="9" height="17" rx="4" fill="#FFFFFF" stroke="#9aa7a0" stroke-width=".7"/><rect x="1" y="9" width="14" height="2" rx="1" fill="#20262A"/><rect x="5" y="14" width="6" height="8" rx="3" fill="#0B4A36"/>`};
-const TOPS={car:[24,44],auto:[26,36],bike:[16,36]};
+const TOPI={car:`<ellipse cx="12" cy="23" rx="11" ry="20" fill="#000" opacity=".2"/><path d="M5 4 Q12 0 19 4 Q22 6 22 12 L22 36 Q22 42 16 42 L8 42 Q2 42 2 36 L2 12 Q2 6 5 4 Z" fill="#FFFFFF" stroke="#9aa7a0" stroke-width=".8"/><path d="M5 12 Q12 9 19 12 L18 17 Q12 15 6 17 Z" fill="#2b3a44"/><rect x="5.5" y="17" width="13" height="15" rx="2" fill="#0B4A36"/><rect x="9" y="22" width="6" height="4" rx="1" fill="#FFC21A"/><path d="M6 32 Q12 34 18 32 L18 36 Q12 37 6 36 Z" fill="#2b3a44"/><rect x="3" y="4.5" width="4" height="2" rx="1" fill="#FFF7C2"/><rect x="17" y="4.5" width="4" height="2" rx="1" fill="#FFF7C2"/>`,auto:`<ellipse cx="13" cy="19" rx="11" ry="16" fill="#000" opacity=".18"/><path d="M13 2 L22 9 L22 31 Q22 34 19 34 L7 34 Q4 34 4 31 L4 9 Z" fill="#FFC21A" stroke="#8a6a00" stroke-width=".8"/><rect x="5.5" y="12" width="15" height="18" rx="3" fill="#0B4A36"/><path d="M8 8 L18 8 L20 11 L6 11 Z" fill="#2b3a44"/>`,bike:`<ellipse cx="8" cy="19" rx="6" ry="16" fill="#000" opacity=".18"/><rect x="6" y="2" width="4" height="9" rx="2" fill="#20262A"/><rect x="6" y="25" width="4" height="9" rx="2" fill="#20262A"/><rect x="3.5" y="9" width="9" height="17" rx="4" fill="#FFFFFF" stroke="#9aa7a0" stroke-width=".7"/><rect x="1" y="9" width="14" height="2" rx="1" fill="#20262A"/><rect x="5" y="14" width="6" height="8" rx="3" fill="#0B4A36"/>`,van:`<rect x="1" y="3" width="24" height="44" rx="5" fill="#000" opacity=".18"/><rect x="2" y="1" width="22" height="45" rx="4.5" fill="#FFFFFF" stroke="#9aa7a0" stroke-width=".8"/><path d="M4.5 6 Q13 3.5 21.5 6 L20.5 11 Q13 9.5 5.5 11 Z" fill="#2b3a44"/><rect x="5" y="12.5" width="16" height="27" rx="2" fill="#0B4A36"/><rect x="7" y="16" width="12" height="2" rx="1" fill="#FFC21A"/><rect x="7" y="23" width="12" height="2" rx="1" fill="#FFC21A"/><rect x="7" y="30" width="12" height="2" rx="1" fill="#FFC21A"/><rect x="5.5" y="41" width="15" height="3" rx="1.2" fill="#2b3a44"/><rect x="3.5" y="1.8" width="4" height="2" rx="1" fill="#FFF7C2"/><rect x="18.5" y="1.8" width="4" height="2" rx="1" fill="#FFF7C2"/>`};
+const TOPS={car:[24,44],auto:[26,36],bike:[16,36],van:[26,47]};
 function topSvg(k,rot,sz){const w=TOPS[k][0],h=TOPS[k][1];return `<svg xmlns="http://www.w3.org/2000/svg" width="${sz||48}" height="${sz||48}" viewBox="0 0 48 48"><g transform="rotate(${Math.round(rot||0)} 24 24) translate(${24-w/2} ${24-h/2})">${TOPI[k]}</g></svg>`}
-const topKind=v=>v==='auto'?'auto':v==='bike'?'bike':'car';
+const topKind=v=>v==='auto'?'auto':v==='bike'?'bike':v==='trav'?'van':'car';
+/* the moving "driver" marker shows that driver's own vehicle type: d.veh from the page, else window.MAPVEH() */
+const drvKind=d=>{let v=d&&d.veh;if(!v&&typeof window!=='undefined'&&typeof window.MAPVEH==='function'){try{v=window.MAPVEH()}catch(e){}}return topKind(v)};
 function topIcon(k,rot,sz){sz=sz||48;return gIcon(topSvg(k,rot,sz),sz,sz,sz/2,sz/2)}
 function makeLeafletMap(cv,o={}){
   const host=document.createElement('div');host.className='map lmap';cv.replaceWith(host);
@@ -187,7 +189,8 @@ function makeLeafletMap(cv,o={}){
     else if(ln){m.removeLayer(ln);m.removeLayer(ln2);ln=ln2=null}
     const d=o.driver?o.driver():null;
     if(d&&d.lat!=null){const ang=d.nlat!=null?Math.atan2(-(d.nlat-d.lat),(d.nlon-d.lon)*Math.cos(d.lat*Math.PI/180))*180/Math.PI:0;
-      if(!drv)drv=LF.marker([d.lat,d.lon],{icon:ic('<div class="lcar2">'+topSvg('car',0)+'</div>',48,48,24,24),interactive:false,keyboard:false,zIndexOffset:500}).addTo(m);else drv.setLatLng([d.lat,d.lon]);
+      const dk=drvKind(d);if(drv&&drv._k!==dk){m.removeLayer(drv);drv=null}
+      if(!drv){drv=LF.marker([d.lat,d.lon],{icon:ic('<div class="lcar2">'+topSvg(dk,0)+'</div>',48,48,24,24),interactive:false,keyboard:false,zIndexOffset:500}).addTo(m);drv._k=dk}else drv.setLatLng([d.lat,d.lon]);
       const el=drv.getElement();if(el&&el.firstChild)el.firstChild.style.transform=`rotate(${d.nlat!=null&&(d.nlat!==d.lat||d.nlon!==d.lon)?bearing(d,{lat:d.nlat,lon:d.nlon}):0}deg)`}
     else if(drv){m.removeLayer(drv);drv=null}
     if(o.fleet){const seen={};o.fleet().forEach(f=>{const k=f.label+f.tag;seen[k]=1;
@@ -298,8 +301,8 @@ function makeGoogleMap(cv,o={}){
     else if(ln){ln.setMap(null);ln2.setMap(null);ln=ln2=null}
     const d=o.driver?o.driver():null;
     if(d&&d.lat!=null){const rot=d.nlat!=null&&(d.nlat!==d.lat||d.nlon!==d.lon)?bearing(d,{lat:d.nlat,lon:d.nlon}):(drv&&drv._rot)||0;
-      const icon=topIcon('car',rot);
-      if(!drv){drv=new g.Marker({map:m,position:{lat:d.lat,lng:d.lon},icon,clickable:false,zIndex:300});}else{drv.setPosition({lat:d.lat,lng:d.lon});if(Math.abs((drv._rot||0)-rot)>2)drv.setIcon(icon)}drv._rot=rot}
+      const dk=drvKind(d),icon=topIcon(dk,rot);
+      if(!drv){drv=new g.Marker({map:m,position:{lat:d.lat,lng:d.lon},icon,clickable:false,zIndex:300});}else{drv.setPosition({lat:d.lat,lng:d.lon});if(drv._k!==dk||Math.abs((drv._rot||0)-rot)>2)drv.setIcon(icon)}drv._rot=rot;drv._k=dk}
     else if(drv){drv.setMap(null);drv=null}
     if(o.fleet){const seen={};o.fleet().forEach(f=>{const k=f.label+f.tag;seen[k]=1;
         const icon={path:g.SymbolPath.CIRCLE,scale:12,fillColor:f.col,fillOpacity:1,strokeColor:'#fff',strokeWeight:2.5};

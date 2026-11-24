@@ -41,7 +41,7 @@
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('./vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV=window.VCT_V='105',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV=window.VCT_V='106',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('./version.json',location.href)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -553,17 +553,17 @@ details.faq p{margin:0;padding:0 14px 14px;color:var(--muted);font-size:14px;lin
 <div class="app" id="app"></div>
 <div class="toast" id="toast"></div>
 
-<script src="./core/report.js?v=105"></script>
-<script src="./core/geo.js?v=105"></script>
-<script src="./core/fare.js?v=105"></script>
-<script src="./core/appget.js?v=105"></script>
-<script src="./core/pin.js?v=105"></script>
-<script src="./core/clock.js?v=105"></script>
-<script src="./core/map.js?v=105"></script>
-<script src="./core/chat.js?v=105"></script>
-<script src="./core/otp.js?v=105"></script>
-<script src="./core/deskmode.js?v=105"></script>
-<script src="./core/weather.js?v=105"></script>
+<script src="./core/report.js?v=106"></script>
+<script src="./core/geo.js?v=106"></script>
+<script src="./core/fare.js?v=106"></script>
+<script src="./core/appget.js?v=106"></script>
+<script src="./core/pin.js?v=106"></script>
+<script src="./core/clock.js?v=106"></script>
+<script src="./core/map.js?v=106"></script>
+<script src="./core/chat.js?v=106"></script>
+<script src="./core/otp.js?v=106"></script>
+<script src="./core/deskmode.js?v=106"></script>
+<script src="./core/weather.js?v=106"></script>
 <script>
 /* ---------- icons ---------- */
 const I = {
@@ -683,6 +683,7 @@ setBike(false);
 /* ---------- state ---------- */
 const S={lang:'en',from:'home',phone:'',name:'',logged:false,tab:'home',dest:null,veh:'auto',pay:'upi'};
 if(window.APPGET)APPGET.init('cust',()=>S.lang);
+window.MAPVEH=()=>R&&R.v?R.v.id:null; // ride map: the driver marker shows the booked vehicle type
 /* Facebook / Instagram open ad links in their own built-in browser. Google refuses sign-in there ("disallowed_useragent"),
    so the Google button is hidden in it; mobile-number OTP works. */
 const IAB=/FBAN|FBAV|FB_IAB|FBIOS|Instagram/i.test(navigator.userAgent||'');
