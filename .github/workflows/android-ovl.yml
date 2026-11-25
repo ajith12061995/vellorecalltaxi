@@ -8,6 +8,7 @@ on:
 jobs:
   emulator:
     runs-on: ubuntu-latest
+    permissions: { contents: write }
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
@@ -45,3 +46,10 @@ jobs:
           name: overlay-screens
           path: ${{ runner.temp }}/shots
           if-no-files-found: ignore
+      - name: Screenshots → branch ovl-shots (small JPEGs, so they can be looked at without downloading artifacts)
+        if: always()
+        run: |
+          cd "$RUNNER_TEMP/shots" && ls -la && sudo apt-get install -y -qq imagemagick >/dev/null 2>&1 || true
+          for f in *.png; do [ -f "$f" ] && convert "$f" -resize 540x -quality 70 "${f%.png}.jpg" && rm "$f"; done
+          git init -q . && git config user.email ci@velloretaxi.app && git config user.name ci && git add -A && git commit -qm "overlay screens" || exit 0
+          git push -q -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" HEAD:refs/heads/ovl-shots

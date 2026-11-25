@@ -99,6 +99,7 @@ public class RideOverlayPlugin extends Plugin {
             endRing();
             ringId = id;
             startSound();
+            android.util.Log.i("RideOverlay", "ring visible=" + visible + " can=" + can());
             if (!visible && can()) showCard(id, title, l1, l2, fare, acc, open);
             timeout = this::endRing;
             main.postDelayed(timeout, secs * 1000L);
@@ -190,7 +191,7 @@ public class RideOverlayPlugin extends Plugin {
                 }
             });
             wm.addView(v, lp); bubble = v;
-        } catch (Exception e) { bubble = null; }
+        } catch (Exception e) { bubble = null; android.util.Log.w("RideOverlay", "icon not shown", e); }
     }
 
     private void removeBubble() { if (bubble != null) { try { wm.removeView(bubble); } catch (Exception e) { /* gone */ } bubble = null; } }
@@ -239,7 +240,7 @@ public class RideOverlayPlugin extends Plugin {
             lp.gravity = Gravity.TOP; lp.y = dp(36); lp.horizontalMargin = 0.03f;
             lp.width = getContext().getResources().getDisplayMetrics().widthPixels - dp(24);
             wm.addView(box, lp); card = box;
-        } catch (Exception e) { card = null; }
+        } catch (Exception e) { card = null; android.util.Log.w("RideOverlay", "card not shown", e); }
     }
 
     /** a button was pressed: stop the noise and the card now; the page ends the request itself once it has acted */
