@@ -42,7 +42,7 @@
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('./vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV=window.VCT_V='118',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV=window.VCT_V='119',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('./version.json',location.href)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -555,18 +555,18 @@ details.faq p{margin:0;padding:0 14px 14px;color:var(--muted);font-size:14px;lin
 <div class="app" id="app"></div>
 <div class="toast" id="toast"></div>
 
-<script src="./core/report.js?v=118"></script>
-<script src="./core/funnel.js?v=118"></script>
-<script src="./core/geo.js?v=118"></script>
-<script src="./core/fare.js?v=118"></script>
-<script src="./core/appget.js?v=118"></script>
-<script src="./core/pin.js?v=118"></script>
-<script src="./core/clock.js?v=118"></script>
-<script src="./core/map.js?v=118"></script>
-<script src="./core/chat.js?v=118"></script>
-<script src="./core/otp.js?v=118"></script>
-<script src="./core/deskmode.js?v=118"></script>
-<script src="./core/weather.js?v=118"></script>
+<script src="./core/report.js?v=119"></script>
+<script src="./core/funnel.js?v=119"></script>
+<script src="./core/geo.js?v=119"></script>
+<script src="./core/fare.js?v=119"></script>
+<script src="./core/appget.js?v=119"></script>
+<script src="./core/pin.js?v=119"></script>
+<script src="./core/clock.js?v=119"></script>
+<script src="./core/map.js?v=119"></script>
+<script src="./core/chat.js?v=119"></script>
+<script src="./core/otp.js?v=119"></script>
+<script src="./core/deskmode.js?v=119"></script>
+<script src="./core/weather.js?v=119"></script>
 <script>
 /* ---------- icons ---------- */
 /* small line icons (one stroke style everywhere; no emoji in the interface) */
@@ -878,12 +878,14 @@ function vrowHtml(on='now'){
 }
 let NEAR=[],NEARUNSUB=null,NEARKEY='';
 /* only drivers in the 3x3 block of ~5 km map cells around the pickup are read (not every driver everywhere) */
-function watchNear(){if(!CL||!S.logged)return;const c=P[S.from]||P.home;if(!c||c.lat==null)return;
+function watchNear(){if(!CL)return; /* also for visitors who have not signed in yet: they see the vehicles around before booking */const c=P[S.from]||P.home;if(!c||c.lat==null)return;
   const cells=VGEO.cells(c.lat,c.lon),key=cells.join(',');if(key===NEARKEY&&NEARUNSUB)return;
   if(NEARUNSUB)NEARUNSUB();NEARKEY=key;const per={};
   const draw=()=>{const now=Date.now();
-    NEAR=Object.values(per).flat().filter(d=>d.online&&!d.busy&&d.lat!=null&&now-CL.toMs(d.updatedAt)<5*60e3)
-      .map(d=>({id:d.id,lat:d.lat,lon:d.lon,veh:d.veh||'car',rot:([...d.id].reduce((a,c)=>a+c.charCodeAt(0),0)*37)%360}));
+    /* a vehicle shows while its driver's switch is ON (d.on), even when the phone has gone quiet in the background;
+       fresh = the phone reported in the last 5 minutes → only these are used for "x min away" */
+    NEAR=Object.values(per).flat().filter(d=>!d.busy&&d.lat!=null&&(d.on===true||(d.on==null&&d.online&&now-CL.toMs(d.updatedAt)<5*60e3)))
+      .map(d=>({id:d.id,lat:d.lat,lon:d.lon,veh:d.veh||'car',fresh:now-CL.toMs(d.updatedAt)<5*60e3,rot:([...d.id].reduce((a,c)=>a+c.charCodeAt(0),0)*37)%360}));
     const nb=document.getElementById('nbc');if(nb){nb.hidden=!NEAR.length;nb.lastChild.textContent=` ${NEAR.length} ${t('nearby')}`}};
   const uns=cells.map(cell=>F().onSnapshot(F().query(F().collection(CL.db,'cars'),F().where('gh','>=',cell),F().where('gh','<',cell+'~')),
     s=>{per[cell]=s.docs.map(d=>({id:d.id,...d.data()}));draw()},()=>{}));
@@ -992,7 +994,7 @@ const NEARKM=4; // drivers within 4 km (first 3 km, then up to 4 km)
 function vAvail(v){
   if(!CL||S.when||ADV.includes(v.id))return{ok:true,eta:v.eta,live:false};
   if(!S.logged)return{ok:true,eta:null,live:false};
-  const pu=P[S.from];const ds=NEAR.filter(n=>n.veh===v.id).map(n=>hav(n,pu)).filter(d=>d<=NEARKM);
+  const pu=P[S.from];const ds=NEAR.filter(n=>n.fresh&&n.veh===v.id).map(n=>hav(n,pu)).filter(d=>d<=NEARKM);
   if(!ds.length)return{ok:true,eta:null,live:false};
   return{ok:true,eta:Math.max(1,Math.round(Math.min(...ds)*1.35/20*60)+1),live:true};
 }
@@ -1603,7 +1605,7 @@ function rentHomeHtml(){
    <div class="rinfo">${L('<b>மணி நேர வாடகை</b> · Shopping, hospital, function, ஊர் சுற்றல் — ஒரே வண்டி, ஒரே driver, நாள் முழுக்க உங்க கூடவே.','<b>Hourly rentals</b> · Shopping, hospital visits, functions or a day out — one vehicle and one driver stay with you.')}</div>`;
 }
 function rentEta(id){const v=VEH.find(x=>x.id===id),pu=P[S.from];
-  const ds=NEAR.filter(n=>n.veh===id||(n.veh==='car'&&id!=='auto'&&id!=='bike')).map(n=>hav(n,pu));
+  const ds=NEAR.filter(n=>n.fresh&&(n.veh===id||(n.veh==='car'&&id!=='auto'&&id!=='bike'))).map(n=>hav(n,pu));
   return ds.length?Math.max(2,Math.round(Math.min(...ds)*1.35/20*60)+2):v.eta}
 function rentalScreen(){home('rent')}
 function rentFare(){
