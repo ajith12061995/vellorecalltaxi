@@ -85,7 +85,7 @@ async def main():
         DESK='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
         c2,g,e2=await guest(FBA)
         t=await card(g);href=await g.evaluate("(document.querySelector('#agGo')||{}).getAttribute&&document.querySelector('#agGo').getAttribute('href')||''")
-        check('Facebook (Android) guest: card says open in Chrome',('Chrome' in t) and ('Facebook' in t),t)
+        check('Facebook (Android) guest: one slim line with "Open in Chrome" (no emoji)',('Open in Chrome' in t) and ('as an app' in t) and ('📲' not in t),t)
         check('…button is a Chrome intent link back to the same page',href.startswith('intent://') and 'package=com.android.chrome' in href and 'S.browser_fallback_url=' in href and 'c2.html' in href,href)
         await g.evaluate("(()=>{const e=new Event('beforeinstallprompt',{cancelable:true});e.prompt=()=>{};e.userChoice=Promise.resolve({outcome:'dismissed'});window.dispatchEvent(e)})()");await g.wait_for_timeout(200)
         check('…still the Chrome card inside Facebook (install cannot work there)','Chrome' in await card(g))
