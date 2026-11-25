@@ -164,6 +164,8 @@ public class RideOverlayPlugin extends Plugin {
     private void syncBubble() {
         boolean want = online && !visible && can() && card == null;
         android.util.Log.i("RideOverlay", "sync " + System.identityHashCode(this) + " online=" + online + " visible=" + visible + " card=" + (card != null) + " bubble=" + (bubble != null) + " want=" + want);
+        // the icon was taken off the screen by the system (it is no longer attached): draw it again
+        if (want && bubble != null && Build.VERSION.SDK_INT >= 19 && !bubble.isAttachedToWindow()) { try { wm.removeView(bubble); } catch (Exception e) { /* gone */ } bubble = null; }
         if (want && bubble == null) showBubble(); else if (!want) removeBubble();
     }
 

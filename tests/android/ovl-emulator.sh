@@ -53,15 +53,18 @@ adb exec-out screencap -p > "$OUT/ovl-3-after.png" 2>/dev/null
 # 26 Nov (owner's report): the icon came the first time the app was left, but not again after going back in and out.
 # The driver goes in and out several times: by tapping the icon, from the launcher, and from the recent-apps list.
 dens=$(adb shell wm density | grep -o '[0-9]*' | tail -1); ix=$(( (6+26)*dens/160 )); iy=$(( (220+26)*dens/160 ))
-for k in 1 2 3 4; do
-  adb shell input keyevent KEYCODE_HOME; sleep 3
-  n=$(overlays); [ "$n" -ge 1 ] && ok "round $k: icon back over the home screen after leaving the app again" || { bad "round $k: NO icon after leaving the app again"; adb logcat -d | grep -i RideOverlay | tail -5; }
+for k in 1 2 3 4 5; do
+  if [ $k -eq 5 ]; then adb shell input keyevent KEYCODE_BACK; sleep 3; else adb shell input keyevent KEYCODE_HOME; sleep 3; fi
+  n=$(overlays); [ "$n" -ge 1 ] && ok "round $k: icon back over the home screen after leaving the app again ($([ $k -eq 5 ] && echo Back || echo Home))" || { bad "round $k: NO icon after leaving the app again"; adb logcat -d | grep -i RideOverlay | tail -5; }
   [ $k -eq 2 ] && adb exec-out screencap -p > "$OUT/ovl-4-again.png" 2>/dev/null
   case $k in
     1) adb shell input tap $ix $iy; how="tapping the icon";;
     2) adb shell am start -n $PKG/.MainActivity >/dev/null; how="the launcher";;
     3) adb shell input keyevent KEYCODE_APP_SWITCH; sleep 2; adb shell input keyevent KEYCODE_APP_SWITCH; how="recent apps";;
     4) adb shell monkey -p $PKG -c android.intent.category.LAUNCHER 1 >/dev/null 2>&1; how="the app icon";;
+    5) t0=$(grep -c '^tick=.*hidden' "$LOG"); sleep 4; t1=$(grep -c '^tick=.*hidden' "$LOG")
+       [ "$t1" -gt "$t0" ] && ok "after Back the page keeps running in the background ($t0 → $t1 ticks)" || bad "after Back the page stopped ($t0 → $t1 ticks)"
+       adb shell monkey -p $PKG -c android.intent.category.LAUNCHER 1 >/dev/null 2>&1; how="the app icon after Back";;
   esac
   sleep 3; n=$(overlays); [ "$n" -eq 0 ] && ok "round $k: back in the app ($how): icon hidden" || bad "round $k: icon still drawn inside the app ($n) after $how"
 done
