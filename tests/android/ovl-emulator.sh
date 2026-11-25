@@ -64,6 +64,8 @@ for k in 1 2 3 4 5; do
     4) adb shell monkey -p $PKG -c android.intent.category.LAUNCHER 1 >/dev/null 2>&1; how="the app icon";;
     5) t0=$(grep -c '^tick=.*hidden' "$LOG"); sleep 4; t1=$(grep -c '^tick=.*hidden' "$LOG")
        [ "$t1" -gt "$t0" ] && ok "after Back the page keeps running in the background ($t0 → $t1 ticks)" || bad "after Back the page stopped ($t0 → $t1 ticks)"
+       echo "--- after Back:"; adb shell pidof $PKG; adb shell dumpsys activity activities 2>/dev/null | grep -E "velloretaxi" | head -5
+       adb logcat -d -b main,system,events 2>/dev/null | grep -iE "velloretaxi|am_kill|am_proc_died|has died|Killing|am_finish|wm_finish|wm_destroy|onBackPressed|moveTaskToBack" | tail -25
        adb shell monkey -p $PKG -c android.intent.category.LAUNCHER 1 >/dev/null 2>&1; how="the app icon after Back";;
   esac
   sleep 3; n=$(overlays); [ "$n" -eq 0 ] && ok "round $k: back in the app ($how): icon hidden" || bad "round $k: icon still drawn inside the app ($n) after $how"
