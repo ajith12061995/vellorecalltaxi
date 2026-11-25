@@ -49,22 +49,22 @@
     const name = kind === 'drv' ? 'VCT Driver' : 'Vellore Taxi';
     const x = `<button class="agx" id="agX" type="button" aria-label="${L('மூடு', 'Close')}">×</button>`;
     if (st.what === 'iab') {
-      const head = L(`📲 ${name}-ஐ app-ஆ phone-ல வச்சுக்கோங்க`, `📲 Keep ${name} as an app on your phone`);
+      const head = L(`${name}-ஐ app-ஆ phone-ல வச்சுக்கோங்க`, `Keep ${name} as an app on your phone`);
       const sub = st.os === 'and'
         ? L('இப்போ Facebook-க்குள்ள திறந்திருக்கு. Chrome-ல திறந்தா ஒரே தொடுதல்ல install ஆகும் — அடுத்த தடவை icon-ஐ தொட்டு நேரா book பண்ணலாம்.', 'You are inside Facebook. Open it in Chrome to install it in one tap — next time just tap the icon to book.')
         : L('இப்போ Facebook-க்குள்ள திறந்திருக்கு. மேல ⋯ அழுத்தி "Open in external browser" (Safari) தேர்வு பண்ணுங்க. அப்புறம் Share ⬆ → "Add to Home Screen".', 'You are inside Facebook. Tap ⋯ at the top and choose "Open in external browser" (Safari). Then Share ⬆ → "Add to Home Screen".');
       const btn = st.os === 'and' ? `<a class="agbtn" id="agGo" href="${esc(chromeIntent())}">${L('Chrome-ல திற', 'Open in Chrome')}</a>` : '';
-      return `<div class="agcard" role="region" aria-label="${esc(head)}"><div class="agtxt"><b>${head}</b><small>${sub}</small></div>${btn}${x}</div>`;
+      return `<div class="agcard${btn ? ' slim' : ''}" role="region" aria-label="${esc(head)}"><div class="agtxt"><b>${head}</b><small>${sub}</small></div>${btn}${x}</div>`;
     }
     if (st.what === 'howto') {
-      const head = L(`📲 ${name}-ஐ app-ஆ install பண்ணுங்க`, `📲 Install ${name} as an app`);
+      const head = L(`${name}-ஐ app-ஆ install பண்ணுங்க`, `Install ${name} as an app`);
       const sub = open ? steps(st.os) : L('Play Store தேவையில்லை, 2 தொடுதல் போதும். Home screen-ல icon வரும்.', 'No Play Store needed — 2 taps. An icon appears on your home screen.');
       const btn = open ? '' : `<button class="agbtn" id="agGo" type="button">${L('எப்படி install பண்றது?', 'How to install')}</button>`;
-      return `<div class="agcard" role="region" aria-label="${esc(head)}"><div class="agtxt"><b>${head}</b><small id="agSteps">${sub}</small></div>${btn}${x}</div>`;
+      return `<div class="agcard${open ? '' : ' slim'}" role="region" aria-label="${esc(head)}"><div class="agtxt"><b>${head}</b><small id="agSteps">${sub}</small></div>${btn}${x}</div>`;
     }
     const head = st.what === 'play'
-      ? L(`📲 ${name} app இப்போ Play Store-ல!`, `📲 ${name} is now on the Play Store!`)
-      : L(`📲 ${name}-ஐ app-ஆ install பண்ணுங்க`, `📲 Install ${name} as an app`);
+      ? L(`${name} app இப்போ Play Store-ல!`, `${name} is now on the Play Store!`)
+      : L(`${name}-ஐ app-ஆ install பண்ணுங்க`, `Install ${name} as an app`);
     const sub = st.what === 'play'
       ? L('Download பண்ணி அதே நம்பர்ல login பண்ணுங்க. உங்க விவரம் எல்லாம் அப்படியே இருக்கும்.', 'Download it and log in with the same number. Everything you have stays.')
       : L('ஒரே தொடுதல். Home screen-ல icon வரும், அடுத்த தடவை நேரா திறக்கலாம்.', 'One tap. An icon appears on your home screen for next time.');
