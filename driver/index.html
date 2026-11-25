@@ -2,6 +2,8 @@
 <html lang="ta">
 <head><script>/* anti-clickjacking: the apps never run inside another site's frame (tests on localhost excepted) */if(window.top!==window.self&&!/^(localhost|127\.0\.0\.1)$/.test(location.hostname)){document.documentElement.style.display="none";try{window.top.location=window.self.location.href}catch(e){}}</script>
 <meta charset="utf-8">
+<link rel="preconnect" href="https://www.gstatic.com" crossorigin><link rel="preconnect" href="https://firestore.googleapis.com"><link rel="preconnect" href="https://maps.googleapis.com">
+<link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"><link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js"><link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js"><link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-check.js">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0B4A36">
 <meta name="mobile-web-app-capable" content="yes">
@@ -14,7 +16,7 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <script src="../maps-config.js"></script>
-<script>(function(){if(!window.GMAPS_KEY)return;var l='ta';try{var s=JSON.parse(localStorage.getItem('vctd')||'{}');if(s.lang)l=s.lang}catch(e){}document.write('<script src="https://maps.googleapis.com/maps/api/js?key='+encodeURIComponent(window.GMAPS_KEY)+'&libraries=places&language='+l+'&region=IN&v=weekly"><\/script>')})();</script>
+<script>/* Google Maps loads in the background (it no longer holds up the first screen); MAPS_READY → true when loaded, false if it fails */(function(){if(!window.GMAPS_KEY){window.MAPS_READY=Promise.resolve(false);return}var l='ta';try{var s=JSON.parse(localStorage.getItem('vctd')||'{}');if(s.lang)l=s.lang}catch(e){}window.MAPS_READY=new Promise(function(r){window.__vctMapsCb=function(){r(true)};var x=document.createElement('script');x.async=true;x.onerror=function(){r(false)};x.src='https://maps.googleapis.com/maps/api/js?key='+encodeURIComponent(window.GMAPS_KEY)+'&libraries=places&language='+l+'&region=IN&v=weekly&callback=__vctMapsCb';document.head.appendChild(x)})})();</script>
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{height:100%}body{margin:0;font-family:system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}
 .hasdot{position:relative}.hasdot::after{content:"";position:absolute;top:-3px;right:-3px;width:10px;height:10px;border-radius:50%;background:#D9443B;border:2px solid var(--surface)}
 .chatlog .msg.dr small,.chatlog .msg.me small{display:block;font-size:10px;opacity:.6;margin-top:2px}
@@ -47,7 +49,7 @@
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('../vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV=window.VCT_V='121',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV=window.VCT_V='122',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('../version.json',location.href)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -56,8 +58,8 @@ setTimeout(chk,3000);setInterval(chk,5*60*1000);document.addEventListener('visib
 <body>
 <title>Vellore Taxi Driver</title>
 <meta name="claude:viewport-fit-sides" content="cover">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+Thambi+2:wght@500;600;700;800&family=Hind+Madurai:wght@400;500;600;700&display=swap">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+Thambi+2:wght@500;600;700;800&family=Hind+Madurai:wght@400;500;600;700&display=swap" media="print" onload="this.media='all'">
 <style>
 /* Layout: one phone-width app column; map is the stage, a white bottom sheet carries the actions. */
 :root{
@@ -655,23 +657,23 @@ a.btn{text-decoration:none}
 .row .ic .pm{font-size:10px;padding:1px 5px}
 </style>
 
-<div class="app" id="app"></div>
+<div class="app" id="app"><section class="screen" id="splash"><div class="roofsign"><b>TAXI</b><span>வேலூர் டாக்ஸி</span></div><span class="drvtag">DRIVER</span><div class="road"></div><div class="tag">Vellore Taxi · Driver</div></section></div>
 <div class="toast" id="toast"></div>
 
-<script src="../core/report.js?v=121"></script>
-<script src="../core/geo.js?v=121"></script>
-<script src="../core/fare.js?v=121"></script>
-<script src="../core/appget.js?v=121"></script>
-<script src="../core/pin.js?v=121"></script>
-<script src="../core/clock.js?v=121"></script>
-<script src="../core/map.js?v=121"></script>
-<script src="../core/chat.js?v=121"></script>
-<script src="../core/driverchecks.js?v=121"></script>
-<script src="../core/nav.js?v=121"></script>
-<script src="../core/otp.js?v=121"></script>
-<script src="../core/deskmode.js?v=121"></script>
-<script src="../core/refer.js?v=121"></script>
-<script src="../core/weather.js?v=121"></script>
+<script src="../core/report.js?v=122"></script>
+<script src="../core/geo.js?v=122"></script>
+<script src="../core/fare.js?v=122"></script>
+<script src="../core/appget.js?v=122"></script>
+<script src="../core/pin.js?v=122"></script>
+<script src="../core/clock.js?v=122"></script>
+<script src="../core/map.js?v=122"></script>
+<script src="../core/chat.js?v=122"></script>
+<script src="../core/driverchecks.js?v=122"></script>
+<script src="../core/nav.js?v=122"></script>
+<script src="../core/otp.js?v=122"></script>
+<script src="../core/deskmode.js?v=122"></script>
+<script src="../core/refer.js?v=122"></script>
+<script src="../core/weather.js?v=122"></script>
 <script>
 /* shared with the customer app: icons, places, fares, map engine */
 /* small line icons (one stroke style everywhere; no emoji in the interface) */
@@ -957,8 +959,10 @@ function splash(){
   go(`<section class="screen" id="splash"><div class="roofsign"><b>TAXI</b><span>வேலூர் டாக்ஸி</span></div><span class="drvtag">DRIVER</span>
     <div class="road"></div><div class="tag">Vellore Taxi · Driver</div></section>`);
   // the sign-in check already loads in the background; show the logo briefly (was a fixed 1.5 s)
-  setTimeout(async()=>{if(await cloudBootD())return;S.logged&&S.pid?home():login()},450);
+  setTimeout(async()=>{if(await cloudBootD())return;if(S.logged&&S.pid){await mapsWait();home()}else login()},450);
 }
+// Google Maps loads in the background: the first map waits for it until 3 s after the app was opened (after that the built-in map is used)
+const mapsWait=(ms=3000)=>Promise.race([window.MAPS_READY||Promise.resolve(false),new Promise(r=>setTimeout(()=>r(false),Math.max(0,ms-performance.now())))]);
 function login(){
   go(`<section class="screen"><div class="hero pad"><img src="./icon-192.png" alt="" style="width:84px;height:84px;border-radius:20px;display:block;margin-bottom:12px;box-shadow:0 4px 14px rgba(0,0,0,.15)" onerror="this.remove()"><span class="mini">VCT DRIVER</span><h1>${L('வணக்கம் Driver!','Welcome, driver!')}</h1>
     <p>${L('உங்க நம்பர்ல login பண்ணுங்க. புது driver-னா சேர்வதற்கான form வரும்','Log in with your number. New drivers will see the sign-up form')}</p>
@@ -1428,11 +1432,11 @@ async function cloudBootD(){
   if(!c){if(ON_PAGES){offlineD();return true}return false}
   const u=await CL.waitUser();
   if(!u||!u.phoneNumber){login();return true}
-  if(await loadMe()){resumeOnline();home();if(WELC)welcomeDriver()}
+  if(await loadMe()){await mapsWait();resumeOnline();home();if(WELC)welcomeDriver()}
   return true;
 }
 async function loadMe(){
-  let s=null;try{s=await F().getDoc(F().doc(CL.db,'drivers',CL.phone))}catch(e){}
+  let s=null;try{s=await F().getDoc(F().doc(CL.db,'drivers',CL.phone))}catch(e){offlineD();return false} // no network at start: say so (it used to treat a failed read as "not a driver" and open the joining page)
   if(!s||!s.exists()){notDriver();return false}
   applyMe(s.data());S.phone=(CL.phone||'').replace('+91','');S.logged=true;S.pid='cloud';save();
   WELC=welcomeDue(s.data());

@@ -2,6 +2,8 @@
 <html lang="en">
 <head><meta name="robots" content="noindex,nofollow"><script>/* anti-clickjacking: the apps never run inside another site's frame (tests on localhost excepted) */if(window.top!==window.self&&!/^(localhost|127\.0\.0\.1)$/.test(location.hostname)){document.documentElement.style.display="none";try{window.top.location=window.self.location.href}catch(e){}}</script>
 <meta charset="utf-8">
+<link rel="preconnect" href="https://www.gstatic.com" crossorigin><link rel="preconnect" href="https://firestore.googleapis.com"><link rel="preconnect" href="https://maps.googleapis.com">
+<link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"><link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js"><link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js"><link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-check.js">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0B4A36">
 <meta name="mobile-web-app-capable" content="yes">
@@ -42,7 +44,7 @@
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('./vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV=window.VCT_V='121',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV=window.VCT_V='122',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('./version.json',location.href)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -555,18 +557,18 @@ details.faq p{margin:0;padding:0 14px 14px;color:var(--muted);font-size:14px;lin
 <div class="app" id="app"></div>
 <div class="toast" id="toast"></div>
 
-<script src="./core/report.js?v=121"></script>
-<script src="./core/funnel.js?v=121"></script>
-<script src="./core/geo.js?v=121"></script>
-<script src="./core/fare.js?v=121"></script>
-<script src="./core/appget.js?v=121"></script>
-<script src="./core/pin.js?v=121"></script>
-<script src="./core/clock.js?v=121"></script>
-<script src="./core/map.js?v=121"></script>
-<script src="./core/chat.js?v=121"></script>
-<script src="./core/otp.js?v=121"></script>
-<script src="./core/deskmode.js?v=121"></script>
-<script src="./core/weather.js?v=121"></script>
+<script src="./core/report.js?v=122"></script>
+<script src="./core/funnel.js?v=122"></script>
+<script src="./core/geo.js?v=122"></script>
+<script src="./core/fare.js?v=122"></script>
+<script src="./core/appget.js?v=122"></script>
+<script src="./core/pin.js?v=122"></script>
+<script src="./core/clock.js?v=122"></script>
+<script src="./core/map.js?v=122"></script>
+<script src="./core/chat.js?v=122"></script>
+<script src="./core/otp.js?v=122"></script>
+<script src="./core/deskmode.js?v=122"></script>
+<script src="./core/weather.js?v=122"></script>
 <script>
 /* ---------- icons ---------- */
 /* small line icons (one stroke style everywhere; no emoji in the interface) */
