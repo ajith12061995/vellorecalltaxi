@@ -49,7 +49,7 @@
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('../vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV=window.VCT_V='123',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV=window.VCT_V='124',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('../version.json',location.href)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -660,20 +660,20 @@ a.btn{text-decoration:none}
 <div class="app" id="app"><section class="screen" id="splash"><div class="roofsign"><b>TAXI</b><span>வேலூர் டாக்ஸி</span></div><span class="drvtag">DRIVER</span><div class="road"></div><div class="tag">Vellore Taxi · Driver</div></section></div>
 <div class="toast" id="toast"></div>
 
-<script src="../core/report.js?v=123"></script>
-<script src="../core/geo.js?v=123"></script>
-<script src="../core/fare.js?v=123"></script>
-<script src="../core/appget.js?v=123"></script>
-<script src="../core/pin.js?v=123"></script>
-<script src="../core/clock.js?v=123"></script>
-<script src="../core/map.js?v=123"></script>
-<script src="../core/chat.js?v=123"></script>
-<script src="../core/driverchecks.js?v=123"></script>
-<script src="../core/nav.js?v=123"></script>
-<script src="../core/otp.js?v=123"></script>
-<script src="../core/deskmode.js?v=123"></script>
-<script src="../core/refer.js?v=123"></script>
-<script src="../core/weather.js?v=123"></script>
+<script src="../core/report.js?v=124"></script>
+<script src="../core/geo.js?v=124"></script>
+<script src="../core/fare.js?v=124"></script>
+<script src="../core/appget.js?v=124"></script>
+<script src="../core/pin.js?v=124"></script>
+<script src="../core/clock.js?v=124"></script>
+<script src="../core/map.js?v=124"></script>
+<script src="../core/chat.js?v=124"></script>
+<script src="../core/driverchecks.js?v=124"></script>
+<script src="../core/nav.js?v=124"></script>
+<script src="../core/otp.js?v=124"></script>
+<script src="../core/deskmode.js?v=124"></script>
+<script src="../core/refer.js?v=124"></script>
+<script src="../core/weather.js?v=124"></script>
 <script>
 /* shared with the customer app: icons, places, fares, map engine */
 /* small line icons (one stroke style everywhere; no emoji in the interface) */
@@ -1014,7 +1014,7 @@ function home(){
    <div class="sheet pad"><div class="grab"></div>
      ${(()=>{const ds=docState();return ds.expired.length?`<div class="warn">${X('block')} ${L('காலாவதி ஆன document: ','Expired: ')}${ds.expired.join(', ')}. ${L('புதுப்பிக்கும் வரை Online போக முடியாது. புது copy-ஐ office-க்கு அனுப்புங்க.','You can’t go online until it is renewed. Send the new copy to the office.')}</div>`:ds.soon.length?`<div class="warn">${X('warn')} ${L('சீக்கிரம் காலாவதி: ','Expiring soon: ')}${ds.soon.join(', ')}</div>`:''})()}
      ${low?`<div class="warn">${L(`Wallet-ல ${inr(DS.wallet)} தான் இருக்கு. Online போக குறைந்தது ${inr(MINBAL)} வேணும்.`,`Only ${inr(DS.wallet)} in wallet. You need at least ${inr(MINBAL)} to go online.`)} <button class="linkbtn" id="rc">${L('Recharge பண்ணு','Recharge')}</button></div>`:''}
-     ${S.online?`${CL&&!GOTFIX?`<div class="warn gpsw" id="gpsw"><b>${X('pin')} ${L('உங்க location இன்னும் கிடைக்கல','Your location is not available yet')}</b><br>${GPSERR===1?L('Location அனுமதி மறுக்கப்பட்டிருக்கு. Browser settings → Site settings → Location → Allow கொடுங்க.','Location permission is blocked. Allow it in browser site settings.'):L('Phone-ல Location / GPS on பண்ணுங்க. கிடைக்கும் வரை customer-க்கு உங்க வண்டி தெரியாது, request-உம் வராது.','Turn on Location/GPS. Until then customers cannot see you and no requests will come.')} <button class="linkbtn" id="gpsr">${L('மறுபடி முயற்சி','Retry')}</button></div>`:`<div class="liveCard"><span class="pulse"></span><div><b>${L('Online-ல இருக்கீங்க','You are online')}</b><small>${L('புது ride request-க்கு காத்திருக்கு…','Waiting for ride requests…')}</small></div></div>`}
+     ${S.online?`${CL&&!GOTFIX&&gpsSeeking()?`<div class="liveCard" id="gpsw"><span class="pulse"></span><div><b>${L('Online-ல இருக்கீங்க','You are online')}</b><small>${L('உங்க location தேடுது…','Finding your location…')}</small></div></div>`:CL&&!GOTFIX?`<div class="warn gpsw" id="gpsw"><b>${X('pin')} ${L('உங்க location இன்னும் கிடைக்கல','Your location is not available yet')}</b><br>${GPSERR===1?L('Location அனுமதி மறுக்கப்பட்டிருக்கு. Browser settings → Site settings → Location → Allow கொடுங்க.','Location permission is blocked. Allow it in browser site settings.'):L('Phone-ல Location / GPS on பண்ணுங்க. கிடைக்கும் வரை customer-க்கு உங்க வண்டி தெரியாது, request-உம் வராது.','Turn on Location/GPS. Until then customers cannot see you and no requests will come.')} <button class="linkbtn" id="gpsr">${L('மறுபடி முயற்சி','Retry')}</button></div>`:`<div class="liveCard"><span class="pulse"></span><div><b>${L('Online-ல இருக்கீங்க','You are online')}</b><small>${L('புது ride request-க்கு காத்திருக்கு…','Waiting for ride requests…')}</small></div></div>`}
         ${myVeh()==='auto'?autoNoteD(true):''}${dutyBtn(true)}
         ${CL?'':`<button class="demo" id="dreq">${L('Demo: ride request கொண்டு வா','Demo: send a ride request')}</button>`}`
       :`${signCard()}${dutyBtn(false)}`}
@@ -1571,8 +1571,13 @@ function startNativeGeo(){
 function webGeo(){if(GEO!=null||!navigator.geolocation)return;GEO=navigator.geolocation.watchPosition(p=>geoFix(p.coords.latitude,p.coords.longitude,p.coords.accuracy),()=>{},{enableHighAccuracy:true,maximumAge:0,timeout:20000})}
 function stopWebGeo(){if(GEO!=null){navigator.geolocation.clearWatch(GEO);GEO=null}}
 function stopNativeGeo(){if(BGP&&BGW!=null){try{BGP.removeWatcher({id:BGW})}catch(e){}}BGW=null;BGP=null;BGTRY=0;if(NATIVE())BGST='off'}
+/* The first GPS fix takes a few seconds after the app opens. For the first 10 s we say "finding your location";
+   the red "turn on Location" warning comes only after that, or at once when the phone reports an error. */
+let GPSSINCE=0;const GPSGRACE=10000;
+const gpsSeeking=()=>!GPSERR&&GPSSINCE>0&&Date.now()-GPSSINCE<GPSGRACE;
 function startGeo(){
-  if(GEO!=null||BGW||BGP||!navigator.geolocation)return;
+  if(GEO!=null||BGW||BGP||!navigator.geolocation)return;GPSSINCE=Date.now();
+  setTimeout(()=>{if(!GOTFIX&&S.online&&S.tab==='home'&&!J&&document.getElementById('gpsw')&&!document.querySelector('.modal'))home()},GPSGRACE+100);
   if(startNativeGeo())return;
   GEO=navigator.geolocation.watchPosition(p=>{geoFix(p.coords.latitude,p.coords.longitude,p.coords.accuracy)},
     e=>{GPSERR=e&&e.code||0;if(S.tab==='home'&&!J&&!GOTFIX&&S.online&&document.getElementById('gpsw')&&e.code===1)home();toast(L('Location அனுமதி கொடுங்க. இல்லைனா customer-க்கு உங்க வண்டி தெரியாது','Allow location so customers can see your vehicle'))},{enableHighAccuracy:true,maximumAge:0,timeout:20000});
