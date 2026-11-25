@@ -115,9 +115,10 @@ service cloud.firestore {
 
     // Nearby cars for the customer map: keyed by the driver's login id (not the phone number), no name/plate
     match /cars/{uid} {
-      allow read: if signedIn();
+      allow read: if true; // no phone number or name here, position rounded to ~110 m: visitors see the vehicles around before signing in
       allow create, update: if isDriver() && request.auth.uid == uid
-        && newData().keys().hasOnly(['lat', 'lon', 'gh', 'online', 'busy', 'veh', 'updatedAt'])
+        && newData().keys().hasOnly(['lat', 'lon', 'gh', 'online', 'on', 'busy', 'veh', 'updatedAt'])
+        && newData().get('on', false) is bool
         && num(newData().lat, -90, 90) && num(newData().lon, -180, 180)
         && newData().gh is string && newData().gh.size() <= 12
         && newData().online is bool && newData().busy is bool

@@ -169,7 +169,10 @@ test('nearby cars: any logged-in user reads; only the driver writes own login id
   await assertFails(setDoc(doc(as.drv(), 'cars', 'u-drv'), { ...car, online: 'yes' }));
   await assertSucceeds(getDocs(query(collection(as.cust(), 'cars'), where('gh', '>=', 'tf3'), where('gh', '<', 'tf3~'))));
   await assertSucceeds(getDocs(collection(as.google(), 'cars')));
-  await assertFails(getDocs(collection(as.anon(), 'cars')));
+  await assertSucceeds(getDocs(collection(as.anon(), 'cars')));                         // visitors see the vehicles around (no phone / name in cars)
+  await assertSucceeds(setDoc(doc(as.drv(), 'cars', 'u-drv'), { ...car, on: true }));    // the driver's own ON switch
+  await assertFails(setDoc(doc(as.drv(), 'cars', 'u-drv'), { ...car, on: 'yes' }));
+  await assertFails(setDoc(doc(as.anon(), 'cars', 'u-x'), { ...car, on: true }));
   await assertFails(deleteDoc(doc(as.drv2(), 'cars', 'u-drv')));
   await assertSucceeds(deleteDoc(doc(as.drv(), 'cars', 'u-drv')));
 });
