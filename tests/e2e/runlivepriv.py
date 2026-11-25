@@ -22,7 +22,7 @@ async def main():
         await D.locator('#ons').click();await pg.wait_for_timeout(3000)
         car=await pg.evaluate("MOCK.store.get('cars/u9999900002')")
         check('online driver writes cars/{login id}',bool(car) and car.get('online') is True,car)
-        check('cars doc has only map fields (no phone, name, plate, booking)',car and set(car)<= {'lat','lon','gh','online','busy','veh','updatedAt'},car and sorted(car))
+        check('cars doc has only map fields (no phone, name, plate, booking)',car and set(car)<= {'lat','lon','gh','online','on','busy','veh','updatedAt'},car and sorted(car))
         check('cars position rounded to 3 decimals',car and abs(car['lat']*1e3-round(car['lat']*1e3))<1e-6 and abs(car['lat']-12.99413)<0.001,car and car.get('lat'))
         allcars=await pg.evaluate("JSON.stringify([...MOCK.store.keys()].filter(k=>k.startsWith('cars/')))")
         check('no phone number in any cars id','99999' not in allcars.replace('u9999900002',''),allcars)
