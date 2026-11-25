@@ -74,6 +74,13 @@ async def main():
         await of.evaluate("S.sec='drv';save();show()");await pg.wait_for_timeout(1500)
         txt=await O.locator('#app').inner_text() if await O.locator('#app').count() else await of.evaluate("document.body.innerText")
         check('Office: says the app is in the background and when it last reported',('app in background' in txt or 'app பின்னணியில' in txt),txt[:80])
+        # "ON" (the driver's switch) and "signal now" (phones really reporting) are counted separately
+        c=await of.evaluate("({on:DB.drv.filter(d=>d.status!=='off').length,sig:DB.drv.filter(sigNow).length,a:sigNow(DB.drv.find(d=>d.id==='+919999900007')),hdr:(document.querySelector('.head,header,h1')||document.body).parentElement.innerText.slice(0,400),tabs:[...document.querySelectorAll('[data-df]')].map(b=>b.dataset.df+':'+b.innerText.replace(/\\s+/g,' '))})")
+        check('Office: a switched-ON driver with a silent phone is ON but not "signal now"',c['a']==False and c['sig']<c['on'],[c['on'],c['sig']])
+        check('Office: header and tabs show both numbers',('signal now '+str(c['sig']) in txt or 'இப்போ signal '+str(c['sig']) in txt) and any(t.startswith('sig:') and t.rstrip().endswith(str(c['sig'])) for t in c['tabs']),c['tabs'][:3])
+        await O.locator('[data-df=sig]').click();await pg.wait_for_timeout(800)
+        n=await O.locator('.dcard').count()
+        check('Office: "Signal now" tab lists exactly those drivers',n==c['sig'],[n,c['sig']])
         check('no page errors',not errs,errs[:2])
         await b.close()
     print('RESULT','PASS' if all(res) else 'FAIL',f'{sum(res)}/{len(res)}')

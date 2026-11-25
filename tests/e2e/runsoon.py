@@ -28,7 +28,7 @@ async def main():
         n=await now();so=await soon('sedan')
         check('busy vehicle with a drop nearby is found although the vehicle itself is far',so>0,so)
         mins=(so-n)/6e4
-        check('time = free time + drop→pickup + 3 min, rounded up to 5 min (16.. → 20)',15<mins<=20 and so%300000==0,round(mins,1))
+        check('time = free time (10) + drop→pickup (~4) + 3 min = ~17 min, rounded UP to the next 5-minute clock mark',16.5<mins<22.2 and so%300000==0,round(mins,1))
         check('other vehicle types get no promise',await soon('auto')==0)
         # 2. limits
         await cars("c('far',{fAt:t+5*6e4,flat:pu.lat+0.04,flon:pu.lon})")
@@ -42,7 +42,7 @@ async def main():
         await cars("c('free',{busy:false,fAt:t+5*6e4,flat:pu.lat+0.005,flon:pu.lon})")
         check('a vehicle that is not on a trip is never a "free soon" one',await soon('sedan')==0)
         await cars("c('a',{fAt:t+25*6e4,flat:pu.lat+0.005,flon:pu.lon});c('b',{fAt:t+8*6e4,flat:pu.lat+0.01,flon:pu.lon})")
-        n=await now();so=await soon('sedan');check('earliest of several vehicles wins',(so-n)/6e4<=20,round((so-n)/6e4,1))
+        n=await now();so=await soon('sedan');check('earliest of several vehicles wins (~15.5 min one, not the ~32 min one)',(so-n)/6e4<21,round((so-n)/6e4,1))
         # 3. fare screen row
         await cf.evaluate("S.logged=true;S.dest=Object.keys(P).find(k=>k!==S.from&&P[k].lat!=null&&hav(P[k],P[S.from])>1&&hav(P[k],P[S.from])<8);S.veh='sedan';S.when=null;fareScreen()")
         await pg.wait_for_timeout(1500);await cf.evaluate("NEARKEY='';watchNear()");await pg.wait_for_timeout(5500)
