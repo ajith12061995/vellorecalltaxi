@@ -62,6 +62,7 @@ public class RideOverlayPlugin extends Plugin {
     public void load() {
         wm = (WindowManager) getContext().getApplicationContext().getSystemService(Context.WINDOW_SERVICE);
         vib = (Vibrator) getContext().getApplicationContext().getSystemService(Context.VIBRATOR_SERVICE);
+        android.util.Log.i("RideOverlay", "load " + System.identityHashCode(this));
     }
 
     private boolean can() { return Build.VERSION.SDK_INT < 23 || Settings.canDrawOverlays(getContext()); }
@@ -84,6 +85,7 @@ public class RideOverlayPlugin extends Plugin {
     @PluginMethod
     public void online(PluginCall call) {
         online = Boolean.TRUE.equals(call.getBoolean("on", false));
+        android.util.Log.i("RideOverlay", "online " + System.identityHashCode(this) + " " + online);
         main.post(this::syncBubble);
         call.resolve();
     }
@@ -120,13 +122,13 @@ public class RideOverlayPlugin extends Plugin {
     }
 
     @Override
-    protected void handleOnResume() { super.handleOnResume(); visible = true; main.post(() -> { removeCard(); syncBubble(); }); }
+    protected void handleOnResume() { super.handleOnResume(); visible = true; android.util.Log.i("RideOverlay", "resume " + System.identityHashCode(this)); main.post(() -> { removeCard(); syncBubble(); }); }
 
     @Override
-    protected void handleOnPause() { super.handleOnPause(); visible = false; main.post(this::syncBubble); }
+    protected void handleOnPause() { super.handleOnPause(); visible = false; android.util.Log.i("RideOverlay", "pause " + System.identityHashCode(this) + " online=" + online); main.post(this::syncBubble); }
 
     @Override
-    protected void handleOnDestroy() { main.post(() -> { endRing(); removeBubble(); }); super.handleOnDestroy(); }
+    protected void handleOnDestroy() { android.util.Log.i("RideOverlay", "destroy " + System.identityHashCode(this)); main.post(() -> { endRing(); removeBubble(); }); super.handleOnDestroy(); }
 
     /* ---------- sound ---------- */
     private void startSound() {
@@ -161,6 +163,7 @@ public class RideOverlayPlugin extends Plugin {
     /* ---------- floating icon while online ---------- */
     private void syncBubble() {
         boolean want = online && !visible && can() && card == null;
+        android.util.Log.i("RideOverlay", "sync " + System.identityHashCode(this) + " online=" + online + " visible=" + visible + " card=" + (card != null) + " bubble=" + (bubble != null) + " want=" + want);
         if (want && bubble == null) showBubble(); else if (!want) removeBubble();
     }
 

@@ -71,6 +71,6 @@ adb shell input keyevent KEYCODE_HOME; sleep 4
 n=$(overlays); [ "$n" -eq 0 ] && ok "permission taken away: nothing is drawn over other apps" || bad "overlay drawn without permission ($n)"
 echo "--- report log:"; cat "$LOG"
 echo "--- windows of the app:"; adb shell dumpsys window windows 2>/dev/null | grep -E "Window\{[^}]*$PKG" | head
-echo "--- logcat:"; adb logcat -d | grep -iE "AndroidRuntime|FATAL|RideOverlay" | tail -20
+echo "--- logcat:"; adb logcat -d | grep -iE "AndroidRuntime|FATAL|RideOverlay: (load|resume|pause|destroy|sync|online)|wm_on_(create|destroy|resume|paused|stop).*velloretaxi|START u0.*velloretaxi" | tail -80
 echo "RESULT $pass passed, $fail failed"
 [ $fail -eq 0 ]
