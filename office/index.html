@@ -1355,7 +1355,9 @@ function newBooking(){
 const lastOnMs=id=>{const l=(typeof LIVE!=='undefined'&&LIVE[id])||null;return l&&l.updatedAt&&CL?CL.toMs(l.updatedAt)||0:0};
 function agoTxt(ms){const m=Math.max(0,Math.round((Date.now()-ms)/60e3));if(m<2)return L('இப்போ','just now');if(m<60)return L(`${m} நிமி முன்`,`${m} min ago`);
   const h=Math.round(m/60);if(h<24)return L(`${h} மணி முன்`,`${h} hr${h>1?'s':''} ago`);const dd=Math.round(h/24);return L(`${dd} நாள் முன்`,`${dd} day${dd>1?'s':''} ago`)}
-function lastOnLine(d){if(d.status!=='off')return `<div class="lastln on"><i class="sdot g"></i> ${L('இப்போ online-ல இருக்காரு','Online now')}</div>`;const t=lastOnMs(d.id);
+function sigTxt(ms){const m=Math.round(ms/60000);return m<60?L(`${m} நிமி முன்`,`${m} min ago`):m<1440?L(`${Math.round(m/60)} மணி முன்`,`${Math.round(m/60)} h ago`):L(`${Math.round(m/1440)} நாள் முன்`,`${Math.round(m/1440)} d ago`)}
+function lastOnLine(d){if(d.status!=='off'){const bg=d.status==='avail'&&(d.sig==null||d.sig>3*60e3);
+    return `<div class="lastln on"><i class="sdot g"></i> ${bg?L(`Online · app பின்னணியில (கடைசி signal ${d.sig==null?'இல்ல':sigTxt(d.sig)})`,`Online · app in background (last signal ${d.sig==null?'none':sigTxt(d.sig)})`):L('இப்போ online-ல இருக்காரு','Online now')}</div>`}const t=lastOnMs(d.id);
   if(!t)return `<div class="lastln never">${L('App-ல இதுவரை online வரலை','Never been online in the app')}</div>`;
   return `<div class="lastln ${Date.now()-t>3*DAY?'old':''}">${X('clock')} ${L('கடைசியா online: ','Last online: ')}<b>${agoTxt(t)}</b> <small>${fmtD(t)}</small></div>`}
 function drivers(){
@@ -2345,12 +2347,14 @@ function remap(liveOnly){
   const busy={};RAWB.forEach(b=>{if(b.driverPhone&&(b.status==='assigned'||b.status==='ontrip'))busy[b.driverPhone]=b.status});
   const wk={};RAWB.forEach(b=>{if(b.status==='done'&&b.driverPhone&&(CL.toMs(b.doneAt)||b.when||0)>now-7*864e5)wk[b.driverPhone]=(wk[b.driverPhone]||0)+1});
   const rsum={};RAWB.forEach(b=>{if(b.status==='done'&&+b.rating>0&&b.driverPhone){const x=rsum[b.driverPhone]||(rsum[b.driverPhone]={s:0,n:0});x.s+=+b.rating;x.n++}});
-  DB.drv=RAWD.map(d=>{const l=LIVE[d._id]||{};const fresh=l.updatedAt&&now-CL.toMs(l.updatedAt)<3*60e3;const online=!!(d.online&&fresh);
+  DB.drv=RAWD.map(d=>{const l=LIVE[d._id]||{};/* Online = the driver's own ON switch (drivers.online). It stays on until the driver switches off, even while the app is
+       in the background and sends no position; sig = how long ago the phone last reported, shown next to it. */
+    const sig=l.updatedAt?now-CL.toMs(l.updatedAt):null;const online=!!d.online;
     const days=k=>d.docs&&d.docs[k]?Math.round((d.docs[k]-now)/864e5):999;
     return{id:d._id,ta:d.name||d._id,en:d.name||d._id,phone:d._id.replace('+91',''),veh:d.veh||'auto',plate:d.plate||'',model:d.model||'',
       status:busy[d._id]==='ontrip'?'trip':busy[d._id]?'pickup':online?'avail':'off',lat:l.lat!=null?l.lat:P.home.lat,lon:l.lon!=null?l.lon:P.home.lon,
       wallet:+d.wallet||0,rating:rsum[d._id]?+(rsum[d._id].s/rsum[d._id].n).toFixed(1):(d.rating||5),docs:{dl:days('dl'),rc:days('rc'),ins:days('ins'),permit:days('permit'),fc:days('fc')},blocked:!!d.blocked,
-      svc:d.svc||null,prio:d.prio||'auto',year:vYear(d),wk:wk[d._id]||0}});
+      svc:d.svc||null,prio:d.prio||'auto',year:vYear(d),wk:wk[d._id]||0,sig}});
   DB.rch=[...RAWR,...RAWRP.filter(x=>!RAWR.some(y=>y._id===x._id))].filter(r=>DB.drv.some(d=>d.id===r.driverPhone)).map(r=>({id:r._id,driver:r.driverPhone,amt:+r.amt||0,utr:r.utr||'',method:r.method||'',date:r.date||CL.toMs(r.createdAt),status:r.status||'pending'})).sort((a,b)=>b.date-a.date);
   DB.sup=RAWT.map(t=>({id:'R'+t._id.slice(0,5).toUpperCase(),_id:t._id,type:t.type||'callback',cust:t.cust||'—',phone:digits(t.phone),title:t.title||{ta:'',en:''},trip:esc(t.trip||''),
     date:t.date||CL.toMs(t.createdAt),status:t.status||'open',note:t.note||'',lat:num(t.lat),lon:num(t.lon)}))
