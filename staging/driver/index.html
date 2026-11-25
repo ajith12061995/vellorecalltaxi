@@ -47,7 +47,7 @@
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('../vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV=window.VCT_V='117',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV=window.VCT_V='118',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('../version.json',location.href)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -110,7 +110,7 @@ h1,h2,h3{font-family:var(--display);margin:0;line-height:1.15;text-wrap:balance}
 .roofsign b{display:block;font-family:var(--display);font-size:30px;font-weight:800;letter-spacing:.06em}
 .roofsign span{font-family:var(--display);font-size:17px;font-weight:600}
 @keyframes pop{from{transform:scale(.6);opacity:0}}
-.xi{vertical-align:-3px;flex:none}.xbig{width:68px;height:68px;border-radius:50%;margin:0 auto 4px;display:flex;align-items:center;justify-content:center;background:var(--yellow-soft);color:var(--yellow-ink)}.welc ul{list-style:none;padding-left:0}.welc li .xi{color:#12664A;margin-right:4px}
+.xi{vertical-align:-3px;flex:none}.stayon{margin:8px 2px 0;font-size:12.5px;line-height:1.4;color:#12664A}.xbig{width:68px;height:68px;border-radius:50%;margin:0 auto 4px;display:flex;align-items:center;justify-content:center;background:var(--yellow-soft);color:var(--yellow-ink)}.welc ul{list-style:none;padding-left:0}.welc li .xi{color:#12664A;margin-right:4px}
 .welc{text-align:center;position:relative;overflow:hidden}.welc .big{font-size:54px;line-height:1;margin:4px 0 6px;animation:pop .5s ease-out}
 .welc h3{margin:0 0 6px;font-size:22px}.welc p{margin:6px 0;line-height:1.55}.welc ul{list-style:none;padding:0;margin:12px 0;text-align:left}
 .welc li{padding:7px 10px;margin:6px 0;border-radius:10px;background:rgba(11,74,54,.08);font-size:14.5px}.welc .nx{font-size:14px;margin:10px 0 14px}
@@ -658,20 +658,20 @@ a.btn{text-decoration:none}
 <div class="app" id="app"></div>
 <div class="toast" id="toast"></div>
 
-<script src="../core/report.js?v=117"></script>
-<script src="../core/geo.js?v=117"></script>
-<script src="../core/fare.js?v=117"></script>
-<script src="../core/appget.js?v=117"></script>
-<script src="../core/pin.js?v=117"></script>
-<script src="../core/clock.js?v=117"></script>
-<script src="../core/map.js?v=117"></script>
-<script src="../core/chat.js?v=117"></script>
-<script src="../core/driverchecks.js?v=117"></script>
-<script src="../core/nav.js?v=117"></script>
-<script src="../core/otp.js?v=117"></script>
-<script src="../core/deskmode.js?v=117"></script>
-<script src="../core/refer.js?v=117"></script>
-<script src="../core/weather.js?v=117"></script>
+<script src="../core/report.js?v=118"></script>
+<script src="../core/geo.js?v=118"></script>
+<script src="../core/fare.js?v=118"></script>
+<script src="../core/appget.js?v=118"></script>
+<script src="../core/pin.js?v=118"></script>
+<script src="../core/clock.js?v=118"></script>
+<script src="../core/map.js?v=118"></script>
+<script src="../core/chat.js?v=118"></script>
+<script src="../core/driverchecks.js?v=118"></script>
+<script src="../core/nav.js?v=118"></script>
+<script src="../core/otp.js?v=118"></script>
+<script src="../core/deskmode.js?v=118"></script>
+<script src="../core/refer.js?v=118"></script>
+<script src="../core/weather.js?v=118"></script>
 <script>
 /* shared with the customer app: icons, places, fares, map engine */
 /* small line icons (one stroke style everywhere; no emoji in the interface) */
@@ -782,8 +782,9 @@ const CUSTOM=['pick','drop'];
 let mapLoop=null,TK=null,REQ=null;
 const S={lang:'ta',phone:'',logged:false,pid:null,tab:'home',online:false,onSince:0};
 if(window.APPGET)APPGET.init('drv',()=>S.lang);
-try{Object.assign(S,JSON.parse(localStorage.getItem('vctd')||'{}'),{online:false,tab:'home'})}catch(e){}
-const save=()=>{try{localStorage.setItem('vctd',JSON.stringify({lang:S.lang,phone:S.phone,logged:S.logged,pid:S.pid}))}catch(e){}};
+let WASON=false; // the driver had switched ON when the app was last open → carry on online (only the driver's own OFF ends it)
+try{const sv=JSON.parse(localStorage.getItem('vctd')||'{}');WASON=!!sv.online;Object.assign(S,sv,{online:false,tab:'home'})}catch(e){}
+const save=()=>{try{localStorage.setItem('vctd',JSON.stringify({lang:S.lang,phone:S.phone,logged:S.logged,pid:S.pid,online:!!S.online}))}catch(e){}};
 const L=(ta,en)=>S.lang==='ta'?ta:en;
 const pn=k=>esc(P[k][S.lang]);
 const padr=k=>{const a=P[k]&&P[k].addr;return a&&a!==P[k][S.lang]?`<small class="muted" style="display:block;font-weight:500;text-transform:none;letter-spacing:0;font-size:12px">${esc(a)}</small>`:''}; // full address (when the booking has one) // place names may come from customers: always escaped
@@ -816,10 +817,26 @@ function go(html,after){cancelAnimationFrame(mapLoop);clearInterval(TK);clearTim
 function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(toast.h);toast.h=setTimeout(()=>el.classList.remove('show'),2600)}
 const isToday=ts=>new Date(ts).toDateString()===new Date().toDateString();
 const onMinutes=()=>Math.round((DS.onMs+(S.online?Date.now()-S.onSince:0))/6e4);
-function setOnline(v){if(v===S.online)return;if(v){S.onSince=Date.now()}else{DS.onMs+=Date.now()-S.onSince;saveDS()}S.online=v;if(CL)goLive(v);keepAwake(v)}
+function setOnline(v){if(v===S.online)return;if(v){S.onSince=Date.now()}else{DS.onMs+=Date.now()-S.onSince;saveDS()}S.online=v;save();if(CL)goLive(v);awakeTick()}
+/* Battery: the screen is held on only while it is needed — during a ride / navigation / a ringing request, or while
+   online on a phone where ride alerts cannot arrive as notifications (then an open, lit app is the only way to hear a ride). */
+let PUSHOK=false;
+function awakeWanted(){if(!S.online)return false;if(J||(typeof NAV!=='undefined'&&NAV)||(typeof REQS!=='undefined'&&REQS&&REQS.length))return true;return !!CL&&!PUSHOK}
+function awakeTick(){keepAwake(awakeWanted())}
+setInterval(awakeTick,5000);
+/* Once ON, always ON: reopening the app (or the phone closing it in the background) carries on online. Only the driver's
+   own OFF, logout, a blocked account, an expired document or a low wallet ends it — and those say why. */
+function resumeOnline(){
+  if(!CL||S.online||!DME)return;if(!(WASON||DME.onl))return;WASON=false;
+  const why=DME.blocked?L('உங்க account நிறுத்தி வைக்கப்பட்டிருக்கு. Owner-ஐ தொடர்பு கொள்ளுங்க','Your account is on hold. Contact the owner')
+    :docState().expired.length?L('காலாவதி ஆன document: ','Expired: ')+docState().expired.join(', ')
+    :(CFGD.reqConsent&&needSign())?L('ஒப்பந்தத்தை ஏத்துக்கிட்டு Online போங்க','Accept the agreement to go online')
+    :DS.wallet<MINBAL?L('Wallet குறைவு. Recharge பண்ணிட்டு Online போங்க','Wallet is low. Recharge to go online'):'';
+  if(why){F().updateDoc(F().doc(CL.db,'drivers',CL.phone),{online:false,updatedAt:ts()}).catch(()=>{});save();setTimeout(()=>toast(why),600);return}
+  setOnline(true);setTimeout(()=>toast(L('நீங்க Online-ல தொடர்றீங்க','You are still online')),600)}
 /* keep the screen on while Online, so ride requests and live location keep working */
 let WL=null;async function keepAwake(on){try{if(on&&'wakeLock' in navigator){if(!WL||WL.released){WL=await navigator.wakeLock.request('screen')}}else if(!on&&WL){await WL.release();WL=null}}catch(e){}}
-document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&S.online)keepAwake(true)});
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){awakeTick();if(CL&&S.online)pushLive(true)}});
 
 /* slide-to-confirm */
 const slider=(id,label,cls='')=>`<div class="slide ${cls}" id="${id}"><span class="slabel">${label}</span><button class="knob" aria-label="${label}">${'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h13M13 6l6 6-6 6"/></svg>'}</button></div>`;
@@ -963,7 +980,7 @@ function login(){
         S.phone=ph.value;save();
         if(CL){b.disabled=true;b.textContent=L('OTP அனுப்புது…','Sending OTP…');nat=VCTOTP.native();if(nat)nat.then(c=>{if(c&&stage&&document.body.contains(ins[0])&&!box.val())VCTOTP.fill(ins,c)});CL.sendOtp(ph.value).then(()=>{stage=1;ow.hidden=false;ph.disabled=true;b.textContent=L('சரிபார்','Verify');b.disabled=true;ins[0].focus()}).catch(er=>{VCTOTP.stop();b.disabled=false;b.textContent=L('OTP அனுப்பு','Send OTP');e.textContent=CL.errText(er,S.lang==='ta')});return}
         stage=1;ow.hidden=false;ph.disabled=true;b.textContent=L('சரிபார்','Verify');b.disabled=true;ins[0].focus();return}
-      if(CL){b.disabled=true;CL.verifyOtp(box.val()).then(async()=>{if(await loadMe()){home();if(WELC)welcomeDriver()}}).catch(er=>{b.disabled=false;e.textContent=CL.errText(er,S.lang==='ta');box.reset();b.disabled=true});return}
+      if(CL){b.disabled=true;CL.verifyOtp(box.val()).then(async()=>{if(await loadMe()){resumeOnline();home();if(WELC)welcomeDriver()}}).catch(er=>{b.disabled=false;e.textContent=CL.errText(er,S.lang==='ta');box.reset();b.disabled=true});return}
       if(box.val()!=='1234'){e.textContent=L('OTP தவறு','Wrong OTP');box.reset();b.disabled=true;return}
       S.logged=true;save();pickProfile();
     };
@@ -998,6 +1015,7 @@ function home(){
         ${CL?'':`<button class="demo" id="dreq">${L('Demo: ride request கொண்டு வா','Demo: send a ride request')}</button>`}`
       :`${signCard()}${dutyBtn(false)}`}
      ${pushReady()&&(CL.nativePush&&CL.nativePush()?!lsGet('vct_fcm'):Notification.permission==='default')?`<button class="warn" id="pushon" style="text-align:left;border:0;width:100%">${X('bell')} ${L('Phone lock ஆனாலும் ride alert வரணுமா? இங்கே தொட்டு Allow கொடுங்க','Get ride alerts even when the phone is locked: tap and Allow')}</button>`:''}
+     ${S.online&&CL?`<p class="stayon" id="stayon">${X('check',14)} ${L('நீங்க OFF பண்ற வரை Online-லயே இருப்பீங்க. App-ஐ மூடினாலும், phone பேசினாலும் Offline ஆகாது.','You stay online until you switch OFF — even if you close the app or take a call.')}</p>`:''}
      <div id="appget" hidden></div>
      ${upcHtml()}
      ${SHOW_SMGR?smgrHtml():''}
@@ -1408,7 +1426,7 @@ async function cloudBootD(){
   if(!c){if(ON_PAGES){offlineD();return true}return false}
   const u=await CL.waitUser();
   if(!u||!u.phoneNumber){login();return true}
-  if(await loadMe()){home();if(WELC)welcomeDriver()}
+  if(await loadMe()){resumeOnline();home();if(WELC)welcomeDriver()}
   return true;
 }
 async function loadMe(){
@@ -1426,7 +1444,7 @@ async function loadMe(){
 const DOCNM={dl:['ஓட்டுநர் உரிமம்','Driving licence'],rc:['RC','RC'],ins:['Insurance','Insurance'],permit:['Permit','Permit'],fc:['FC','FC']};
 function docState(){const out={expired:[],soon:[]};if(!DME||!DME.docs)return out;const now=Date.now();
   Object.entries(DME.docs).forEach(([k,t])=>{if(!t||!DOCNM[k])return;const nm=DOCNM[k][S.lang==='ta'?0:1],d=Math.ceil((t-now)/864e5);if(t<now)out.expired.push(nm);else if(d<=15)out.soon.push(`${nm} (${d} ${L('நாள்','days')})`)});return out}
-function applyMe(d){const pv=DME&&DME.veh;if(REQUNSUB&&pv&&d.veh&&pv!==d.veh){REQUNSUB();REQUNSUB=null;setTimeout(()=>{if(S.online)listenReq()},0)}DME={id:CL.phone,ta:d.name||'Driver',en:d.name||'Driver',plate:d.plate||'',model:d.model||'',veh:d.veh||'auto',rating:RATE||d.rating||5,docs:d.docs||null,blocked:!!d.blocked,upi:d.upi||'',svc:d.svc||null,prio:d.prio||'auto',year:+d.year||+((String(d.model||'').match(/\b(19|20)\d\d\b/)||[''])[0])||0,consent:d.consent||null};DS.wallet=+d.wallet||0}
+function applyMe(d){const pv=DME&&DME.veh;if(REQUNSUB&&pv&&d.veh&&pv!==d.veh){REQUNSUB();REQUNSUB=null;setTimeout(()=>{if(S.online)listenReq()},0)}DME={id:CL.phone,ta:d.name||'Driver',en:d.name||'Driver',plate:d.plate||'',model:d.model||'',veh:d.veh||'auto',rating:RATE||d.rating||5,docs:d.docs||null,blocked:!!d.blocked,upi:d.upi||'',svc:d.svc||null,prio:d.prio||'auto',year:+d.year||+((String(d.model||'').match(/\b(19|20)\d\d\b/)||[''])[0])||0,consent:d.consent||null,onl:!!d.online};DS.wallet=+d.wallet||0}
 function watchMe(){UNS.push(F().onSnapshot(F().doc(CL.db,'drivers',CL.phone),s=>{if(!s.exists())return;const before=DS.wallet;applyMe(s.data());
   if(DME.blocked&&S.online){setOnline(false);toast(L('உங்க account நிறுத்தி வைக்கப்பட்டிருக்கு','Your account is on hold'))}
   if(S.online&&!J&&docState().expired.length){setOnline(false);toast(L('ஒரு document காலாவதி ஆயிடுச்சு. Offline ஆக்கப்பட்டீங்க','A document has expired. You have been taken offline'))}
@@ -1480,7 +1498,7 @@ async function enablePush(ask){if(!pushReady())return false;
   if(!NAT&&Notification.permission!=='granted'){if(!ask)return false;if(await Notification.requestPermission()!=='granted'){toast(L('Notification அனுமதி கொடுக்கல','Notifications not allowed'));return false}}
   const t=NAT?await CL.nativePushToken():await CL.pushToken(CFGD.push.vapid,'./fcm-sw.js','./fcm/');if(!t){if(ask)toast(L('இந்த phone-ல push வேலை செய்யாது','Push is not supported on this phone'));return false}
   if(t!==localStorage.getItem('vct_fcm')){await F().updateDoc(F().doc(CL.db,'drivers',CL.phone),{fcm:t,fcmAt:ts()}).catch(()=>{});try{localStorage.setItem('vct_fcm',t)}catch(e){}}
-  if(ask){toast(L('சரி! Phone lock-லயும் ride alert வரும்','Done! Ride alerts will come even when locked'));home()}return true}
+  PUSHOK=true;if(ask){toast(L('சரி! Phone lock-லயும் ride alert வரும்','Done! Ride alerts will come even when locked'));home()}return true}
 function goLive(on){
   F().updateDoc(F().doc(CL.db,'drivers',CL.phone),{online:on,updatedAt:ts()}).catch(()=>{});
   pushLive(true);
@@ -1494,7 +1512,8 @@ function pushLive(force){
   // cars/{login id}: what every customer's "nearby" map sees — no phone number, position rounded to ~110 m
   if(CL.user&&CL.user.uid)F().setDoc(F().doc(CL.db,'cars',CL.user.uid),{lat:Math.round(POS.lat*1e3)/1e3,lon:Math.round(POS.lon*1e3)/1e3,gh,online:!!S.online,busy,veh:String(veh||''),updatedAt:ts()}).catch(()=>{});
 }
-setInterval(()=>{if(CL&&S.online)pushLive(true)},20000);
+let HBPOS=null,HBAT=0;
+setInterval(()=>{if(!CL||!S.online)return;const now=Date.now(),moved=!HBPOS||hav(HBPOS,POS)>0.03;if(J||moved||now-HBAT>=58000){HBPOS={lat:POS.lat,lon:POS.lon};HBAT=now;pushLive(true)}},20000);
 let GOTFIX=false,GPSERR=0,LASTFIX=0,POSACC=0; // real GPS received? (never publish the default Vellore point)
 function trackKm(){if(!J||!J.id||!J.b||J.b.status!=='ontrip')return;const last=J.gpsLast;J.gpsLast={lat:POS.lat,lon:POS.lon};if(!last)return;
   const d=hav(last,POS);if(d<0.02){J.gpsLast=last;return}if(d>3)return; // ignore GPS jumps
