@@ -42,7 +42,7 @@
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('./vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV=window.VCT_V='120',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV=window.VCT_V='121',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('./version.json',location.href)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -469,7 +469,7 @@ b.pos{color:var(--ok)}
 .rperks{display:flex;flex-wrap:wrap;gap:6px}.rperks span{font-size:12.5px;padding:6px 10px;border-radius:999px;background:var(--surface-2);border:1px solid var(--line)}
 .rinfo{padding:14px 16px;border-radius:16px;background:var(--surface-2);border:1px solid var(--line);font-size:13.5px;line-height:1.5;color:var(--muted)}.rinfo b{color:var(--fg)}
 .rhead{display:flex;align-items:center;gap:10px}.rhead h3{margin:0;font-size:18px;flex:1}.rhead .ib{width:32px;height:32px;border-radius:50%;border:1px solid var(--line);background:var(--surface);font-weight:700;color:var(--navy)}
-.veh.off .vi,.veh.off b,.veh.off .price{opacity:.5}.veh .na{color:var(--danger);font-weight:600}
+.veh.off .vi,.veh.off b,.veh.off .price{opacity:.5}.veh .na{color:var(--danger);font-weight:600}.veh .soon{color:#8A5A00;font-weight:600}.veh .soon .xi{vertical-align:-2px}
 .xi{vertical-align:-3px;flex:none}.xbig{width:68px;height:68px;border-radius:50%;margin:0 auto 4px;display:flex;align-items:center;justify-content:center;background:var(--yellow-soft);color:var(--yellow-ink)}.xbig.bad{background:#FDECEC;color:var(--danger)}.rperks span{display:inline-flex;align-items:center;gap:5px}
 .vtag{display:inline-block;font-size:11px;font-weight:700;padding:3px 8px;border-radius:8px;margin-top:4px;background:var(--navy);color:#fff}.vtag.y{background:var(--yellow);color:#0B4A36}
 :root[data-theme="dark"] .vtag:not(.y){color:#0A1712}
@@ -555,18 +555,18 @@ details.faq p{margin:0;padding:0 14px 14px;color:var(--muted);font-size:14px;lin
 <div class="app" id="app"></div>
 <div class="toast" id="toast"></div>
 
-<script src="./core/report.js?v=120"></script>
-<script src="./core/funnel.js?v=120"></script>
-<script src="./core/geo.js?v=120"></script>
-<script src="./core/fare.js?v=120"></script>
-<script src="./core/appget.js?v=120"></script>
-<script src="./core/pin.js?v=120"></script>
-<script src="./core/clock.js?v=120"></script>
-<script src="./core/map.js?v=120"></script>
-<script src="./core/chat.js?v=120"></script>
-<script src="./core/otp.js?v=120"></script>
-<script src="./core/deskmode.js?v=120"></script>
-<script src="./core/weather.js?v=120"></script>
+<script src="./core/report.js?v=121"></script>
+<script src="./core/funnel.js?v=121"></script>
+<script src="./core/geo.js?v=121"></script>
+<script src="./core/fare.js?v=121"></script>
+<script src="./core/appget.js?v=121"></script>
+<script src="./core/pin.js?v=121"></script>
+<script src="./core/clock.js?v=121"></script>
+<script src="./core/map.js?v=121"></script>
+<script src="./core/chat.js?v=121"></script>
+<script src="./core/otp.js?v=121"></script>
+<script src="./core/deskmode.js?v=121"></script>
+<script src="./core/weather.js?v=121"></script>
 <script>
 /* ---------- icons ---------- */
 /* small line icons (one stroke style everywhere; no emoji in the interface) */
@@ -876,7 +876,17 @@ function vrowHtml(on='now'){
   const vt=(attr,veh,badge,label,on)=>`<button class="vt${on?' on':''}" ${attr}><span class="im">${I[veh].replace('width="58" height="36"','width="96" height="58"')}${badge?`<i class="vb"><svg viewBox="0 0 24 24" width="14" height="14">${VBADGE[badge]}</svg></i>`:''}</span><b>${label}</b></button>`;
   return `<div class="vrow" role="list">${svc.map(([k,v,b,l],i)=>vt(`data-svc="${k}"`,v,b,l,k===on)).join('')}<span class="vsep"></span>${VEH.map(v=>vt(`data-veh="${v.id}"`,v.id,'',v[S.lang].replace(' கார்','').replace(' car',''),false)).join('')}</div>`;
 }
-let NEAR=[],NEARUNSUB=null,NEARKEY='';
+let NEAR=[],NEARUNSUB=null,NEARKEY='',FSOON=[];
+/* When no vehicle of this type is free near the pickup: the earliest time one that is finishing a trip close by can reach the customer.
+   Counted only if its drop is within 3 km of the pickup and its phone reported in the last 3 minutes.
+   Time = when it becomes free (the driver app's estimate) + drop → pickup (x1.35 for roads, 20 km/h) + 3 min, rounded UP to the next 5 minutes.
+   Nothing is shown when that is more than 45 minutes away. Returns 0 when there is nothing to promise. */
+const SOONKM=3,SOONMAX=45*6e4;
+function soonAt(vid,pu){pu=pu||P[S.from];if(!pu||pu.lat==null)return 0;const now=Date.now();let best=0;
+  FSOON.forEach(d=>{if(d.veh!==vid||now-d.at>3*6e4||d.fAt<now-5*6e4)return;const km=hav(d,pu);if(km>SOONKM)return;
+    const at=Math.max(d.fAt,now)+Math.round((km*1.35/20*60+3)*6e4);if(at-now>SOONMAX)return;if(!best||at<best)best=at});
+  return best?Math.ceil(best/3e5)*3e5:0}
+function freeNear(vid,pu){pu=pu||P[S.from];return NEAR.some(n=>n.veh===vid&&hav(n,pu)<=NEARKM)}
 /* only drivers in the 3x3 block of ~5 km map cells around the pickup are read (not every driver everywhere) */
 function watchNear(){if(!CL)return; /* also for visitors who have not signed in yet: they see the vehicles around before booking */const c=P[S.from]||P.home;if(!c||c.lat==null)return;
   const cells=VGEO.cells(c.lat,c.lon),key=cells.join(',');if(key===NEARKEY&&NEARUNSUB)return;
@@ -889,6 +899,11 @@ function watchNear(){if(!CL)return; /* also for visitors who have not signed in 
     const nb=document.getElementById('nbc');if(nb){nb.hidden=!NEAR.length;nb.lastChild.textContent=` ${NEAR.length} ${t('nearby')}`}};
   const uns=cells.map(cell=>F().onSnapshot(F().query(F().collection(CL.db,'cars'),F().where('gh','>=',cell),F().where('gh','<',cell+'~')),
     s=>{per[cell]=s.docs.map(d=>({id:d.id,...d.data()}));draw()},()=>{}));
+  /* vehicles finishing a trip around here ("free soon"): found by the drop area, because the vehicle itself may still be far away */
+  const sper={};FSOON=[];
+  cells.forEach(cell=>uns.push(F().onSnapshot(F().query(F().collection(CL.db,'cars'),F().where('fgh','>=',cell),F().where('fgh','<',cell+'~')),
+    s=>{sper[cell]=s.docs.map(d=>({id:d.id,...d.data()}));const seen={};FSOON=Object.values(sper).flat().filter(d=>!seen[d.id]&&(seen[d.id]=1)&&d.busy&&d.fAt>0&&d.flat!=null&&d.flon!=null)
+      .map(d=>({id:d.id,veh:d.veh||'car',fAt:+d.fAt,lat:+d.flat,lon:+d.flon,at:CL.toMs(d.updatedAt)}))},()=>{})));
   NEARUNSUB=()=>{uns.forEach(u=>{try{u()}catch(e){}});NEARUNSUB=null;NEARKEY=''};}
 function home(mode){
   try{window.VCTF&&VCTF('home')}catch(e){}
@@ -1002,7 +1017,8 @@ function vehRows(r,mins){
   const VL=vlist(),av={};VL.forEach(v=>av[v.id]=vAvail(v));
   const live=VL.filter(v=>av[v.id].ok&&av[v.id].live),fast=live.length?live.reduce((a,v)=>av[v.id].eta<av[a.id].eta?v:a,live[0]).id:null;
   return VL.map(v=>{const f=fare(v,r.km),a=av[v.id];
-    const sub=a.ok&&a.eta==null?`<span class="seek">${S.logged?L('Book பண்ணா அருகில் உள்ள driver-ஐ தேடுவோம்','Book and we’ll find a nearby driver'):L('~'+mins+' நிமிட பயணம்','~'+mins+' min ride')}</span>`:a.ok?`${a.eta} ${t('away')} · Drop ${timeLabel(Date.now()+(a.eta+mins)*6e4)}`:`<span class="na">${L(`இப்போ அருகில் ${v.ta} இல்லை`,`No ${v.en} nearby right now`)}</span>`;
+    const so=CL&&!S.when&&!ADV.includes(v.id)&&a.ok&&a.eta==null&&!freeNear(v.id)?soonAt(v.id):0;
+    const sub=so?`<span class="soon" data-soon="${v.id}">${X('clock',12)} ${L(`இப்போ ${v.ta} எல்லாம் பயணத்துல இருக்கு · சுமார் ${timeLabel(so)}-க்கு மேல கிடைக்கும்`,`All ${v.en}s are on trips · one should be free after about ${timeLabel(so)}`)}</span>`:a.ok&&a.eta==null?`<span class="seek">${S.logged?L('Book பண்ணா அருகில் உள்ள driver-ஐ தேடுவோம்','Book and we’ll find a nearby driver'):L('~'+mins+' நிமிட பயணம்','~'+mins+' min ride')}</span>`:a.ok?`${a.eta} ${t('away')} · Drop ${timeLabel(Date.now()+(a.eta+mins)*6e4)}`:`<span class="na">${L(`இப்போ அருகில் ${v.ta} இல்லை`,`No ${v.en} nearby right now`)}</span>`;
     return `<button class="veh ${S.veh===v.id?'sel':''} ${a.ok?'':'off'}" data-v="${v.id}"><span class="vi">${I[v.id]}</span>
      <div><b>${v[S.lang]} <span class="muted" style="font-family:var(--body);font-size:13px;font-weight:600">· ${v.seats} ${t('seats')}</span></b><small>${sub}</small>${v.id===fast?`<span class="vtag">${X('bolt',12)} ${L('வேகமா வரும்','Fastest')}</span>`:''}</div>
      <span class="price"><b>₹${f}</b></span></button>`}).join('');
@@ -2334,6 +2350,7 @@ function sorrySheet(reason){if(document.getElementById('sorry'))return;if(reason
     modal(`<div id="sorry" class="xbig">${X('info',34)}</div><h3 style="text-align:center">${L('மன்னிச்சிருங்க','We’re really sorry')}</h3>
       <p style="margin:0;line-height:1.55">${L('இப்போ உங்க பகுதியில வண்டி கிடைக்கலை. Vellore Taxi இப்போ தான் ஆரம்பிச்சிருக்கோம் — இது ஆரம்பம் தான். தினமும் புது வண்டிகள் சேர்ந்துகிட்டு இருக்கு, இனிமே கண்டிப்பா நல்லா கிடைக்கும். இப்போதைக்கு எங்களை மன்னிச்சிருங்க.','No vehicle is free near you right now. Vellore Taxi has only just started — this is just the beginning. New vehicles are joining every day, and it will get much better soon. Please forgive us for now.')}</p>
       <p class="muted" style="margin:0;line-height:1.5;font-size:13.5px">${L('உங்க booking ரத்து ஆயிடுச்சு, கட்டணம் எதுவும் இல்லை. எங்க office-க்கு தகவல் போயிருக்கு — வண்டி ஏற்பாடு பண்ண முடிஞ்சா உங்களை அழைப்பாங்க.','Your booking was cancelled at no charge. Our office has been told and will call you if they can arrange a vehicle.')}</p>
+      ${(()=>{const so=nb&&nb.veh&&CL?soonAt(nb.veh,nb.from&&P[nb.from]):0;return so?`<p id="sorrysoon" style="margin:0;line-height:1.5;font-weight:600">${X('clock',14)} ${L(`பக்கத்துல ஒரு வண்டி பயணத்தை முடிக்கப் போகுது. சுமார் ${timeLabel(so)}-க்கு மேல மறுபடி முயற்சி பண்ணுங்க.`,`A vehicle nearby is finishing a trip. Please try again after about ${timeLabel(so)}.`)}</p>`:''})()}
       ${nb?`<button class="btn yellow" id="srb">${X('repeat',18)} ${L('மறுபடி தேடு','Search again')}${nb.tip?` · ₹${nb.tip} tip`:''}</button>`:''}
       ${CFG.office?`<a class="btn ghost" href="tel:+91${CFG.office}">${X('phone',18)} ${L('Office-ஐ அழை','Call our office')}</a>`:''}<button class="btn ghost" id="sok">${L('சரி','OK')}</button>`,(m,close)=>{
       m.querySelector('#sok').onclick=()=>{close();if(S.tab==='home'&&!R)home()};

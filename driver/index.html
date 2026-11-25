@@ -47,7 +47,7 @@
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('../vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV=window.VCT_V='120',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV=window.VCT_V='121',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('../version.json',location.href)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -658,20 +658,20 @@ a.btn{text-decoration:none}
 <div class="app" id="app"></div>
 <div class="toast" id="toast"></div>
 
-<script src="../core/report.js?v=120"></script>
-<script src="../core/geo.js?v=120"></script>
-<script src="../core/fare.js?v=120"></script>
-<script src="../core/appget.js?v=120"></script>
-<script src="../core/pin.js?v=120"></script>
-<script src="../core/clock.js?v=120"></script>
-<script src="../core/map.js?v=120"></script>
-<script src="../core/chat.js?v=120"></script>
-<script src="../core/driverchecks.js?v=120"></script>
-<script src="../core/nav.js?v=120"></script>
-<script src="../core/otp.js?v=120"></script>
-<script src="../core/deskmode.js?v=120"></script>
-<script src="../core/refer.js?v=120"></script>
-<script src="../core/weather.js?v=120"></script>
+<script src="../core/report.js?v=121"></script>
+<script src="../core/geo.js?v=121"></script>
+<script src="../core/fare.js?v=121"></script>
+<script src="../core/appget.js?v=121"></script>
+<script src="../core/pin.js?v=121"></script>
+<script src="../core/clock.js?v=121"></script>
+<script src="../core/map.js?v=121"></script>
+<script src="../core/chat.js?v=121"></script>
+<script src="../core/driverchecks.js?v=121"></script>
+<script src="../core/nav.js?v=121"></script>
+<script src="../core/otp.js?v=121"></script>
+<script src="../core/deskmode.js?v=121"></script>
+<script src="../core/refer.js?v=121"></script>
+<script src="../core/weather.js?v=121"></script>
 <script>
 /* shared with the customer app: icons, places, fares, map engine */
 /* small line icons (one stroke style everywhere; no emoji in the interface) */
@@ -1512,8 +1512,15 @@ function pushLive(force){
   // live/{phone}: exact position, read only by the office, this driver and the customer of the ride in bk
   F().setDoc(F().doc(CL.db,'live',CL.phone),{lat:POS.lat,lon:POS.lon,gh,online:!!S.online,busy,bk:busy?String(J.id):'',veh,updatedAt:ts()}).catch(()=>{});
   // cars/{login id}: what every customer's "nearby" map sees — no phone number, position rounded to ~110 m
-  if(CL.user&&CL.user.uid)F().setDoc(F().doc(CL.db,'cars',CL.user.uid),{lat:Math.round(POS.lat*1e3)/1e3,lon:Math.round(POS.lon*1e3)/1e3,gh,online:!!S.online,on:!!S.online,busy,veh:String(veh||''),updatedAt:ts()}).catch(()=>{}); // on = the driver's own switch: customers see the vehicle until the driver switches OFF ("online" is cleared by the server when the phone goes quiet)
+  if(CL.user&&CL.user.uid)F().setDoc(F().doc(CL.db,'cars',CL.user.uid),{lat:Math.round(POS.lat*1e3)/1e3,lon:Math.round(POS.lon*1e3)/1e3,gh,online:!!S.online,on:!!S.online,busy,veh:String(veh||''),...freeSoon(now),updatedAt:ts()}).catch(()=>{}); // on = the driver's own switch: customers see the vehicle until the driver switches OFF ("online" is cleared by the server when the phone goes quiet)
 }
+/* "Free soon": while a local trip is running (customer on board), tell the customer app roughly when and where this vehicle becomes free,
+   so a customer who finds no free vehicle can be shown "available after about 7:30". Only the drop AREA goes out (rounded to ~1 km), never the address.
+   Time left = straight line to the drop x 1.3 (roads) at 20 km/h, + 2 min to finish and take payment. Rental / outstation trips are left out: their end time is not known. */
+function freeSoon(now){try{const b=J&&J.id&&J.b;if(!S.online||!b||b.status!=='ontrip'||b.kind==='rental'||b.kind==='outstation')return{};
+  const d=P.drop;if(!d||d.lat==null||d.lon==null||!GOTFIX)return{};
+  const flat=Math.round(d.lat*100)/100,flon=Math.round(d.lon*100)/100,km=hav(POS,d)*1.3;
+  return{fAt:now+Math.round((km*3+2)*60e3),flat,flon,fgh:VGEO.gh(flat,flon)}}catch(e){return{}}}
 let HBPOS=null,HBAT=0;
 setInterval(()=>{if(!CL||!S.online)return;const now=Date.now(),moved=!HBPOS||hav(HBPOS,POS)>0.03;if(J||moved||now-HBAT>=58000){HBPOS={lat:POS.lat,lon:POS.lon};HBAT=now;pushLive(true)}},20000);
 let GOTFIX=false,GPSERR=0,LASTFIX=0,POSACC=0; // real GPS received? (never publish the default Vellore point)

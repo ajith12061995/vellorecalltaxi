@@ -167,6 +167,14 @@ test('nearby cars: any logged-in user reads; only the driver writes own login id
   await assertFails(setDoc(doc(as.drv(), 'cars', 'u-drv'), { ...car, name: 'Ravi' }));
   await assertFails(setDoc(doc(as.drv(), 'cars', 'u-drv'), { ...car, lat: 200 }));
   await assertFails(setDoc(doc(as.drv(), 'cars', 'u-drv'), { ...car, online: 'yes' }));
+  // "free soon" fields while a local trip is running
+  await assertSucceeds(setDoc(doc(as.drv(), 'cars', 'u-drv'), { ...car, busy: true, fAt: Date.now() + 6e5, flat: 12.95, flon: 79.13, fgh: 'tf238tk' }));
+  await assertFails(setDoc(doc(as.drv(), 'cars', 'u-drv'), { ...car, fAt: 'soon' }));
+  await assertFails(setDoc(doc(as.drv(), 'cars', 'u-drv'), { ...car, fAt: 1, flat: 500, flon: 79.13, fgh: 'x' }));
+  await assertFails(setDoc(doc(as.drv(), 'cars', 'u-drv'), { ...car, fAt: 1, flat: 12.95, flon: 79.13, fgh: 'x'.repeat(13) }));
+  await assertFails(setDoc(doc(as.drv(), 'cars', 'u-drv'), { ...car, fAt: 1, dropAddr: 'CMC' }));
+  await assertSucceeds(setDoc(doc(as.drv(), 'cars', 'u-drv'), car));
+  await assertSucceeds(getDocs(query(collection(as.anon(), 'cars'), where('fgh', '>=', 'tf2'), where('fgh', '<', 'tf2~'))));
   await assertSucceeds(getDocs(query(collection(as.cust(), 'cars'), where('gh', '>=', 'tf3'), where('gh', '<', 'tf3~'))));
   await assertSucceeds(getDocs(collection(as.google(), 'cars')));
   await assertSucceeds(getDocs(collection(as.anon(), 'cars')));                         // visitors see the vehicles around (no phone / name in cars)

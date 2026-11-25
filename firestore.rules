@@ -117,8 +117,12 @@ service cloud.firestore {
     match /cars/{uid} {
       allow read: if true; // no phone number or name here, position rounded to ~110 m: visitors see the vehicles around before signing in
       allow create, update: if isDriver() && request.auth.uid == uid
-        && newData().keys().hasOnly(['lat', 'lon', 'gh', 'online', 'on', 'busy', 'veh', 'updatedAt'])
+        && newData().keys().hasOnly(['lat', 'lon', 'gh', 'online', 'on', 'busy', 'veh', 'updatedAt', 'fAt', 'flat', 'flon', 'fgh'])
         && newData().get('on', false) is bool
+        // "free soon" (only while a local trip is running): estimated time the vehicle becomes free + the drop AREA rounded to ~1 km
+        && newData().get('fAt', 0) is number
+        && num(newData().get('flat', 0), -90, 90) && num(newData().get('flon', 0), -180, 180)
+        && newData().get('fgh', '') is string && newData().get('fgh', '').size() <= 12
         && num(newData().lat, -90, 90) && num(newData().lon, -180, 180)
         && newData().gh is string && newData().gh.size() <= 12
         && newData().online is bool && newData().busy is bool
