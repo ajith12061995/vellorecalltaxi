@@ -49,7 +49,7 @@
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('../vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV=window.VCT_V='125',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV=window.VCT_V='126',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('../version.json',location.href)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -93,7 +93,7 @@ button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
 button:focus-visible,input:focus-visible{outline:3px solid var(--yellow);outline-offset:2px}
 .app{position:relative;height:100%;max-width:440px;margin:0 auto;background:var(--surface);overflow:hidden}
 @media (min-width:520px){.app{height:calc(100% - 32px);margin-block:16px;border-radius:28px;box-shadow:var(--shadow);border:1px solid var(--line)}}
-.screen{position:absolute;inset:0;display:flex;flex-direction:column;background:var(--surface);animation:in .32s ease both}
+.screen{position:absolute;inset:0;display:flex;flex-direction:column;background:var(--surface);animation:in .32s ease both}.screen.noin{animation:none}
 @keyframes in{from{opacity:.4;transform:translateY(10px)}to{opacity:1;transform:none}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 .pad{padding-left:max(18px,env(safe-area-inset-left,0px));padding-right:max(18px,env(safe-area-inset-right,0px))}
@@ -660,20 +660,20 @@ a.btn{text-decoration:none}
 <div class="app" id="app"><section class="screen" id="splash"><div class="roofsign"><b>TAXI</b><span>வேலூர் டாக்ஸி</span></div><span class="drvtag">DRIVER</span><div class="road"></div><div class="tag">Vellore Taxi · Driver</div></section></div>
 <div class="toast" id="toast"></div>
 
-<script src="../core/report.js?v=125"></script>
-<script src="../core/geo.js?v=125"></script>
-<script src="../core/fare.js?v=125"></script>
-<script src="../core/appget.js?v=125"></script>
-<script src="../core/pin.js?v=125"></script>
-<script src="../core/clock.js?v=125"></script>
-<script src="../core/map.js?v=125"></script>
-<script src="../core/chat.js?v=125"></script>
-<script src="../core/driverchecks.js?v=125"></script>
-<script src="../core/nav.js?v=125"></script>
-<script src="../core/otp.js?v=125"></script>
-<script src="../core/deskmode.js?v=125"></script>
-<script src="../core/refer.js?v=125"></script>
-<script src="../core/weather.js?v=125"></script>
+<script src="../core/report.js?v=126"></script>
+<script src="../core/geo.js?v=126"></script>
+<script src="../core/fare.js?v=126"></script>
+<script src="../core/appget.js?v=126"></script>
+<script src="../core/pin.js?v=126"></script>
+<script src="../core/clock.js?v=126"></script>
+<script src="../core/map.js?v=126"></script>
+<script src="../core/chat.js?v=126"></script>
+<script src="../core/driverchecks.js?v=126"></script>
+<script src="../core/nav.js?v=126"></script>
+<script src="../core/otp.js?v=126"></script>
+<script src="../core/deskmode.js?v=126"></script>
+<script src="../core/refer.js?v=126"></script>
+<script src="../core/weather.js?v=126"></script>
 <script>
 /* shared with the customer app: icons, places, fares, map engine */
 /* small line icons (one stroke style everywhere; no emoji in the interface) */
@@ -815,7 +815,8 @@ let POS={lat:P.home.lat+.003,lon:P.home.lon-.002};
 let J=null; // active job
 
 const app=document.getElementById('app');
-function go(html,after){cancelAnimationFrame(mapLoop);clearInterval(TK);clearTimeout(REQ);app.innerHTML=html;after&&after();if(window.APPGET)APPGET.paint()}
+let NOANIM=false; // redrawing the screen that is already showing (live data came in): no entry animation, so it does not blink
+function go(html,after){cancelAnimationFrame(mapLoop);clearInterval(TK);clearTimeout(REQ);app.innerHTML=html;if(NOANIM){NOANIM=false;const sc=app.querySelector('.screen');if(sc)sc.classList.add('noin')}after&&after();if(window.APPGET)APPGET.paint()}
 function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(toast.h);toast.h=setTimeout(()=>el.classList.remove('show'),2600)}
 const isToday=ts=>new Date(ts).toDateString()===new Date().toDateString();
 const onMinutes=()=>Math.round((DS.onMs+(S.online?Date.now()-S.onSince:0))/6e4);
@@ -1010,7 +1011,7 @@ function bindNav(){app.querySelectorAll('.nav button').forEach(b=>b.onclick=()=>
 
 /* ---------- home ---------- */
 function home(){
-  S.tab='home';const d=me(),today=DS.trips.filter(x=>isToday(x.date)),net=today.reduce((a,x)=>a+x.net,0);const low=DS.wallet<MINBAL;
+  NOANIM=!!(document.getElementById('ons')||document.getElementById('offs'));S.tab='home';const d=me(),today=DS.trips.filter(x=>isToday(x.date)),net=today.reduce((a,x)=>a+x.net,0);const low=DS.wallet<MINBAL;
   go(shell(`<div class="mapwrap"><canvas class="map" id="map"></canvas>
      <div class="topbar"><button class="chipbtn menub" id="menu" aria-label="Menu">${X('menu',20)}${unread()?'<i class="mdot"></i>':''}</button><button class="tpill" id="tpill"><span class="stdot ${S.online?'on':''}"></span><b>${today.length} ${L('trips','trips')}</b><span>${inr(net)}</span><i>›</i></button><div style="flex:1"></div>
        <button class="chipbtn ${low?'lowbal':''}" id="wb">${I.navWallet.replace('<svg ','<svg width="18" height="18" ')} ${inr(DS.wallet)}</button></div>

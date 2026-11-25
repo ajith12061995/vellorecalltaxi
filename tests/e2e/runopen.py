@@ -91,6 +91,11 @@ async def main():
         await df.evaluate("geoFix(12.9165,79.1325,10)");await pg.wait_for_timeout(600)
         g=await df.evaluate("({w:!!document.getElementById('gpsw'),t:document.querySelector('.liveCard')&&document.querySelector('.liveCard').innerText.replace(/\\s+/g,' ')})")
         check('GPS arrives: warning gone, normal "waiting for ride requests"',not g['w'] and 'Waiting for ride requests' in (g['t'] or ''),g)
+        # live data redraws home: no entry animation (it blinked in the 25 Nov recording); a new screen still animates
+        a1=await df.evaluate("(()=>{home();const sc=document.querySelector('#app .screen');return getComputedStyle(sc).animationName})()")
+        a2=await df.evaluate("(()=>{S.tab='earn';document.querySelector('[data-tab=earn],[data-t=earn],.nav button:nth-child(2)').click();const sc=document.querySelector('#app .screen');return getComputedStyle(sc).animationName})()")
+        a3=await df.evaluate("(()=>{home();const sc=document.querySelector('#app .screen');return getComputedStyle(sc).animationName})()")
+        check('home redrawn in place: no blink; other screens and coming back to home still animate',a1=='none' and a2=='in' and a3=='in',[a1,a2,a3])
         check('no page errors (GPS)',not ge,ge[:2]);await b.close()
         # Office on a phone with "Desktop site" on
         async def office(desk,touch=True,screen=(360,800),vp=None):
