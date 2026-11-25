@@ -4,7 +4,7 @@
 /* Helper for putting Vellore Taxi's own post images into the Meta Business Suite composer: embedded by that tab,
    it reads the image from this site and posts it to that tab (only to the Business Suite origin). */
 (async()=>{const s=document.getElementById('s');
-  try{const n=new URLSearchParams(location.search).get('n')==='2'?'2':'1';
+  try{const q=new URLSearchParams(location.search).get('n'),n=/^[1-6]$/.test(q||'')?q:'1';
     const tgt=window.parent!==window?window.parent:null;if(!tgt)throw new Error('no parent');
     const r=await fetch('./promo/vct-post'+n+'.png',{cache:'no-store'});if(!r.ok)throw new Error('HTTP '+r.status);
     const f=new File([await r.blob()],'vellore-taxi-post'+n+'.png',{type:'image/png'});
