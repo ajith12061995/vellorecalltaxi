@@ -4,7 +4,7 @@
 #  - a signed-in driver's home waits for Maps at most 3 s (they load while the sign-in is checked)
 #  - no network at start → "You are offline" with Try again, never the "not a driver" / joining page
 #  - Office on a phone whose browser has "Desktop site" on comes up in the phone layout (core/phonefit.js)
-import asyncio, os, re
+import asyncio, os, re, json
 from playwright.async_api import async_playwright
 E=os.path.dirname(os.path.abspath(__file__));R=os.path.dirname(os.path.dirname(E));O=os.path.join(E,'out')
 B='http://localhost:8765/tests/e2e/out/'
@@ -25,7 +25,7 @@ INIT="""if(location.pathname.endsWith('/dk.html')){window.SEEN={};window.MM=[];
  const look=()=>{const a=document.getElementById('app');if(!a)return;const k=document.getElementById('splash')?'splash':a.querySelector('#ons,#offs')?'home':a.querySelector('#ph')?'login':a.querySelector('#rl')?'offline':'other';if(!(k in SEEN))SEEN[k]=Math.round(performance.now())};
  new MutationObserver(look).observe(document,{childList:true,subtree:true});
  addEventListener('DOMContentLoaded',()=>{window.SEEN.dcl=Math.round(performance.now());window.makeMap=function(cv,o){MM.push(GMAP());return makeCanvasMap(cv,o)}})}"""
-async def run(p,maps_ms,down=False):
+async def run(p,maps_ms,down=False,extra='',slowms=1500,stored=None,evaljs=None,wait=None):
     b=await p.chromium.launch();ctx=await b.new_context(viewport={'width':1900,'height':880},geolocation={'latitude':12.9165,'longitude':79.1325},permissions=['geolocation'])
     pg=await ctx.new_page();errs=[];pg.on('pageerror',lambda e:errs.append(str(e)))
     await pg.add_init_script(INIT)
@@ -36,14 +36,16 @@ async def run(p,maps_ms,down=False):
         await route.fulfill(content_type='text/javascript',body='window.google={maps:{Map:function(){}}};window.%s&&window.%s();'%(cb,cb))
     await pg.route('https://maps.googleapis.com/**',maps)
     async def slow(route):   # the app's own scripts arrive late, like on a weak mobile network
-        await asyncio.sleep(1.5);await route.continue_()
+        await asyncio.sleep(slowms/1000);await route.continue_()
     await pg.route('**/core/report.js*',slow)
-    pre="const mk=makeApi;window.makeApi=()=>{const a=mk();a.sendOtp('9999900002');a.verifyOtp('123456');return a};"+("MOCK.down=true;" if down else "")
+    pre="const mk=makeApi;window.makeApi=()=>{const a=mk();a.sendOtp('9999900002');a.verifyOtp('123456');return a};"+("MOCK.down=true;" if down else "")+extra
     await pg.add_init_script("if(location.pathname.endsWith('/harness_k.html'))addEventListener('DOMContentLoaded',()=>{"+pre+"})")
-    await pg.add_init_script("if(location.pathname.endsWith('/dk.html'))try{localStorage.setItem('vctd',JSON.stringify({lang:'ta',logged:true,pid:'cloud',phone:'9999900002'}))}catch(e){}")
-    await pg.goto(B+'harness_k.html');await pg.wait_for_timeout(max(4800,(maps_ms or 0)+1500))
+    STORED=json.dumps(stored or {'lang':'ta','logged':True,'pid':'cloud','phone':'9999900002'})
+    await pg.add_init_script("if(location.pathname.endsWith('/dk.html'))try{localStorage.setItem('vctd',JSON.stringify("+STORED+"))}catch(e){}")
+    await pg.goto(B+'harness_k.html');await pg.wait_for_timeout(wait or max(4800,(maps_ms or 0)+1500))
     df=pg.frame(url=B+'dk.html')
-    r=await df.evaluate("({seen:SEEN,mm:MM,ready:typeof GMAP==='function'&&GMAP(),url:location.pathname})")
+    r=await df.evaluate("({seen:SEEN,mm:MM,ready:typeof GMAP==='function'&&GMAP(),url:location.pathname,gmap:!!document.querySelector('.gmap')})")
+    if evaljs:r['x']=await pg.evaluate(evaljs) if evaljs.startswith('H:')==False else None
     await b.close();return r,errs
 async def main():
     async with async_playwright() as p:
@@ -52,11 +54,27 @@ async def main():
         check('logo screen is on screen before the page\'s scripts have finished (a script held back 1.5 s)',s.get('splash',9e9)<s.get('dcl',0)-800,s)
         check('Maps 1 s: home right after the page\'s own scripts (held 1.5 s), on Google\'s map',900<=s.get('home',0)<3000 and r['mm'][:1]==[True],[s,r['mm']])
         r,e2=await run(p,6000)
-        check('Maps very slow: home 3 s after opening (not 3 s after sign-in) on the built-in map; Google map ready for later screens',2900<=r['seen'].get('home',0)<3900 and r['mm'][:1]==[False] and r['ready'],r)
+        check('Maps very slow (6 s): home does not wait for it (by ~2.6 s) on the built-in map',r['seen'].get('home',9e9)<2600 and r['mm'][:1]==[False],r)
+        check('… and home switches to Google\'s map by itself when it arrives (home redrawn with it)',r['ready'] and r['mm'][:1]==[False] and True in r['mm'],r['mm'])
         r,e3=await run(p,None)
-        check('Maps blocked: home without the 3 s wait',r['seen'].get('home',9e9)<2900 and r['mm'][:1]==[False],r)
-        r,e4=await run(p,300,down=True)
-        check('no network at start: "You are offline" + Try again, still on the driver page',('offline' in r['seen']) and 'home' not in r['seen'] and r['url'].endswith('/dk.html'),r)
+        check('Maps blocked: home without waiting',r['seen'].get('home',9e9)<2600 and r['mm'][:1]==[False],r)
+        r,e4=await run(p,300,down=True,extra='MOCK.nocache=true;')
+        check('no network and nothing saved on the phone: "You are offline" + Try again, still on the driver page',('offline' in r['seen']) and 'home' not in r['seen'] and r['url'].endswith('/dk.html'),r)
+        r,e5=await run(p,300,down=True)
+        check('no network but the phone has the driver\'s saved copy: home opens anyway',('home' in r['seen']) and 'offline' not in r['seen'],r)
+        # saved copy vs server: the server delays every read 1.5 s; home must not wait for it
+        r,e6=await run(p,300,extra='MOCK.delay=1500;',slowms=200)
+        check('slow network (1.5 s per server read): home from the saved copy without waiting for the server',r['seen'].get('home',9e9)<1500,r['seen'])
+        r,e7=await run(p,300,extra='MOCK.delay=1500;MOCK.nocache=true;',slowms=200)
+        check('… first open on this phone (no saved copy): waits for the server read, as before',r['seen'].get('home',0)>=1500,r['seen'])
+        # the saved copy is out of date: wallet was fine, the server says it is now below the minimum → taken offline with a message
+        stale="MOCK.store.set('config/app',{comm:0,minbal:100});MOCK.cache={'drivers/+919999900002':{...MOCK.store.get('drivers/+919999900002'),wallet:500,online:true}};MOCK.store.set('drivers/+919999900002',{...MOCK.store.get('drivers/+919999900002'),wallet:40,online:true});"
+        r,e8=await run(p,300,extra=stale,slowms=200,stored={'lang':'en','logged':True,'pid':'cloud','phone':'9999900002','online':True},evaljs="(()=>{const f=[...document.querySelectorAll('iframe')].find(x=>/dk\\.html/.test(x.src)).contentWindow;return {on:f.eval('S.online'),db:MOCK.store.get('drivers/+919999900002').online,toast:f.document.getElementById('toast').textContent}})()")
+        check('saved copy out of date (wallet now low): the live record takes the driver offline, says why',r['x']['on']==False and r['x']['db']==False and 'Wallet' in r['x']['toast'],r['x'])
+        gone="MOCK.cache={'drivers/+919999900002':MOCK.store.get('drivers/+919999900002')};MOCK.store.delete('drivers/+919999900002');"
+        r,e9=await run(p,300,extra=gone,slowms=200,evaljs="(()=>{const f=[...document.querySelectorAll('iframe')].find(x=>/dk\\.html/.test(x.src)).contentWindow;return {txt:f.document.getElementById('app').innerText.slice(0,120),dme:f.eval('DME')}})()")
+        check('driver removed by the office since the last open: the live record shows "not registered"',r['x']['dme'] is None and ('not registered' in r['x']['txt'] or 'சேர்க்கப்படல' in r['x']['txt']),r['x'])
+        e4=e4+e5+e6+e7+e8+e9
         check('no page errors',not (e+e2+e3+e4),(e+e2+e3+e4)[:2])
         # GPS has not answered yet: a calm "finding your location" line first, the red warning only after 10 s
         b=await p.chromium.launch();ctx=await b.new_context(viewport={'width':1900,'height':880})

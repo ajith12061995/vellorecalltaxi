@@ -49,7 +49,7 @@
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('../vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV=window.VCT_V='124',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV=window.VCT_V='125',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('../version.json',location.href)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -660,20 +660,20 @@ a.btn{text-decoration:none}
 <div class="app" id="app"><section class="screen" id="splash"><div class="roofsign"><b>TAXI</b><span>வேலூர் டாக்ஸி</span></div><span class="drvtag">DRIVER</span><div class="road"></div><div class="tag">Vellore Taxi · Driver</div></section></div>
 <div class="toast" id="toast"></div>
 
-<script src="../core/report.js?v=124"></script>
-<script src="../core/geo.js?v=124"></script>
-<script src="../core/fare.js?v=124"></script>
-<script src="../core/appget.js?v=124"></script>
-<script src="../core/pin.js?v=124"></script>
-<script src="../core/clock.js?v=124"></script>
-<script src="../core/map.js?v=124"></script>
-<script src="../core/chat.js?v=124"></script>
-<script src="../core/driverchecks.js?v=124"></script>
-<script src="../core/nav.js?v=124"></script>
-<script src="../core/otp.js?v=124"></script>
-<script src="../core/deskmode.js?v=124"></script>
-<script src="../core/refer.js?v=124"></script>
-<script src="../core/weather.js?v=124"></script>
+<script src="../core/report.js?v=125"></script>
+<script src="../core/geo.js?v=125"></script>
+<script src="../core/fare.js?v=125"></script>
+<script src="../core/appget.js?v=125"></script>
+<script src="../core/pin.js?v=125"></script>
+<script src="../core/clock.js?v=125"></script>
+<script src="../core/map.js?v=125"></script>
+<script src="../core/chat.js?v=125"></script>
+<script src="../core/driverchecks.js?v=125"></script>
+<script src="../core/nav.js?v=125"></script>
+<script src="../core/otp.js?v=125"></script>
+<script src="../core/deskmode.js?v=125"></script>
+<script src="../core/refer.js?v=125"></script>
+<script src="../core/weather.js?v=125"></script>
 <script>
 /* shared with the customer app: icons, places, fares, map engine */
 /* small line icons (one stroke style everywhere; no emoji in the interface) */
@@ -828,14 +828,16 @@ function awakeTick(){keepAwake(awakeWanted())}
 setInterval(awakeTick,5000);
 /* Once ON, always ON: reopening the app (or the phone closing it in the background) carries on online. Only the driver's
    own OFF, logout, a blocked account, an expired document or a low wallet ends it — and those say why. */
-function resumeOnline(){
-  if(!CL||S.online||!DME)return;if(!(WASON||DME.onl))return;WASON=false;
-  const why=DME.blocked?L('உங்க account நிறுத்தி வைக்கப்பட்டிருக்கு. Owner-ஐ தொடர்பு கொள்ளுங்க','Your account is on hold. Contact the owner')
+// why this driver may not be online right now ('' = fine)
+function resumeWhy(){return DME.blocked?L('உங்க account நிறுத்தி வைக்கப்பட்டிருக்கு. Owner-ஐ தொடர்பு கொள்ளுங்க','Your account is on hold. Contact the owner')
     :docState().expired.length?L('காலாவதி ஆன document: ','Expired: ')+docState().expired.join(', ')
     :(CFGD.reqConsent&&needSign())?L('ஒப்பந்தத்தை ஏத்துக்கிட்டு Online போங்க','Accept the agreement to go online')
-    :DS.wallet<MINBAL?L('Wallet குறைவு. Recharge பண்ணிட்டு Online போங்க','Wallet is low. Recharge to go online'):'';
+    :DS.wallet<MINBAL?L('Wallet குறைவு. Recharge பண்ணிட்டு Online போங்க','Wallet is low. Recharge to go online'):''}
+function resumeOnline(){
+  if(!CL||S.online||!DME)return;if(!(WASON||DME.onl))return;WASON=false;
+  const why=resumeWhy();
   if(why){F().updateDoc(F().doc(CL.db,'drivers',CL.phone),{online:false,updatedAt:ts()}).catch(()=>{});save();setTimeout(()=>toast(why),600);return}
-  setOnline(true);setTimeout(()=>toast(L('நீங்க Online-ல தொடர்றீங்க','You are still online')),600)}
+  setOnline(true);setTimeout(()=>{if(S.online)toast(L('நீங்க Online-ல தொடர்றீங்க','You are still online'))},600)}
 /* keep the screen on while Online, so ride requests and live location keep working */
 let WL=null;async function keepAwake(on){try{if(on&&'wakeLock' in navigator){if(!WL||WL.released){WL=await navigator.wakeLock.request('screen')}}else if(!on&&WL){await WL.release();WL=null}}catch(e){}}
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){awakeTick();if(CL&&S.online)pushLive(true)}});
@@ -961,8 +963,10 @@ function splash(){
   // the sign-in check already loads in the background; show the logo briefly (was a fixed 1.5 s)
   setTimeout(async()=>{if(await cloudBootD())return;if(S.logged&&S.pid){await mapsWait();home()}else login()},450);
 }
-// Google Maps loads in the background: the first map waits for it until 3 s after the app was opened (after that the built-in map is used)
-const mapsWait=(ms=3000)=>Promise.race([window.MAPS_READY||Promise.resolve(false),new Promise(r=>setTimeout(()=>r(false),Math.max(0,ms-performance.now())))]);
+// Google Maps loads in the background: the first map waits for it until 1.5 s after the app was opened (then the built-in map; home switches to Google's map when it arrives)
+const mapsWait=(ms=1500)=>Promise.race([window.MAPS_READY||Promise.resolve(false),new Promise(r=>setTimeout(()=>r(false),Math.max(0,ms-performance.now())))]);
+// Google's map arrived after home was drawn with the built-in map: redraw home once (only when nothing else is open)
+(window.MAPS_READY||Promise.resolve(false)).then(ok=>{if(!ok)return;setTimeout(()=>{try{if(S.tab==='home'&&!J&&!SHOWING&&!document.querySelector('.modal')&&(document.getElementById('ons')||document.getElementById('offs'))&&!document.querySelector('.gmap'))home()}catch(e){}},50)});
 function login(){
   go(`<section class="screen"><div class="hero pad"><img src="./icon-192.png" alt="" style="width:84px;height:84px;border-radius:20px;display:block;margin-bottom:12px;box-shadow:0 4px 14px rgba(0,0,0,.15)" onerror="this.remove()"><span class="mini">VCT DRIVER</span><h1>${L('வணக்கம் Driver!','Welcome, driver!')}</h1>
     <p>${L('உங்க நம்பர்ல login பண்ணுங்க. புது driver-னா சேர்வதற்கான form வரும்','Log in with your number. New drivers will see the sign-up form')}</p>
@@ -1435,9 +1439,15 @@ async function cloudBootD(){
   if(await loadMe()){await mapsWait();resumeOnline();home();if(WELC)welcomeDriver()}
   return true;
 }
+/* Opening the app: the driver's record is taken from the phone's own copy (Firestore offline cache) so home shows at
+   once; the live record follows a moment later through watchMe, which re-checks everything (ME_CACHED). The first open
+   on a phone, or an empty cache, reads from the server as before. */
+let ME_CACHED=false;
 async function loadMe(){
-  let s=null;try{s=await F().getDoc(F().doc(CL.db,'drivers',CL.phone))}catch(e){offlineD();return false} // no network at start: say so (it used to treat a failed read as "not a driver" and open the joining page)
-  if(!s||!s.exists()){notDriver();return false}
+  let s=null;ME_CACHED=false;
+  if(F().getDocFromCache){try{const c=await F().getDocFromCache(F().doc(CL.db,'drivers',CL.phone));if(c&&c.exists()){s=c;ME_CACHED=true}}catch(e){}}
+  if(!s){try{s=await F().getDoc(F().doc(CL.db,'drivers',CL.phone))}catch(e){offlineD();return false} // no network at start: say so (it used to treat a failed read as "not a driver" and open the joining page)
+    if(!s||!s.exists()){notDriver();return false}}
   applyMe(s.data());S.phone=(CL.phone||'').replace('+91','');S.logged=true;S.pid='cloud';save();
   WELC=welcomeDue(s.data());
   DS={wallet:DS.wallet,tx:[],trips:[],pending:[],onMs:0,onDay:new Date().toDateString()};
@@ -1451,7 +1461,10 @@ const DOCNM={dl:['ஓட்டுநர் உரிமம்','Driving licence'
 function docState(){const out={expired:[],soon:[]};if(!DME||!DME.docs)return out;const now=Date.now();
   Object.entries(DME.docs).forEach(([k,t])=>{if(!t||!DOCNM[k])return;const nm=DOCNM[k][S.lang==='ta'?0:1],d=Math.ceil((t-now)/864e5);if(t<now)out.expired.push(nm);else if(d<=15)out.soon.push(`${nm} (${d} ${L('நாள்','days')})`)});return out}
 function applyMe(d){const pv=DME&&DME.veh;if(REQUNSUB&&pv&&d.veh&&pv!==d.veh){REQUNSUB();REQUNSUB=null;setTimeout(()=>{if(S.online)listenReq()},0)}DME={id:CL.phone,ta:d.name||'Driver',en:d.name||'Driver',plate:d.plate||'',model:d.model||'',veh:d.veh||'auto',rating:RATE||d.rating||5,docs:d.docs||null,blocked:!!d.blocked,upi:d.upi||'',svc:d.svc||null,prio:d.prio||'auto',year:+d.year||+((String(d.model||'').match(/\b(19|20)\d\d\b/)||[''])[0])||0,consent:d.consent||null,onl:!!d.online};DS.wallet=+d.wallet||0}
-function watchMe(){UNS.push(F().onSnapshot(F().doc(CL.db,'drivers',CL.phone),s=>{if(!s.exists())return;const before=DS.wallet;applyMe(s.data());
+function watchMe(){UNS.push(F().onSnapshot(F().doc(CL.db,'drivers',CL.phone),s=>{const live=!(s.metadata&&s.metadata.fromCache);
+  if(!s.exists()){if(live&&ME_CACHED){ME_CACHED=false;if(S.online)setOnline(false);stopAllD();DME=null;notDriver()}return}
+  const before=DS.wallet;applyMe(s.data());
+  if(live&&ME_CACHED){ME_CACHED=false;if(S.online&&!J){const why=resumeWhy();if(why){setOnline(false);F().updateDoc(F().doc(CL.db,'drivers',CL.phone),{online:false,updatedAt:ts()}).catch(()=>{});setTimeout(()=>toast(why),700);if(S.tab==='home'&&!document.querySelector('.modal'))home()}}}
   if(DME.blocked&&S.online){setOnline(false);toast(L('உங்க account நிறுத்தி வைக்கப்பட்டிருக்கு','Your account is on hold'))}
   if(S.online&&!J&&docState().expired.length){setOnline(false);toast(L('ஒரு document காலாவதி ஆயிடுச்சு. Offline ஆக்கப்பட்டீங்க','A document has expired. You have been taken offline'))}
   if(!J&&!document.querySelector('.modal')){if(S.tab==='wallet'&&before!==DS.wallet)walletTab();else if(S.tab==='home'&&(document.getElementById('ons')||(document.getElementById('ons')||document.getElementById('offs'))))home()}},()=>{}))}

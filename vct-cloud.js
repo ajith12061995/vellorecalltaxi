@@ -6,7 +6,7 @@ import {
   GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult,
 } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
 import {
-  getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager, doc, getDoc, getDocs, setDoc, updateDoc, addDoc, deleteDoc,
+  getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager, doc, getDoc, getDocFromCache, getDocs, setDoc, updateDoc, addDoc, deleteDoc,
   collection, query, where, orderBy, limit, onSnapshot, serverTimestamp, increment, runTransaction, writeBatch,
 } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 import { firebaseConfig, VCT_ENV, APPCHECK_SITE_KEY } from './firebase-config.js';
@@ -89,7 +89,7 @@ const api = {
     return r.data;
   },
   auth, db,
-  fs: { doc, getDoc, getDocs, setDoc, updateDoc, addDoc, deleteDoc, collection, query, where, orderBy, limit, onSnapshot, serverTimestamp, increment, runTransaction, writeBatch },
+  fs: { doc, getDoc, getDocFromCache, getDocs, setDoc, updateDoc, addDoc, deleteDoc, collection, query, where, orderBy, limit, onSnapshot, serverTimestamp, increment, runTransaction, writeBatch },
   toMs,
   get user() { return auth.currentUser; },
   get phone() { return auth.currentUser ? auth.currentUser.phoneNumber : null; },

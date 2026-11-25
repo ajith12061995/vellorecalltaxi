@@ -44,7 +44,7 @@
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('./vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV=window.VCT_V='124',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV=window.VCT_V='125',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('./version.json',location.href)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -471,7 +471,7 @@ b.pos{color:var(--ok)}
 .rperks{display:flex;flex-wrap:wrap;gap:6px}.rperks span{font-size:12.5px;padding:6px 10px;border-radius:999px;background:var(--surface-2);border:1px solid var(--line)}
 .rinfo{padding:14px 16px;border-radius:16px;background:var(--surface-2);border:1px solid var(--line);font-size:13.5px;line-height:1.5;color:var(--muted)}.rinfo b{color:var(--fg)}
 .rhead{display:flex;align-items:center;gap:10px}.rhead h3{margin:0;font-size:18px;flex:1}.rhead .ib{width:32px;height:32px;border-radius:50%;border:1px solid var(--line);background:var(--surface);font-weight:700;color:var(--navy)}
-.veh.off .vi,.veh.off b,.veh.off .price{opacity:.5}.veh .na{color:var(--danger);font-weight:600}.veh .soon{color:#8A5A00;font-weight:600}.veh .soon .xi{vertical-align:-2px}
+.veh.off .vi,.veh.off b,.veh.off .price{opacity:.5}.veh .na{color:var(--danger);font-weight:600}.nearon{display:flex;width:fit-content;align-items:center;gap:6px;margin:4px 0 2px;padding:3px 10px;border-radius:999px;background:#E6F2EC;color:#12664A;font-size:12.5px;font-weight:600}.veh .soon{color:#8A5A00;font-weight:600}.veh .soon .xi{vertical-align:-2px}
 .xi{vertical-align:-3px;flex:none}.xbig{width:68px;height:68px;border-radius:50%;margin:0 auto 4px;display:flex;align-items:center;justify-content:center;background:var(--yellow-soft);color:var(--yellow-ink)}.xbig.bad{background:#FDECEC;color:var(--danger)}.rperks span{display:inline-flex;align-items:center;gap:5px}
 .vtag{display:inline-block;font-size:11px;font-weight:700;padding:3px 8px;border-radius:8px;margin-top:4px;background:var(--navy);color:#fff}.vtag.y{background:var(--yellow);color:#0B4A36}
 :root[data-theme="dark"] .vtag:not(.y){color:#0A1712}
@@ -557,18 +557,18 @@ details.faq p{margin:0;padding:0 14px 14px;color:var(--muted);font-size:14px;lin
 <div class="app" id="app"></div>
 <div class="toast" id="toast"></div>
 
-<script src="./core/report.js?v=124"></script>
-<script src="./core/funnel.js?v=124"></script>
-<script src="./core/geo.js?v=124"></script>
-<script src="./core/fare.js?v=124"></script>
-<script src="./core/appget.js?v=124"></script>
-<script src="./core/pin.js?v=124"></script>
-<script src="./core/clock.js?v=124"></script>
-<script src="./core/map.js?v=124"></script>
-<script src="./core/chat.js?v=124"></script>
-<script src="./core/otp.js?v=124"></script>
-<script src="./core/deskmode.js?v=124"></script>
-<script src="./core/weather.js?v=124"></script>
+<script src="./core/report.js?v=125"></script>
+<script src="./core/funnel.js?v=125"></script>
+<script src="./core/geo.js?v=125"></script>
+<script src="./core/fare.js?v=125"></script>
+<script src="./core/appget.js?v=125"></script>
+<script src="./core/pin.js?v=125"></script>
+<script src="./core/clock.js?v=125"></script>
+<script src="./core/map.js?v=125"></script>
+<script src="./core/chat.js?v=125"></script>
+<script src="./core/otp.js?v=125"></script>
+<script src="./core/deskmode.js?v=125"></script>
+<script src="./core/weather.js?v=125"></script>
 <script>
 /* ---------- icons ---------- */
 /* small line icons (one stroke style everywhere; no emoji in the interface) */
@@ -1297,8 +1297,24 @@ function safetySheet(){
     m.querySelector('#shr').onclick=()=>{close();shareTrip()};
   });
 }
+/* While we are still looking for a driver, the first minute is too early to call it "late": drivers need a few
+   seconds to see the alert, unlock the phone and accept. In that minute the first Cancel tap asks once whether
+   the customer can wait (25 Nov: every booking that week was cancelled after 9–53 s, before any driver could answer). */
+const searchSecs=()=>R&&R.phase==='search'?(Date.now()-(R.t0||Date.now()))/1000:Infinity;
+const WAITMIN=60;
+function cancelAsk(){
+  const s=searchSecs();if(!(s<WAITMIN)||R.waitAsked)return cancelSheet();
+  R.waitAsked=true;const left=Math.max(5,Math.ceil(WAITMIN-s));
+  modal(`<div class="xbig">${X('clock',34)}</div><h3 style="text-align:center">${L('இன்னும் கொஞ்சம் காத்திருக்கலாமா?','Can you wait a little longer?')}</h3>
+    <p style="margin:0;line-height:1.55">${L('Driver-க்கு உங்க request போய், அவர் phone-ல பார்த்து ஏத்துக்க கொஞ்ச நேரம் ஆகும். இன்னும் '+left+' நொடி பொறுத்தா driver பதில் சொல்ல நேரம் கிடைக்கும்.','Your request has gone to drivers; they need a moment to see it on their phone and accept. Waiting another '+left+' seconds gives them time to answer.')}</p>
+    <button class="btn yellow" id="wok">${L('சரி, காத்திருக்கேன்','OK, I will wait')}</button>
+    <button class="btn ghost" id="wno">${L('இல்ல, ரத்து பண்ணணும்','No, I want to cancel')}</button>`,(m,close)=>{
+    m.querySelector('#wok').onclick=()=>{close();toast(L('சரி! Driver-ஐ தேடிட்டே இருக்கோம்','Great! Still looking for your driver'))};
+    m.querySelector('#wno').onclick=()=>{close();setTimeout(cancelSheet,50)}});
+}
 function cancelSheet(){
-  const rs=S.lang==='ta'?['Driver ரொம்ப லேட்','Plan மாறிடுச்சு','Pickup இடம் தப்பு','தவறா book பண்ணிட்டேன்','வேற காரணம்']:['Driver is taking too long','Change of plans','Wrong pickup point','Booked by mistake','Other reason'];
+  const early=searchSecs()<WAITMIN;
+  const rs=(S.lang==='ta'?['Driver ரொம்ப லேட்','Plan மாறிடுச்சு','Pickup இடம் தப்பு','தவறா book பண்ணிட்டேன்','வேற காரணம்']:['Driver is taking too long','Change of plans','Wrong pickup point','Booked by mistake','Other reason']).filter((r,i)=>!(early&&i===0));
   modal(`<h3>${L('ஏன் ரத்து பண்றீங்க?','Why are you cancelling?')}</h3>
     ${rs.map((r,i)=>`<button class="reason" data-i="${i}"><i class="radio"></i>${r}</button>`).join('')}
     <div class="note">${L('Driver வர்றதுக்கு முன்னாடி ரத்து செய்தா கட்டணம் இல்லை.','No charge if you cancel before the driver arrives.')}</div>
@@ -2216,12 +2232,15 @@ async function enablePushC(ask){if(!pushReadyC()||!CUID)return false;
   if(ask)toast(L('சரி! Driver வந்ததும் phone-க்கு alert வரும்','Done! You will get an alert when the driver comes'));return true}
 const pushAskHtml=()=>pushReadyC()&&(CL.nativePush&&CL.nativePush()?!lsGet('vct_cfcm'):Notification.permission==='default')?`<div class="pushask" id="pushask"><span>${X('bell')} ${L('Driver கிடைச்சதும், வந்ததும் phone-க்கு alert வேணுமா?','Get an alert when the driver is found and arrives?')}</span><button class="chip" id="pushon">${L('ஆமா','Yes')}</button></div>`:'';
 function bindPushAsk(){const b=document.getElementById('pushon');if(b)b.onclick=async()=>{const ok=await enablePushC(true);const w=document.getElementById('pushask');if(w&&(ok||(CL.nativePush&&CL.nativePush())||Notification.permission!=='default'))w.remove()}}
+// drivers of this vehicle type that are switched ON within 4 km of the pickup (from the nearby-vehicles listener)
+function nearOn(vid,pu){try{return NEAR.filter(n=>n.veh===vid&&hav(n,pu)<=NEARKM).length}catch(e){return 0}}
 function searchingCloud(){
   R.phase='search';const pu={lat:R.b.from.lat,lon:R.b.from.lon};
   go(`<section class="screen"><div class="mapwrap"><canvas class="map" id="map"></canvas><div class="radar"><i></i><i></i><i></i></div>
      <div class="topbar"><div class="greet"><small>${R.fromName[S.lang]}</small><b>→ ${R.destName[S.lang]}</b></div></div></div>
    <div class="sheet ride-sheet pad"><div class="grab"></div>
      <div class="searchrow"><span class="vi">${I[R.v.id]}</span><div><h3>${L('Driver-ஐ தேடுறோம்…','Finding your driver…')}</h3>
+       ${(()=>{const n=nearOn(R.v.id,pu);return n?`<div class="nearon" id="nearon">${X('user',14)} ${L(`அருகில் ${n} ${R.v.ta} driver ON-ல இருக்காங்க`,`${n} ${R.v.en} driver${n>1?'s':''} ON near you`)}</div>`:''})()}
        <small class="muted" id="sst">${R.rebooked?L('முந்தைய driver ரத்து செஞ்சார். மன்னிக்கவும் — வேற driver-ஐ தேடுறோம்…','Your previous driver cancelled. Sorry — finding another driver…'):L(`அருகில் இருக்கிற ${R.v.ta} drivers-க்கும் எங்க office-க்கும் request போயிடுச்சு`,`Request sent to nearby ${R.v.en} drivers and our office`)}</small></div></div>
      <div class="bar"><i style="animation-duration:60s"></i></div>
      <div class="rounds" id="rounds">${[1,2,3].map(i=>`<i data-r="${i}"></i>`).join('')}<span id="rlbl"></span></div>
@@ -2231,7 +2250,7 @@ function searchingCloud(){
      ${pushAskHtml()}${stopsHtml()}
      <button class="btn ghost" id="cxs">${L('Booking-ஐ ரத்து செய்','Cancel booking')}</button></div></section>`,()=>{
     const m=makeMap(document.getElementById('map'),{cars:true,pins:[{...pu,col:'#1E8A5A'}],hide:CUSTOM});m.setView(pu.lat,pu.lon,32000);bindPushAsk();
-    document.getElementById('cxs').onclick=cancelSheet;
+    document.getElementById('cxs').onclick=cancelAsk;
     app.querySelectorAll('[data-boost]').forEach(b=>b.onclick=()=>{const add=+b.dataset.boost,v=Math.min(TIPMAX,(R.boost||0)+add);if(v<=(R.boost||0)){toast(L(`அதிகபட்ச tip ₹${TIPMAX}`,`Maximum tip is ₹${TIPMAX}`));return}
       R.boost=v;F().updateDoc(F().doc(CL.db,'bookings',R.id),{tip:v,updatedAt:F().serverTimestamp()}).catch(e=>toast(CL.errText(e,S.lang==='ta')));
       const tn=document.getElementById('tipnow');if(tn)tn.innerHTML=tipNowTxt();b.classList.add('pop');setTimeout(()=>b.classList.remove('pop'),400);

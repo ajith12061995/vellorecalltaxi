@@ -29,6 +29,8 @@
     where:(f,op,v)=>({w:[f,op,v]}),orderBy:(f,dir)=>({o:[f,dir||'asc']}),limit:n=>({l:n}),
     serverTimestamp:()=>({__ts:true}),increment:n=>({__inc:n}),
     async getDoc(r){return snapDoc(r.path)},
+    // the phone's own copy (Firestore offline cache): works with no network; MOCK.nocache = empty cache; MOCK.cache[path] = an older copy
+    async getDocFromCache(r){if(window.MOCK&&MOCK.nocache)throw{code:'unavailable',message:'not in cache'};if(window.MOCK&&MOCK.cache&&r.path in MOCK.cache){const d=MOCK.cache[r.path];return{id:r.path.split('/').pop(),exists:()=>d!=null,data:()=>clone(d)}}return snapDoc(r.path)},
     async getDocs(q){return runQuery(q.type==='coll'?{path:q.path}:q)},
     async setDoc(r,d,o){write(r.path,d,o&&o.merge);notify()},
     async updateDoc(r,d){if(!store.has(r.path))throw{code:'not-found'};if(window.MOCK&&MOCK.denyUpdate&&MOCK.denyUpdate(r.path,d))throw{code:'permission-denied'};write(r.path,d,true);notify()},
