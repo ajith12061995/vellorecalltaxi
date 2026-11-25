@@ -50,6 +50,21 @@ waitlog '^take={"action":"accept","id":"ride42"}' 20 && ok "app came to the fron
 sleep 2
 has_text "New ride!" && bad "card still on screen after Accept" || ok "card is gone after Accept"
 adb exec-out screencap -p > "$OUT/ovl-3-after.png" 2>/dev/null
+# 26 Nov (owner's report): the icon came the first time the app was left, but not again after going back in and out.
+# The driver goes in and out several times: by tapping the icon, from the launcher, and from the recent-apps list.
+dens=$(adb shell wm density | grep -o '[0-9]*' | tail -1); ix=$(( (6+26)*dens/160 )); iy=$(( (220+26)*dens/160 ))
+for k in 1 2 3 4; do
+  adb shell input keyevent KEYCODE_HOME; sleep 3
+  n=$(overlays); [ "$n" -ge 1 ] && ok "round $k: icon back over the home screen after leaving the app again" || { bad "round $k: NO icon after leaving the app again"; adb logcat -d | grep -i RideOverlay | tail -5; }
+  [ $k -eq 2 ] && adb exec-out screencap -p > "$OUT/ovl-4-again.png" 2>/dev/null
+  case $k in
+    1) adb shell input tap $ix $iy; how="tapping the icon";;
+    2) adb shell am start -n $PKG/.MainActivity >/dev/null; how="the launcher";;
+    3) adb shell input keyevent KEYCODE_APP_SWITCH; sleep 2; adb shell input keyevent KEYCODE_APP_SWITCH; how="recent apps";;
+    4) adb shell monkey -p $PKG -c android.intent.category.LAUNCHER 1 >/dev/null 2>&1; how="the app icon";;
+  esac
+  sleep 3; n=$(overlays); [ "$n" -eq 0 ] && ok "round $k: back in the app ($how): icon hidden" || bad "round $k: icon still drawn inside the app ($n) after $how"
+done
 # without the permission nothing may be drawn
 adb shell appops set $PKG SYSTEM_ALERT_WINDOW deny
 adb shell input keyevent KEYCODE_HOME; sleep 4
