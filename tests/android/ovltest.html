@@ -1,0 +1,19 @@
+<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width">
+<title>Overlay test</title><body style="font:20px sans-serif;padding:20px">
+<div id="st">overlay test…</div>
+<script>
+// CI test page for the Android RideOverlay plugin (tests/android/ovl-emulator.sh). It behaves like the driver page:
+// tells the plugin "online", and 12 s later (the script has put the app in the background by then) asks it to ring.
+// A 1-second ticker is reported too, so the log shows whether this page keeps running while the app is in the background.
+const st=document.getElementById('st');const rep=(k,v)=>fetch('/report?'+k+'='+encodeURIComponent(v)).catch(()=>{});
+const C=window.Capacitor,call=(m,o)=>C.nativePromise('RideOverlay',m,o||{});
+let n=0;setInterval(()=>{n++;if(n%3===0)rep('tick',n+':'+document.visibilityState)},1000);
+(async()=>{
+  try{const s=await call('status');rep('status',JSON.stringify(s));
+    await call('online',{on:true});rep('online','sent');
+    setTimeout(async()=>{try{await call('ring',{id:'ride42',title:'New ride!',line1:'Katpadi Junction → CMC Hospital',line2:'Pickup 1.2 km · trip 4.8 km',fare:'₹130',accept:'Accept',open:'View',secs:40});rep('ring','sent:'+document.visibilityState)}catch(e){rep('ring','ERR '+e)}},12000);
+  }catch(e){rep('status','ERR '+e)}
+})();
+document.addEventListener('visibilitychange',async()=>{rep('vis',document.visibilityState);
+  if(document.visibilityState==='visible'){try{const t=await call('take');rep('take',JSON.stringify(t));st.textContent='TAKE:'+JSON.stringify(t);if(t&&t.action)await call('stop')}catch(e){rep('take','ERR '+e)}}});
+</script>

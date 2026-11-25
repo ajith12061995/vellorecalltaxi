@@ -1,0 +1,47 @@
+name: android-ovl
+# Emulator test of the RideOverlay plugin (ride card + floating icon over other apps, driver app). Debug build pointed
+# at a local test page; the real apps are built by android.yml. Runs on pushes to the android-ovl-test branch and by hand.
+on:
+  push:
+    branches: [android-ovl-test]
+  workflow_dispatch:
+jobs:
+  emulator:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: '21' }
+      - uses: actions/setup-node@v4
+        with: { node-version: '22' }
+      - name: Debug driver app → test page on the runner (10.0.2.2:8080)
+        working-directory: mobile/driver
+        run: |
+          node -e "const f='capacitor.config.json',j=require('./'+f);j.server.url='http://10.0.2.2:8080/tests/android/ovltest.html';j.server.cleartext=true;j.server.allowNavigation=['10.0.2.2'];require('fs').writeFileSync(f,JSON.stringify(j,null,2)+'\n')"
+          npm ci --no-audit --no-fund && npx cap sync android
+          sed -i 's/<application\b/<application android:usesCleartextTraffic="true"/' android/app/src/main/AndroidManifest.xml
+          grep -c usesCleartextTraffic android/app/src/main/AndroidManifest.xml
+          cd android && chmod +x gradlew && ./gradlew --no-daemon assembleDebug
+      - name: Test server
+        run: nohup python3 tests/android/server.py "$PWD" "$RUNNER_TEMP/report.log" > "$RUNNER_TEMP/server.log" 2>&1 &
+      - name: KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules && sudo udevadm trigger --name-match=kvm
+      - name: Emulator test
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          target: google_apis
+          arch: x86_64
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          script: mkdir -p "$RUNNER_TEMP/shots" && bash tests/android/ovl-emulator.sh mobile/driver/android/app/build/outputs/apk/debug/app-debug.apk "$RUNNER_TEMP/report.log" "$RUNNER_TEMP/shots"
+      - name: Screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: overlay-screens
+          path: ${{ runner.temp }}/shots
+          if-no-files-found: ignore
