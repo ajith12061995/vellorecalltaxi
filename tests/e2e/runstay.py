@@ -81,6 +81,11 @@ async def main():
         await O.locator('[data-df=sig]').click();await pg.wait_for_timeout(800)
         n=await O.locator('.dcard').count()
         check('Office: "Signal now" tab lists exactly those drivers',n==c['sig'],[n,c['sig']])
+        # fleet map: real positions only; a phone that has not reported for a while is grey with how long ago
+        await of.evaluate("(()=>{S.sec='today';save();show()})()");await pg.wait_for_timeout(1200)
+        fp=await of.evaluate("(()=>{const pts=FLEETPTS(),by=id=>{const d=DB.drv.find(x=>x.id===id);return d?pts.find(p=>p.label.startsWith(d.plate.slice(-4))):null};return {n:pts.length,on:DB.drv.filter(d=>d.status!=='off').length,nopos:DB.drv.filter(d=>d.status!=='off'&&!d.hasPos).length,silent:by('+919999900007'),grey:pts.filter(p=>p.col==='#9AA5A0').map(p=>p.label)}})()")
+        check('Office map: drivers with no position are not drawn at the office',fp['n']==fp['on']-fp['nopos'],fp)
+        check('Office map: the silent phone is grey with how long ago it reported',fp['silent'] is not None and fp['silent']['col']=='#9AA5A0' and '·' in fp['silent']['label'],fp['silent'])
         check('no page errors',not errs,errs[:2])
         await b.close()
     print('RESULT','PASS' if all(res) else 'FAIL',f'{sum(res)}/{len(res)}')
