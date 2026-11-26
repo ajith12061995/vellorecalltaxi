@@ -8,12 +8,18 @@
 const st=document.getElementById('st');const rep=(k,v)=>fetch('/report?'+k+'='+encodeURIComponent(v)).catch(()=>{});
 const C=window.Capacitor,call=(m,o)=>C.nativePromise('RideOverlay',m,o||{});
 let n=0;setInterval(()=>{n++;if(n%3===0)rep('tick',n+':'+document.visibilityState)},1000);
+// boot = how many times this page has started (the app is reopened by DutyService after being swiped away / killed)
+let boot=1;try{boot=(+localStorage.getItem('boot')||0)+1;localStorage.setItem('boot',boot)}catch(e){}
 (async()=>{
-  try{const s=await call('status');rep('status',JSON.stringify(s));
+  try{rep('boot',boot);const s=await call('status');rep('status',JSON.stringify(s));
     await call('online',{on:true});rep('online','sent');
-    setTimeout(async()=>{try{await call('ring',{id:'ride42',title:'New ride!',line1:'Katpadi Junction → CMC Hospital',line2:'Pickup 1.2 km · trip 4.8 km',fare:'₹130',accept:'Accept',open:'View',secs:40});rep('ring','sent:'+document.visibilityState)}catch(e){rep('ring','ERR '+e)}},12000);
+    setTimeout(()=>call('ready').then(()=>rep('ready','sent:'+boot)).catch(e=>rep('ready','ERR '+e)),2000);
+    if(boot===1)setTimeout(async()=>{try{await call('ring',{id:'ride42',title:'New ride!',line1:'Katpadi Junction → CMC Hospital',line2:'Pickup 1.2 km · trip 4.8 km',fare:'₹130',accept:'Accept',open:'View',secs:40,
+      veh:'Sedan',pay:'Cash',pkm:'0.8 km',pname:'Katpadi Junction',psub:'Chittoor Bus Stand, Katpadi',dkm:'4.3 km',dname:'CMC Hospital',dsub:'Ida Scudder Road, Vellore',extra:'incl. ₹10 tip'});rep('ring','sent:'+document.visibilityState)}catch(e){rep('ring','ERR '+e)}},12000);
   }catch(e){rep('status','ERR '+e)}
 })();
+// the test script switches the driver OFF by writing "off" into tests/android/cmd.txt
+let offDone=false;setInterval(()=>{if(offDone)return;fetch('/tests/android/cmd.txt?'+Date.now()).then(r=>r.ok?r.text():'').then(t=>{if(t.trim()==='off'&&!offDone){offDone=true;call('online',{on:false}).then(()=>rep('off','sent')).catch(e=>rep('off','ERR '+e))}}).catch(()=>{})},1500);
 document.addEventListener('visibilitychange',async()=>{rep('vis',document.visibilityState);
   if(document.visibilityState==='visible'){try{const t=await call('take');rep('take',JSON.stringify(t));st.textContent='TAKE:'+JSON.stringify(t);if(t&&t.action)await call('stop')}catch(e){rep('take','ERR '+e)}}});
 </script>

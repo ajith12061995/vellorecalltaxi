@@ -1025,6 +1025,7 @@ function home(){
       :`${signCard()}${dutyBtn(false)}`}
      ${pushReady()&&(CL.nativePush&&CL.nativePush()?!lsGet('vct_fcm'):Notification.permission==='default')?`<button class="warn" id="pushon" style="text-align:left;border:0;width:100%">${X('bell')} ${L('Phone lock ஆனாலும் ride alert வரணுமா? இங்கே தொட்டு Allow கொடுங்க','Get ride alerts even when the phone is locked: tap and Allow')}</button>`:''}
      ${OVL&&!OVLCAN?`<button class="warn" id="ovlon" style="text-align:left;border:0;width:100%">${X('mobile')} ${L('வேற app-ல இருந்தாலும், phone பேசினாலும் ride card திரை மேல வரணுமா? இங்கே தொட்டு "Display over other apps" Allow கொடுங்க','Show the ride card over other apps and during calls: tap and allow "Display over other apps"')}</button>`:''}
+     ${OVL&&OVLCAN&&S.online&&OVLPWR===false?`<button class="warn" id="pwron" style="text-align:left;border:0;width:100%">${X('bolt')} ${L('Phone app-ஐ நிறுத்தாம இருக்க: இங்கே தொட்டு → Battery → "No restrictions" / "Allow background activity" தேர்வு பண்ணுங்க. Realme / Oppo / Vivo-ல "Auto launch"-உம் ON பண்ணுங்க.','So the phone never stops the app: tap → Battery → "No restrictions" / "Allow background activity". On Realme / Oppo / Vivo also turn on "Auto launch".')}</button>`:''}
      ${S.online&&CL?`<p class="stayon" id="stayon">${X('check',14)} ${L('நீங்க OFF பண்ற வரை Online-லயே இருப்பீங்க. App-ஐ மூடினாலும், phone பேசினாலும் Offline ஆகாது.','You stay online until you switch OFF — even if you close the app or take a call.')}</p>`:''}
      <div id="appget" hidden></div>
      ${upcHtml()}
@@ -1043,6 +1044,7 @@ function home(){
     const rc=document.getElementById('rc');if(rc)rc.onclick=()=>{S.tab='wallet';walletTab();recharge()};
     {const pb=document.getElementById('pushon');if(pb)pb.onclick=()=>enablePush(true)}
     {const ob=document.getElementById('ovlon');if(ob)ob.onclick=()=>{try{OVL.ask()}catch(e){}}}
+    {const pb=document.getElementById('pwron');if(pb)pb.onclick=()=>{try{OVL.askPower().catch(()=>{})}catch(e){}}}
     const gr=document.getElementById('gpsr');if(gr)gr.onclick=()=>{stopGeo();GPSERR=0;startGeo();try{navigator.geolocation.getCurrentPosition(p=>{POS={lat:p.coords.latitude,lon:p.coords.longitude};GOTFIX=true;pushLive(true);if(S.tab==='home'&&!J)home()},e=>{GPSERR=e.code;toast(L('Location இன்னும் கிடைக்கல','Still no location'))},{enableHighAccuracy:true,timeout:15000,maximumAge:0})}catch(e){}};
     if(S.online){bindTap('offs',()=>confirmOff(()=>{setOnline(false);home();toast(L('Offline ஆயிட்டீங்க','You are offline'))}));
       if(CL)maybeShowReq();else{document.getElementById('dreq').onclick=()=>incoming()}}
@@ -1632,12 +1634,25 @@ function stopReq(){clearInterval(RQT);RQT=null;try{navigator.vibrate&&navigator.
    shows what it is given, and "Accept" on the card presses this page's own Accept button once the app is in front. */
 let OVL=null,OVLCAN=false,OVLASKED=false;
 function ovlInit(){if(!NATIVE())return;try{const p=capPlugin('RideOverlay');if(!p)return;
-  p.status().then(r=>{const first=!OVL;OVL=p;const can=!!(r&&r.can);if(can!==OVLCAN||first){OVLCAN=can;ovlOnline();if(!J&&!document.querySelector('.modal')&&(document.getElementById('offs')||document.getElementById('ons')))home()}}).catch(()=>{OVL=null})}catch(e){}}
+  p.status().then(r=>{const first=!OVL;OVL=p;const can=!!(r&&r.can);ovlPower();if(can!==OVLCAN||first){OVLCAN=can;ovlOnline();if(first)ovlReady();if(!J&&!document.querySelector('.modal')&&(document.getElementById('offs')||document.getElementById('ons')))home()}}).catch(()=>{OVL=null})}catch(e){}}
 function ovlOnline(){if(OVL)try{OVL.online({on:!!S.online}).catch(()=>{})}catch(e){}}
-function ovlRing(j){if(!OVL||!j||!j.id)return;try{const amt=Math.round((+j.fare||0)+(+j.tip||0));
-  OVL.ring({id:String(j.id),title:L('புது Ride!','New ride!'),line1:`${P[j.from]?P[j.from][S.lang]:''} → ${P[j.to]?P[j.to][S.lang]:''}`,
+/* the page is running (and, if ON, location has had time to start): an app the phone reopened after it was swiped away goes
+   back behind the driver's other app (1.0.16+; older apps have no ready()) */
+let OVLREADY=false,OVLPWR=null;
+/* is the app free of the phone's battery limits? (1.0.16+; unknown on older apps → no tip) */
+function ovlPower(){if(!OVL)return;try{OVL.power().then(r=>{const f=!!(r&&r.free);if(f!==OVLPWR){OVLPWR=f;if(!J&&!document.querySelector('.modal')&&document.getElementById('offs'))home()}}).catch(()=>{})}catch(e){}}
+function ovlReady(){if(!OVL||OVLREADY)return;OVLREADY=true;setTimeout(()=>{try{OVL.ready().catch(()=>{})}catch(e){}},S.online?3500:500)}
+/* the card over other apps, laid out like Rapido's: vehicle, fare (how it is paid), pickup km + place + address, drop km + place +
+   address, a big Accept with the time left. Android app 1.0.16+ draws veh…dsub; older apps use title / line1 / line2. */
+function ovlRing(j){if(!OVL||!j||!j.id)return;try{const amt=Math.round((+j.fare||0)+(+j.tip||0)),pf=P[j.from]||{},pt=P[j.to]||{},b=j.b||{};
+  const v=VEH.find(x=>x.id===(b.veh||myVeh()))||{},km=n=>(+n||0).toFixed(1)+' km',sub=p=>p.addr&&p.addr!==p[S.lang]?String(p.addr):'';
+  const pay={cash:L('Cash','Cash'),upi:'UPI',wallet:L('Wallet','Wallet')}[j.pay]||'';
+  const kind=b.kind==='outstation'?' · Outstation':b.kind==='rental'?' · Rental':'';
+  OVL.ring({id:String(j.id),title:L('புது Ride!','New ride!'),line1:`${pf[S.lang]||''} → ${pt[S.lang]||''}`,
     line2:L(`Pickup ${(+j.away||0).toFixed(1)} கி.மீ · பயணம் ${(+j.km||0).toFixed(1)} கி.மீ`,`Pickup ${(+j.away||0).toFixed(1)} km · trip ${(+j.km||0).toFixed(1)} km`),
-    fare:amt>0?'₹'+amt:'',accept:L('ஏற்கிறேன்','Accept'),open:L('பார்க்க','View'),secs:20}).catch(()=>{})}catch(e){}}
+    fare:amt>0?'₹'+amt:'',accept:L('ஏற்கிறேன்','Accept'),open:L('பார்க்க','View'),secs:20,
+    veh:(v[S.lang]||v.en||L('புது Ride','New ride'))+kind,pay,pkm:km(j.away),pname:String(pf[S.lang]||''),psub:sub(pf),dkm:km(j.km),dname:String(pt[S.lang]||''),dsub:sub(pt),
+    extra:(+j.tip||0)>0?L(`Tip ₹${Math.round(+j.tip)} சேர்த்து`,`incl. ₹${Math.round(+j.tip)} tip`):''}).catch(()=>{})}catch(e){}}
 function ovlStop(){if(OVL)try{OVL.stop().catch(()=>{})}catch(e){}}
 function ovlTake(){if(!OVL)return;try{OVL.take().then(r=>{if(r&&r.action==='accept'&&J&&String(J.id||'')===String(r.id||'')){const a=document.getElementById('acc');if(a)a.click()}}).catch(()=>{})}catch(e){}}
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){ovlInit();ovlTake()}});

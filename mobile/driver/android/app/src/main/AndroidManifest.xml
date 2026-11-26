@@ -33,6 +33,8 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_paths"></meta-data>
         </provider>
+        <!-- "On duty": notification + floating icon while the driver is ON; reopens the app if it is swiped away (DutyService) -->
+        <service android:name=".DutyService" android:exported="false" android:foregroundServiceType="location" android:stopWithTask="false" />
         <!-- plugin service is only used by this app: not exported to other apps -->
         <service android:name="com.equimaps.capacitor_background_geolocation.BackgroundGeolocationService"
             android:exported="false" tools:node="merge" tools:replace="android:exported" />
@@ -45,6 +47,8 @@
     <!-- ride card over other apps while the driver is online (the driver allows it once: "Display over other apps") -->
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-feature android:name="android.hardware.location.gps" android:required="false" />
