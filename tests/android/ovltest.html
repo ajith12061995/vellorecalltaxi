@@ -14,7 +14,7 @@ let boot=1;try{boot=(+localStorage.getItem('boot')||0)+1;localStorage.setItem('b
   try{rep('boot',boot);const s=await call('status');rep('status',JSON.stringify(s));
     await call('online',{on:true});rep('online','sent');
     setTimeout(()=>call('ready').then(()=>rep('ready','sent:'+boot)).catch(e=>rep('ready','ERR '+e)),2000);
-    if(boot===1)setTimeout(async()=>{try{await call('ring',{id:'ride42',title:'New ride!',line1:'Katpadi Junction → CMC Hospital',line2:'Pickup 1.2 km · trip 4.8 km',fare:'₹130',accept:'Accept',open:'View',secs:40,
+    if(!localStorage.getItem('rung'))setTimeout(async()=>{localStorage.setItem('rung','1');try{await call('ring',{id:'ride42',title:'New ride!',line1:'Katpadi Junction → CMC Hospital',line2:'Pickup 1.2 km · trip 4.8 km',fare:'₹130',accept:'Accept',open:'View',secs:40,
       veh:'Sedan',pay:'Cash',pkm:'0.8 km',pname:'Katpadi Junction',psub:'Chittoor Bus Stand, Katpadi',dkm:'4.3 km',dname:'CMC Hospital',dsub:'Ida Scudder Road, Vellore',extra:'incl. ₹10 tip'});rep('ring','sent:'+document.visibilityState)}catch(e){rep('ring','ERR '+e)}},12000);
   }catch(e){rep('status','ERR '+e)}
 })();

@@ -84,7 +84,7 @@ adb shell input keyevent KEYCODE_HOME; sleep 3
 b0=$(boots); adb logcat -c
 adb shell input keyevent KEYCODE_APP_SWITCH; sleep 3
 adb exec-out screencap -p > "$OUT/ovl-5-recents.png" 2>/dev/null
-intask(){ adb shell dumpsys activity recents 2>/dev/null | grep -c "A=.*app.velloretaxi.driver\|realActivity=app.velloretaxi.driver\|cmp=app.velloretaxi.driver"; }
+intask(){ adb shell dumpsys activity recents 2>/dev/null | grep -c "Recent #.*velloretaxi"; }
 echo "app tasks before: $(intask)"
 W=$(adb shell wm size | grep -o '[0-9]*x[0-9]*' | tail -1); w=${W%x*}; hh=${W#*x}; how=""
 if tap_text "Clear all" >/dev/null 2>&1; then how="Clear all"; fi
