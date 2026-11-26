@@ -131,5 +131,7 @@ n=$(overlays); [ "$n" -eq 0 ] && ok "permission taken away: nothing is drawn ove
 echo "--- report log:"; cat "$LOG"
 echo "--- windows of the app:"; adb shell dumpsys window windows 2>/dev/null | grep -E "Window\{[^}]*$PKG" | head
 echo "--- logcat:"; adb logcat -d | grep -iE "DutyService|AndroidRuntime: (FATAL|Shutting down VM.*velloretaxi)|FATAL|RideOverlay: (load|resume|pause|destroy|sync|online)|wm_on_(create|destroy|resume|paused|stop).*velloretaxi|START u0.*velloretaxi" | tail -80
+echo "--- crash buffer:"; adb logcat -d -b crash | tail -40
+echo "--- process deaths:"; adb logcat -d -b events | grep -E "am_kill|am_proc_died|am_crash|am_anr" | grep -i velloretaxi | tail -10
 echo "RESULT $pass passed, $fail failed"
 [ $fail -eq 0 ]
