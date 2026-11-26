@@ -274,6 +274,7 @@
   // the app reads #book=<base64url JSON> after the customer signs in (index.html readBookLink)
   function bookLink() {
     const x = { f: { lat: +B.a.lat.toFixed(6), lon: +B.a.lon.toFixed(6), n: B.a.n }, t: { lat: +B.b.lat.toFixed(6), lon: +B.b.lon.toFixed(6), n: B.b.n }, v: B.veh, k: B.q.kind, o: B.o };
+    const w = window.__vctWhen && window.__vctWhen(); if (w) x.w = w;   // pickup time chosen on the website (ms); the app reads it (index.html readBookLink)
     const b64 = btoa(unescape(encodeURIComponent(JSON.stringify(x)))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
     $('#go').href = '/#book=' + b64;
   }
@@ -303,5 +304,5 @@
   if ('IntersectionObserver' in window) new IntersectionObserver(es => es.forEach(e => $('.fab').classList.toggle('away', e.isIntersecting)), { threshold: 0.15 }).observe($('#book'));
 
   renderAll(); renderSugLabels();
-  window.__vctSite = { B, PTS, setPoint, fromKey, state: () => ({ SITE, PRICES }) };   // for the page tests
+  window.__vctSite = { B, PTS, setPoint, fromKey, state: () => ({ SITE, PRICES }), bookLink: () => { if (B.q) bookLink(); }, ptName };   // for the page tests
 })();

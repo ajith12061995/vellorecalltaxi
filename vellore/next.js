@@ -27,9 +27,10 @@
     if (ms > now + 30 * 864e5) return L('30 நாளுக்குள் ஒரு தேதியை தேர்ந்தெடுங்க.', 'Choose a date within 30 days.');
     return '';
   }
-  // within 20 minutes of now counts as "now" for the app; later = a scheduled ride
-  window.__vctWhen = () => { const ms = when(); return ms && !checkWhen() && ms > Date.now() + 20 * 60e3 ? ms : null; };
-  ['#wd', '#wt'].forEach(s => $(s).addEventListener('change', () => { const e = checkWhen(); $('#berr').textContent = e; V.bookLink(); if (TAB === 'rent') rentShow(); }));
+  // within 30 minutes of now counts as "now" for the app (its own minimum for a scheduled ride); later = scheduled
+  window.__vctWhen = () => { const ms = when(); return ms && !checkWhen() && ms > Date.now() + 30 * 60e3 ? ms : null; };
+  function whenHint() { const ms = when(), h = $('#whint'); if (!h) return; h.textContent = ms && !checkWhen() && ms <= Date.now() + 30 * 60e3 ? L('30 நிமிஷத்துக்குள் = இப்போவே ride.', 'Within 30 minutes = a ride now.') : ''; }
+  ['#wd', '#wt'].forEach(s => $(s).addEventListener('change', () => { const e = checkWhen(); $('#berr').textContent = e; whenHint(); V.bookLink(); if (TAB === 'rent') rentShow(); }));
   setWhenDefault();
   $('#go').addEventListener('click', e => { const er = checkWhen(); if (er) { e.preventDefault(); $('#berr').textContent = er; $('#wd').focus(); } });
 
@@ -94,8 +95,9 @@
     $('#rinfo').textContent = `${RS.pt.n} · ${pk.h} ${L('மணி', pk.h > 1 ? 'hours' : 'hour')} · ${pk.km} km`;
     $('#vl').innerHTML = rows.map(({ v, p }) => `<label class="${v.id === RS.veh ? 'on' : ''}"><input type="radio" name="rveh" value="${v.id}" ${v.id === RS.veh ? 'checked' : ''}><img src="/vehicles/${v.id}.jpg" alt="" loading="lazy">
       <span><b>${esc(L(v.ta, v.en))}</b><small>${v.seats} ${L('பேர்', 'seats')} · +₹${money(T.XKM[v.id])}/km · +₹${money(T.XHR[v.id])}/${L('மணி', 'hr')}</small></span><span class="p">₹${money(p)}</span></label>`).join('');
-    $('#bnote').textContent = L('Package-க்கு மேல் போனா கூடுதல் கி.மீ., கூடுதல் மணி கட்டணம். Toll, parking தனி. App-ல் Rental-ஐ தேர்ந்தெடுத்து book பண்ணுங்க.', 'Beyond the package, extra km and extra hours are charged as shown. Tolls and parking extra. In the app, choose Rental to book.');
-    $('#go').href = '/';
+    $('#bnote').textContent = L('Package-க்கு மேல் போனா கூடுதல் கி.மீ., கூடுதல் மணி கட்டணம். Toll, parking தனி. இந்த package-ஓட app திறக்கும்.', 'Beyond the package, extra km and extra hours are charged as shown. Tolls and parking extra. The app opens with this package.');
+    const x = { f: { lat: +RS.pt.lat.toFixed(6), lon: +RS.pt.lon.toFixed(6), n: RS.pt.n }, v: RS.veh, k: 'rent', h: RS.h }, w = window.__vctWhen(); if (w) x.w = w;
+    $('#go').href = '/#book=' + btoa(unescape(encodeURIComponent(JSON.stringify(x)))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
     $('#res').classList.add('on');
   }
   document.addEventListener('langchange', () => { rentList(); if (TAB === 'rent') rentShow(); else if (TAB === 'out') setTab('out'); drawTowns(); });

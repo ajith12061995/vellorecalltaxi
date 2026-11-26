@@ -1,3 +1,5 @@
+# Website velloretaxi.app/vellore/ (new design, 26 Nov) — the earlier checks plus trip tabs, date/time,
+# hourly rental, service-area map, corporate shortcut. Original header:
 # Public website velloretaxi.app/vellore/ — the whole page with fake Google Maps / Routes and a fake Firebase:
 # Office content + prices replace the built-in ones, photos, booking box (Google place search, road km, city and
 # outstation fares = the app's prices, vehicle choice, link into the app), contact form, language, menu, phones, safety.
@@ -117,7 +119,7 @@ async def main():
         check('form: robots (hidden field) are not saved',await pg.evaluate("window.__FSADD.length")==0)
         # language
         await pg.click('#lang');await pg.wait_for_timeout(300)
-        check('தமிழ் switch (places + booking text change)',await pg.locator('h1 .ta').is_visible() and 'கோட்டை' in await pg.inner_text('#plist'))
+        check('தமிழ் switch (places + booking text change)',await pg.locator('h1 > .ta').is_visible() and 'கோட்டை' in await pg.inner_text('#plist'))
         await pg.reload();await pg.wait_for_timeout(1200)
         check('Tamil remembered',await pg.evaluate("document.documentElement.dataset.l")=='ta')
         ld=await pg.evaluate("JSON.parse(document.querySelector('script[type=\"application/ld+json\"]').textContent)")
@@ -134,7 +136,7 @@ async def main():
             check(f'{w}px: call/WhatsApp buttons step aside over the booking box',await m.evaluate("document.querySelector('.fab').classList.contains('away')"))
             await m.locator('#faq').scroll_into_view_if_needed();await m.wait_for_timeout(500)
             check(f'{w}px: and come back further down',await m.evaluate("!document.querySelector('.fab').classList.contains('away')"))
-            if w<900:
+            if w<1081:
                 vis=await m.locator('#menu').is_visible();await m.click('#burger');await m.wait_for_timeout(400)
                 ok=await m.locator('#menu a[href="#contact"]').is_visible();await m.click('#menu a[href="#contact"]');await m.wait_for_timeout(600)
                 check(f'{w}px: menu opens and closes after a tap',not vis and ok and not await m.locator('#menu a[href="#contact"]').is_visible())
@@ -144,7 +146,57 @@ async def main():
         q=await ctx.new_page();e2=[];q.on('pageerror',lambda e:e2.append(str(e)))
         await q.goto(U);await q.wait_for_timeout(600);await q.click('#lang')
         check('works with storage blocked',not e2 and await q.evaluate("document.documentElement.dataset.l")=='ta',e2)
-        check('live notice shown, links to booking',await q.locator('#soon').is_visible() and await q.get_attribute('#soon','href')=='#book' and ('Now live' in (st:=await q.locator('#soon').inner_text()) or 'இப்போ வேலூரில்' in st))
+        await ctx.close()
+        # ---- 5. new design: tabs, date/time, rental, maps, corporate
+        ctx=await b.new_context(viewport={'width':1366,'height':900});await fakes(ctx)
+        await ctx.add_init_script(f"window.__FS={json.dumps({'public/site':SITE,'public/prices':{**PRICES,'rent':{'price':{'sedan':[399,699,1199,2199,3099]},'xkm':{'sedan':14}}}})}")
+        pg=await ctx.new_page();errs=[];pg.on('pageerror',lambda e:errs.append(str(e)))
+        await pg.goto(U);await pg.wait_for_timeout(3000)
+        check('three trip tabs, one way selected',await pg.locator('[role=tab]').count()==3 and await pg.get_attribute('#tab-one','aria-selected')=='true')
+        await pg.click('#tab-out');await pg.wait_for_timeout(400)
+        ch=await pg.inner_text('#chips')
+        check('outstation tab: far places as quick picks',('Chennai Airport' in ch and 'Tirupati' in ch and 'Katpadi Junction' not in ch),ch)
+        await pg.focus('#tab-out');await pg.keyboard.press('ArrowRight');await pg.wait_for_timeout(300)
+        check('arrow keys move between tabs (rental)',await pg.get_attribute('#tab-rent','aria-selected')=='true' and await pg.locator('#pane-rent').is_visible() and not await pg.locator('#pane-trip').is_visible())
+        check('rental: 9 packages from 1 to 12 hours',await pg.locator('#rpk [data-h]').count()==9)
+        await pg.fill('#rf','Katpadi Junction');await pg.dispatch_event('#rf','change');await pg.wait_for_timeout(300)
+        exp=await pg.evaluate("SITERENT.price('sedan',4,window.__vctSite.state().PRICES.rent)")
+        vl=await pg.inner_text('#vl')
+        check('rental: 4 hours, Sedan shows the computed Office price',exp is not None and f'₹{exp:,}' in vl and 'Katpadi Junction' in await pg.inner_text('#rinfo'),(exp,vl[:120]))
+        check('rental: Office price table used (Sedan 4 h ₹1,199)',exp==1199,exp)
+        await pg.click('#rpk [data-h="3"]');await pg.wait_for_timeout(200)
+        e3=await pg.evaluate("SITERENT.price('sedan',3,window.__vctSite.state().PRICES.rent)")
+        check('rental: 3 hours = between 2 h and 4 h, rounded like the app (₹949)',e3==949 and '₹949' in await pg.inner_text('#vl'),e3)
+        check('rental: extra km from the Office (+₹14/km for Sedan)','+₹14/km' in await pg.inner_text('#vl'))
+        await pg.click('#vl label:has-text("Sedan")');await pg.wait_for_timeout(200)
+        x=link(await pg.get_attribute('#go','href'))
+        check('rental Book link: pickup, Sedan, 3 hours, rental',x['k']=='rent' and x['v']=='sedan' and x['h']==3 and x['f']['n']=='Katpadi Junction' and 't' not in x,x)
+        await pg.click('#tab-one');await pg.wait_for_timeout(300)
+        # date and time
+        await pg.evaluate("document.querySelector('#wd').value='2020-01-01';document.querySelector('#wd').dispatchEvent(new Event('change'))");await pg.wait_for_timeout(200)
+        check('a past time is refused',('passed' in await pg.inner_text('#berr')) or ('போயிடுச்சு' in await pg.inner_text('#berr')))
+        await pg.evaluate("(()=>{const d=new Date(Date.now()+3*864e5);d.setHours(9,30,0,0);const p=n=>String(n).padStart(2,'0');document.querySelector('#wd').value=d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());document.querySelector('#wt').value='09:30';document.querySelector('#wd').dispatchEvent(new Event('change'))})()")
+        await pg.click('#chips [data-pt=katpadi]');await pg.click('#chips [data-pt=cmc]');await pg.wait_for_timeout(1200)
+        x=link(await pg.get_attribute('#go','href'))
+        w=await pg.evaluate("(()=>{const d=new Date(Date.now()+3*864e5);d.setHours(9,30,0,0);return d.getTime()})()")
+        check('book link carries the chosen pickup time',x.get('w')==w,x)
+        await pg.evaluate("(()=>{const d=new Date(Date.now()+5*60e3),p=n=>String(n).padStart(2,'0');document.querySelector('#wd').value=d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());document.querySelector('#wt').value=p(d.getHours())+':'+p(d.getMinutes());document.querySelector('#wt').dispatchEvent(new Event('change'))})()");await pg.wait_for_timeout(200)
+        x=link(await pg.get_attribute('#go','href'))
+        check('a time within 30 minutes = ride now (no time in the link) and said so','w' not in x and ('ride now' in await pg.inner_text('#whint') or 'இப்போவே' in await pg.inner_text('#whint')),x)
+        # maps
+        txt=await pg.evaluate("document.querySelector('#areamap').textContent")
+        check('service area map: pickup area and towns named',all(t in txt for t in ['Katpadi','Arcot','Ranipet','Gudiyatham','Ambur','Chennai','Bengaluru','Tiruvannamalai','Pickup area']),txt)
+        check('towns list with distances',await pg.locator('#towns li').count()==10 and 'about' in await pg.inner_text('#towns'))
+        check('hero contour map drawn',await pg.locator('#heromap path').count()>20)
+        # corporate shortcut
+        await pg.click('#corporate [data-kind=corporate]');await pg.wait_for_timeout(700)
+        check('corporate enquiry button picks "Corporate" in the form',await pg.input_value('#ekind')=='corporate')
+        # services "Book" opens the right tab
+        await pg.click('#services a[data-tab-go=rent]');await pg.wait_for_timeout(500)
+        check('services: Rental "Book" opens the rental tab',await pg.get_attribute('#tab-rent','aria-selected')=='true')
+        check('no fake reviews / partner logos on the page',not await pg.locator('text=/trusted by|testimonial/i').count())
+        check('indexed by Google',(await pg.get_attribute('meta[name=robots]','content')).startswith('index'))
+        check('no page errors (new parts)',not errs,errs)
         await b.close()
 asyncio.run(main())
 print('RESULT','PASS' if all(res) else 'FAIL','%d/%d'%(sum(res),len(res)))

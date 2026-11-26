@@ -18,7 +18,7 @@
 <link rel="icon" type="image/png" href="/icon-192.png?v=9">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=9">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Baloo+Thambi+2:wght@600;700;800&family=Hind+Madurai:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Anek+Tamil:wdth,wght@75..100,600..800&family=Hind+Madurai:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script type="application/ld+json">
 {"@context":"https://schema.org","@graph":[
  {"@type":"TaxiService","@id":"https://velloretaxi.app/vellore/#service","name":"Vellore Taxi (VCT)","alternateName":["Vellore Call Taxi","வேலூர் கால் டாக்ஸி"],"url":"https://velloretaxi.app/vellore/",
@@ -30,420 +30,407 @@
   {"@type":"Question","name":"What is the auto fare in Vellore?","acceptedAnswer":{"@type":"Answer","text":"Autos follow the Tamil Nadu Government fare: ₹50 for the first 1.8 km, then ₹25 a km."}},
   {"@type":"Question","name":"What is included in an outstation fare?","acceptedAnswer":{"@type":"Answer","text":"The distance charge and the driver allowance. Tolls, parking and state permits, if any, are extra."}}]}]}
 </script>
+
 <style>
-:root{--forest:#0B4A36;--forest2:#0E5A42;--taxi:#FFC21A;--moat:#2F7D74;--paper:#F5F7F2;--ink:#10241C;--muted:#4E6159;--line:#DCE5DF;--danger:#B3261E;--ease:cubic-bezier(.2,.7,.2,1)}
-*{box-sizing:border-box}
-html{scroll-behavior:smooth;scroll-padding-top:76px}
-body{margin:0;background:var(--paper);color:var(--ink);font:400 17px/1.6 "Hind Madurai",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
-h1,h2,h3{font-family:"Baloo Thambi 2","Hind Madurai",sans-serif;line-height:1.15;margin:0}
-a{color:var(--forest)}
-img{max-width:100%}
+/* VOICE  a Vellore transport company that shows its prices and its city: calm, exact, local.
+   IDEA   the route map: the fort and its moat as contour lines, roads as thin rules; taxi yellow means "go".
+   PICTURE the hero carries the fort contour map beside the booking engine; the service-area map repeats it.
+   COLOUR white ground, forest green leads, deep forest for the hero and footer, taxi yellow only for Book.
+   TYPE   Anek Tamil (English + Tamil, condensed for headings) + Hind Madurai body. */
+:root{--forest:#0B4A36;--forest2:#0E5A42;--deep:#062A1F;--taxi:#F5B800;--taxi2:#FFC933;--paper:#F4F6F3;--ink:#1F2523;--muted:#56625C;--line:#DDE3DF;--err:#B3261E;--ok:#1E8A5A;
+  --fd:"Anek Tamil","Hind Madurai",system-ui,sans-serif;--fb:"Hind Madurai",system-ui,sans-serif;--r:10px;--ease:cubic-bezier(.2,.7,.2,1)}
+*{box-sizing:border-box;min-width:0}
+html{scroll-padding-top:76px;-webkit-text-size-adjust:100%}
+body{margin:0;background:#fff;color:var(--ink);font:400 17px/1.6 var(--fb);-webkit-font-smoothing:antialiased;overflow-x:clip}
+[data-l=ta] .en,[data-l=en] .ta,[hidden]{display:none!important}
+h1,h2,h3{font-family:var(--fd);font-stretch:85%;line-height:1.05;margin:0;text-wrap:balance}
+h2{font-size:clamp(30px,3.6vw,44px);color:var(--forest);font-weight:800}
+h3{font-size:21px;font-weight:700;font-stretch:90%}
+a{color:var(--forest)}img{max-width:100%;display:block}
 :focus-visible{outline:3px solid var(--taxi);outline-offset:2px;border-radius:6px}
-[data-l=ta] .en,[data-l=en] .ta{display:none!important}
-.wrap{max-width:1160px;margin:0 auto;padding:0 20px}
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:48px;padding:0 22px;border-radius:999px;font:700 16px "Hind Madurai",sans-serif;text-decoration:none;border:2px solid transparent;cursor:pointer;transition:transform .15s var(--ease),background .2s}
-.btn:active{transform:scale(.97)}
-.btn.y{background:var(--taxi);color:var(--ink)}.btn.y:hover{background:#FFCD45}
-.btn.o{border-color:currentColor;color:var(--forest);background:transparent}
+.wrap{max-width:1200px;margin:0 auto;padding:0 max(5vw,16px)}
+section{padding:clamp(48px,7vw,88px) 0}
+.alt{background:var(--paper)}
+.sub{color:var(--muted);margin:10px 0 0;max-width:60ch}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:0 22px;border-radius:var(--r);font:700 16px var(--fb);text-decoration:none;border:2px solid transparent;cursor:pointer;transition:background .15s}
+.btn.y{background:var(--taxi);color:var(--ink)}.btn.y:hover{background:var(--taxi2)}
 .btn.g{background:var(--forest);color:#fff}.btn.g:hover{background:var(--forest2)}
-.btn.off{opacity:.45;pointer-events:none}
+.btn.o{border-color:var(--forest);color:var(--forest);background:#fff}
+.btn.w{border-color:rgba(255,255,255,.6);color:#fff;background:transparent}
+.btn[disabled]{opacity:.6;cursor:default}
+.ico{width:22px;height:22px;flex:none;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 
 /* header */
-.top{position:sticky;top:0;z-index:20;background:rgba(245,247,242,.94);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
-.top .wrap{display:flex;align-items:center;gap:12px;height:64px}
-.logo{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--forest)}
-.logo img{width:38px;height:38px;border-radius:10px}
-.logo .tm{font-size:.55em;font-weight:600;margin-left:1px;vertical-align:super;line-height:0}
-.logo b{font:800 20px "Baloo Thambi 2",sans-serif}
-.menu{margin-left:auto;display:flex;align-items:center;gap:2px}
-.menu a{padding:8px 10px;text-decoration:none;font-weight:600;color:var(--ink);border-radius:8px}
-.menu a:hover{background:#E6EEE9}
-.menu a.btn{color:#fff}
-.lang{border:1px solid var(--line);background:#fff;border-radius:999px;padding:6px 12px;font:600 14px "Hind Madurai",sans-serif;cursor:pointer;color:var(--ink)}
-.callsm{min-height:40px;padding:0 16px;font-size:15px}
-.burger{display:none;width:44px;height:44px;border:0;background:none;cursor:pointer;margin-left:auto}
+.top{position:sticky;top:0;z-index:30;background:rgba(255,255,255,.96);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+.top .wrap{display:flex;align-items:center;gap:14px;height:68px}
+.logo{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--forest);margin-right:auto}
+.logo img{width:40px;height:40px;border-radius:50%}
+.logo b{font:800 22px var(--fd);font-stretch:85%}
+.menu{display:flex;align-items:center;gap:2px}
+.menu a{padding:8px 10px;text-decoration:none;color:var(--ink);font-weight:600;font-size:15.5px;border-radius:8px}
+.menu a:hover{background:var(--paper)}
+.lang{border:1px solid var(--line);background:#fff;border-radius:999px;padding:6px 12px;font:600 14px var(--fb);cursor:pointer;color:var(--ink);min-height:36px}
+.login{font-weight:600;text-decoration:none;color:var(--forest);padding:8px 6px}
+.top .btn{min-height:42px;padding:0 16px;font-size:15px}
+.burger{display:none;background:none;border:0;width:44px;height:44px;cursor:pointer}
 .burger span{display:block;width:22px;height:2px;background:var(--ink);margin:5px auto;transition:transform .25s var(--ease),opacity .2s}
-@media(max-width:940px){
-  .burger{display:block}
-  .menu{position:fixed;left:0;right:0;top:64px;flex-direction:column;align-items:stretch;background:var(--paper);padding:10px 20px 20px;border-bottom:1px solid var(--line);
-    transform:translateY(-12px);opacity:0;visibility:hidden;transition:transform .25s var(--ease),opacity .2s,visibility .25s;margin:0}
-  .menu a{padding:12px 6px;font-size:18px}
-  .open .menu{transform:none;opacity:1;visibility:visible}
-  .open .burger span:nth-child(1){transform:translateY(7px) rotate(45deg)}.open .burger span:nth-child(2){opacity:0}.open .burger span:nth-child(3){transform:translateY(-7px) rotate(-45deg)}
-  .menu .lang,.menu .callsm{align-self:flex-start;margin-top:8px}
-}
+@media(max-width:1080px){
+  .burger{display:block}.login,.top .hide-s{display:none}
+  .menu{position:fixed;left:0;right:0;top:68px;flex-direction:column;align-items:stretch;background:#fff;padding:8px 20px 20px;border-bottom:1px solid var(--line);
+    transform:translateY(-10px);opacity:0;visibility:hidden;transition:transform .25s var(--ease),opacity .2s,visibility .25s}
+  .menu a{padding:13px 4px;font-size:18px;border-bottom:1px solid var(--line);border-radius:0}
+  .top.open .menu{transform:none;opacity:1;visibility:visible}
+  .top.open .burger span:nth-child(1){transform:translateY(7px) rotate(45deg)}.top.open .burger span:nth-child(2){opacity:0}.top.open .burger span:nth-child(3){transform:translateY(-7px) rotate(-45deg)}}
 
 /* hero */
-.hero{position:relative;background:linear-gradient(180deg,#E7F1EC 0%,#F3EBD3 100%);overflow:hidden}
-.hero .wrap{position:relative;z-index:2;display:grid;grid-template-columns:1.05fr .95fr;gap:36px;align-items:start;padding-top:48px}
-.hero h1{font-size:clamp(36px,5.6vw,66px);color:var(--forest);font-weight:800}
-.soon{display:inline-flex;flex-wrap:wrap;gap:6px 10px;align-items:center;margin:0 0 14px;padding:8px 14px;border-radius:999px;background:#FFF4CC;border:1px solid #F0D37A;color:var(--ink);font-size:14.5px;line-height:1.35;text-decoration:none}.soon b{background:var(--forest);color:#fff;border-radius:999px;padding:2px 10px;font-size:12.5px;letter-spacing:.02em;white-space:nowrap}.soon:hover{background:#FFEDB0}
-[data-wa][hidden]{display:none!important}
-.hero p.lead{font-size:clamp(17px,1.9vw,20px);max-width:44ch;color:var(--muted);margin:14px 0 22px}
-.hero .cta{display:flex;flex-wrap:wrap;gap:12px}
-.intro>*{animation:rise .7s var(--ease) both}.intro>*:nth-child(2){animation-delay:.08s}.intro>*:nth-child(3){animation-delay:.16s}
-@keyframes rise{from{opacity:0;transform:translateY(14px)}}
-.scene{display:block;width:100%;height:auto;margin-top:-30px}
-.taxi{animation:drive 7s cubic-bezier(.45,.05,.4,1) .6s both}
-@keyframes drive{from{transform:translateX(-160px)}to{transform:translateX(560px)}}
-@media(max-width:940px){.hero .wrap{grid-template-columns:1fr;padding-top:32px;gap:24px}.scene{height:200px;margin-top:0}}
+.hero{position:relative;background:var(--deep);color:#EAF3EE;padding:clamp(36px,6vw,72px) 0 clamp(40px,6vw,80px);overflow:hidden;isolation:isolate}
+.hero .map{position:absolute;inset:0;z-index:-1;width:100%;height:100%}
+.hero .wrap{display:grid;gap:32px;align-items:start}
+@media(min-width:980px){.hero .wrap{grid-template-columns:minmax(0,1fr) minmax(400px,470px);align-items:center}}
+.hero h1{font-size:clamp(44px,6.4vw,82px);font-weight:800;color:#fff;font-stretch:80%;letter-spacing:-.005em}
+.hero .tl{display:block;font-family:var(--fd);font-stretch:90%;font-weight:700;font-size:clamp(20px,2.2vw,28px);color:#E6D9BC;margin-top:14px;line-height:1.3}
+.hero p.lead{color:#BFD3C9;font-size:18px;margin:16px 0 0;max-width:34em}
+.hero .acts{display:flex;flex-wrap:wrap;gap:10px;margin-top:24px}
+.trust{list-style:none;display:flex;flex-wrap:wrap;gap:8px 22px;padding:0;margin:28px 0 0;color:#D2E3DA;font-size:15px}
+.trust li{display:flex;align-items:center;gap:8px}.trust .ico{width:18px;height:18px;color:var(--taxi)}
 
-/* booking card */
-.bk{background:#fff;border-radius:22px;box-shadow:0 18px 40px rgba(11,74,54,.14);padding:20px;animation:rise .7s var(--ease) .2s both;scroll-margin-top:80px}
-.bk h2{font-size:24px;color:var(--forest);margin-bottom:12px}
-.stop{position:relative;margin-bottom:10px}
-.stop label{display:block;font-weight:700;font-size:14px;color:var(--muted);margin:0 0 4px 4px}
-.stop input{width:100%;height:50px;border:2px solid var(--line);border-radius:14px;padding:0 44px 0 40px;font:500 16px "Hind Madurai",sans-serif;color:var(--ink);background:#fff}
-.stop input:focus{border-color:var(--forest);outline:0}
-.stop .dot{position:absolute;left:15px;top:44px;width:12px;height:12px;border-radius:50%;background:#1E8A5A}
-.stop.to .dot{background:var(--ink);border-radius:3px}
-.stop .clr{position:absolute;right:6px;top:32px;width:38px;height:38px;border:0;background:none;font-size:22px;color:var(--muted);cursor:pointer;display:none}
-.stop.has .clr{display:block}
-.sug{position:absolute;left:0;right:0;top:100%;z-index:5;background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:0 14px 30px rgba(0,0,0,.12);margin-top:4px;max-height:300px;overflow:auto;display:none}
+/* booking engine */
+.bk{background:#fff;color:var(--ink);border-radius:16px;box-shadow:0 30px 70px rgba(0,0,0,.35);padding:8px 18px 18px}
+.tabs{display:flex;border-bottom:1px solid var(--line);margin:0 -18px 16px;padding:0 6px}
+.tabs button{flex:1;min-height:52px;border:0;background:none;font:700 15.5px var(--fb);color:var(--muted);border-bottom:3px solid transparent;cursor:pointer;margin-bottom:-1px}
+.tabs button[aria-selected=true]{color:var(--forest);border-bottom-color:var(--forest)}
+.stop{position:relative;display:grid;grid-template-columns:20px minmax(0,1fr) auto;align-items:center;gap:6px;border:1px solid #C9D2CD;border-radius:var(--r);padding:0 6px 0 12px;margin-bottom:10px;background:#fff}
+.stop label{position:absolute;left:38px;top:5px;font-size:12px;font-weight:600;color:var(--muted)}
+.stop input{grid-column:2;border:0;outline:0;font:500 16px var(--fb);height:56px;padding:16px 0 0;background:transparent;color:var(--ink);width:100%}
+.stop:focus-within{border-color:var(--forest);box-shadow:0 0 0 3px rgba(11,74,54,.12)}
+.stop .dot{grid-column:1;grid-row:1;width:10px;height:10px;border-radius:50%;background:var(--ok)}
+.stop.to .dot{border-radius:2px;background:var(--ink)}
+.clr{border:0;background:none;width:36px;height:36px;border-radius:50%;cursor:pointer;color:var(--muted);font-size:20px;visibility:hidden}
+.stop.has .clr{visibility:visible}
+.sug{position:absolute;left:-1px;right:-1px;top:calc(100% + 4px);z-index:20;background:#fff;border:1px solid var(--line);border-radius:var(--r);box-shadow:0 12px 30px rgba(0,0,0,.14);display:none;max-height:300px;overflow:auto}
 .sug.on{display:block}
-.sug button{display:block;width:100%;text-align:left;border:0;background:none;padding:10px 14px;font:500 15.5px "Hind Madurai",sans-serif;color:var(--ink);cursor:pointer;border-bottom:1px solid #EEF2EF}
-.sug button:hover,.sug button.hi{background:#EEF5F1}
-.sug small{display:block;color:var(--muted);font-size:13px}
-.chips{display:flex;flex-wrap:wrap;gap:8px;margin:4px 0 12px}
-.chips button{border:1px solid var(--line);background:#F7FAF8;border-radius:999px;padding:6px 12px;font:600 14px "Hind Madurai",sans-serif;color:var(--ink);cursor:pointer}
-.chips button:hover{border-color:var(--forest)}
-.res{display:grid;grid-template-rows:0fr;transition:grid-template-rows .45s var(--ease)}
-.res.on{grid-template-rows:1fr}
-.res>div{overflow:hidden;min-height:0}
-.bmap{height:190px;border-radius:14px;background:#E7F1EC;margin:6px 0 10px;overflow:hidden}
-.bmap[hidden]{display:none}
-.rinfo{font-weight:600;color:var(--muted);font-size:15px;margin:4px 0 8px}
-.seg{display:flex;background:#EEF3F0;border-radius:999px;padding:4px;margin:0 0 10px}
-.seg[hidden]{display:none}
-.seg button{flex:1;border:0;background:none;border-radius:999px;padding:8px;font:700 14.5px "Hind Madurai",sans-serif;color:var(--muted);cursor:pointer;transition:background .2s}
-.seg button.on{background:#fff;color:var(--forest);box-shadow:0 2px 6px rgba(0,0,0,.08)}
-.vl{display:grid;gap:8px;margin-bottom:12px}
-.vl label{position:relative;display:grid;grid-template-columns:58px 1fr auto;gap:12px;align-items:center;border:2px solid var(--line);border-radius:14px;padding:8px 12px;cursor:pointer;transition:border-color .2s,background .2s}
+.sug button{display:block;width:100%;text-align:left;border:0;background:none;padding:10px 14px;font:500 15.5px var(--fb);cursor:pointer;color:var(--ink);border-bottom:1px solid #F0F3F1}
+.sug button small{display:block;color:var(--muted);font-size:13px}
+.sug button:hover,.sug button.hi{background:var(--paper)}
+.when{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+.fld{display:grid;gap:4px}
+.fld span{font-size:12px;font-weight:600;color:var(--muted)}
+.fld input,.fld select{height:48px;border:1px solid #C9D2CD;border-radius:var(--r);padding:0 10px;font:500 16px var(--fb);color:var(--ink);background:#fff;width:100%}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 6px}
+.chips button,.dest button{border:1px solid var(--line);background:#fff;border-radius:999px;padding:6px 12px;font:600 13.5px var(--fb);color:var(--ink);cursor:pointer;min-height:34px}
+.chips button:hover,.dest button:hover{border-color:var(--forest)}
+.berr{color:var(--err);font-size:14px;margin:4px 0 0;min-height:0}
+.res{display:none;margin-top:10px;border-top:1px solid var(--line);padding-top:12px}
+.res.on{display:block}
+.bmap{height:150px;border-radius:var(--r);margin-bottom:10px;overflow:hidden}
+.rinfo{margin:0 0 8px;font-weight:600;font-size:14.5px;color:var(--forest)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:999px;padding:3px;margin-bottom:8px}
+.seg button{border:0;background:none;border-radius:999px;padding:6px 14px;font:600 14px var(--fb);cursor:pointer;color:var(--ink)}
+.seg button.on{background:var(--forest);color:#fff}.seg button:disabled{opacity:.4;cursor:default}
+.vl{display:grid;gap:6px;max-height:300px;overflow:auto;margin-bottom:10px}
+.vl label{display:grid;grid-template-columns:56px minmax(0,1fr) auto;align-items:center;gap:10px;border:1px solid var(--line);border-radius:var(--r);padding:6px 10px;cursor:pointer}
+.vl label.on{border-color:var(--forest);box-shadow:0 0 0 2px var(--forest) inset}
 .vl input{position:absolute;opacity:0;pointer-events:none}
-.vl label.on{border-color:var(--forest);background:#F1F8F4}
-.vl label:focus-within{outline:3px solid var(--taxi)}
-.vl img{width:58px;height:38px;object-fit:contain}
-.vl b{display:block;font-size:16px}.vl small{color:var(--muted);font-size:13px}
-.vl .p{font:800 20px "Baloo Thambi 2",sans-serif;color:var(--forest);white-space:nowrap}
+.vl img{width:56px;height:38px;object-fit:contain}
+.vl b{display:block;font-size:15.5px}.vl small{color:var(--muted);font-size:13px}
+.vl .p{font:800 22px var(--fd);font-stretch:85%;color:var(--forest);white-space:nowrap}
+.go{width:100%}
 .bnote{font-size:13px;color:var(--muted);margin:8px 0 0}
-.berr{color:var(--danger);font-weight:600;font-size:14.5px;margin:0}
-.berr:empty{display:none}
-.bk .go{width:100%}
+.rent .pk{display:grid;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:6px;margin-bottom:10px}
+.rent .pk button{border:1px solid var(--line);background:#fff;border-radius:var(--r);padding:8px 4px;cursor:pointer;font:600 14px var(--fb);color:var(--ink)}
+.rent .pk button b{display:block;font:800 18px var(--fd);font-stretch:90%}
+.rent .pk button small{color:var(--muted);font-size:12.5px}
+.rent .pk button.on{border-color:var(--forest);box-shadow:0 0 0 2px var(--forest) inset}
 
-section{padding:64px 0}
-section h2{font-size:clamp(28px,3.6vw,40px);color:var(--forest);margin-bottom:10px}
-section p.sub{color:var(--muted);max-width:62ch;margin:0 0 28px}
-.alt{background:#fff}
+/* services */
+.svc{display:grid;gap:0;margin-top:28px;border-top:2px solid var(--forest)}
+@media(min-width:820px){.svc{grid-template-columns:1fr 1fr;column-gap:48px}}
+.svc li{list-style:none;display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:14px;align-items:start;padding:18px 0;border-bottom:1px solid var(--line)}
+.svc .ic{width:44px;height:44px;border-radius:10px;background:var(--paper);display:grid;place-items:center;color:var(--forest)}
+.svc p{margin:4px 0 0;color:var(--muted);font-size:15.5px}
+.svc a.lk{font-weight:700;text-decoration:none;white-space:nowrap;align-self:center;padding:8px 0}
+.svc{padding:0;margin-left:0}
 
-/* fares board */
-.board{background:var(--forest);color:#fff;border-radius:22px;overflow:hidden}
-.row{display:grid;grid-template-columns:92px 1fr auto;gap:18px;align-items:center;padding:16px 22px;border-top:1px solid rgba(255,255,255,.12)}
-.row:first-child{border-top:0}
-.row img{width:92px;height:62px;object-fit:contain;background:#fff;border-radius:12px}
-.row h3{font-size:22px}.row small{display:block;color:#BFD6CB;font-size:14.5px}
-.price{text-align:right;font:800 26px "Baloo Thambi 2",sans-serif;color:var(--taxi);white-space:nowrap}
-.price small{font:500 14px "Hind Madurai",sans-serif;color:#BFD6CB}
-.note{font-size:14.5px;color:var(--muted);margin-top:14px}
-@media(max-width:560px){.row{grid-template-columns:64px 1fr;gap:4px 14px;padding:14px 16px}.row img{width:64px;height:46px;grid-row:span 2}.price{grid-column:2;text-align:left;font-size:22px}}
+/* fleet */
+.board{display:grid;gap:0;margin-top:26px;border-top:2px solid var(--forest)}
+.board .row{display:grid;grid-template-columns:92px minmax(0,1fr) auto;gap:16px;align-items:center;padding:14px 0;border-bottom:1px solid var(--line)}
+.board img{width:92px;height:62px;object-fit:contain}
+.board h3{font-size:21px}.board small{color:var(--muted);font-size:14.5px}
+.board .price{font:800 30px var(--fd);font-stretch:85%;color:var(--forest);text-align:right;white-space:nowrap}
+.board .price small{display:block;font:500 13px var(--fb);color:var(--muted)}
+.note{font-size:13.5px;color:var(--muted);margin-top:12px}
+@media(max-width:600px){.board .row{grid-template-columns:72px minmax(0,1fr) auto;gap:12px}.board img{width:72px;height:50px}.board .price{font-size:26px}.board .price small{font-size:12px;max-width:8.5em;margin-left:auto;white-space:normal}.board small{font-size:13.5px}
+  .towns{columns:1}.app .shot{display:none}}
 
-/* trip kinds */
-.kinds{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:28px}
-.kind h3{font-size:24px;margin-bottom:6px}.kind p{margin:0 0 10px;color:var(--muted)}
-.kind .tag{display:block;font-weight:700;color:var(--forest);margin-bottom:10px}
-.kind a{font-weight:700}
-.route{display:grid;grid-template-columns:1fr auto auto;gap:20px;align-items:center;background:var(--paper);border:1px solid var(--line);border-radius:22px;padding:22px 26px;margin-top:32px}
-.route .from{font:700 22px "Baloo Thambi 2",sans-serif}.route .km{color:var(--muted)}
-.route .amt{font:800 40px "Baloo Thambi 2",sans-serif;color:var(--forest)}
-.dest{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}
-.dest button{background:var(--paper);border:1px solid var(--line);border-radius:999px;padding:8px 16px;font:600 15.5px "Hind Madurai",sans-serif;color:var(--ink);cursor:pointer}
-.dest button:hover{border-color:var(--forest)}
-@media(max-width:640px){.route{grid-template-columns:1fr}.route .amt{font-size:34px}}
+/* outstation */
+.route{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:18px;align-items:center;background:var(--deep);color:#fff;border-radius:14px;padding:20px 22px;margin-top:26px}
+.route .from{font-weight:700;font-size:18px}.route .km{color:#B9CEC4;font-size:14.5px}
+.route .amt{font:800 40px var(--fd);font-stretch:80%;color:var(--taxi);white-space:nowrap}
+@media(max-width:620px){.route{grid-template-columns:1fr}.route .btn{width:100%}}
+.dest{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+
+/* corporate */
+.corp{display:grid;gap:28px;align-items:start}
+@media(min-width:900px){.corp{grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr)}}
+.ticks{list-style:none;padding:0;margin:20px 0 0;display:grid;gap:12px}
+.ticks li{display:grid;grid-template-columns:26px minmax(0,1fr);gap:10px}
+.ticks .ico{color:var(--ok);margin-top:3px}
+.panel{border:1px solid var(--line);border-radius:14px;padding:22px;background:#fff}
+.panel h3{margin-bottom:6px}
+
+/* service area */
+.area{display:grid;gap:28px;align-items:center}
+@media(min-width:900px){.area{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}}
+.amap{position:relative;border-radius:14px;overflow:hidden;background:var(--deep);aspect-ratio:1/1;max-height:560px}
+.amap svg{position:absolute;inset:0;width:100%;height:100%}
+.towns{columns:2;column-gap:24px;padding:0;margin:18px 0 0;list-style:none}
+.towns li{break-inside:avoid;padding:6px 0;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:10px}
+.towns small{color:var(--muted)}
 
 /* places */
-.places{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:22px}
-.place .pic{aspect-ratio:8/5;border-radius:18px;overflow:hidden;background:#E7F1EC}
-.place .pic svg,.place .pic img{width:100%;height:100%;display:block;object-fit:cover}
-.place h3{font-size:21px;margin:12px 0 2px}.place p{margin:0;color:var(--muted);font-size:15.5px}
-
-/* app */
-.appband{display:grid;grid-template-columns:auto 1fr;gap:32px;align-items:center}
-.qr{width:150px;height:150px;background:#fff;border-radius:16px;padding:10px;border:1px solid var(--line)}
-@media(max-width:640px){.appband{grid-template-columns:1fr}.qr{width:130px;height:130px}}
+.places{display:grid;gap:18px;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));margin-top:26px}
+.place .pic{aspect-ratio:16/10;border-radius:12px;overflow:hidden;background:var(--paper)}
+.place .pic img,.place .pic svg{width:100%;height:100%;object-fit:cover}
+.place h3{margin-top:10px;font-size:19px}.place p{margin:4px 0 0;color:var(--muted);font-size:15px}
+.credit{font-size:12.5px;color:var(--muted);margin-top:18px}
 
 /* safety */
-.safe{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:18px 36px;padding:0;margin:0;list-style:none}
-.safe li{padding-left:34px;position:relative}
-.safe li::before{content:"";position:absolute;left:0;top:6px;width:20px;height:20px;border-radius:50%;background:var(--taxi);box-shadow:inset 0 0 0 6px var(--forest)}
-.safe b{display:block;font-size:18px}.safe span{color:var(--muted)}
+.safe{list-style:none;padding:0;margin:26px 0 0;display:grid;gap:0;border-top:2px solid var(--forest)}
+@media(min-width:820px){.safe{grid-template-columns:1fr 1fr;column-gap:48px}}
+.safe li{display:grid;grid-template-columns:44px minmax(0,1fr);gap:14px;padding:18px 0;border-bottom:1px solid var(--line)}
+.safe .ic{width:44px;height:44px;border-radius:10px;background:var(--paper);display:grid;place-items:center;color:var(--forest)}
+.safe b{display:block;font-size:17.5px}.safe span span{color:var(--muted);font-size:15.5px}
 
-/* drivers: a real sequence, so the steps are numbered */
-.drivers{background:var(--taxi)}
-.drivers h2{color:var(--ink)}
-.drivers p.sub{color:#3A3A1F}
-.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:20px;counter-reset:s;margin:0 0 26px;padding:0;list-style:none}
-.steps li{counter-increment:s;background:rgba(255,255,255,.55);border-radius:18px;padding:16px 18px}
-.steps li::before{content:counter(s);display:grid;place-items:center;width:34px;height:34px;border-radius:50%;background:var(--ink);color:var(--taxi);font:800 18px "Baloo Thambi 2";margin-bottom:8px}
-.steps b{display:block;font-size:17.5px}.steps span{font-size:15px;color:#3A3A1F}
-.drivers .acts{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
-
-/* faq */
-details{border-bottom:1px solid var(--line);padding:16px 0}
-summary{cursor:pointer;font-weight:700;font-size:18px;list-style:none;display:flex;justify-content:space-between;gap:16px}
-summary::-webkit-details-marker{display:none}
-summary::after{content:"+";font:800 24px "Baloo Thambi 2";color:var(--forest);line-height:1;transition:transform .25s var(--ease)}
-details[open] summary::after{transform:rotate(45deg)}
-details p{margin:10px 0 0;color:var(--muted);max-width:70ch}
-
-/* contact */
-.contact{display:grid;grid-template-columns:1fr 1.1fr;gap:40px}
-.cards{display:grid;gap:12px;align-content:start}
-.cc{display:flex;gap:14px;align-items:center;background:var(--paper);border:1px solid var(--line);border-radius:18px;padding:14px 16px;text-decoration:none;color:var(--ink)}
-a.cc:hover{border-color:var(--forest)}
-.cc i{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;background:#E7F1EC;font-style:normal;font-size:20px;flex:none}
-.cc b{display:block}.cc small{color:var(--muted);word-break:break-word}
-form.enq{background:var(--paper);border:1px solid var(--line);border-radius:22px;padding:22px;display:grid;gap:12px;position:relative}
-form.enq label{font-weight:700;font-size:14.5px;color:var(--muted);display:grid;gap:4px}
-form.enq input,form.enq select,form.enq textarea{width:100%;border:2px solid var(--line);border-radius:12px;padding:11px 12px;font:500 16px "Hind Madurai",sans-serif;color:var(--ink);background:#fff}
-form.enq input:focus,form.enq select:focus,form.enq textarea:focus{border-color:var(--forest);outline:0}
-.hp{position:absolute;left:-9999px;width:1px;height:1px}
-.fmsg{font-weight:600;margin:0}.fmsg:empty{display:none}.fmsg.ok{color:var(--forest)}.fmsg.err{color:var(--danger)}
-@media(max-width:820px){.contact{grid-template-columns:1fr}}
-
-footer{background:var(--ink);color:#C9D6CF;padding:44px 0 96px;font-size:15.5px}
-footer .wrap{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:26px}
-footer h3{color:#fff;font-size:19px;margin-bottom:8px}
-footer a{color:#fff}
-footer ul{list-style:none;padding:0;margin:0;line-height:2}
-.copy{grid-column:1/-1;border-top:1px solid #2A3D35;padding-top:18px;font-size:14px}
-
-/* always-on help buttons */
-.fab{position:fixed;right:16px;bottom:16px;z-index:15;display:flex;flex-direction:column;gap:10px}
-.fab a{width:56px;height:56px;border-radius:50%;display:grid;place-items:center;box-shadow:0 8px 22px rgba(0,0,0,.22);transition:transform .15s var(--ease)}
-.fab a:hover{transform:scale(1.06)}
-.fab .wa{background:#1FA855}.fab .cl{background:var(--forest)}
-.fab svg{width:28px;height:28px;fill:#fff}
-.fab{transition:opacity .25s var(--ease),transform .25s var(--ease)}
-.fab.away{opacity:0;transform:translateY(12px);pointer-events:none}
-@media(max-width:560px){.vl label{grid-template-columns:46px 1fr auto;padding:6px 10px;gap:10px}.vl img{width:46px;height:32px}.vl b{font-size:15px}.chips{gap:6px}.chips button{padding:5px 10px;font-size:13.5px}}
-@media(prefers-reduced-motion:reduce){.taxi{animation:none;transform:translateX(560px)}.intro>*,.bk{animation:none}html{scroll-behavior:auto}*{transition:none!important}}
-
-/* ===== v2 skin (11 Nov 2026) ===== */
-:root{--night:#07291F;--night2:#0A3A2C;--mint:#BFE3D2;--sand:#F3EBD3}
-body{font-size:17.5px}
-.wrap{max-width:1200px;padding:0 24px}
-section{padding:88px 0}
-section h2{font-size:clamp(30px,4.2vw,50px);font-weight:800;letter-spacing:-.01em;margin-bottom:14px}
-section p.sub{font-size:clamp(17px,1.5vw,19.5px);margin-bottom:36px}
-.btn{min-height:52px;padding:0 26px;font-size:16.5px}
-.btn.y{box-shadow:0 6px 0 #C9930A}.btn.y:active{box-shadow:0 2px 0 #C9930A;transform:translateY(4px)}
-
-/* header: quiet over the night hero */
-.top{background:rgba(7,41,31,.92);border-bottom-color:rgba(255,255,255,.08)}
-.top .wrap{height:70px}
-.logo{color:#fff}.logo b{font-size:22px}
-.menu a{color:#E3F1EA}.menu a:hover{background:rgba(255,255,255,.1)}
-.menu a.btn.g{background:var(--taxi);color:var(--ink)}.menu a.btn.g:hover{background:#FFCD45}
-.lang{background:transparent;border-color:rgba(255,255,255,.35);color:#fff}
-.burger span{background:#fff}
-@media(max-width:940px){.menu{top:70px;background:var(--night);border-bottom-color:rgba(255,255,255,.1)}}
-html{scroll-padding-top:84px}
-
-/* hero: Vellore at dusk */
-.hero{background:linear-gradient(180deg,var(--night) 0%,#0B4A36 62%,#12604A 100%);color:#fff}
-.hero .wrap{grid-template-columns:1.08fr .92fr;gap:48px;padding-top:64px}
-.hero h1{color:#fff;font-size:clamp(40px,6.2vw,80px);line-height:1.02;letter-spacing:-.015em;text-wrap:balance}
-.hero p.lead{color:var(--mint);font-size:clamp(18px,1.9vw,22px);margin:18px 0 28px}
-.hero .btn.o{color:var(--ink);background:var(--taxi);border-color:var(--taxi);box-shadow:0 6px 0 #C9930A;font-size:18px;min-height:56px}
-.soon{background:rgba(255,194,26,.14);border-color:rgba(255,194,26,.5);color:#FFF3CF;margin-bottom:20px}.soon b{background:var(--taxi);color:var(--ink)}.soon:hover{background:rgba(255,194,26,.24)}
-.bk{border-radius:26px;padding:26px;box-shadow:0 30px 70px rgba(0,0,0,.38);color:var(--ink);position:relative;z-index:3}
-.bk h2{font-size:28px;margin-bottom:16px}
-.stop input{height:56px;border-radius:16px;font-size:17px}.stop .dot{top:47px}.stop .clr{top:35px}
-.scene{margin-top:-90px;min-height:260px}
-@keyframes drive{from{transform:translateX(-220px)}to{transform:translateX(600px)}}
-@media(max-width:940px){.hero .wrap{grid-template-columns:1fr;padding-top:36px;gap:28px}.scene{height:230px;margin-top:-10px}}
-@media(prefers-reduced-motion:reduce){.taxi{transform:translateX(600px)}}
-
-/* fares */
-#fares{background:var(--paper)}
-.board{border-radius:28px;box-shadow:0 24px 50px rgba(11,74,54,.22)}
-.row{padding:20px 28px;grid-template-columns:112px 1fr auto}
-.row img{width:112px;height:76px;border-radius:14px}
-.row h3{font-size:25px}.price{font-size:32px}
-@media(max-width:560px){.row{grid-template-columns:72px 1fr;padding:16px 18px}.row img{width:72px;height:52px}.price{font-size:24px}}
-
-/* trip kinds: one picture card per kind */
-.kinds{grid-template-columns:repeat(4,1fr);gap:22px}
-.kind{background:var(--paper);border:1px solid var(--line);border-radius:24px;padding:0 22px 24px;display:flex;flex-direction:column;overflow:hidden;transition:transform .25s var(--ease),box-shadow .25s var(--ease)}
-.kind:hover{transform:translateY(-4px);box-shadow:0 18px 36px rgba(11,74,54,.14)}
-.kind img{display:block;width:calc(100% + 44px);max-width:none;margin:0 -22px 18px;height:170px;object-fit:contain;background:#fff;border-bottom:1px solid var(--line);padding:14px 20px 4px}
-.kind h3{font-size:26px}.kind p{flex:1}
-.kind .tag{font:800 20px "Baloo Thambi 2",sans-serif}
-@media(max-width:1020px){.kinds{grid-template-columns:repeat(2,1fr)}}
-@media(max-width:560px){.kinds{grid-template-columns:1fr}.kind img{height:150px}}
-.route{background:var(--night);color:#fff;border:0;border-radius:28px;padding:28px 32px;margin-top:40px}
-.route .km{color:var(--mint)}.route .amt{color:var(--taxi);font-size:48px}
-.route .btn.g{background:var(--taxi);color:var(--ink)}
-.dest button{background:#fff;padding:10px 18px}
-
-/* places */
-.credit{font-size:12.5px;color:var(--muted);margin:22px 0 0;max-width:none}.credit a{color:inherit}
-.places{gap:26px}.place .pic{border-radius:22px;box-shadow:0 10px 24px rgba(11,74,54,.1)}
-.place h3{font-size:23px;margin-top:14px}
-
-/* app: the product itself */
-.appsec{background:var(--night);color:#fff;overflow:hidden;padding:0}
-.appsec .appband{grid-template-columns:auto auto 1fr;gap:44px;align-items:center;min-height:440px}
-.appsec h2{color:#fff}.appsec p.sub{color:var(--mint)}
-.appsec .btn.g{background:var(--taxi);color:var(--ink);box-shadow:0 6px 0 #C9930A}
-.phone{width:264px;align-self:end;margin:64px 0 -150px;background:#0E1A16;border-radius:38px;padding:10px;box-shadow:0 30px 60px rgba(0,0,0,.45),inset 0 0 0 2px #2A3D35}
-.phone .scr{border-radius:29px;overflow:hidden;background:#fff}
-.phone svg,.phone img{display:block;width:100%;height:auto}
-.appsec .qr{width:156px;height:156px;border:0;border-radius:20px;padding:12px}
-@media(max-width:900px){.appsec .appband{grid-template-columns:1fr auto;gap:24px;padding-top:56px}.appsec .appband>div:last-child{grid-column:1/-1;order:-1}.phone{width:210px;margin:0 0 -60px;justify-self:center}.appsec .qr{align-self:center}}
-@media(max-width:520px){.appsec .qr{display:none}.appsec .appband{grid-template-columns:1fr}}
-
-/* safety: four promises with their own marks */
-.safe{grid-template-columns:repeat(2,1fr);gap:22px}
-.safe li{background:#fff;border:1px solid var(--line);border-radius:22px;padding:24px 24px 24px 92px;min-height:112px}
-.safe li::before{left:24px;top:24px;width:50px;height:50px;border-radius:16px;box-shadow:none;background:var(--forest) center/26px no-repeat}
-.safe li:nth-child(1)::before{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23FFC21A' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='4' y='10' width='16' height='10' rx='2'/%3E%3Cpath d='M8 10V7a4 4 0 0 1 8 0v3'/%3E%3C/svg%3E")}
-.safe li:nth-child(2)::before{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23FFC21A' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 21s7-6.2 7-11a7 7 0 0 0-14 0c0 4.800 7 11 7 11Z'/%3E%3Ccircle cx='12' cy='10' r='2.500'/%3E%3C/svg%3E")}
-.safe li:nth-child(3)::before{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23FFC21A' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 3l8 3v6c0 5-3.500 8-8 9-4.500-1-8-4-8-9V6l8-3Z'/%3E%3Cpath d='M8.500 12l2.500 2.500 4.500-5'/%3E%3C/svg%3E")}
-.safe li:nth-child(4)::before{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23FFC21A' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 3l18 18'/%3E%3Cpath d='M10.600 5.100A10 10 0 0 1 12 5c5 0 9 4 10 7a12 12 0 0 1-3 4.200M6.500 6.600C4.300 8 2.700 10 2 12c1 3 5 7 10 7 1.600 0 3-.400 4.300-1'/%3E%3C/svg%3E")}
-.safe b{font-size:20px;margin-bottom:2px}
-@media(max-width:760px){.safe{grid-template-columns:1fr}}
+/* apps */
+.apps{background:var(--deep);color:#EAF3EE}
+.apps h2{color:#fff}.apps .sub{color:#B9CEC4}
+.appg{display:grid;gap:18px;margin-top:28px}
+@media(min-width:860px){.appg{grid-template-columns:1fr 1fr}}
+.app{display:grid;grid-template-columns:minmax(0,1fr);align-content:start;gap:18px;background:#0B3A2B;border:1px solid #1C5A44;border-radius:16px;padding:22px}
+.app h3{color:#fff}.app p{color:#B9CEC4;margin:8px 0 16px;font-size:15.5px}
+.app.q{grid-template-columns:minmax(0,1fr) 120px}.app .qr{width:120px;height:120px;background:#fff;border-radius:10px;padding:8px}
+.app .shot{grid-column:1/-1;border-radius:10px;overflow:hidden;max-height:220px}
+.app .shot img{width:100%;object-fit:cover;object-position:top}
+.app ul{margin:0 0 16px;padding-left:18px;color:#D2E3DA;font-size:15px}
 
 /* drivers */
-.drivers{position:relative}
-.offer{display:inline-flex;align-items:baseline;gap:10px;margin:0 0 14px;background:var(--ink);color:#fff;border-radius:18px;padding:6px 18px 6px 14px;font-weight:700}
-.offer b{font:800 40px/1.1 "Baloo Thambi 2",sans-serif;color:var(--taxi)}
-.steps li{background:#fff;border-radius:22px;padding:20px 22px;box-shadow:0 8px 0 rgba(16,36,28,.12)}
-.steps li::before{width:40px;height:40px;font-size:21px}
-.drivers .btn.g{background:var(--ink)}
+.drivers{background:var(--taxi);color:var(--ink)}
+.drivers h2{color:var(--ink)}.drivers .sub{color:#3B3416}
+.offer{display:inline-flex;align-items:center;gap:8px;background:var(--ink);color:#fff;border-radius:8px;padding:6px 12px;margin:0 0 14px;font-weight:600}
+.offer b{font:800 24px var(--fd);color:var(--taxi)}
+.steps{list-style:none;padding:0;margin:24px 0 0;display:grid;gap:10px;counter-reset:s}
+@media(min-width:820px){.steps{grid-template-columns:repeat(4,minmax(0,1fr))}}
+.steps li{counter-increment:s;background:#fff;border-radius:12px;padding:16px}
+.steps li::before{content:counter(s);display:grid;place-items:center;width:28px;height:28px;border-radius:50%;background:var(--ink);color:var(--taxi);font-weight:800;margin-bottom:8px}
+.steps b{display:block}.steps span span{color:var(--muted);font-size:15px}
+.drivers .acts{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px}
+.drivers .btn.o{background:transparent;border-color:var(--ink);color:var(--ink)}
 
-/* faq + contact */
-details{padding:20px 0}summary{font-size:20px}
-.cc{background:#fff;border-radius:20px;padding:16px 18px}.cc i{background:var(--forest);width:48px;height:48px;border-radius:14px}
-form.enq{background:#fff;border-radius:26px;padding:28px;box-shadow:0 18px 40px rgba(11,74,54,.1)}
-footer{background:var(--night)}
+/* faq */
+.faq{max-width:860px}
+details{border-bottom:1px solid var(--line)}
+summary{cursor:pointer;list-style:none;padding:18px 36px 18px 0;font-weight:700;font-size:17.5px;position:relative}
+summary::-webkit-details-marker{display:none}
+summary::after{content:"";position:absolute;right:8px;top:24px;width:10px;height:10px;border-right:2px solid var(--forest);border-bottom:2px solid var(--forest);transform:rotate(45deg);transition:transform .2s}
+details[open] summary::after{transform:rotate(-135deg);top:28px}
+details p{margin:0 0 18px;color:var(--muted)}
+
+/* contact */
+.contact{display:grid;gap:28px;margin-top:26px;align-items:start}
+@media(min-width:900px){.contact{grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr)}}
+.cards{display:grid;gap:0;border-top:2px solid var(--forest)}
+.cc{display:grid;grid-template-columns:44px minmax(0,1fr);gap:14px;align-items:center;padding:14px 0;border-bottom:1px solid var(--line);text-decoration:none;color:var(--ink)}
+.cc .ic{width:44px;height:44px;border-radius:10px;background:var(--paper);display:grid;place-items:center;color:var(--forest)}
+.cc b{display:block}.cc small{color:var(--muted);font-size:15px}
+.enq{display:grid;gap:12px;background:#fff;border:1px solid var(--line);border-radius:14px;padding:22px}
+.enq label{display:grid;gap:4px;font-size:13px;font-weight:600;color:var(--muted)}
+.enq input,.enq select,.enq textarea{border:1px solid #C9D2CD;border-radius:var(--r);padding:12px;font:500 16px var(--fb);color:var(--ink);background:#fff;width:100%}
+.enq input,.enq select{height:48px;padding:0 12px}
+.hp{position:absolute;left:-9999px;width:1px;height:1px;opacity:0}
+.fmsg{margin:0;font-size:14.5px;min-height:1.4em}.fmsg.err{color:var(--err)}.fmsg.ok{color:var(--ok);font-weight:600}
+
+/* footer */
+footer{background:var(--deep);color:#C9DCD2;padding:56px 0 28px;font-size:15px}
+footer .wrap{display:grid;gap:28px;grid-template-columns:repeat(auto-fit,minmax(180px,1fr))}
+footer h3{color:#fff;font-size:18px;margin-bottom:10px}
+footer ul{list-style:none;padding:0;margin:0;display:grid;gap:8px}
+footer a{color:#E3EEE8}
+footer .copy{grid-column:1/-1;border-top:1px solid #1C4A3A;padding-top:18px;margin:6px 0 0;font-size:13.5px;color:#9DB8AC}
+
+/* call button (phones) */
+.fab{position:fixed;right:16px;bottom:16px;z-index:25;display:flex;flex-direction:column;gap:10px;transition:transform .25s var(--ease),opacity .2s}
+.fab.away{transform:translateY(90px);opacity:0;pointer-events:none}
+.fab a{width:56px;height:56px;border-radius:50%;display:grid;place-items:center;box-shadow:0 8px 22px rgba(0,0,0,.25)}
+.fab .cl{background:var(--taxi)}.fab .wa{background:#1E8A5A}
+.fab svg{width:26px;height:26px;fill:var(--ink)}.fab .wa svg{fill:#fff}
+@media(min-width:1081px){.fab{display:none}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
 </style>
 </head>
 <body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-city" viewBox="0 0 24 24"><path d="M3 17h18M5 17l1.5-5h11L19 17M7 12l1.2-3.5h7.6L17 12"/><circle cx="7.5" cy="17.5" r="1.5"/><circle cx="16.5" cy="17.5" r="1.5"/></symbol>
+  <symbol id="i-plane" viewBox="0 0 24 24"><path d="M2 16l20-6-3-2-6 2-5-6H6l3 7-5 1.5L2 11z"/><path d="M3 21h18"/></symbol>
+  <symbol id="i-road" viewBox="0 0 24 24"><path d="M8 3 4 21M16 3l4 18M12 5v2M12 11v2M12 17v2"/></symbol>
+  <symbol id="i-loop" viewBox="0 0 24 24"><path d="M4 12a8 8 0 0 1 14-5.3L20 9M20 4v5h-5M20 12a8 8 0 0 1-14 5.3L4 15M4 20v-5h5"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+  <symbol id="i-brief" viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5h6v2M3 12h18"/></symbol>
+  <symbol id="i-auto" viewBox="0 0 24 24"><path d="M4 17V9a4 4 0 0 1 4-4h6l4 6v6M4 13h14M10 5v8"/><circle cx="7" cy="17.5" r="1.5"/><circle cx="17" cy="17.5" r="1.5"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21s7-6.2 7-12a7 7 0 0 0-14 0c0 5.8 7 12 7 12z"/><circle cx="12" cy="9" r="2.5"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 4.5-3.4 8.2-8 9-4.6-.8-8-4.5-8-9V6z"/><path d="M8.5 12l2.5 2.5 4.5-5"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></symbol>
+  <symbol id="i-share" viewBox="0 0 24 24"><circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="M8.2 10.8l7.6-4.4M8.2 13.2l7.6 4.4"/></symbol>
+  <symbol id="i-eye" viewBox="0 0 24 24"><path d="M3 3l18 18M10.6 6.1A9.8 9.8 0 0 1 12 6c5 0 9 6 9 6a16 16 0 0 1-2.8 3.4M6.2 7.6C4.2 9.2 3 12 3 12s4 6 9 6c1.4 0 2.7-.4 3.9-1"/></symbol>
+  <symbol id="i-phone" viewBox="0 0 24 24"><path d="M6.6 10.8a15 15 0 0 0 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1A17 17 0 0 1 3 4c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.3 0 .7-.2 1z"/></symbol>
+  <symbol id="i-chat" viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.8 7L4 20l1.1-4.6A8 8 0 1 1 21 12z"/></symbol>
+  <symbol id="i-mail" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></symbol>
+  <symbol id="i-steer" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2"/><path d="M3.5 10h17M12 14v7"/></symbol>
+</svg>
+
 <header class="top" id="top"><div class="wrap">
-  <a class="logo" href="/vellore/"><img src="/icon-192.png?v=9" alt="" width="38" height="38"><b>Vellore Taxi<sup class="tm">™</sup></b></a>
+  <a class="logo" href="#"><img src="/icon-192.png?v=9" alt="" width="40" height="40"><b>Vellore Taxi</b></a>
   <button class="burger" id="burger" type="button" aria-label="Menu" aria-expanded="false" aria-controls="menu"><span></span><span></span><span></span></button>
   <nav class="menu" id="menu" aria-label="Main">
-    <a href="#book">Book</a>
-    <a href="#fares"><span class="ta">கட்டணம்</span><span class="en">Fares</span></a>
-    <a href="#trips">Outstation</a>
-    <a href="#places"><span class="ta">இடங்கள்</span><span class="en">Places</span></a>
-    <a href="#drivers"><span class="ta">Driver-ஆக சேர</span><span class="en">Drive with us</span></a>
+    <a href="#book"><span class="ta">Taxi book</span><span class="en">Book a taxi</span></a>
+    <a href="#services"><span class="ta">சேவைகள்</span><span class="en">Services</span></a>
+    <a href="#fares"><span class="ta">வண்டிகள்</span><span class="en">Fleet</span></a>
+    <a href="#corporate">Corporate</a>
+    <a href="#drivers"><span class="ta">Driver-ஆக சேர</span><span class="en">Become a driver</span></a>
     <a href="#contact"><span class="ta">தொடர்பு</span><span class="en">Contact</span></a>
-    <button class="lang" id="lang" type="button"><span class="ta">English</span><span class="en">தமிழ்</span></button>
-    <a class="btn g callsm" data-tel="phone" href="tel:+919344640416"><span class="ta">அழைக்க</span><span class="en">Call</span></a>
   </nav>
+  <button class="lang" id="lang" type="button"><span class="ta">English</span><span class="en">தமிழ்</span></button>
+  <a class="login" href="/?app=1"><span class="ta">Login</span><span class="en">Login</span></a>
+  <a class="btn y hide-s" href="#book" data-focus="bf"><span class="ta">Book பண்ணு</span><span class="en">Book now</span></a>
 </div></header>
 
 <main>
-<section class="hero" style="padding:0" aria-labelledby="h1">
+<section class="hero" aria-labelledby="h1">
+  <svg class="map" id="heromap" viewBox="0 0 1440 760" preserveAspectRatio="xMidYMid slice" aria-hidden="true"></svg>
   <div class="wrap">
-    <div class="intro">
-      <a class="soon" id="soon" href="#book"><b><span class="ta">இப்போ வேலூரில்</span><span class="en">Now live in Vellore</span></b> <span class="ta">இப்பவே book பண்ணுங்க · Driver-களுக்கு Commission 0% →</span><span class="en">Book your ride now · Drivers: 0% commission →</span></a>
-      <h1 id="h1"><span class="ta">வேலூர் எங்கும், ஒரு டச்சில் டாக்ஸி.</span><span class="en">A taxi anywhere in Vellore, in one tap.</span></h1>
-      <p class="lead"><span class="ta">Katpadi-யிலிருந்து CMC வரை, கோட்டையிலிருந்து சென்னை விமான நிலையம் வரை. கட்டணம் book பண்றதுக்கு முன்னாடியே தெரியும்.</span><span class="en">From Katpadi to CMC, from the Fort to Chennai Airport. You see the fare before you book.</span></p>
-      <div class="cta"><a class="btn o" data-tel="phone" href="tel:+919344640416"><span class="ta">அழைத்து book பண்ண:</span><span class="en">Book by phone:</span> <span data-show="phone">93446 40416</span></a></div>
+    <div>
+      <h1 id="h1"><span class="en">Vellore, your journey starts here.</span><span class="ta">வேலூர், உங்கள் பயணம் இங்கே தொடங்குகிறது.</span>
+        <span class="tl"><span class="en">வேலூர், உங்கள் பயணம் இங்கே தொடங்குகிறது.</span><span class="ta">Vellore, your journey starts here.</span></span></h1>
+      <p class="lead"><span class="en">Reliable rides. Transparent fares. Comfortable journeys. From Katpadi Junction to CMC, from the Fort to Chennai Airport — you see the fare before you book.</span><span class="ta">நம்பகமான பயணம். வெளிப்படையான கட்டணம். வசதியான பயணம். Katpadi Junction-லிருந்து CMC வரை, கோட்டையிலிருந்து சென்னை விமான நிலையம் வரை — book பண்றதுக்கு முன்பே கட்டணம் தெரியும்.</span></p>
+      <div class="acts"><a class="btn y" href="#book" data-focus="bf"><span class="ta">கட்டணம் பார்க்க</span><span class="en">See your fare</span></a>
+        <a class="btn w" data-tel="phone" href="tel:+919344640416"><svg class="ico"><use href="#i-phone"/></svg><span data-show="phone">93446 40416</span></a></div>
+      <ul class="trust">
+        <li><svg class="ico"><use href="#i-check"/></svg><span class="ta">முன்பே கட்டணம்</span><span class="en">Fare before you book</span></li>
+        <li><svg class="ico"><use href="#i-check"/></svg>Ride PIN</li>
+        <li><svg class="ico"><use href="#i-check"/></svg><span class="ta">Live பயணப் பகிர்வு</span><span class="en">Live trip sharing</span></li>
+        <li><svg class="ico"><use href="#i-check"/></svg><span class="ta">சரிபார்த்த driver-கள்</span><span class="en">Checked drivers</span></li>
+      </ul>
     </div>
-    <form class="bk" id="book" autocomplete="off" aria-labelledby="bkh">
-      <h2 id="bkh"><span class="ta">எங்கே போகணும்?</span><span class="en">Where are you going?</span></h2>
-      <div class="stop" id="sf"><label for="bf"><span class="ta">எங்கிருந்து</span><span class="en">Pickup</span></label><i class="dot"></i>
-        <input id="bf" type="text" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="sgf" placeholder="Katpadi, CMC, New Bus Stand…"><button class="clr" type="button" aria-label="Clear">×</button>
-        <div class="sug" id="sgf" role="listbox"></div></div>
-      <div class="stop to" id="st"><label for="bt"><span class="ta">எங்கே</span><span class="en">Drop</span></label><i class="dot"></i>
-        <input id="bt" type="text" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="sgt" placeholder="VIT, Chennai Airport, Tirupati…"><button class="clr" type="button" aria-label="Clear">×</button>
-        <div class="sug" id="sgt" role="listbox"></div></div>
-      <div class="chips" id="chips" aria-label="Popular places"></div>
+
+    <form class="bk" id="book" autocomplete="off" aria-label="Book a taxi">
+      <div class="tabs" role="tablist" aria-label="Trip type">
+        <button type="button" role="tab" id="tab-one" aria-selected="true" aria-controls="pane-trip" data-tab="one"><span class="ta">ஒரு வழி</span><span class="en">One way</span></button>
+        <button type="button" role="tab" id="tab-out" aria-selected="false" aria-controls="pane-trip" data-tab="out">Outstation</button>
+        <button type="button" role="tab" id="tab-rent" aria-selected="false" aria-controls="pane-rent" data-tab="rent">Rental</button>
+      </div>
+      <div id="pane-trip" role="tabpanel">
+        <div class="stop" id="sf"><label for="bf"><span class="ta">எங்கிருந்து</span><span class="en">Pickup</span></label><i class="dot"></i>
+          <input id="bf" type="text" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="sgf" placeholder="Katpadi, CMC, New Bus Stand…"><button class="clr" type="button" aria-label="Clear">×</button>
+          <div class="sug" id="sgf" role="listbox"></div></div>
+        <div class="stop to" id="st"><label for="bt"><span class="ta">எங்கே</span><span class="en">Drop</span></label><i class="dot"></i>
+          <input id="bt" type="text" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="sgt" placeholder="VIT, Chennai Airport, Tirupati…"><button class="clr" type="button" aria-label="Clear">×</button>
+          <div class="sug" id="sgt" role="listbox"></div></div>
+        <div class="chips" id="chips" aria-label="Popular places"></div>
+      </div>
+      <div id="pane-rent" class="rent" role="tabpanel" hidden>
+        <div class="stop" id="srf"><label for="rf"><span class="ta">Pickup</span><span class="en">Pickup</span></label><i class="dot"></i>
+          <input id="rf" type="text" placeholder="Katpadi, CMC, New Bus Stand…" list="rflist"><datalist id="rflist"></datalist><button class="clr" type="button" aria-label="Clear">×</button></div>
+        <div class="pk" id="rpk" role="radiogroup" aria-label="Hours"></div>
+      </div>
+      <div class="when">
+        <label class="fld"><span><span class="ta">தேதி</span><span class="en">Date</span></span><input id="wd" type="date"></label>
+        <label class="fld"><span><span class="ta">நேரம்</span><span class="en">Time</span></span><input id="wt" type="time" step="900"></label>
+      </div>
+      <p class="bnote" id="whint" style="margin:-4px 0 4px"></p>
       <p class="berr" id="berr" role="alert"></p>
       <div class="res" id="res"><div>
         <div class="bmap" id="bmap" aria-hidden="true" hidden></div>
         <p class="rinfo" id="rinfo"></p>
         <div class="seg" id="otype" hidden><button type="button" data-o="one" class="on"><span class="ta">ஒரு வழி</span><span class="en">One way</span></button><button type="button" data-o="round"><span class="ta">போய்-வர</span><span class="en">Round trip</span></button></div>
         <div class="vl" id="vl" role="radiogroup" aria-label="Vehicle"></div>
-        <a class="btn y go" id="go" href="/"><span class="ta">இந்த கட்டணத்தில் Book பண்ணு</span><span class="en">Book at this fare</span></a>
+        <a class="btn y go" id="go" href="/?app=1"><span class="ta">இந்த கட்டணத்தில் Book பண்ணு</span><span class="en">Book at this fare</span></a>
         <p class="bnote" id="bnote"></p>
       </div></div>
     </form>
   </div>
-  <!-- Vellore at dusk: hills, Jalakandeswarar gopuram, the fort walls and moat, Sripuram's golden temple; a taxi on the moat road -->
-  <svg class="scene" viewBox="0 0 1440 420" preserveAspectRatio="xMidYMax slice" role="img" aria-label="Vellore Fort with its moat, the temple tower and the golden temple at dusk, with a taxi on the road">
-    <defs>
-      <linearGradient id="gw" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#D9B98A"/><stop offset="1" stop-color="#A9855A"/></linearGradient>
-      <linearGradient id="gm" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1F6F66"/><stop offset="1" stop-color="#0F4A45"/></linearGradient>
-      <radialGradient id="gs" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#FFE08A"/><stop offset=".55" stop-color="#FFC21A"/><stop offset="1" stop-color="#FFC21A" stop-opacity="0"/></radialGradient>
-    </defs>
-    <circle cx="560" cy="150" r="150" fill="url(#gs)" opacity=".5"/><circle cx="560" cy="150" r="62" fill="#FFD25A"/>
-    <path d="M0 250 C140 170 250 200 360 150 C470 100 560 180 680 165 C800 150 880 92 1000 112 C1130 134 1230 190 1440 150 L1440 330 L0 330Z" fill="#12604A"/>
-    <path d="M0 286 C190 236 360 256 500 232 C670 204 840 246 1030 226 C1200 208 1320 236 1440 222 L1440 340 L0 340Z" fill="#0F5441"/>
-    <g fill="#0A3B2E"><path d="M96 300c-4-30 6-52 0-78 16 8 18 30 14 48 12-22 30-26 40-22-18 8-30 26-34 52Z"/><path d="M1290 300c-4-30 6-52 0-78 16 8 18 30 14 48 12-22 30-26 40-22-18 8-30 26-34 52Z"/><path d="M1190 304c-3-22 4-38 0-58 12 6 14 22 10 36 10-16 22-20 30-16-14 6-22 20-26 38Z"/></g>
-    <g fill="url(#gw)" stroke="#6E5334" stroke-width="2"><path d="M500 300 L510 150 L590 150 L600 300Z"/><path d="M515 150 L522 112 L578 112 L585 150Z"/><path d="M527 112 L532 84 L568 84 L573 112Z"/><path d="M536 84 C540 60 560 60 564 84Z"/></g>
-    <g stroke="#6E5334" stroke-width="2" fill="none"><path d="M507 190H593M505 222H595M503 254H597M519 134H581M530 100H570"/></g>
-    <g fill="#6E5334"><rect x="542" y="262" width="16" height="38" rx="8"/><circle cx="550" cy="170" r="3"/><circle cx="550" cy="205" r="3"/><circle cx="550" cy="238" r="3"/></g>
-    <g transform="translate(1120 196)"><path d="M-78 104 L78 104 L58 52 L-58 52Z" fill="#E7B422" stroke="#8A6608" stroke-width="2"/><path d="M-50 52 C-50 0 50 0 50 52Z" fill="#F7CE4A" stroke="#8A6608" stroke-width="2"/>
-      <g fill="#F7CE4A" stroke="#8A6608" stroke-width="2"><ellipse cx="0" cy="2" rx="12" ry="6"/><circle cx="0" cy="-10" r="8"/><path d="M0 -18 C-3 -25 3 -25 0 -34"/></g>
-      <g stroke="#8A6608" stroke-width="2"><path d="M-66 74H66M-72 90H72"/></g></g>
-    <g fill="url(#gw)" stroke="#6E5334" stroke-width="2">
-      <path d="M170 340 V262 h24 v-14 h24 v14 h24 v-14 h24 v14 h24 v-14 h24 v14 h24 v-14 h24 v14 h26 V340Z"/>
-      <path d="M428 340 V240 h18 v-14 h18 v14 h18 v-14 h18 v14 h18 v-14 h18 v14 V340Z"/>
-      <path d="M536 340 V266 h24 v-14 h24 v14 h24 v-14 h24 v14 h24 v-14 h24 v14 h24 v-14 h24 v14 h24 v-14 h24 v14 h24 v-14 h24 v14 h24 V340Z"/>
-      <path d="M872 340 V244 h18 v-14 h18 v14 h18 v-14 h18 v14 h18 v-14 h18 v14 V340Z"/>
-      <path d="M980 340 V268 h26 v-14 h26 v14 h26 v-14 h26 v14 h26 v-14 h26 v14 V340Z"/></g>
-    <g stroke="#6E5334" stroke-width="1.5" opacity=".55"><path d="M182 286H402M182 312H402M548 290H860M548 316H860M992 292H1162M992 318H1162"/></g>
-    <g fill="#FFD25A"><rect x="466" y="266" width="8" height="14" rx="4"/><rect x="910" y="270" width="8" height="14" rx="4"/></g>
-    <rect x="0" y="340" width="1440" height="36" fill="url(#gm)"/>
-    <g stroke="#7FD0C2" stroke-width="3" stroke-linecap="round" opacity=".55"><path d="M70 354h70M290 362h100M620 352h80M900 362h130M1210 354h90"/></g>
-    <path d="M520 344h80" stroke="#FFD25A" stroke-width="5" stroke-linecap="round" opacity=".5"/>
-    <rect x="0" y="376" width="1440" height="44" fill="#1C2A25"/><path d="M0 398 H1440" stroke="#F1E7C4" stroke-width="3" stroke-dasharray="30 26"/>
-    <g class="taxi"><g transform="translate(40 330) scale(1.45)">
-      <ellipse cx="66" cy="50" rx="62" ry="4" fill="#000" opacity=".28"/>
-      <path d="M6 32 C6 20 14 18 24 17 L40 6 C44 3 48 2 54 2 H84 C92 2 96 4 100 10 L108 18 C118 19 124 22 124 32 V38 H6Z" fill="#FFFFFF" stroke="#10241C" stroke-width="2"/>
-      <path d="M8 27 H122 V31 H8Z" fill="#FFC21A"/>
-      <path d="M44 9 H62 V18 H32Z M68 9 H86 C90 9 92 11 95 15 L98 18 H68Z" fill="#BFE0EE" stroke="#10241C" stroke-width="1.6"/>
-      <rect x="50" y="-5" width="26" height="8" rx="2" fill="#FFC21A" stroke="#10241C" stroke-width="1.6"/>
-      <path d="M118 24h8" stroke="#FFE9A6" stroke-width="5" stroke-linecap="round"/>
-      <circle cx="32" cy="40" r="9" fill="#10241C"/><circle cx="32" cy="40" r="4" fill="#C9D6CF"/><circle cx="98" cy="40" r="9" fill="#10241C"/><circle cx="98" cy="40" r="4" fill="#C9D6CF"/></g></g>
-  </svg>
 </section>
 
-<section id="fares" aria-labelledby="fh">
+<section id="services" aria-labelledby="svh">
   <div class="wrap">
-    <h2 id="fh"><span class="ta">City கட்டணம்</span><span class="en">City fares</span></h2>
-    <p class="sub"><span class="ta">வேலூர் நகருக்குள் (மையத்திலிருந்து <b data-show="local">18</b> கி.மீ. வரை). Book பண்றதுக்கு முன்னாடியே மொத்த கட்டணம் தெரியும். மறைமுக கட்டணம் இல்லை.</span><span class="en">Within Vellore town (up to <b data-show="local">18</b> km from the centre). You see the full fare before you book. No hidden charges.</span></p>
-    <div class="board" id="board"></div>
-    <p class="note"><span class="ta">இரவு நேரத்தில் கூடுதல் கட்டணம் இருக்கலாம்; அது book பண்ணும் முன்பே app-ல் தெரியும். ஆட்டோ கட்டணம் தமிழ்நாடு அரசு ஆணைப்படி (G.O. 366).</span><span class="en">A night charge may apply; the app shows it before you book. Auto fares follow the Tamil Nadu Government order (G.O. 366).</span></p>
+    <h2 id="svh"><span class="ta">எங்கள் சேவைகள்</span><span class="en">Our services</span></h2>
+    <p class="sub"><span class="ta">வேலூருக்குள், விமான நிலையம், வெளியூர், மணிநேர வாடகை — ஒரே இடத்தில்.</span><span class="en">In town, to the airport, out of town or by the hour — one place to book.</span></p>
+    <ul class="svc">
+      <li><span class="ic"><svg class="ico"><use href="#i-city"/></svg></span><div><h3><span class="ta">உள்ளூர் Taxi</span><span class="en">Local taxi</span></h3><p><span class="ta">இப்போவே அல்லது நீங்க சொல்ற நேரத்துக்கு. Mini ₹<b data-show="mini">105</b> முதல்.</span><span class="en">Now or at the time you choose. Mini from ₹<b data-show="mini">105</b>.</span></p></div><a class="lk" href="#book" data-tab-go="one">Book</a></li>
+      <li><span class="ic"><svg class="ico"><use href="#i-auto"/></svg></span><div><h3><span class="ta">ஆட்டோ</span><span class="en">Auto</span></h3><p><span class="ta">அரசு கட்டணம்: முதல் 1.8 கி.மீ. ₹50, பிறகு கி.மீ.க்கு ₹25.</span><span class="en">Government fare: ₹50 for the first 1.8 km, then ₹25 a km.</span></p></div><a class="lk" href="#book" data-tab-go="one">Book</a></li>
+      <li><span class="ic"><svg class="ico"><use href="#i-plane"/></svg></span><div><h3><span class="ta">விமான நிலைய பயணம்</span><span class="en">Airport transfers</span></h3><p><span class="ta">சென்னை, பெங்களூரு விமான நிலையம் — ஒரு வழி, பேட்டா உட்பட.</span><span class="en">Chennai and Bengaluru airports, one way, driver allowance included.</span></p></div><a class="lk" href="#book" data-trip="newbus|maa">Fare</a></li>
+      <li><span class="ic"><svg class="ico"><use href="#i-road"/></svg></span><div><h3><span class="ta">Outstation · ஒரு வழி</span><span class="en">Outstation · one way</span></h3><p><span class="ta">வேலூரிலிருந்து எந்த ஊருக்கும். Toll, parking, permit தனி.</span><span class="en">From Vellore to any town. Tolls, parking and permits extra.</span></p></div><a class="lk" href="#book" data-tab-go="out">Book</a></li>
+      <li><span class="ic"><svg class="ico"><use href="#i-loop"/></svg></span><div><h3><span class="ta">Outstation · போய்-வர</span><span class="en">Outstation · round trip</span></h3><p><span class="ta">போய்-வர கி.மீ.க்கு ₹<b data-show="oround">11</b> முதல், driver பேட்டா உட்பட.</span><span class="en">Round trip from ₹<b data-show="oround">11</b> a km, driver allowance included.</span></p></div><a class="lk" href="#book" data-tab-go="out">Book</a></li>
+      <li><span class="ic"><svg class="ico"><use href="#i-clock"/></svg></span><div><h3><span class="ta">மணிநேர Rental</span><span class="en">Hourly rental</span></h3><p><span class="ta">1 முதல் 12 மணி நேரம், பல இடங்களுக்கு. Shopping, மருத்துவமனை, கல்யாணம்.</span><span class="en">1 to 12 hours with several stops. Shopping, hospital visits, weddings.</span></p></div><a class="lk" href="#book" data-tab-go="rent">Book</a></li>
+      <li><span class="ic"><svg class="ico"><use href="#i-brief"/></svg></span><div><h3>Corporate</h3><p><span class="ta">ஊழியர் பயணம், விருந்தினர் pickup, business பயணம்.</span><span class="en">Staff travel, guest pickups and business trips.</span></p></div><a class="lk" href="#corporate">More</a></li>
+    </ul>
   </div>
 </section>
 
-<section id="trips" class="alt" aria-labelledby="kh">
+<section id="fares" class="alt" aria-labelledby="fh">
   <div class="wrap">
-    <h2 id="kh"><span class="ta">எப்படி பயணம் பண்ணணும்?</span><span class="en">How do you want to travel?</span></h2>
-    <p class="sub"><span class="ta">ஒரே app-ல் நாலு வகை.</span><span class="en">Four kinds of trips, one app.</span></p>
-    <div class="kinds">
-      <div class="kind"><img src="/vehicles/sedan.jpg" alt="" width="360" height="250" loading="lazy"><h3>City ride</h3><p><span class="ta">இப்போவே அல்லது பின்னர் ஒரு நேரத்துக்கு. அருகில் உள்ள driver வருவார்.</span><span class="en">Now or at a time you choose. The nearest driver comes to you.</span></p><span class="tag"><span class="ta">Mini ₹<b data-show="mini">105</b> முதல்</span><span class="en">Mini from ₹<b data-show="mini">105</b></span></span><a href="#book" data-focus="bf"><span class="ta">Book பண்ண</span><span class="en">Book now</span></a></div>
-      <div class="kind"><img src="/vehicles/auto.jpg" alt="" width="360" height="250" loading="lazy"><h3><span class="ta">ஆட்டோ</span><span class="en">Auto</span></h3><p><span class="ta">அரசு கட்டணம்: முதல் 1.8 கி.மீ. ₹50, பிறகு கி.மீ.க்கு ₹25.</span><span class="en">Government fare: ₹50 for the first 1.8 km, then ₹25 a km.</span></p><span class="tag">₹50</span><a href="#book" data-focus="bf"><span class="ta">Book பண்ண</span><span class="en">Book now</span></a></div>
-      <div class="kind"><img src="/vehicles/suv.jpg" alt="" width="360" height="250" loading="lazy"><h3><span class="ta">மணிநேர Rental</span><span class="en">Hourly rental</span></h3><p><span class="ta">1 முதல் 12 மணி நேரம், பல இடங்களுக்கு. Shopping, மருத்துவமனை, கல்யாணம்.</span><span class="en">1 to 12 hours with several stops. Shopping, hospital visits, weddings.</span></p><span class="tag"><span class="ta">1–12 மணி</span><span class="en">1–12 hours</span></span><a href="/"><span class="ta">App-ல் Rental</span><span class="en">Rental in the app</span></a></div>
-      <div class="kind"><img src="/vehicles/trav.jpg" alt="" width="360" height="250" loading="lazy"><h3>Outstation</h3><p><span class="ta">ஒரு வழி அல்லது போய்-வர. Driver பேட்டா கட்டணத்திலேயே சேர்ந்திருக்கும். 4 முதல் 12 பேர் வரை.</span><span class="en">One way or round trip. Driver allowance is included. 4 to 12 seats.</span></p><span class="tag"><span class="ta">போய்-வர ₹<b data-show="oround">11</b>/கி.மீ. முதல்</span><span class="en">Round trip from ₹<b data-show="oround">11</b> a km</span></span><a href="#book" data-focus="bt"><span class="ta">கட்டணம் பார்க்க</span><span class="en">See the fare</span></a></div>
-    </div>
+    <h2 id="fh"><span class="ta">எங்கள் வண்டிகள்</span><span class="en">Our fleet</span></h2>
+    <p class="sub"><span class="ta">வேலூர் நகருக்குள் ("<b data-show="local">18</b> கி.மீ." வரை) கட்டணம். Book பண்றதுக்கு முன்பே முழு கட்டணம் தெரியும்.</span><span class="en">City fares within Vellore town (up to <b data-show="local">18</b> km from the centre). You see the full fare before you book.</span></p>
+    <div class="board" id="board"></div>
+    <p class="note"><span class="ta">இரவு நேரக் கட்டணம் சேரலாம்; book பண்ணும்போதே தெரியும். ஆட்டோ கட்டணம் தமிழ்நாடு அரசு ஆணைப்படி (G.O. 366).</span><span class="en">A night charge may apply; you see it before you book. Auto fares follow the Tamil Nadu Government order (G.O. 366).</span></p>
+  </div>
+</section>
+
+<section id="trips" aria-labelledby="kh">
+  <div class="wrap">
+    <h2 id="kh">Outstation</h2>
+    <p class="sub"><span class="ta">ஒரு வழி அல்லது போய்-வர. Driver பேட்டா கட்டணத்திலேயே. 4 முதல் 12 பேர் வரை.</span><span class="en">One way or round trip. Driver allowance is included. 4 to 12 seats.</span></p>
     <div class="route">
       <div><div class="from"><span class="ta">வேலூர் புது பேருந்து நிலையம் → சென்னை விமான நிலையம்</span><span class="en">Vellore New Bus Stand → Chennai Airport</span></div>
         <div class="km"><span class="ta">124 கி.மீ. · Mini · ஒரு வழி · பேட்டா உட்பட</span><span class="en">124 km · Mini · one way · driver allowance included</span></div></div>
       <div class="amt">₹<span id="exAmt">2,280</span></div>
-      <button class="btn g" type="button" data-trip="newbus|maa">Book</button>
+      <button class="btn y" type="button" data-trip="newbus|maa">Book</button>
     </div>
-    <p class="sub" style="margin:22px 0 0"><span class="ta">பிரபலமான பயணங்கள் — தொட்டா கட்டணம் தெரியும்:</span><span class="en">Popular trips — tap to see the fare:</span></p>
+    <p class="sub" style="margin-top:22px"><span class="ta">பிரபலமான பயணங்கள் — தொட்டா கட்டணம் தெரியும்:</span><span class="en">Popular trips — tap to see the fare:</span></p>
     <div class="dest" id="dest"></div>
   </div>
 </section>
 
-<section id="places" aria-labelledby="ph">
+<section id="corporate" class="alt" aria-labelledby="coh">
+  <div class="wrap corp">
+    <div>
+      <h2 id="coh"><span class="ta">நிறுவனங்களுக்கு</span><span class="en">Corporate travel</span></h2>
+      <p class="sub"><span class="ta">உங்க ஊழியர்கள், விருந்தினர்கள், business பயணங்களுக்கு ஒரே தொடர்பு.</span><span class="en">One contact for your staff, guests and business trips.</span></p>
+      <ul class="ticks">
+        <li><svg class="ico"><use href="#i-check"/></svg><span><b><span class="ta">ஊழியர் பயணம்</span><span class="en">Employee transport</span></b><br><span class="ta">Shift drop, office pickup.</span><span class="en">Shift drops and office pickups.</span></span></li>
+        <li><svg class="ico"><use href="#i-check"/></svg><span><b><span class="ta">விருந்தினர் & விமான நிலையம்</span><span class="en">Guests and airports</span></b><br><span class="ta">Katpadi Junction, சென்னை / பெங்களூரு விமான நிலைய pickup.</span><span class="en">Katpadi Junction and Chennai / Bengaluru airport pickups.</span></span></li>
+        <li><svg class="ico"><use href="#i-check"/></svg><span><b><span class="ta">Business பயணம்</span><span class="en">Business trips</span></b><br><span class="ta">ஒரு நாள் rental அல்லது outstation, உங்க தேதிக்கு.</span><span class="en">Day rentals or outstation trips on your dates.</span></span></li>
+      </ul>
+    </div>
+    <div class="panel">
+      <h3><span class="ta">Corporate விசாரணை</span><span class="en">Corporate enquiry</span></h3>
+      <p class="sub" style="margin:0 0 16px"><span class="ta">விவரம் அனுப்புங்க; Office உங்களை அழைத்து பேசும்.</span><span class="en">Send your details and the office will call you.</span></p>
+      <a class="btn g" href="#contact" data-kind="corporate"><span class="ta">விசாரணை அனுப்ப</span><span class="en">Send an enquiry</span></a>
+    </div>
+  </div>
+</section>
+
+<section id="area" aria-labelledby="arh">
+  <div class="wrap area">
+    <div class="amap"><svg id="areamap" viewBox="0 0 600 600" role="img" aria-label="Map: pickups in Vellore and Katpadi; outstation to nearby towns and cities"></svg></div>
+    <div>
+      <h2 id="arh"><span class="ta">எங்கே சேவை?</span><span class="en">Where we serve</span></h2>
+      <p class="sub"><span class="ta">Pickup: வேலூர், காட்பாடி (நகரைச் சுற்றி <b data-show="local">18</b> கி.மீ.). வெளியூர் பயணம்: கீழே உள்ள ஊர்களுக்கும் இன்னும் பல இடங்களுக்கும்.</span><span class="en">Pickups in Vellore and Katpadi (about <b data-show="local">18</b> km around town). Outstation trips to these towns and many more.</span></p>
+      <ul class="towns" id="towns"></ul>
+    </div>
+  </div>
+</section>
+
+<section id="places" class="alt" aria-labelledby="ph">
   <div class="wrap">
     <h2 id="ph"><span class="ta">வேலூரைச் சுற்றிப் பாருங்க</span><span class="en">See Vellore and around</span></h2>
     <p class="sub"><span class="ta">ஒரு நாள் Rental எடுத்தா இதில் பல இடங்களை ஒரே நாளில் பார்க்கலாம்.</span><span class="en">With a day rental you can cover several of these in one day.</span></p>
@@ -452,28 +439,39 @@ footer{background:var(--night)}
   </div>
 </section>
 
-<section class="appsec" aria-labelledby="ah">
-  <div class="wrap appband">
-    <div class="phone" aria-hidden="true"><div class="scr">
-      <svg viewBox="0 0 390 200" preserveAspectRatio="xMidYMid slice"><rect width="390" height="200" fill="#E6EEF2"/><path d="M-10 150 C80 120 150 170 240 130 S360 90 400 110" fill="none" stroke="#fff" stroke-width="18"/><path d="M120 -10 C130 60 90 120 110 210" fill="none" stroke="#fff" stroke-width="14"/><path d="M280 -10 C260 70 300 130 290 210" fill="none" stroke="#fff" stroke-width="10"/><path d="M-10 60 L400 40" stroke="#fff" stroke-width="8"/><rect x="150" y="60" width="70" height="46" rx="8" fill="#CFE5D6"/><rect x="306" y="124" width="60" height="50" rx="8" fill="#CFE5D6"/><circle cx="196" cy="118" r="16" fill="#2B4EA2" opacity=".2"/><circle cx="196" cy="118" r="7" fill="#2B4EA2" stroke="#fff" stroke-width="3"/><g transform="translate(86 132)"><rect x="-13" y="-7" width="26" height="14" rx="5" fill="#fff" stroke="#10241C" stroke-width="1.5"/><rect x="-13" y="-1" width="26" height="3" fill="#FFC21A"/></g><g transform="translate(288 76) rotate(80)"><rect x="-13" y="-7" width="26" height="14" rx="5" fill="#fff" stroke="#10241C" stroke-width="1.5"/><rect x="-13" y="-1" width="26" height="3" fill="#FFC21A"/></g></svg>
-      <img src="/vellore/app-ui.webp" alt="" width="780" height="616" loading="lazy"></div></div>
-    <img class="qr" src="/vellore/qr-app.svg" alt="QR code for velloretaxi.app" width="150" height="150" loading="lazy">
-    <div><h2 id="ah"><span class="ta">App-ல் book பண்ணுங்க</span><span class="en">Book in the app</span></h2>
-      <p class="sub" style="margin-bottom:16px"><span class="ta">QR-ஐ scan பண்ணுங்க அல்லது velloretaxi.app-ஐ திறங்க. Install தேவையில்லை — browser-லயே வேலை செய்யும். Play Store app விரைவில்.</span><span class="en">Scan the QR or open velloretaxi.app. Nothing to install — it works in the browser. Play Store app coming soon.</span></p>
-      <a class="btn g" href="/"><span class="ta">App-ஐ திற</span><span class="en">Open the app</span></a></div>
-  </div>
-</section>
-
 <section aria-labelledby="sh">
   <div class="wrap">
     <h2 id="sh"><span class="ta">பாதுகாப்பான பயணம்</span><span class="en">Ride safe</span></h2>
     <p class="sub"><span class="ta">வேலூர்காரர்களால் வேலூருக்காக நடத்தப்படும் சேவை.</span><span class="en">Run in Vellore, for Vellore.</span></p>
     <ul class="safe">
-      <li><b>Ride PIN</b><span><span class="ta">உங்க PIN-ஐ சொன்னா தான் பயணம் ஆரம்பிக்கும். தப்பான வண்டியில் ஏற முடியாது.</span><span class="en">The trip starts only with your PIN, so you never get into the wrong car.</span></span></li>
-      <li><b><span class="ta">Live location பகிர்வு</span><span class="en">Share your trip live</span></b><span><span class="ta">வீட்டாருக்கு ஒரு link அனுப்பினா, வண்டி எங்கே இருக்குன்னு அவங்களும் பார்க்கலாம்.</span><span class="en">Send one link and your family can follow the car.</span></span></li>
-      <li><b><span class="ta">சரிபார்க்கப்பட்ட Driver-கள்</span><span class="en">Checked drivers</span></b><span><span class="ta">உரிமம், RC, காப்பீடு பார்த்த பிறகு தான் driver சேர முடியும்.</span><span class="en">Licence, RC and insurance are checked before a driver can join.</span></span></li>
-      <li><b><span class="ta">உங்க எண் மறைக்கப்படும்</span><span class="en">Your number stays private</span></b><span><span class="ta">உங்க ride-ஐ ஏற்றுக்கொண்ட driver-க்கு மட்டும் தான் உங்க எண் தெரியும்.</span><span class="en">Only the driver who accepts your ride sees your number.</span></span></li>
+      <li><span class="ic"><svg class="ico"><use href="#i-lock"/></svg></span><span><b>Ride PIN</b><span><span class="ta">உங்க PIN-ஐ சொன்னா தான் பயணம் ஆரம்பிக்கும். தப்பான வண்டியில் ஏற முடியாது.</span><span class="en">The trip starts only with your PIN, so you never get into the wrong car.</span></span></span></li>
+      <li><span class="ic"><svg class="ico"><use href="#i-share"/></svg></span><span><b><span class="ta">Live location பகிர்வு</span><span class="en">Share your trip live</span></b><span><span class="ta">வீட்டாருக்கு ஒரு link அனுப்பினா, வண்டி எங்கே இருக்குன்னு அவங்களும் பார்க்கலாம்.</span><span class="en">Send one link and your family can follow the car.</span></span></span></li>
+      <li><span class="ic"><svg class="ico"><use href="#i-shield"/></svg></span><span><b><span class="ta">சரிபார்க்கப்பட்ட Driver-கள்</span><span class="en">Checked drivers</span></b><span><span class="ta">உரிமம், RC, காப்பீடு பார்த்த பிறகு தான் driver சேர முடியும்.</span><span class="en">Licence, RC and insurance are checked before a driver can join.</span></span></span></li>
+      <li><span class="ic"><svg class="ico"><use href="#i-eye"/></svg></span><span><b><span class="ta">உங்க எண் மறைக்கப்படும்</span><span class="en">Your number stays private</span></b><span><span class="ta">உங்க ride-ஐ ஏற்றுக்கொண்ட driver-க்கு மட்டும் தான் உங்க எண் தெரியும்.</span><span class="en">Only the driver who accepts your ride sees your number.</span></span></span></li>
     </ul>
+  </div>
+</section>
+
+<section class="apps" id="apps" aria-labelledby="ah">
+  <div class="wrap">
+    <h2 id="ah"><span class="ta">எங்கள் App-கள்</span><span class="en">Our apps</span></h2>
+    <p class="sub"><span class="ta">Customer-க்கு ஒன்று, driver-க்கு ஒன்று.</span><span class="en">One for riders, one for drivers.</span></p>
+    <div class="appg">
+      <div class="app q">
+        <div><h3><span class="ta">Customer App</span><span class="en">Customer app</span></h3>
+          <p><span class="ta">Browser-லயே வேலை செய்யும் — install தேவையில்லை. Play Store app விரைவில்.</span><span class="en">Works in your browser — nothing to install. Play Store app coming soon.</span></p>
+          <ul><li><span class="ta">முன்பே கட்டணம், driver map-ல்</span><span class="en">Fare first, driver on the map</span></li><li><span class="ta">Ride PIN, live பகிர்வு</span><span class="en">Ride PIN and live sharing</span></li></ul>
+          <a class="btn y" href="/?app=1"><span class="ta">App-ஐ திற</span><span class="en">Open the app</span></a></div>
+        <img class="qr" src="/vellore/qr-app.svg" alt="QR code for velloretaxi.app" width="120" height="120" loading="lazy">
+        <div class="shot"><img src="/vellore/app-ui.webp" alt="The Vellore Taxi app: choose a vehicle and see the fare" width="780" height="616" loading="lazy"></div>
+      </div>
+      <div class="app">
+        <div><h3><span class="ta">Driver App</span><span class="en">Driver app</span></h3>
+          <p><span class="ta">Android app. ON பண்ணா OFF பண்ற வரை ride வரும் — வேற app-ல இருந்தாலும்.</span><span class="en">Android app. Switch ON and rides reach you until you switch OFF — even while you use other apps.</span></p>
+          <ul><li><span class="ta">Ride card எந்த app மேலயும்</span><span class="en">Ride card over any app</span></li><li><span class="ta">Navigation, வருமானம், wallet</span><span class="en">Navigation, earnings, wallet</span></li></ul>
+          <a class="btn w" href="/driver/join/"><span class="ta">Driver-ஆக சேர</span><span class="en">Join as a driver</span></a></div>
+      </div>
+    </div>
   </div>
 </section>
 
@@ -481,27 +479,30 @@ footer{background:var(--night)}
   <div class="wrap">
     <p class="offer"><b>0%</b> <span class="ta">Commission · தொடக்க சலுகை</span><span class="en">commission · launch offer</span></p>
     <h2 id="dh"><span class="ta">சொந்த வண்டி இருக்கா? Vellore Taxi-ல் சேருங்க.</span><span class="en">Own a car or auto? Drive with Vellore Taxi.</span></h2>
-    <p class="sub"><span class="ta">உங்க வண்டி, உங்க நேரம். முதலில் சேரும் driver-களுக்கு முன்னுரிமை. இங்கிருந்தே சேரலாம்:</span><span class="en">Your vehicle, your hours. Early drivers get priority. Join right from here:</span></p>
+    <p class="sub"><span class="ta">உங்க வண்டி, உங்க நேரம். முதலில் சேரும் driver-களுக்கு முன்னுரிமை.</span><span class="en">Your vehicle, your hours. Early drivers get priority.</span></p>
     <ol class="steps">
-      <li><b><span class="ta">Driver app-ஐ திறங்க</span><span class="en">Open the driver app</span></b><span><span class="ta">கீழே உள்ள பட்டனை அழுத்துங்க. Install தேவையில்லை.</span><span class="en">Press the button below. Nothing to install.</span></span></li>
+      <li><b><span class="ta">Driver app-ஐ திறங்க</span><span class="en">Open the driver app</span></b><span><span class="ta">கீழே உள்ள பட்டனை அழுத்துங்க.</span><span class="en">Press the button below.</span></span></li>
       <li><b><span class="ta">மொபைல் OTP</span><span class="en">Mobile OTP</span></b><span><span class="ta">உங்க எண்ணை போட்டு OTP மூலம் உள்ளே போங்க.</span><span class="en">Sign in with an OTP on your number.</span></span></li>
       <li><b><span class="ta">ஆவணங்கள் upload</span><span class="en">Upload documents</span></b><span><span class="ta">லைசென்ஸ், RC, காப்பீடு, வண்டி படம்.</span><span class="en">Licence, RC, insurance and a vehicle photo.</span></span></li>
       <li><b><span class="ta">Office ஒப்புதல்</span><span class="en">Office approval</span></b><span><span class="ta">சரிபார்த்ததும் Online போய் ride எடுக்கலாம்.</span><span class="en">Once checked, go online and take rides.</span></span></li>
     </ol>
     <div class="acts"><a class="btn g" href="/driver/join/"><span class="ta">Driver-ஆக சேர</span><span class="en">Join as a driver</span></a>
-      <a class="btn o" data-tel="driverPhone" href="tel:+919344039933" style="color:var(--ink)"><span class="ta">சந்தேகமா? அழைக்க</span><span class="en">Questions? Call</span> <span data-show="driverPhone">93440 39933</span></a></div>
+      <a class="btn o" data-tel="driverPhone" href="tel:+919344039933"><span class="ta">சந்தேகமா? அழைக்க</span><span class="en">Questions? Call</span> <span data-show="driverPhone">93440 39933</span></a></div>
   </div>
 </section>
 
 <section id="faq" aria-labelledby="qh">
-  <div class="wrap" style="max-width:860px">
+  <div class="wrap faq">
     <h2 id="qh"><span class="ta">அடிக்கடி கேட்கப்படும் கேள்விகள்</span><span class="en">Questions people ask</span></h2>
     <details><summary><span class="ta">எப்படி book பண்றது?</span><span class="en">How do I book?</span></summary><p><span class="ta">மேலே pickup, drop இடங்களைத் தேர்ந்தெடுத்தா கட்டணம் தெரியும். "Book" அழுத்தி உங்க மொபைல் OTP போட்டா போதும். அல்லது அழைத்தும் book பண்ணலாம்.</span><span class="en">Pick your pickup and drop above to see the fare. Press "Book" and sign in with an OTP on your mobile. Or simply call us.</span></p></details>
+    <details><summary><span class="ta">கட்டணம் எப்படி கணக்கிடப்படுது?</span><span class="en">How is the fare worked out?</span></summary><p><span class="ta">நகருக்குள்: ஆரம்பக் கட்டணம் + கி.மீ. கட்டணம். ஆட்டோ அரசு கட்டணம். வெளியூர்: கி.மீ. கட்டணம் + driver பேட்டா. Book பண்றதுக்கு முன்பே முழு கட்டணம் தெரியும்.</span><span class="en">In town: a starting fare plus a charge per km; autos use the government fare. Outstation: a charge per km plus the driver allowance. You see the full fare before you book.</span></p></details>
     <details><summary><span class="ta">எப்படி பணம் கொடுக்கலாம்?</span><span class="en">How can I pay?</span></summary><p><span class="ta">பயணம் முடிந்ததும் driver-இடம் பணமாகவோ UPI மூலமாகவோ கொடுக்கலாம்.</span><span class="en">Pay the driver at the end of the trip, in cash or by UPI.</span></p></details>
+    <details><summary><span class="ta">Cancel பண்ணலாமா?</span><span class="en">Can I cancel?</span></summary><p><span class="ta">ஆம், app-லயே cancel பண்ணலாம். Driver வர ரொம்ப நேரமானாலும் cancel பண்ணலாம்.</span><span class="en">Yes, cancel in the app at any time, including when the driver is taking too long.</span></p></details>
     <details><summary><span class="ta">Katpadi ரயில் நிலையத்திலிருந்து pickup கிடைக்குமா?</span><span class="en">Can I get a pickup at Katpadi Junction?</span></summary><p><span class="ta">ஆம். ரயில் வரும் நேரத்துக்கு முன்பே advance booking பண்ணலாம்.</span><span class="en">Yes. Book in advance for your train's arrival time.</span></p></details>
+    <details><summary><span class="ta">விமான நிலையத்துக்கு / விமான நிலையத்திலிருந்து?</span><span class="en">To or from the airport?</span></summary><p><span class="ta">சென்னை, பெங்களூரு விமான நிலையங்களுக்கு ஒரு வழி பயணம் book பண்ணலாம். Driver பேட்டா கட்டணத்திலேயே; toll, parking தனி.</span><span class="en">Book a one-way trip to Chennai or Bengaluru airport. The driver allowance is in the fare; tolls and parking are extra.</span></p></details>
     <details><summary><span class="ta">Outstation கட்டணத்தில் என்ன சேர்ந்திருக்கு?</span><span class="en">What is included in an outstation fare?</span></summary><p><span class="ta">கி.மீ. கட்டணமும் driver பேட்டாவும். Toll, parking, மாநில permit இருந்தா அது தனி.</span><span class="en">The distance charge and the driver allowance. Tolls, parking and state permits, if any, are extra.</span></p></details>
     <details><summary><span class="ta">7 பேர் அல்லது அதிக லக்கேஜ் இருந்தா?</span><span class="en">What if we are 7 people or have lots of luggage?</span></summary><p><span class="ta">MPV (6–7 பேர்), Premium MPV, அல்லது 12 பேர் வரை Tempo Traveller தேர்ந்தெடுங்க.</span><span class="en">Choose an MPV (6–7 people), a Premium MPV, or a Tempo Traveller for up to 12.</span></p></details>
-    <details><summary><span class="ta">ஒரு கல்யாணம் / நிகழ்ச்சிக்கு பல வண்டிகள் வேணும்னா?</span><span class="en">We need several cars for a wedding or event.</span></summary><p><span class="ta">கீழே உள்ள படிவத்தில் விவரம் அனுப்புங்க அல்லது அழையுங்க. Office உங்க தேதிக்கு வண்டிகளை ஏற்பாடு செய்யும்.</span><span class="en">Send the details in the form below or call us. The office will arrange cars for your date.</span></p></details>
+    <details><summary><span class="ta">Driver-ஆக எப்படி சேர்றது?</span><span class="en">How do I join as a driver?</span></summary><p><span class="ta">"Driver-ஆக சேர" அழுத்தி, OTP போட்டு, லைசென்ஸ், RC, காப்பீடு upload பண்ணுங்க. Office சரிபார்த்ததும் ride எடுக்கலாம்.</span><span class="en">Press "Join as a driver", sign in with an OTP and upload your licence, RC and insurance. Once the office checks them you can take rides.</span></p></details>
     <details><summary><span class="ta">Driver வரலைன்னா என்ன பண்றது?</span><span class="en">What if no driver comes?</span></summary><p><span class="ta">App-லயே cancel பண்ணலாம். Office-ஐ அழைத்தா உடனே வேறு வண்டி ஏற்பாடு செய்வோம்.</span><span class="en">Cancel in the app, or call the office and we will send another car.</span></p></details>
   </div>
 </section>
@@ -512,16 +513,16 @@ footer{background:var(--night)}
     <p class="sub"><span class="ta">Booking, outstation, கல்யாணம், corporate — எதுவானாலும் கேளுங்க. Office உங்களை அழைக்கும்.</span><span class="en">Bookings, outstation, weddings, corporate — ask anything. The office will call you back.</span></p>
     <div class="contact">
       <div class="cards">
-        <a class="cc" data-tel="phone" href="tel:+919344640416"><i aria-hidden="true">📞</i><span><b><span class="ta">Booking</span><span class="en">Bookings</span></b><small data-show="phone">93446 40416</small></span></a>
-        <a class="cc" data-wa="whatsapp" hidden href="https://wa.me/919344640416" target="_blank" rel="noopener"><i aria-hidden="true">💬</i><span><b>WhatsApp</b><small data-show="whatsapp">93446 40416</small></span></a>
-        <a class="cc" data-tel="driverPhone" href="tel:+919344039933"><i aria-hidden="true">🚖</i><span><b><span class="ta">Driver உதவி</span><span class="en">Driver help</span></b><small data-show="driverPhone">93440 39933</small></span></a>
-        <a class="cc" data-mail="email" href="mailto:vellorecalltaxi.office@gmail.com"><i aria-hidden="true">✉️</i><span><b>Email</b><small data-show="email">vellorecalltaxi.office@gmail.com</small></span></a>
-        <div class="cc"><i aria-hidden="true">📍</i><span><b><span class="ta">முகவரி</span><span class="en">Address</span></b><small data-show="address">Vellore, Tamil Nadu</small></span></div>
+        <a class="cc" data-tel="phone" href="tel:+919344640416"><span class="ic"><svg class="ico"><use href="#i-phone"/></svg></span><span><b><span class="ta">Booking</span><span class="en">Bookings</span></b><small data-show="phone">93446 40416</small></span></a>
+        <a class="cc" data-wa="whatsapp" hidden href="https://wa.me/919344640416" target="_blank" rel="noopener"><span class="ic"><svg class="ico"><use href="#i-chat"/></svg></span><span><b>WhatsApp</b><small data-show="whatsapp">93446 40416</small></span></a>
+        <a class="cc" data-tel="driverPhone" href="tel:+919344039933"><span class="ic"><svg class="ico"><use href="#i-steer"/></svg></span><span><b><span class="ta">Driver உதவி</span><span class="en">Driver help</span></b><small data-show="driverPhone">93440 39933</small></span></a>
+        <a class="cc" data-mail="email" href="mailto:vellorecalltaxi.office@gmail.com"><span class="ic"><svg class="ico"><use href="#i-mail"/></svg></span><span><b>Email</b><small data-show="email">vellorecalltaxi.office@gmail.com</small></span></a>
+        <div class="cc"><span class="ic"><svg class="ico"><use href="#i-pin"/></svg></span><span><b><span class="ta">முகவரி</span><span class="en">Address</span></b><small data-show="address">Vellore, Tamil Nadu</small></span></div>
       </div>
       <form class="enq" id="enq" novalidate>
         <label><span><span class="ta">உங்க பெயர்</span><span class="en">Your name</span></span><input name="name" maxlength="60" autocomplete="name" required></label>
         <label><span><span class="ta">மொபைல் எண்</span><span class="en">Mobile number</span></span><input name="phone" inputmode="tel" maxlength="18" autocomplete="tel" required placeholder="98xxxxxxxx"></label>
-        <label><span><span class="ta">எதுக்காக?</span><span class="en">About</span></span><select name="kind">
+        <label><span><span class="ta">எதுக்காக?</span><span class="en">About</span></span><select name="kind" id="ekind">
           <option value="ride">City ride</option><option value="outstation">Outstation</option><option value="rental">Rental</option>
           <option value="event">Wedding / event · கல்யாணம்</option><option value="corporate">Corporate</option>
           <option value="driver">Driver joining · Driver-ஆக சேர</option><option value="other">Other · மற்றவை</option></select></label>
@@ -537,30 +538,34 @@ footer{background:var(--night)}
 
 <footer>
   <div class="wrap">
-    <div><h3>Vellore Taxi (VCT)</h3><p style="margin:0" data-show="address">Vellore, Tamil Nadu</p></div>
+    <div><h3>Vellore Taxi (VCT)</h3><p style="margin:0 0 10px" data-show="address">Vellore, Tamil Nadu</p><p style="margin:0"><span class="ta">வேலூர், காட்பாடியில் call taxi, ஆட்டோ, outstation, rental.</span><span class="en">Call taxi, auto, outstation and rental in Vellore and Katpadi.</span></p></div>
     <div><h3><span class="ta">சேவைகள்</span><span class="en">Services</span></h3><ul>
       <li><a href="#book">City ride</a></li><li><a href="#fares"><span class="ta">ஆட்டோ</span><span class="en">Auto</span></a></li>
-      <li><a href="#trips">Outstation</a></li><li><a href="/">Rental</a></li></ul></div>
-    <div><h3><span class="ta">தொடர்பு</span><span class="en">Contact</span></h3><ul>
+      <li><a href="#trips">Outstation</a></li><li><a href="#book" data-tab-go="rent">Rental</a></li><li><a href="#corporate">Corporate</a></li></ul></div>
+    <div><h3><span class="ta">பிரபல பயணங்கள்</span><span class="en">Popular routes</span></h3><ul>
+      <li><a href="/taxi/katpadi-railway-station-taxi/">Katpadi Junction taxi</a></li><li><a href="/taxi/cmc-hospital-vellore-taxi/">CMC Hospital taxi</a></li>
+      <li><a href="/taxi/vit-vellore-taxi/">VIT Vellore taxi</a></li><li><a href="/taxi/vellore-to-chennai-airport-taxi/">Vellore → Chennai Airport</a></li>
+      <li><a href="/taxi/vellore-to-bangalore-taxi/">Vellore → Bengaluru</a></li><li><a href="/taxi/vellore-to-tirupati-taxi/">Vellore → Tirupati</a></li><li><a href="/taxi/vellore-auto-booking/">Auto booking</a></li></ul></div>
+    <div><h3><span class="ta">உதவி</span><span class="en">Support</span></h3><ul>
       <li><a data-tel="phone" href="tel:+919344640416"><span data-show="phone">93446 40416</span></a></li>
       <li><span class="ta">Driver உதவி:</span><span class="en">Driver help:</span> <a data-tel="driverPhone" href="tel:+919344039933"><span data-show="driverPhone">93440 39933</span></a></li>
-      <li><a data-mail="email" href="mailto:vellorecalltaxi.office@gmail.com"><span data-show="email">vellorecalltaxi.office@gmail.com</span></a></li></ul></div>
-    <div><h3>Links</h3><ul>
-      <li><a href="/"><span class="ta">App திற</span><span class="en">Open the app</span></a></li>
-      <li><a href="/driver/"><span class="ta">Driver-ஆக சேர</span><span class="en">Join as a driver</span></a></li>
+      <li><a data-mail="email" href="mailto:vellorecalltaxi.office@gmail.com"><span data-show="email">vellorecalltaxi.office@gmail.com</span></a></li>
+      <li><a href="/driver/join/"><span class="ta">Driver-ஆக சேர</span><span class="en">Become a driver</span></a></li>
       <li><a href="/privacy/"><span class="ta">தனியுரிமை & விதிமுறைகள்</span><span class="en">Privacy & terms</span></a></li></ul></div>
     <p class="copy">© 2026 Vellore Call Taxi</p>
   </div>
 </footer>
 
 <div class="fab">
-  <a class="wa" data-wa="whatsapp" hidden href="https://wa.me/919344640416" target="_blank" rel="noopener" aria-label="WhatsApp"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm5.2 14.1c-.2.6-1.3 1.2-1.8 1.2-.5.1-1 .2-3.3-.7-2.8-1.1-4.5-3.9-4.7-4.1-.1-.2-1.1-1.5-1.1-2.9s.7-2 1-2.3c.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.5l.8 2c.1.2.1.4 0 .6l-.4.6-.4.4c-.1.1-.3.3-.1.6.2.3.8 1.3 1.7 2.1 1.2 1 2.1 1.3 2.4 1.5.3.1.5.1.6-.1l.9-1c.2-.3.4-.2.7-.1l1.9.9c.3.1.5.2.5.3.1.2.1.8-.1 1.3Z"/></svg></a>
+  <a class="wa" data-wa="whatsapp" hidden href="https://wa.me/919344640416" target="_blank" rel="noopener" aria-label="WhatsApp"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Z"/></svg></a>
   <a class="cl" data-tel="phone" href="tel:+919344640416" aria-label="Call"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1A17 17 0 0 1 3 4c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.3 0 .7-.2 1Z"/></svg></a>
 </div>
 
 <script src="/core/fare.js"></script>
 <script src="/vellore/quote.js"></script>
+<script src="/vellore/rent.js"></script>
 <script src="/vellore/site.js"></script>
+<script src="/vellore/next.js"></script>
 <script type="module" src="/vellore/site-data.js"></script>
 </body>
 </html>

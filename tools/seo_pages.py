@@ -113,7 +113,7 @@ def page(p):
 <meta property="og:title" content="{e(p['h1'])} | Vellore Taxi"><meta property="og:description" content="{e(p['desc'])}"><meta property="og:image" content="{SITE}/brand/logo-main.png">
 <link rel="icon" type="image/png" href="/icon-192.png?v=9">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Baloo+Thambi+2:wght@600;700;800&family=Hind+Madurai:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Anek+Tamil:wdth,wght@75..100,600..800&family=Hind+Madurai:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/taxi/seo.css">
 <script type="application/ld+json">{json.dumps(ld, ensure_ascii=False)}</script>
 </head>

@@ -1,6 +1,13 @@
 <!doctype html>
 <html lang="en">
 <head><meta name="robots" content="noindex,nofollow"><script>/* anti-clickjacking: the apps never run inside another site's frame (tests on localhost excepted) */if(window.top!==window.self&&!/^(localhost|127\.0\.0\.1)$/.test(location.hostname)){document.documentElement.style.display="none";try{window.top.location=window.self.location.href}catch(e){}}</script>
+<script>/* A first visit on a computer (wide screen, mouse) to velloretaxi.app lands on the website, which has the booking box,
+   fares and everything else; the app stays one click away ("Login" / "Open the app" = /?app=1, remembered for the visit).
+   Phones, the installed app, returning customers (saved settings) and website "Book" links (#book=…) always get the app. */
+(function(){try{var q=location.search,h=location.hash;if(/[?&]app=1/.test(q)){sessionStorage.setItem('vct-app','1');return}
+  if(location.pathname!=='/'||h||q||sessionStorage.getItem('vct-app')||localStorage.getItem('vct'))return;
+  if(matchMedia('(display-mode: standalone)').matches||navigator.standalone||window.Capacitor)return;
+  if(matchMedia('(min-width: 1024px) and (pointer: fine)').matches)location.replace('/vellore/')}catch(e){}})();</script>
 <meta charset="utf-8">
 <link rel="preconnect" href="https://www.gstatic.com" crossorigin><link rel="preconnect" href="https://firestore.googleapis.com"><link rel="preconnect" href="https://maps.googleapis.com">
 <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"><link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js"><link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js"><link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-check.js">
@@ -44,7 +51,7 @@
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('./vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV=window.VCT_V='131',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV=window.VCT_V='132',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('./version.json',location.href)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -557,18 +564,18 @@ details.faq p{margin:0;padding:0 14px 14px;color:var(--muted);font-size:14px;lin
 <div class="app" id="app"></div>
 <div class="toast" id="toast"></div>
 
-<script src="./core/report.js?v=131"></script>
-<script src="./core/funnel.js?v=131"></script>
-<script src="./core/geo.js?v=131"></script>
-<script src="./core/fare.js?v=131"></script>
-<script src="./core/appget.js?v=131"></script>
-<script src="./core/pin.js?v=131"></script>
-<script src="./core/clock.js?v=131"></script>
-<script src="./core/map.js?v=131"></script>
-<script src="./core/chat.js?v=131"></script>
-<script src="./core/otp.js?v=131"></script>
-<script src="./core/deskmode.js?v=131"></script>
-<script src="./core/weather.js?v=131"></script>
+<script src="./core/report.js?v=132"></script>
+<script src="./core/funnel.js?v=132"></script>
+<script src="./core/geo.js?v=132"></script>
+<script src="./core/fare.js?v=132"></script>
+<script src="./core/appget.js?v=132"></script>
+<script src="./core/pin.js?v=132"></script>
+<script src="./core/clock.js?v=132"></script>
+<script src="./core/map.js?v=132"></script>
+<script src="./core/chat.js?v=132"></script>
+<script src="./core/otp.js?v=132"></script>
+<script src="./core/deskmode.js?v=132"></script>
+<script src="./core/weather.js?v=132"></script>
 <script>
 /* ---------- icons ---------- */
 /* small line icons (one stroke style everywhere; no emoji in the interface) */
@@ -709,8 +716,10 @@ function toast(msg){const el=document.getElementById('toast');el.textContent=msg
 
 /* ---------- screens ---------- */
 /* "Book" on the public website (velloretaxi.app/vellore/) opens the app as #book=<base64url JSON>:
-   {f:{lat,lon,n}, t:{lat,lon,n}, v:'mini', k:'local'|'out', o:'one'|'round'}. It is kept until the customer is signed in,
-   then the fare screen opens with those places. Everything in it is checked: it is just a link anyone could make. */
+   {f:{lat,lon,n}, t:{lat,lon,n}, v:'mini', k:'local'|'out'|'rent', o:'one'|'round', w:pickup time ms (optional), h:rental hours}.
+   Rental needs only f. It is kept until the customer is signed in, then the fare screen opens with those places.
+   Everything in it is checked: it is just a link anyone could make. A time is only a suggestion: each screen still
+   applies its own minimum notice (city 30 min, outstation notice, Tempo Traveller 3 h). */
 function readBookLink(){
   let x=null;
   try{const m=/^#book=([A-Za-z0-9_-]{10,1200})$/.exec(location.hash);
@@ -718,16 +727,20 @@ function readBookLink(){
       try{history.replaceState(null,'',location.pathname+location.search)}catch(e){}}
     else{const s=sessionStorage.getItem('vct-booklink');if(s)x=JSON.parse(s)}}catch(e){x=null}
   const pt=p=>p&&isFinite(+p.lat)&&isFinite(+p.lon)&&+p.lat>6&&+p.lat<37&&+p.lon>68&&+p.lon<98?{lat:+p.lat,lon:+p.lon,n:String(p.n||'').replace(/[<>"'`&\\]/g,'').trim().slice(0,80)}:null;
-  if(!x||!pt(x.f)||!pt(x.t))return null;
-  return{f:pt(x.f),t:pt(x.t),v:/^(auto|mini|sedan|suv|psuv|trav)$/.test(x.v)?x.v:'',k:x.k==='out'?'out':'local',o:x.o==='round'?'round':'one'};
+  const rent=!!x&&x.k==='rent';
+  if(!x||!pt(x.f)||(!rent&&!pt(x.t)))return null;
+  const now=Date.now(),w=+x.w,when=isFinite(w)&&w>now+20*60e3&&w<now+31*864e5?Math.round(w):null;
+  const h=[1,2,3,4,5,6,8,10,12].includes(+x.h)?+x.h:4;
+  return{f:pt(x.f),t:rent?null:pt(x.t),v:/^(auto|mini|sedan|suv|psuv|trav)$/.test(x.v)?x.v:'',k:rent?'rent':x.k==='out'?'out':'local',o:x.o==='round'?'round':'one',w:when,h};
 }
 let BOOKLINK=readBookLink();
 function useBookLink(){
   const x=BOOKLINK;BOOKLINK=null;try{sessionStorage.removeItem('vct-booklink')}catch(e){}
-  [['pick',x.f],['drop',x.t]].forEach(([k,p])=>{setCustom(k,{lat:p.lat,lon:p.lon});if(p.n){P[k].ta=P[k].en=p.n}});
-  S.from='pick';S.dest='drop';S.when=null;S.rider=null;S.autoFor='';
-  if(x.k==='out'&&x.v!=='auto'){S.mode='out';if(x.v)OS.veh=x.v;OS.type=x.o;return outFare2()}
-  S.mode='';if(x.v)S.veh=x.v;fareScreen();
+  [['pick',x.f],['drop',x.t]].filter(([k,p])=>p).forEach(([k,p])=>{setCustom(k,{lat:p.lat,lon:p.lon});if(p.n){P[k].ta=P[k].en=p.n}});
+  S.from='pick';S.dest=x.t?'drop':null;S.when=null;S.rider=null;S.autoFor='';
+  if(x.k==='rent'){S.mode='rent';const i=PKG.findIndex(p=>p.h===x.h);RS.pkg=i<0?3:i;if(x.v&&RENT[x.v])RS.veh=x.v;RS.when=x.w;return rentFare()}
+  if(x.k==='out'&&x.v!=='auto'){S.mode='out';if(x.v)OS.veh=x.v;OS.type=x.o;if(x.w)OS.leave=x.w;return outFare2()}
+  S.mode='';if(x.v)S.veh=x.v;S.when=x.w&&x.w>=Date.now()+25*60e3?x.w:null;fareScreen();
 }
 /* Guests (not signed in, e.g. from an ad) can look around and see real prices. Sign-in is asked only when they press Book.
    What they chose is kept here (also in sessionStorage, so it survives a reload) and the same fare screen comes back after sign-in. */

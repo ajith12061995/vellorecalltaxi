@@ -1,7 +1,7 @@
-// node tests/unit/siterent.test.js — website rental prices (vellore-next/rent.js) = the customer app's own rental code
+// node tests/unit/siterent.test.js — website rental prices (vellore/rent.js) = the customer app's own rental code
 const assert = require('assert'), fs = require('fs'), path = require('path');
 const R = path.join(__dirname, '../..'); let n = 0; const ok = (name, fn) => { fn(); n++; console.log('PASS', name); };
-const SR = require(path.join(R, 'vellore-next/rent.js'));
+const SR = require(path.join(R, 'vellore/rent.js'));
 const app = fs.readFileSync(path.join(R, 'index.html'), 'utf8');
 const grab = re => { const m = re.exec(app); assert.ok(m, 'not found in app: ' + re); return m[0]; };
 const src = [grab(/const PKG=\[[^\n]*\];/), grab(/const RANCH=\[[^\n]*\];/), grab(/const RENT=\{[^\n]*\};/), grab(/const XKM=\{[^\n]*\};/),
