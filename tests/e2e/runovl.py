@@ -51,6 +51,9 @@ async def main():
         r=rg[-1][1] if rg else {}
         check('plugin asked to ring with the ride details',bool(rg) and r.get('id') and '→' in r.get('line1','') and ('km' in r.get('line2','') or 'கி.மீ' in r.get('line2','')) and r.get('secs')==20,r)
         check('card shows the fare and Accept / View',r.get('fare','').startswith('₹') and r.get('accept') in ('Accept','ஏற்கிறேன்') and r.get('open') in ('View','பார்க்க'),r)
+        check('Rapido-like card fields: vehicle, payment, pickup km + place, drop km + place',r.get('veh') and r.get('pay') in ('Cash','UPI','Wallet') and r.get('pkm','').endswith(' km') and r.get('dkm','').endswith(' km') and r.get('pname') and r.get('dname'),r)
+        check('page tells the app it is running (ready) once',len([c for c in await ov() if c[0]=='ready'])==1,[c[0] for c in await ov()])
+        check('battery state asked',any(c[0]=='power' for c in await ov()))
         check('no customer phone number or name sent to the card',not any(('9999900001' in str(v)) or ('Priya' in str(v)) for v in r.values()),r)
         bid=r.get('id')
         # "View" on the card: the app only comes to the front, nothing is accepted
@@ -66,6 +69,10 @@ async def main():
         bk=await pg.evaluate(f"MOCK.store.get('bookings/{bid}')")
         check('"Accept" on the card accepts the ride for this driver',bk.get('status')!='searching' and bk.get('driverPhone')=='+919999900002',[bk.get('status'),bk.get('driverPhone')])
         check('ringing is stopped once the request ends',len([c for c in await ov() if c[0]=='stop'])>n0)
+        await df.evaluate("J=null;SHOWING=null;document.querySelectorAll('.modal').forEach(m=>m.remove());home()");await pg.wait_for_timeout(600)
+        check('battery limited (power free:false) → tip with a button to the settings',await D.locator('#pwron').count()==1)
+        await D.locator('#pwron').click();await pg.wait_for_timeout(300)
+        check('tip opens the app settings (askPower)',any(c[0]=='askPower' for c in await ov()))
         check('no page errors',not errs,errs[:2])
         await b.close()
     print('RESULT','PASS' if all(res) else 'FAIL',f'{sum(res)}/{len(res)}')

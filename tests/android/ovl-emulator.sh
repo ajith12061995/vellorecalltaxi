@@ -30,9 +30,12 @@ overlays(){ adb shell dumpsys window windows 2>/dev/null | grep -E "Window\{[^}]
 
 adb install -r "$APK" || { echo "FAIL install"; exit 1; }
 adb shell appops set $PKG SYSTEM_ALERT_WINDOW allow     # what the driver does once on the "Display over other apps" screen
+# a driver going ON has already allowed location (the app asks first); and notifications (Android 13+)
+adb shell pm grant $PKG android.permission.ACCESS_FINE_LOCATION; adb shell pm grant $PKG android.permission.ACCESS_COARSE_LOCATION; adb shell pm grant $PKG android.permission.POST_NOTIFICATIONS 2>/dev/null
 adb shell am start -n $PKG/.MainActivity
 waitlog '^status={"can":true}' 90 && ok "app opened; plugin present; overlay permission seen as allowed" || { bad "plugin status"; cat "$LOG"; adb logcat -d | grep -iE "capacitor|RideOverlay|AndroidRuntime" | tail -40; }
 waitlog '^online=sent' 20 && ok "page told the plugin: online" || bad "online call"
+sleep 2; adb logcat -d | grep -E "DutyService" | tail -5
 adb shell dumpsys notification --noredact 2>/dev/null | grep -q "id=4711" && ok "ON → 'Vellore Taxi · Online' notification (duty service running)" || bad "no duty notification"
 adb shell input keyevent KEYCODE_HOME; sleep 4          # the driver leaves the app (home screen)
 waitlog '^vis=hidden' 10 && ok "app is in the background" || bad "app did not go to the background"
@@ -121,6 +124,6 @@ adb shell input keyevent KEYCODE_HOME; sleep 4
 n=$(overlays); [ "$n" -eq 0 ] && ok "permission taken away: nothing is drawn over other apps" || bad "overlay drawn without permission ($n)"
 echo "--- report log:"; cat "$LOG"
 echo "--- windows of the app:"; adb shell dumpsys window windows 2>/dev/null | grep -E "Window\{[^}]*$PKG" | head
-echo "--- logcat:"; adb logcat -d | grep -iE "AndroidRuntime|FATAL|RideOverlay: (load|resume|pause|destroy|sync|online)|wm_on_(create|destroy|resume|paused|stop).*velloretaxi|START u0.*velloretaxi" | tail -80
+echo "--- logcat:"; adb logcat -d | grep -iE "DutyService|AndroidRuntime: (FATAL|Shutting down VM.*velloretaxi)|FATAL|RideOverlay: (load|resume|pause|destroy|sync|online)|wm_on_(create|destroy|resume|paused|stop).*velloretaxi|START u0.*velloretaxi" | tail -80
 echo "RESULT $pass passed, $fail failed"
 [ $fail -eq 0 ]
