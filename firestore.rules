@@ -84,7 +84,16 @@ service cloud.firestore {
       allow create, delete: if isOwner();
       allow update: if isOwner() || (isStaff() && !changes().hasAny(['wallet', 'blocked']))
         || (signedIn() && phone() == ph
-            && changes().hasOnly(['online', 'lat', 'lon', 'updatedAt', 'wallet', 'fcm', 'fcmAt', 'consent'])
+            && changes().hasOnly(['online', 'lat', 'lon', 'updatedAt', 'wallet', 'fcm', 'fcmAt', 'consent', 'dev'])
+            // the phone's own setup, shown to the office: app version, permissions — short values and server time only
+            && (!('dev' in changes()) || (newData().dev is map && newData().dev.keys().hasOnly(['app', 'ovl', 'pwr', 'loc', 'notif', 'os', 'mk', 'at'])
+                && newData().dev.at == request.time
+                && newData().dev.get('app', '') is string && newData().dev.get('app', '').size() <= 20
+                && newData().dev.get('loc', '') is string && newData().dev.get('loc', '').size() <= 20
+                && newData().dev.get('notif', '') is string && newData().dev.get('notif', '').size() <= 20
+                && newData().dev.get('os', '') is string && newData().dev.get('os', '').size() <= 20
+                && newData().dev.get('mk', '') is string && newData().dev.get('mk', '').size() <= 30
+                && newData().dev.get('ovl', false) is bool && newData().dev.get('pwr', false) is bool))
             // the driver signs the agreement in the app: own name, server time, nothing else
             && (!('consent' in changes()) || (newData().consent.keys().hasOnly(['v', 'name', 'lang', 'ua', 'at'])
                 && newData().consent.v is string && newData().consent.name is string && newData().consent.name.size() <= 80

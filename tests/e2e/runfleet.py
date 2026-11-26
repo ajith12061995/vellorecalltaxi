@@ -83,6 +83,19 @@ async def main():
         check('"Auto" filter → only the auto',[m['lab'][:4] for m in mk]==['2222'],[m['lab'] for m in mk])
         await O.locator('[data-fvh=all]').click();await pg.wait_for_timeout(900)
         check('all back',len(await of.evaluate(FM))==3)
+        # phone setup on the drivers page (26 Nov): what each driver's phone is missing
+        await pg.evaluate("""(()=>{const t=Date.now();
+          MOCK.fs.updateDoc({path:'drivers/+919999900011'},{dev:{app:'1.0.16+',ovl:true,pwr:true,loc:'granted',notif:'granted',os:'Android 14',mk:'realme',at:{__ms:t}}});
+          MOCK.fs.updateDoc({path:'drivers/+919999900012'},{dev:{app:'1.0.15-',ovl:false,pwr:true,loc:'granted',notif:'denied',os:'Android 13',mk:'',at:{__ms:t}}});})()""")
+        await of.evaluate("S.sec='drv';save();show()");await pg.wait_for_timeout(1500)
+        txt=' '.join((await O.locator('.cards').inner_text()).split())
+        check('drivers page: phone line per driver','App 1.0.16+' in txt and 'realme · Android 14' in txt and ('பழையது' in txt or 'older' in txt),txt[:300])
+        check('drivers page: no report yet is said plainly',('No phone report yet' in txt or 'Phone விவரம் இன்னும் வரல' in txt))
+        tabs=' '.join((await O.locator('.tabs').first.inner_text()).split())
+        check('"Phone to fix" tab counts the old-app driver',('Phone to fix 1' in tabs or 'Phone சரி பண்ணணும் 1' in tabs),tabs)
+        await O.locator('[data-df=ph]').click();await pg.wait_for_timeout(800)
+        txt=' '.join((await O.locator('.cards').inner_text()).split())
+        check('"Phone to fix" shows only Bala (old app, no notifications)','Bala K' in txt and 'Arun S' not in txt and ('App needs update' in txt or 'App update வேணும்' in txt or 'older' in txt or 'பழையது' in txt),txt[:300])
         check('no page errors',not errs,errs[:3])
         await b.close()
 asyncio.run(main())

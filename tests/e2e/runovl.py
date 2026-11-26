@@ -11,6 +11,8 @@ BRIDGE="""(()=>{window.__calls=[];window.__can=%s;window.__take={action:null,id:
     if(p==='BackgroundGeolocation'&&m==='checkPermissions')return Promise.resolve({location:'granted'});
     if(p==='PushNotifications'&&m==='checkPermissions')return Promise.resolve({receive:'granted'});
     if(p==='RideOverlay'&&m==='status')return Promise.resolve({can:window.__can});
+    if(m==='checkPermissions')return Promise.resolve({location:'granted',receive:'granted'});
+    if(p==='RideOverlay'&&m==='power')return Promise.resolve({free:false,maker:'realme'});
     if(p==='RideOverlay'&&m==='take'){const t=window.__take;window.__take={action:null,id:null};return Promise.resolve(t)}
     return Promise.resolve({})},
   nativeCallback:(p,m,o,cb)=>{__calls.push([p,m,o]);if(m==='addWatcher')window.__cb=cb;return String(++n)},
@@ -54,6 +56,14 @@ async def main():
         check('Rapido-like card fields: vehicle, payment, pickup km + place, drop km + place',r.get('veh') and r.get('pay') in ('Cash','UPI','Wallet') and r.get('pkm','').endswith(' km') and r.get('dkm','').endswith(' km') and r.get('pname') and r.get('dname'),r)
         check('page tells the app it is running (ready) once',len([c for c in await ov() if c[0]=='ready'])==1,[c[0] for c in await ov()])
         check('battery state asked',any(c[0]=='power' for c in await ov()))
+        dv=await pg.evaluate("(MOCK.store.get('drivers/+919999900002')||{}).dev")
+        check('phone setup reported to the office (app, overlay, battery, GPS, notifications, maker, Android)',dv and dv.get('app')=='1.0.16+' and dv.get('ovl') is True and dv.get('pwr') is False and dv.get('loc')=='granted' and dv.get('notif')=='granted' and dv.get('mk')=='realme' and dv.get('os')=='Android 16',dv)
+        await pg.evaluate("(()=>{window.__dw=0;const f=MOCK.fs.updateDoc;MOCK.fs.updateDoc=function(r,d){if(d&&d.dev)__dw++;return f.apply(this,arguments)}})()")
+        await df.evaluate("devReport('1.0.16+','realme')");await pg.wait_for_timeout(400)
+        check('unchanged report is not written again',await pg.evaluate("__dw")==0)
+        await df.evaluate("OVLCAN=false;devReport('1.0.16+','realme')");await pg.wait_for_timeout(400)
+        check('changed (overlay taken away) → written again',await pg.evaluate("__dw")==1 and (await pg.evaluate("MOCK.store.get('drivers/+919999900002').dev.ovl")) is False)
+        await df.evaluate("OVLCAN=true;localStorage.removeItem('vct_dev');devReport('1.0.16+','realme')");await pg.wait_for_timeout(400)
         check('no customer phone number or name sent to the card',not any(('9999900001' in str(v)) or ('Priya' in str(v)) for v in r.values()),r)
         bid=r.get('id')
         # "View" on the card: the app only comes to the front, nothing is accepted

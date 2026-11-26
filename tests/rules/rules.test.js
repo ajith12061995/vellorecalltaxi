@@ -125,6 +125,13 @@ test('driver signs the agreement on own record (server time), nothing else rides
   await assertSucceeds(updateDoc(doc(as.drv(), 'drivers', DRV), { consent: { v: '2026-11-03', name: 'Test', lang: 'ta', ua: 'x', at: serverTimestamp() }, updatedAt: serverTimestamp() }));
   await assertFails(updateDoc(doc(as.drv(), 'drivers', DRV), { consent: { v: '2026-11-03', name: 'Test', at: 12345 } }));          // back-dated
   await assertFails(updateDoc(doc(as.drv(), 'drivers', DRV), { consent: { v: '2026-11-03', name: 'Test', at: serverTimestamp(), ok: true } }));
+  // phone setup report (dev): short values, server time, nothing else; never the wallet with it
+  await assertSucceeds(updateDoc(doc(as.drv(), 'drivers', DRV), { dev: { app: '1.0.16+', ovl: true, pwr: false, loc: 'granted', notif: 'granted', os: 'Android 14', mk: 'realme', at: serverTimestamp() } }));
+  await assertFails(updateDoc(doc(as.drv(), 'drivers', DRV), { dev: { app: '1.0.16+', ovl: true, at: 12345 } }));
+  await assertFails(updateDoc(doc(as.drv(), 'drivers', DRV), { dev: { app: '1.0.16+', ovl: 'yes', at: serverTimestamp() } }));
+  await assertFails(updateDoc(doc(as.drv(), 'drivers', DRV), { dev: { app: '1.0.16+', at: serverTimestamp(), blocked: false } }));
+  await assertFails(updateDoc(doc(as.drv(), 'drivers', DRV), { dev: { app: 'x'.repeat(40), at: serverTimestamp() } }));
+  await assertFails(updateDoc(doc(as.drv(), 'drivers', DRV), { dev: { app: '1.0.16+', at: serverTimestamp() }, wallet: 999999 }));
   await assertFails(updateDoc(doc(as.drv(), 'drivers', DRV), { consent: { v: '2026-11-03', name: 'T', at: serverTimestamp() }, blocked: false }));
   await assertFails(updateDoc(doc(as.drv2(), 'drivers', DRV), { consent: { v: '2026-11-03', name: 'X', at: serverTimestamp() } })); // someone else's record
 });

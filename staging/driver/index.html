@@ -49,7 +49,7 @@
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('../vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV=window.VCT_V='129',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV=window.VCT_V='130',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('../version.json',location.href)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -660,20 +660,20 @@ a.btn{text-decoration:none}
 <div class="app" id="app"><section class="screen" id="splash"><div class="roofsign"><b>TAXI</b><span>வேலூர் டாக்ஸி</span></div><span class="drvtag">DRIVER</span><div class="road"></div><div class="tag">Vellore Taxi · Driver</div></section></div>
 <div class="toast" id="toast"></div>
 
-<script src="../core/report.js?v=129"></script>
-<script src="../core/geo.js?v=129"></script>
-<script src="../core/fare.js?v=129"></script>
-<script src="../core/appget.js?v=129"></script>
-<script src="../core/pin.js?v=129"></script>
-<script src="../core/clock.js?v=129"></script>
-<script src="../core/map.js?v=129"></script>
-<script src="../core/chat.js?v=129"></script>
-<script src="../core/driverchecks.js?v=129"></script>
-<script src="../core/nav.js?v=129"></script>
-<script src="../core/otp.js?v=129"></script>
-<script src="../core/deskmode.js?v=129"></script>
-<script src="../core/refer.js?v=129"></script>
-<script src="../core/weather.js?v=129"></script>
+<script src="../core/report.js?v=130"></script>
+<script src="../core/geo.js?v=130"></script>
+<script src="../core/fare.js?v=130"></script>
+<script src="../core/appget.js?v=130"></script>
+<script src="../core/pin.js?v=130"></script>
+<script src="../core/clock.js?v=130"></script>
+<script src="../core/map.js?v=130"></script>
+<script src="../core/chat.js?v=130"></script>
+<script src="../core/driverchecks.js?v=130"></script>
+<script src="../core/nav.js?v=130"></script>
+<script src="../core/otp.js?v=130"></script>
+<script src="../core/deskmode.js?v=130"></script>
+<script src="../core/refer.js?v=130"></script>
+<script src="../core/weather.js?v=130"></script>
 <script>
 /* shared with the customer app: icons, places, fares, map engine */
 /* small line icons (one stroke style everywhere; no emoji in the interface) */
@@ -1633,14 +1633,28 @@ function stopReq(){clearInterval(RQT);RQT=null;try{navigator.vibrate&&navigator.
 /* Android app 1.0.14+: ride card + ringtone over other apps (RideOverlay plugin). The page stays in charge: the plugin only
    shows what it is given, and "Accept" on the card presses this page's own Accept button once the app is in front. */
 let OVL=null,OVLCAN=false,OVLASKED=false;
-function ovlInit(){if(!NATIVE())return;try{const p=capPlugin('RideOverlay');if(!p)return;
+function ovlInit(){if(!NATIVE())return;try{const p=capPlugin('RideOverlay');if(!p){devReport('old');return}
   p.status().then(r=>{const first=!OVL;OVL=p;const can=!!(r&&r.can);ovlPower();if(can!==OVLCAN||first){OVLCAN=can;ovlOnline();if(first)ovlReady();if(!J&&!document.querySelector('.modal')&&(document.getElementById('offs')||document.getElementById('ons')))home()}}).catch(()=>{OVL=null})}catch(e){}}
 function ovlOnline(){if(OVL)try{OVL.online({on:!!S.online}).catch(()=>{})}catch(e){}}
 /* the page is running (and, if ON, location has had time to start): an app the phone reopened after it was swiped away goes
    back behind the driver's other app (1.0.16+; older apps have no ready()) */
 let OVLREADY=false,OVLPWR=null;
 /* is the app free of the phone's battery limits? (1.0.16+; unknown on older apps → no tip) */
-function ovlPower(){if(!OVL)return;try{OVL.power().then(r=>{const f=!!(r&&r.free);if(f!==OVLPWR){OVLPWR=f;if(!J&&!document.querySelector('.modal')&&document.getElementById('offs'))home()}}).catch(()=>{})}catch(e){}}
+function ovlPower(){if(!OVL)return;try{OVL.power().then(r=>{const f=!!(r&&r.free),ch=f!==OVLPWR;OVLPWR=f;devReport('1.0.16+',r&&r.maker);if(ch&&!J&&!document.querySelector('.modal')&&document.getElementById('offs'))home()}).catch(()=>devReport('1.0.15-'))}catch(e){devReport('1.0.15-')}}
+/* tell the office how this phone is set up (app version, over-other-apps, battery, location, notifications), so the office
+   can see which driver needs to update or allow something — written only when something changed, or twice a day */
+let DEVBUSY=false;
+async function devReport(app,mk){if(!CL||!CL.phone||DEVBUSY)return;DEVBUSY=true;try{
+  let loc='?';try{const bg=capPlugin('BackgroundGeolocation');if(bg&&bg.checkPermissions){const st=await bg.checkPermissions();loc=String(st&&st.location||'?')}
+    else if(navigator.permissions){loc=(await navigator.permissions.query({name:'geolocation'})).state}}catch(e){}
+  let notif='?';try{const P=capPlugin('PushNotifications');if(P){const r=await P.checkPermissions();notif=String(r&&r.receive||'?')}}catch(e){}
+  const os=((navigator.userAgent.match(/Android [0-9.]+/)||[''])[0]).slice(0,20);
+  const d={app:String(app).slice(0,20),ovl:!!OVLCAN,pwr:OVLPWR!==false,loc:loc.slice(0,20),notif:notif.slice(0,20),os,mk:String(mk||'').slice(0,30)};
+  const key=JSON.stringify(d),old=(()=>{try{return JSON.parse(localStorage.getItem('vct_dev')||'{}')}catch(e){return{}}})();
+  if(old.k===key&&Date.now()-(old.t||0)<12*3600e3)return;
+  await F().updateDoc(F().doc(CL.db,'drivers',CL.phone),{dev:{...d,at:ts()}});
+  try{localStorage.setItem('vct_dev',JSON.stringify({k:key,t:Date.now()}))}catch(e){}
+}catch(e){}finally{DEVBUSY=false}}
 function ovlReady(){if(!OVL||OVLREADY)return;OVLREADY=true;setTimeout(()=>{try{OVL.ready().catch(()=>{})}catch(e){}},S.online?3500:500)}
 /* the card over other apps, laid out like Rapido's: vehicle, fare (how it is paid), pickup km + place + address, drop km + place +
    address, a big Accept with the time left. Android app 1.0.16+ draws veh…dsub; older apps use title / line1 / line2. */
