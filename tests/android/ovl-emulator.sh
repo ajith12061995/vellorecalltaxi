@@ -84,8 +84,14 @@ adb shell input keyevent KEYCODE_HOME; sleep 3
 b0=$(boots); adb logcat -c
 adb shell input keyevent KEYCODE_APP_SWITCH; sleep 3
 adb exec-out screencap -p > "$OUT/ovl-5-recents.png" 2>/dev/null
-if tap_text "Clear all"; then how="Clear all"; else W=$(adb shell wm size | grep -o '[0-9]*x[0-9]*' | tail -1); w=${W%x*}; hh=${W#*x}; adb shell input swipe $((w/2)) $((hh/2)) $((w/2)) 80 250; how="swipe up"; fi
-echo "recent apps: $how"; sleep 2; adb shell input keyevent KEYCODE_HOME
+intask(){ adb shell dumpsys activity recents 2>/dev/null | grep -c "A=.*app.velloretaxi.driver\|realActivity=app.velloretaxi.driver\|cmp=app.velloretaxi.driver"; }
+echo "app tasks before: $(intask)"
+W=$(adb shell wm size | grep -o '[0-9]*x[0-9]*' | tail -1); w=${W%x*}; hh=${W#*x}; how=""
+if tap_text "Clear all" >/dev/null 2>&1; then how="Clear all"; fi
+k=0; for d in 150 300 100; do [ "$(intask)" -eq 0 ] && break
+  k=$((k+1)); if [ $k -gt 1 ]; then adb shell input keyevent KEYCODE_HOME; sleep 1; adb shell input keyevent KEYCODE_APP_SWITCH; sleep 2; fi
+  adb shell input touchscreen swipe $((w/2)) $((hh*45/100)) $((w/2)) 5 $d; sleep 2; how="$how swipe-up($d)"; done
+echo "recent apps: $how · app tasks after: $(intask)"; sleep 1; adb shell input keyevent KEYCODE_HOME
 for i in $(seq 1 40); do [ "$(boots)" -gt "$b0" ] && break; sleep 1; done
 adb logcat -d | grep -E "DutyService" | tail -8
 [ "$(boots)" -gt "$b0" ] && ok "swiped away ($how) → app reopened by itself, page running again (boot $(boots))" || bad "swiped away ($how) → app did NOT come back"
