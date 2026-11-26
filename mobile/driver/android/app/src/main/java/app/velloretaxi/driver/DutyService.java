@@ -47,6 +47,8 @@ public class DutyService extends Service {
 
     /** the app's screen is in front (set by RideOverlayPlugin on resume / pause / destroy) */
     static volatile boolean appVisible = false;
+    /** which screen (plugin instance) set appVisible: an old screen closing after a new one opened must not clear it */
+    static volatile int owner = 0;
     /** a ride card is on screen: no icon meanwhile */
     static volatile boolean cardShown = false;
     private static DutyService inst;
@@ -212,7 +214,7 @@ public class DutyService extends Service {
                 }
             });
             wm.addView(v, lp); bubble = v;
-            Log.i(TAG, "icon shown");
+            Log.i(TAG, "icon shown visible=" + appVisible);
         } catch (Exception e) { bubble = null; Log.w(TAG, "icon not shown", e); }
     }
 

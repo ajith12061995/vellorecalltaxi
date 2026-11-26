@@ -69,7 +69,9 @@ async def main():
         bk=await pg.evaluate(f"MOCK.store.get('bookings/{bid}')")
         check('"Accept" on the card accepts the ride for this driver',bk.get('status')!='searching' and bk.get('driverPhone')=='+919999900002',[bk.get('status'),bk.get('driverPhone')])
         check('ringing is stopped once the request ends',len([c for c in await ov() if c[0]=='stop'])>n0)
-        await df.evaluate("J=null;SHOWING=null;document.querySelectorAll('.modal').forEach(m=>m.remove());home()");await pg.wait_for_timeout(600)
+        for _ in range(8):  # under load a late snapshot can redraw the screen: draw home again until the tip is there
+            await df.evaluate("J=null;SHOWING=null;document.querySelectorAll('.modal').forEach(m=>m.remove());if(!document.getElementById('pwron'))home()");await pg.wait_for_timeout(600)
+            if await D.locator('#pwron').count():break
         check('battery limited (power free:false) → tip with a button to the settings',await D.locator('#pwron').count()==1)
         await D.locator('#pwron').click();await pg.wait_for_timeout(300)
         check('tip opens the app settings (askPower)',any(c[0]=='askPower' for c in await ov()))

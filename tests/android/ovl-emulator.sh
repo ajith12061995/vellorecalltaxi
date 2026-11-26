@@ -28,7 +28,7 @@ PY
   echo "--- screen text:"; grep -o 'text="[^"]*"' /tmp/ui.xml | head -40; return 1; }
 overlays(){ adb shell dumpsys window windows 2>/dev/null | grep -E "Window\{[^}]*$PKG" | grep -vc "MainActivity"; }
 
-adb install -r "$APK" || { echo "FAIL install"; exit 1; }
+adb logcat -G 16M >/dev/null 2>&1; adb install -r "$APK" || { echo "FAIL install"; exit 1; }
 adb shell appops set $PKG SYSTEM_ALERT_WINDOW allow     # what the driver does once on the "Display over other apps" screen
 # a driver going ON has already allowed location (the app asks first); and notifications (Android 13+)
 adb shell pm grant $PKG android.permission.ACCESS_FINE_LOCATION; adb shell pm grant $PKG android.permission.ACCESS_COARSE_LOCATION; adb shell pm grant $PKG android.permission.POST_NOTIFICATIONS 2>/dev/null
@@ -60,7 +60,7 @@ adb exec-out screencap -p > "$OUT/ovl-3-after.png" 2>/dev/null
 dens=$(adb shell wm density | grep -o '[0-9]*' | tail -1); ix=$(( (6+26)*dens/160 )); iy=$(( (220+26)*dens/160 ))
 for k in 1 2 3 4 5; do
   if [ $k -eq 5 ]; then adb shell input keyevent KEYCODE_BACK; sleep 3; else adb shell input keyevent KEYCODE_HOME; sleep 3; fi
-  n=$(overlays); [ "$n" -ge 1 ] && ok "round $k: icon back over the home screen after leaving the app again ($([ $k -eq 5 ] && echo Back || echo Home))" || { bad "round $k: NO icon after leaving the app again"; adb logcat -d | grep -i RideOverlay | tail -5; }
+  n=$(overlays); [ "$n" -ge 1 ] && ok "round $k: icon back over the home screen after leaving the app again ($([ $k -eq 5 ] && echo Back || echo Home))" || { bad "round $k: NO icon after leaving the app again"; adb logcat -d | grep -E "RideOverlay: (pause|resume|destroy|load)|DutyService: icon" | tail -8; }
   [ $k -eq 2 ] && adb exec-out screencap -p > "$OUT/ovl-4-again.png" 2>/dev/null
   case $k in
     1) adb shell input tap $ix $iy; how="tapping the icon";;
@@ -73,7 +73,7 @@ for k in 1 2 3 4 5; do
        adb logcat -d -b main,system,events 2>/dev/null | grep -iE "velloretaxi|am_kill|am_proc_died|has died|Killing|am_finish|wm_finish|wm_destroy|onBackPressed|moveTaskToBack" | tail -25
        adb shell monkey -p $PKG -c android.intent.category.LAUNCHER 1 >/dev/null 2>&1; how="the app icon after Back";;
   esac
-  sleep 3; n=$(overlays); [ "$n" -eq 0 ] && ok "round $k: back in the app ($how): icon hidden" || bad "round $k: icon still drawn inside the app ($n) after $how"
+  sleep 3; n=$(overlays); [ "$n" -eq 0 ] && ok "round $k: back in the app ($how): icon hidden" || { bad "round $k: icon still drawn inside the app ($n) after $how"; adb logcat -d | grep -E "RideOverlay: (pause|resume|destroy|load)|DutyService: icon" | tail -8; adb shell dumpsys activity activities | grep -E "ResumedActivity" | head -2; }
 done
 # 26 Nov (owner's recording of Rapido): swiped away from recent apps / killed → the app comes back by itself, behind the
 # other app, the icon is there again and the page runs again. The driver does nothing.
@@ -81,14 +81,14 @@ boots(){ grep -c '^boot=' "$LOG"; }
 alive(){ adb shell pidof $PKG | tr -d '\r'; }
 front(){ adb shell dumpsys activity activities 2>/dev/null | grep -E "mResumedActivity|topResumedActivity" | head -1; }
 adb shell input keyevent KEYCODE_HOME; sleep 3
-b0=$(boots); adb logcat -c
+b0=$(boots)
 adb shell input keyevent KEYCODE_APP_SWITCH; sleep 3
 adb exec-out screencap -p > "$OUT/ovl-5-recents.png" 2>/dev/null
 intask(){ adb shell dumpsys activity recents 2>/dev/null | grep -c "Recent #.*velloretaxi"; }
 echo "app tasks before: $(intask)"
 W=$(adb shell wm size | grep -o '[0-9]*x[0-9]*' | tail -1); w=${W%x*}; hh=${W#*x}; how=""
 if tap_text "Clear all" >/dev/null 2>&1; then how="Clear all"; fi
-k=0; for d in 150 300 100; do [ "$(intask)" -eq 0 ] && break
+k=0; for d in 150 300 100; do [ "$(boots)" -gt "$b0" ] && break; adb logcat -d | grep -q "DutyService: task removed" && break
   k=$((k+1)); if [ $k -gt 1 ]; then adb shell input keyevent KEYCODE_HOME; sleep 1; adb shell input keyevent KEYCODE_APP_SWITCH; sleep 2; fi
   adb shell input touchscreen swipe $((w/2)) $((hh*45/100)) $((w/2)) 5 $d; sleep 2; how="$how swipe-up($d)"; done
 echo "recent apps: $how · app tasks after: $(intask)"; sleep 1; adb shell input keyevent KEYCODE_HOME

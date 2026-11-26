@@ -126,13 +126,13 @@ public class RideOverlayPlugin extends Plugin {
     }
 
     @Override
-    protected void handleOnResume() { super.handleOnResume(); visible = true; DutyService.appVisible = true; android.util.Log.i("RideOverlay", "resume " + System.identityHashCode(this)); main.post(() -> { removeCard(); DutyService.sync(); }); }
+    protected void handleOnResume() { super.handleOnResume(); visible = true; DutyService.owner = System.identityHashCode(this); DutyService.appVisible = true; android.util.Log.i("RideOverlay", "resume " + System.identityHashCode(this)); main.post(() -> { removeCard(); DutyService.sync(); }); }
 
     @Override
-    protected void handleOnPause() { super.handleOnPause(); visible = false; DutyService.appVisible = false; android.util.Log.i("RideOverlay", "pause " + System.identityHashCode(this) + " online=" + online); DutyService.sync(); }
+    protected void handleOnPause() { super.handleOnPause(); visible = false; if (DutyService.owner == System.identityHashCode(this)) DutyService.appVisible = false; android.util.Log.i("RideOverlay", "pause " + System.identityHashCode(this) + " online=" + online); DutyService.sync(); }
 
     @Override
-    protected void handleOnDestroy() { android.util.Log.i("RideOverlay", "destroy " + System.identityHashCode(this)); visible = false; DutyService.appVisible = false; main.post(this::endRing); DutyService.sync(); super.handleOnDestroy(); }
+    protected void handleOnDestroy() { android.util.Log.i("RideOverlay", "destroy " + System.identityHashCode(this)); visible = false; if (DutyService.owner == System.identityHashCode(this)) DutyService.appVisible = false; main.post(this::endRing); DutyService.sync(); super.handleOnDestroy(); }
 
     /** the page is running again (online, location started): an app that DutyService reopened goes back behind the other app */
     @PluginMethod
