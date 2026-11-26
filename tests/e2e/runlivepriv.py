@@ -37,13 +37,39 @@ async def main():
         near=await cf.evaluate("JSON.stringify(NEAR)")
         check('customer map shows the car from cars/ (login id, not phone)','u9999900002' in near and '+91' not in near,near)
         check('car rotation is a number',await cf.evaluate("NEAR.every(n=>Number.isFinite(n.rot))"))
-        await C.locator('#bookb').click();await pg.wait_for_timeout(4000);await D.locator('#acc').click();await pg.wait_for_timeout(3000)
+        await cf.evaluate("CFG.area={lat:12.99,lon:80.17}")
+        await C.locator('#bookb').click();await pg.wait_for_timeout(4000)
+        if not await cf.evaluate("typeof R!=='undefined'&&!!(R&&R.id)"):  # the test area (Chennai) can be reset by a late config snapshot → "outside the local area" dialog; set it again and re-tap
+            await cf.evaluate("CFG.area={lat:12.99,lon:80.17};document.querySelectorAll('.modal').forEach(m=>m.remove());fareScreen()");await pg.wait_for_timeout(800)
+            await C.locator('#bookb').click();await pg.wait_for_timeout(4000)
+        await D.locator('#acc').click();await pg.wait_for_timeout(3000)
         bid=await cf.evaluate("R&&R.id")
         lv=await pg.evaluate("MOCK.store.get('live/+919999900002')")
         check('after accepting, live.bk = the booking id',lv and bid and lv.get('bk')==bid,(lv and lv.get('bk'),bid))
         car=await pg.evaluate("MOCK.store.get('cars/u9999900002')")
         check('busy car stays without booking id',car and car.get('busy') is True and 'bk' not in car,car)
         check('customer follows the driver position',await cf.evaluate("!!(R&&R.dpos&&R.dpos.lat)"))
+        # the car turns to where it is going and the arrival time uses its speed (26 Nov)
+        lv=await pg.evaluate("MOCK.store.get('live/+919999900002')")
+        await pg.evaluate("MOCK.fs.setDoc({path:'live/+919999900002'},{...MOCK.store.get('live/+919999900002'),hd:180,sp:30})");await pg.wait_for_timeout(500)
+        r=await cf.evaluate("(()=>{const d=R.map&&0;const o={lat:R.dpos.lat,lon:R.dpos.lon};return{hd:R.dhd,sp:R.dsp}})()")
+        check('rider: phone heading used',r['hd']==180,r)
+        e=await cf.evaluate("[etaMin({lat:12.99,lon:80.17},{lat:12.99+0.045,lon:80.17}),(R.dsp=0,etaMin({lat:12.99,lon:80.17},{lat:12.99+0.045,lon:80.17}))]")
+        check('rider: ETA faster at 30 km/h than the 21 km/h default (5 km straight)',e[0]<e[1] and e[1]==19,e)
+        await pg.evaluate("MOCK.fs.setDoc({path:'live/+919999900002'},{...MOCK.store.get('live/+919999900002'),hd:-1,sp:0,lon:MOCK.store.get('live/+919999900002').lon+0.0005})");await pg.wait_for_timeout(500)
+        hd=await cf.evaluate("R.dhd");check('rider: no phone heading → direction of the move (east ≈ 90)',abs(hd-90)<3,hd)
+        nd=await cf.evaluate("(()=>{const h=R.dhd*Math.PI/180,d={...R.dpos,nlat:R.dpos.lat+Math.cos(h)*1e-4,nlon:R.dpos.lon+Math.sin(h)*1e-4};return bearing(d,{lat:d.nlat,lon:d.nlon})})()")
+        check('rider: map marker points the same way',abs(nd-90)<3,nd)
+        # the map slides the rider's driver marker (Google path, recording fake)
+        g=await cf.evaluate("""new Promise(res=>{const MK=[];function Map(el,o){this.c=o.center;this.z=15;this.controls={0:[]}}
+          Map.prototype={addListener(){},getCenter(){const c=this.c;return{lat:()=>c.lat,lng:()=>c.lng}},setCenter(){},getZoom(){return 15},setZoom(){},fitBounds(){},getMapTypeId(){return'roadmap'}};
+          function Mk(o){Object.assign(this,o);MK.push(this)}Mk.prototype={setPosition(p){this.position=p},getPosition(){const p=this.position;return{lat:()=>p.lat,lng:()=>p.lng}},setIcon(i){this.icon=i},setMap(m){this.map=m},setZIndex(){},setLabel(){}};
+          function Pl(){}Pl.prototype={setPath(){},setMap(){},setCenter(){},setRadius(){}};
+          const keep=[window.GMAPS_KEY,window.google];window.GMAPS_KEY='t';window.google={maps:{Map,Marker:Mk,Polyline:Pl,Circle:Pl,Size:function(){},Point:function(){},LatLngBounds:function(){this.extend=()=>{}},SymbolPath:{CIRCLE:0},ControlPosition:{LEFT_BOTTOM:0}}};
+          const cv=document.createElement('canvas');document.body.appendChild(cv);let pos={lat:12.99,lon:80.17};
+          const m=makeMap(cv,{glide:true,driver:()=>({...pos,nlat:pos.lat+1e-4,nlon:pos.lon})});
+          setTimeout(()=>res(['timeout',MK.length]),6000);const dm=()=>MK.find(x=>x.zIndex===300);setTimeout(()=>{pos={lat:12.991,lon:80.17};setTimeout(()=>{const a=dm()?dm().position.lat:'none';setTimeout(()=>{res([a,dm()?dm().position.lat:MK.length]);const gm=document.querySelector('.gmap');if(gm)gm.remove();setTimeout(()=>{window.GMAPS_KEY=keep[0];window.google=keep[1]},700);document.querySelector('.gmap')&&document.querySelector('.gmap').remove()},1600)},800)},300)})""")
+        check('rider map: driver marker slides between updates',isinstance(g[0],float) and 12.99<g[0]<12.991 and abs(g[1]-12.991)<1e-7,g)
         # a first denied read (driver app not yet marked the ride) is retried
         await cf.evaluate("""(()=>{if(LIVEUNSUB){LIVEUNSUB();LIVEUNSUB=null}R.dpos=null;const o=F().onSnapshot;let n=0;
           window.__deny=1;F().onSnapshot=(r,a,e)=>{if(r&&r.path&&r.path.startsWith('live/')&&window.__deny){window.__deny=0;n++;setTimeout(()=>e&&e({code:'permission-denied'}),10);return()=>{}}return o(r,a,e)};

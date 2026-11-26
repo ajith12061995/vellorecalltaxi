@@ -156,6 +156,13 @@ test('live position is private: office, the driver and only the customer of the 
 test('driver writes bk (string, short) on live', async () => {
   await assertSucceeds(setDoc(doc(as.drv(), 'live', DRV), { lat: 12.9, lon: 79.1, gh: 'tf3k', online: true, busy: true, bk: 'b2', veh: 'sedan', updatedAt: serverTimestamp() }));
   await assertFails(setDoc(doc(as.drv(), 'live', DRV), { lat: 12.9, lon: 79.1, bk: 5 }));
+  // heading / speed / accuracy (office map, rider's map): bounded numbers only
+  await assertSucceeds(setDoc(doc(as.drv(), 'live', DRV), { lat: 12.9, lon: 79.1, gh: 'tf3k', online: true, busy: false, bk: '', veh: 'sedan', hd: 270, sp: 32.5, acc: 8, updatedAt: serverTimestamp() }));
+  await assertSucceeds(setDoc(doc(as.drv(), 'live', DRV), { lat: 12.9, lon: 79.1, online: true, hd: -1, sp: 0, acc: 0 }));
+  await assertFails(setDoc(doc(as.drv(), 'live', DRV), { lat: 12.9, lon: 79.1, hd: 400 }));
+  await assertFails(setDoc(doc(as.drv(), 'live', DRV), { lat: 12.9, lon: 79.1, sp: -3 }));
+  await assertFails(setDoc(doc(as.drv(), 'live', DRV), { lat: 12.9, lon: 79.1, acc: 'good' }));
+  await assertFails(setDoc(doc(as.drv(), 'live', DRV), { lat: 12.9, lon: 79.1, sp: 900 }));
   await assertFails(setDoc(doc(as.drv(), 'live', DRV), { lat: 12.9, lon: 79.1, bk: 'x'.repeat(41) }));
 });
 test('nearby cars: any logged-in user reads; only the driver writes own login id, no phone/name', async () => {

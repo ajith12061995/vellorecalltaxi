@@ -157,6 +157,19 @@ const topKind=v=>v==='auto'?'auto':v==='bike'?'bike':v==='trav'?'van':'car';
 /* the moving "driver" marker shows that driver's own vehicle type: d.veh from the page, else window.MAPVEH() */
 const drvKind=d=>{let v=d&&d.veh;if(!v&&typeof window!=='undefined'&&typeof window.MAPVEH==='function'){try{v=window.MAPVEH()}catch(e){}}return topKind(v)};
 function topIcon(k,rot,sz){sz=sz||48;return gIcon(topSvg(k,rot,sz),sz,sz,sz/2,sz/2)}
+/* Office live map: a ring in the status colour with the top view of that driver's vehicle turned to where it is heading.
+   Faded when the phone has not reported for 3 minutes (f.old); bigger ring when picked (f.sel). */
+function fleetSvg(f,sz){sz=sz||46;const k=TOPS[f.kind]?f.kind:'car',w=TOPS[k][0],h=TOPS[k][1],r=f.sel?22.5:20;
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${sz}" height="${sz}" viewBox="0 0 48 48"><g opacity="${f.old?.55:1}"><circle cx="24" cy="24" r="${r}" fill="${f.col}" fill-opacity="${f.sel?.32:.2}" stroke="${f.col}" stroke-width="${f.sel?3:2}"/>`+
+    `<g transform="rotate(${Math.round(f.hd||0)} 24 24) translate(${24-w*.78/2} ${24-h*.78/2}) scale(.78)">${TOPI[k]}</g></g></svg>`}
+const fleetKey=f=>[f.kind,Math.round((f.hd||0)/4),f.col,f.old?1:0,f.sel?1:0].join();
+/* Slide a marker to its new place over ~1.2 s instead of jumping (positions arrive every 4-8 s). A jump of more than ~2 km
+   (first fix after a long gap) is not slid. get()/set() read and move the marker in the map library's own terms. */
+function glideTo(mk,to,get,set){if(mk._to&&mk._to.lat===to.lat&&mk._to.lon===to.lon)return;mk._to={lat:to.lat,lon:to.lon};
+  const a=get();if(mk._g){cancelAnimationFrame(mk._g);mk._g=0}
+  if(!a||Math.abs(a.lat-to.lat)+Math.abs(a.lon-to.lon)>.02||typeof requestAnimationFrame!=='function'||document.hidden){set(to);return}
+  const t0=performance.now(),D=1200,st=t=>{const k=Math.min(1,(t-t0)/D),e=k*(2-k);set({lat:a.lat+(to.lat-a.lat)*e,lon:a.lon+(to.lon-a.lon)*e});mk._g=k<1?requestAnimationFrame(st):0};
+  mk._g=requestAnimationFrame(st)}
 function makeLeafletMap(cv,o={}){
   const host=document.createElement('div');host.className='map lmap';cv.replaceWith(host);
   const m=LF.map(host,{zoomControl:false,zoomSnap:.25,attributionControl:true}).setView([P.home.lat,P.home.lon],14);
@@ -190,14 +203,18 @@ function makeLeafletMap(cv,o={}){
     const d=o.driver?o.driver():null;
     if(d&&d.lat!=null){const ang=d.nlat!=null?Math.atan2(-(d.nlat-d.lat),(d.nlon-d.lon)*Math.cos(d.lat*Math.PI/180))*180/Math.PI:0;
       const dk=drvKind(d);if(drv&&drv._k!==dk){m.removeLayer(drv);drv=null}
-      if(!drv){drv=LF.marker([d.lat,d.lon],{icon:ic('<div class="lcar2">'+topSvg(dk,0)+'</div>',48,48,24,24),interactive:false,keyboard:false,zIndexOffset:500}).addTo(m);drv._k=dk}else drv.setLatLng([d.lat,d.lon]);
+      if(!drv){drv=LF.marker([d.lat,d.lon],{icon:ic('<div class="lcar2">'+topSvg(dk,0)+'</div>',48,48,24,24),interactive:false,keyboard:false,zIndexOffset:500}).addTo(m);drv._k=dk;drv._to={lat:d.lat,lon:d.lon}}
+      else if(o.glide){const q=drv;glideTo(q,d,()=>{const p=q.getLatLng();return{lat:p.lat,lon:p.lng}},p=>q.setLatLng([p.lat,p.lon]))}else drv.setLatLng([d.lat,d.lon]);
       const el=drv.getElement();if(el&&el.firstChild)el.firstChild.style.transform=`rotate(${d.nlat!=null&&(d.nlat!==d.lat||d.nlon!==d.lon)?bearing(d,{lat:d.nlat,lon:d.nlon}):0}deg)`}
     else if(drv){m.removeLayer(drv);drv=null}
-    if(o.fleet){const seen={};o.fleet().forEach(f=>{const k=f.label+f.tag;seen[k]=1;
-        const html=`<span class="lfleet" style="background:${f.col};color:${f.col==='#F2A900'?'#0B4A36':'#fff'}">${f.tag}<b>${f.label}</b></span>`;
-        if(!fleet[k]){fleet[k]=LF.marker([f.lat,f.lon],{icon:ic(html,26,26,13,13),keyboard:false}).addTo(m);fleet[k]._h=html}
-        else{fleet[k].setLatLng([f.lat,f.lon]);if(fleet[k]._h!==html){fleet[k].setIcon(ic(html,26,26,13,13));fleet[k]._h=html}}});
-      Object.keys(fleet).forEach(k=>{if(!seen[k]){m.removeLayer(fleet[k]);delete fleet[k]}})}
+    if(o.fleet){const seen={};o.fleet().forEach(f=>{const k=f.id||f.label+f.tag;seen[k]=1;
+        const v=!!f.kind,html=v?`<span class="lfv">${fleetSvg(f,46)}<b>${f.label}</b></span>`:`<span class="lfleet" style="background:${f.col};color:${f.col==='#F2A900'?'#0B4A36':'#fff'}">${f.tag}<b>${f.label}</b></span>`;
+        const mk=()=>v?ic(html,46,46,23,23):ic(html,26,26,13,13);
+        if(!fleet[k]){fleet[k]=LF.marker([f.lat,f.lon],{icon:mk(),keyboard:false,zIndexOffset:f.sel?1000:0}).addTo(m);fleet[k]._h=html;fleet[k]._to={lat:f.lat,lon:f.lon};
+          if(o.onFleet)fleet[k].on('click',()=>o.onFleet(f.id))}
+        else{const q=fleet[k];glideTo(q,f,()=>{const p=q.getLatLng();return{lat:p.lat,lon:p.lng}},p=>q.setLatLng([p.lat,p.lon]));
+          if(q._h!==html){q.setIcon(mk());q._h=html;q.setZIndexOffset(f.sel?1000:0)}}});
+      Object.keys(fleet).forEach(k=>{if(!seen[k]){if(fleet[k]._g)cancelAnimationFrame(fleet[k]._g);m.removeLayer(fleet[k]);delete fleet[k]}})}
     if(o.near){const seen={};o.near().forEach(c=>{seen[c.id]=1;if(!near[c.id]){near[c.id]=LF.marker([c.lat,c.lon],{icon:ic('<div class="lcar2" style="transform:rotate('+c.rot+'deg)">'+topSvg(topKind(c.veh),0,40)+'</div>',40,40,20,20),interactive:false,keyboard:false}).addTo(m)}else near[c.id].setLatLng([c.lat,c.lon])});
       Object.keys(near).forEach(k=>{if(!seen[k]){m.removeLayer(near[k]);delete near[k]}})}
   }
@@ -265,6 +282,7 @@ function revGeoWait(lat,lon,ms){return Promise.race([revGeo(lat,lon),new Promise
 let GFAIL=false;
 window.gm_authFailure=function(){GFAIL=true;try{toast(S.lang==='ta'?'Google Maps key வேலை செய்யல. இலவச map காட்டுறோம்':'Google Maps key rejected. Showing the free map')}catch(e){}};
 const GMAP=()=>!GFAIL&&!!(window.GMAPS_KEY&&window.google&&window.google.maps&&window.google.maps.Map);
+const FICON={};
 const gIcon=(svg,w,h,ax,ay)=>({url:'data:image/svg+xml;charset=UTF-8,'+encodeURIComponent(svg),scaledSize:new google.maps.Size(w,h),anchor:new google.maps.Point(ax,ay)});
 const gPinSvg=col=>`<svg xmlns="http://www.w3.org/2000/svg" width="46" height="60" viewBox="0 0 46 60"><path d="M23 58C23 58 4 36 4 22a19 19 0 0138 0c0 14-19 36-19 36z" fill="${col}" stroke="#fff" stroke-width="3"/><circle cx="23" cy="22" r="8" fill="#FFC21A"/></svg>`;
 function bearing(a,b){const r=Math.PI/180,y=Math.sin((b.lon-a.lon)*r)*Math.cos(b.lat*r),x=Math.cos(a.lat*r)*Math.sin(b.lat*r)-Math.sin(a.lat*r)*Math.cos(b.lat*r)*Math.cos((b.lon-a.lon)*r);return(Math.atan2(y,x)/r+360)%360}
@@ -302,14 +320,19 @@ function makeGoogleMap(cv,o={}){
     const d=o.driver?o.driver():null;
     if(d&&d.lat!=null){const rot=d.nlat!=null&&(d.nlat!==d.lat||d.nlon!==d.lon)?bearing(d,{lat:d.nlat,lon:d.nlon}):(drv&&drv._rot)||0;
       const dk=drvKind(d),icon=topIcon(dk,rot);
-      if(!drv){drv=new g.Marker({map:m,position:{lat:d.lat,lng:d.lon},icon,clickable:false,zIndex:300});}else{drv.setPosition({lat:d.lat,lng:d.lon});if(drv._k!==dk||Math.abs((drv._rot||0)-rot)>2)drv.setIcon(icon)}drv._rot=rot;drv._k=dk}
+      if(!drv){drv=new g.Marker({map:m,position:{lat:d.lat,lng:d.lon},icon,clickable:false,zIndex:300});drv._to={lat:d.lat,lon:d.lon}}else{const q=drv;if(o.glide)glideTo(q,d,()=>{const p=q.getPosition();return p?{lat:p.lat(),lon:p.lng()}:null},p=>q.setPosition({lat:p.lat,lng:p.lon}));else drv.setPosition({lat:d.lat,lng:d.lon});if(drv._k!==dk||Math.abs((drv._rot||0)-rot)>2)drv.setIcon(icon)}drv._rot=rot;drv._k=dk}
     else if(drv){drv.setMap(null);drv=null}
-    if(o.fleet){const seen={};o.fleet().forEach(f=>{const k=f.label+f.tag;seen[k]=1;
-        const icon={path:g.SymbolPath.CIRCLE,scale:12,fillColor:f.col,fillOpacity:1,strokeColor:'#fff',strokeWeight:2.5};
-        const label={text:f.tag,color:f.col==='#F2A900'?'#0B4A36':'#fff',fontWeight:'800',fontSize:'11px'};
-        if(!fleet[k])fleet[k]=new g.Marker({map:m,position:{lat:f.lat,lng:f.lon},icon,label,title:f.label,zIndex:100});
-        else{fleet[k].setPosition({lat:f.lat,lng:f.lon});fleet[k].setIcon(icon)}});
-      Object.keys(fleet).forEach(k=>{if(!seen[k]){fleet[k].setMap(null);delete fleet[k]}})}
+    if(o.fleet){const seen={};o.fleet().forEach(f=>{const k=f.id||f.label+f.tag;seen[k]=1;let icon,label,ik;
+        if(f.kind){ik=fleetKey(f);icon=FICON[ik]||(FICON[ik]={url:'data:image/svg+xml;charset=UTF-8,'+encodeURIComponent(fleetSvg(f,46)),scaledSize:new g.Size(46,46),anchor:new g.Point(23,23),labelOrigin:new g.Point(23,55)});
+          label={text:f.label,color:'#0B2A20',fontWeight:'700',fontSize:'11px',className:'gflab'}}
+        else{ik='c'+f.col;icon={path:g.SymbolPath.CIRCLE,scale:12,fillColor:f.col,fillOpacity:1,strokeColor:'#fff',strokeWeight:2.5};
+          label={text:f.tag,color:f.col==='#F2A900'?'#0B4A36':'#fff',fontWeight:'800',fontSize:'11px'}}
+        const z=f.sel?400:f.old?90:100;
+        if(!fleet[k]){const q=fleet[k]=new g.Marker({map:m,position:{lat:f.lat,lng:f.lon},icon,label,title:f.label,zIndex:z});q._ik=ik;q._lt=label.text;q._to={lat:f.lat,lon:f.lon};
+          if(o.onFleet)q.addListener('click',()=>o.onFleet(f.id))}
+        else{const q=fleet[k];glideTo(q,f,()=>{const p=q.getPosition();return p?{lat:p.lat(),lon:p.lng()}:null},p=>q.setPosition({lat:p.lat,lng:p.lon}));
+          if(q._ik!==ik){q.setIcon(icon);q._ik=ik;q.setZIndex(z)}if(q._lt!==label.text){q.setLabel(label);q._lt=label.text}}});
+      Object.keys(fleet).forEach(k=>{if(!seen[k]){if(fleet[k]._g)cancelAnimationFrame(fleet[k]._g);fleet[k].setMap(null);delete fleet[k]}})}
     if(o.near){const seen={};o.near().forEach(c=>{seen[c.id]=1;if(!near[c.id])near[c.id]=new g.Marker({map:m,position:{lat:c.lat,lng:c.lon},icon:topIcon(topKind(c.veh),c.rot,40),clickable:false,zIndex:90});else near[c.id].setPosition({lat:c.lat,lng:c.lon})});
       Object.keys(near).forEach(k=>{if(!seen[k]){near[k].setMap(null);delete near[k]}})}
   }

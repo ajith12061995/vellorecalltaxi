@@ -44,7 +44,7 @@
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('./vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV=window.VCT_V='127',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV=window.VCT_V='128',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('./version.json',location.href)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -557,18 +557,18 @@ details.faq p{margin:0;padding:0 14px 14px;color:var(--muted);font-size:14px;lin
 <div class="app" id="app"></div>
 <div class="toast" id="toast"></div>
 
-<script src="./core/report.js?v=127"></script>
-<script src="./core/funnel.js?v=127"></script>
-<script src="./core/geo.js?v=127"></script>
-<script src="./core/fare.js?v=127"></script>
-<script src="./core/appget.js?v=127"></script>
-<script src="./core/pin.js?v=127"></script>
-<script src="./core/clock.js?v=127"></script>
-<script src="./core/map.js?v=127"></script>
-<script src="./core/chat.js?v=127"></script>
-<script src="./core/otp.js?v=127"></script>
-<script src="./core/deskmode.js?v=127"></script>
-<script src="./core/weather.js?v=127"></script>
+<script src="./core/report.js?v=128"></script>
+<script src="./core/funnel.js?v=128"></script>
+<script src="./core/geo.js?v=128"></script>
+<script src="./core/fare.js?v=128"></script>
+<script src="./core/appget.js?v=128"></script>
+<script src="./core/pin.js?v=128"></script>
+<script src="./core/clock.js?v=128"></script>
+<script src="./core/map.js?v=128"></script>
+<script src="./core/chat.js?v=128"></script>
+<script src="./core/otp.js?v=128"></script>
+<script src="./core/deskmode.js?v=128"></script>
+<script src="./core/weather.js?v=128"></script>
 <script>
 /* ---------- icons ---------- */
 /* small line icons (one stroke style everywhere; no emoji in the interface) */
@@ -2190,8 +2190,15 @@ function watchBooking(){
   BKUNSUB=F().onSnapshot(F().doc(CL.db,'bookings',R.id),s=>{if(!s.exists()||!R)return;onBooking(s.data())},()=>{});
 }
 /* the driver's exact position is readable only once the driver's app marks this ride as theirs (live.bk) — retry until then */
+/* the driver's car on the rider's map: turned to where it is going (the phone's heading, else the direction of its last move)
+   and slid to each new place by the map; speed kept for the arrival time */
+function drvMoved(d){const p={lat:+d.lat,lon:+d.lon},o=R.dpos;
+  if(typeof d.hd==='number'&&d.hd>=0&&(+d.sp||0)>=3)R.dhd=d.hd;else if(o&&hav(o,p)>.015)R.dhd=bearing(o,p);
+  R.dsp=+d.sp||0;R.dat=Date.now();R.dpos=p}
+/* arrival time: road ≈ 1.3 × straight line; speed = the car's own (km/h) blended with a 21 km/h town average, kept between 15 and 35 */
+function etaMin(from,to){const v=R&&R.dsp>=5?Math.min(35,Math.max(15,(R.dsp+21)/2)):21;return Math.max(1,Math.round(hav(from,to)*1.3/v*60))}
 function watchDrv(ph){
-  LIVEUNSUB=F().onSnapshot(F().doc(CL.db,'live',ph),s=>{if(s.exists()){const d=s.data();if(d.lat)R.dpos={lat:d.lat,lon:d.lon}}},
+  LIVEUNSUB=F().onSnapshot(F().doc(CL.db,'live',ph),s=>{if(s.exists()){const d=s.data();if(d.lat)drvMoved(d)}},
     ()=>{LIVEUNSUB=null;setTimeout(()=>{if(!LIVEUNSUB&&R&&R.b&&R.b.driverPhone===ph&&['assigned','arrived','ontrip'].includes(R.b.status))watchDrv(ph)},8000)});
 }
 function onBooking(b){
@@ -2285,7 +2292,7 @@ ${L('Driver-கிட்ட இந்த PIN-ஐ சொல்லுங்க','T
      <div class="acts"><button data-a="call">${I.phone}Call</button><button data-a="chat">${I.chat}Chat</button><button data-a="share">${I.share}Share</button><button data-a="safety">${I.shield}${L('பாதுகாப்பு','Safety')}</button></div>
      ${stopsHtml()}
      <button class="btn ghost" id="cx">${L('Ride-ஐ ரத்து செய்','Cancel ride')}</button></div></section>`,()=>{
-    const o={hide:CUSTOM,pins:[],driver:()=>R&&R.dpos?{...R.dpos,nlat:R.dpos.lat+.0001,nlon:R.dpos.lon}:null,
+    const o={hide:CUSTOM,pins:[],glide:true,driver:()=>{if(!R||!R.dpos)return null;const h=(R.dhd||0)*Math.PI/180;return{...R.dpos,nlat:R.dpos.lat+Math.cos(h)*1e-4,nlon:R.dpos.lon+Math.sin(h)*1e-4}},
       line:()=>{if(!R)return null;if(R.b.status==='ontrip')return R.trip;return R.dpos&&!R.b.arrivedAt?[R.dpos,pu]:null}};
     R.map=makeMap(document.getElementById('map'),o);R.mo=o;R.fitFor=null;
     rideCloudUpdate(true);rideTimer=setInterval(()=>rideCloudUpdate(false),1000);
@@ -2301,12 +2308,12 @@ function rideCloudUpdate(refit){
   if(mode!==R.fitFor||refit){R.fitFor=mode;if(R.map){if(on)R.map.fit(R.trip.length>1?R.trip:[pu,dp],60,70);else if(R.dpos&&mode==='come')R.map.fit([R.dpos,pu],80,70);else R.map.setView(pu.lat,pu.lon,60000)}}
   const ph=document.getElementById('pinbox'),cx=document.getElementById('cx');if(ph)ph.hidden=on;if(cx)cx.hidden=on;
   if(mode==='come'){const dn=R.drv||{ta:'Driver',en:'Your driver'};/* the 1-second tick can run while the driver is being changed (R.drv not set yet) */stS.textContent=L(`${dn.ta||'Driver'} வந்துகிட்டு இருக்காரு`,`${dn.en||'Your driver'} is on the way`);
-    if(R.dpos){const mn=Math.max(1,Math.round(hav(R.dpos,pu)*1.3/0.35));stB.textContent=L(`${mn} நிமி-ல வருவாரு`,`Arriving in ${mn} min`)}else stB.textContent=L('Driver கிளம்பிட்டாரு','Driver is on the way')}
+    if(R.dpos){const mn=etaMin(R.dpos,pu);stB.textContent=L(`${mn} நிமி-ல வருவாரு`,`Arriving in ${mn} min`)}else stB.textContent=L('Driver கிளம்பிட்டாரு','Driver is on the way')}
   else if(mode==='here'){const s=Math.max(0,Math.round((Date.now()-CL.toMs(b.arrivedAt))/1000)),free=Math.max(0,180-s);
     stB.textContent=L('Driver வந்துட்டாரு!','Your driver has arrived');stS.textContent=free?L(`இலவச காத்திருப்பு ${Math.floor(free/60)}:${String(free%60).padStart(2,'0')}`,`Free waiting ${Math.floor(free/60)}:${String(free%60).padStart(2,'0')}`):((wr=>wr>0?L(`காத்திருப்பு கட்டணம் ₹${wr}/நிமி`,`Waiting charge ₹${wr}/min`):0)(R.v&&R.v.id==='auto'?FARE.AUTO_GOVT.wait:CFG.wait&&+CFG.wait.rate)||L('Driver காத்திருக்கிறார்','Your driver is waiting'));
     if(!R.hereToast){R.hereToast=1;toast(L('Driver வந்துட்டாரு! PIN-ஐ சொல்லுங்க','Your driver is here. Share your PIN'))}}
   else{stS.textContent=L('பயணத்தில்','On trip');
-    if(R.dpos){const mn=Math.max(1,Math.round(hav(R.dpos,dp)*1.3/0.37));stB.textContent=L(`${mn} நிமி-ல சேருவீங்க`,`${mn} min to drop`)}else stB.textContent=R.destName[S.lang]}
+    if(R.dpos){const mn=etaMin(R.dpos,dp);stB.textContent=L(`${mn} நிமி-ல சேருவீங்க`,`${mn} min to drop`)}else stB.textContent=R.destName[S.lang]}
 }
 async function cloudCancel(reason){
   if(!R||!R.id)return;R.selfCancel=true;

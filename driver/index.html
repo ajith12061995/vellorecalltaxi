@@ -49,7 +49,7 @@
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('../vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV=window.VCT_V='127',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV=window.VCT_V='128',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('../version.json',location.href)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -660,20 +660,20 @@ a.btn{text-decoration:none}
 <div class="app" id="app"><section class="screen" id="splash"><div class="roofsign"><b>TAXI</b><span>வேலூர் டாக்ஸி</span></div><span class="drvtag">DRIVER</span><div class="road"></div><div class="tag">Vellore Taxi · Driver</div></section></div>
 <div class="toast" id="toast"></div>
 
-<script src="../core/report.js?v=127"></script>
-<script src="../core/geo.js?v=127"></script>
-<script src="../core/fare.js?v=127"></script>
-<script src="../core/appget.js?v=127"></script>
-<script src="../core/pin.js?v=127"></script>
-<script src="../core/clock.js?v=127"></script>
-<script src="../core/map.js?v=127"></script>
-<script src="../core/chat.js?v=127"></script>
-<script src="../core/driverchecks.js?v=127"></script>
-<script src="../core/nav.js?v=127"></script>
-<script src="../core/otp.js?v=127"></script>
-<script src="../core/deskmode.js?v=127"></script>
-<script src="../core/refer.js?v=127"></script>
-<script src="../core/weather.js?v=127"></script>
+<script src="../core/report.js?v=128"></script>
+<script src="../core/geo.js?v=128"></script>
+<script src="../core/fare.js?v=128"></script>
+<script src="../core/appget.js?v=128"></script>
+<script src="../core/pin.js?v=128"></script>
+<script src="../core/clock.js?v=128"></script>
+<script src="../core/map.js?v=128"></script>
+<script src="../core/chat.js?v=128"></script>
+<script src="../core/driverchecks.js?v=128"></script>
+<script src="../core/nav.js?v=128"></script>
+<script src="../core/otp.js?v=128"></script>
+<script src="../core/deskmode.js?v=128"></script>
+<script src="../core/refer.js?v=128"></script>
+<script src="../core/weather.js?v=128"></script>
 <script>
 /* shared with the customer app: icons, places, fares, map engine */
 /* small line icons (one stroke style everywhere; no emoji in the interface) */
@@ -1524,12 +1524,19 @@ function goLive(on){
   pushLive(true);
   if(on){startGeo();listenReq();enablePush(false)}else{stopGeo();if(REQUNSUB){REQUNSUB();REQUNSUB=null}REQS=[]}
 }
+let LASTCARS=0,CARSK='',LIVEX=true,LIVEXAT=0;
 function pushLive(force){
-  if(!CL||!CL.phone)return;if(S.online&&!GOTFIX)return;const now=Date.now();if(!force&&now-LASTLIVE<8000)return;LASTLIVE=now;
+  if(!CL||!CL.phone)return;if(S.online&&!GOTFIX)return;const now=Date.now();if(!force&&now-LASTLIVE<3500)return;LASTLIVE=now;
   const busy=!!(J&&J.id),gh=VGEO.gh(POS.lat,POS.lon),veh=me().veh;
-  // live/{phone}: exact position, read only by the office, this driver and the customer of the ride in bk
-  F().setDoc(F().doc(CL.db,'live',CL.phone),{lat:POS.lat,lon:POS.lon,gh,online:!!S.online,busy,bk:busy?String(J.id):'',veh,updatedAt:ts()}).catch(()=>{});
-  // cars/{login id}: what every customer's "nearby" map sees — no phone number, position rounded to ~110 m
+  // live/{phone}: exact position + heading/speed/accuracy, read only by the office, this driver and the customer of the ride in bk
+  const base={lat:POS.lat,lon:POS.lon,gh,online:!!S.online,busy,bk:busy?String(J.id):'',veh,updatedAt:ts()},ref=F().doc(CL.db,'live',CL.phone);
+  // heading / speed / accuracy go only while the database rules accept them: a refused write is sent again without them
+  // (so the office never loses the position), and they are tried again after 10 minutes
+  const useX=LIVEX&&now>=LIVEXAT;
+  F().setDoc(ref,useX?{...base,hd:POSHD==null?-1:POSHD,sp:Math.round((POSSP||0)*36)/10,acc:Math.round(POSACC||0)}:base)
+    .catch(e=>{if(useX&&e&&e.code==='permission-denied'){LIVEXAT=Date.now()+600e3;F().setDoc(ref,base).catch(()=>{})}});
+  // cars/{login id}: what every customer's "nearby" map sees — no phone number, position rounded to ~110 m; at most every 15 s unless the state changed
+  const ck=[!!S.online,busy,String(veh||'')].join();if(now-LASTCARS<15000&&ck===CARSK)return;LASTCARS=now;CARSK=ck;
   if(CL.user&&CL.user.uid)F().setDoc(F().doc(CL.db,'cars',CL.user.uid),{lat:Math.round(POS.lat*1e3)/1e3,lon:Math.round(POS.lon*1e3)/1e3,gh,online:!!S.online,on:!!S.online,busy,veh:String(veh||''),...freeSoon(now),updatedAt:ts()}).catch(()=>{}); // on = the driver's own switch: customers see the vehicle until the driver switches OFF ("online" is cleared by the server when the phone goes quiet)
 }
 /* "Free soon": while a local trip is running (customer on board), tell the customer app roughly when and where this vehicle becomes free,
@@ -1540,13 +1547,28 @@ function freeSoon(now){try{const b=J&&J.id&&J.b;if(!S.online||!b||b.status!=='on
   const flat=Math.round(d.lat*100)/100,flon=Math.round(d.lon*100)/100,km=hav(POS,d)*1.3;
   return{fAt:now+Math.round((km*3+2)*60e3),flat,flon,fgh:VGEO.gh(flat,flon)}}catch(e){return{}}}
 let HBPOS=null,HBAT=0;
-setInterval(()=>{if(!CL||!S.online)return;const now=Date.now(),moved=!HBPOS||hav(HBPOS,POS)>0.03;if(J||moved||now-HBAT>=58000){HBPOS={lat:POS.lat,lon:POS.lon};HBAT=now;pushLive(true)}},20000);
+setInterval(()=>{if(!CL||!S.online)return;const now=Date.now(),moved=!HBPOS||hav(HBPOS,POS)>0.03,gap=now-LASTLIVE;if((J&&gap>=4000)||(moved&&gap>=8000)||gap>=30000){HBPOS={lat:POS.lat,lon:POS.lon};HBAT=now;pushLive(true)}},5000);
 let GOTFIX=false,GPSERR=0,LASTFIX=0,POSACC=0; // real GPS received? (never publish the default Vellore point)
 function trackKm(){if(!J||!J.id||!J.b||J.b.status!=='ontrip')return;const last=J.gpsLast;J.gpsLast={lat:POS.lat,lon:POS.lon};if(!last)return;
   const d=hav(last,POS);if(d<0.02){J.gpsLast=last;return}if(d>3)return; // ignore GPS jumps
   J.gpsKm=(J.gpsKm||0)+d;try{localStorage.setItem('vct_km_'+J.id,String(J.gpsKm))}catch(e){}}
 let BGW=null,BGP=null;
-function geoFix(lat,lon,acc){POS={lat,lon};LASTFIX=Date.now();POSACC=acc||0;trackKm();const first=!GOTFIX;GOTFIX=true;GPSERR=0;pushLive(first);if(first&&S.tab==='home'&&!J&&document.getElementById('gpsw'))home()}
+/* Every GPS reading. A reading less accurate than 80 m is skipped while a good one is less than 30 s old (a jump of a
+   few hundred metres on the office map / customer's map used to come from these). Heading and speed come from the
+   phone when it gives them, otherwise from the last two readings. Sending: every 4 s on a ride, every 8 s while
+   moving, every 30 s when standing (see the heartbeat) — like Uber/Ola, without draining the battery when parked. */
+let POSHD=null,POSSP=0,LASTGOOD=0;
+function geoFix(lat,lon,acc,hd,spd,ts){
+  const now=Date.now();acc=+acc||0;
+  if(acc>80&&GOTFIX&&now-LASTGOOD<30000)return;
+  const prev=GOTFIX?{lat:POS.lat,lon:POS.lon}:null,dt=Math.max(.5,(now-(LASTFIX||now))/1000),km=prev?hav(prev,{lat,lon}):0;
+  if(hd!=null&&isFinite(hd)&&hd>=0&&(spd==null||spd>.8))POSHD=Math.round(hd)%360;
+  else if(prev&&km>.012)POSHD=Math.round(bearing(prev,{lat,lon}));
+  POSSP=spd!=null&&isFinite(spd)&&spd>=0?spd:(prev?Math.min(45,km*1000/dt):0);
+  POS={lat,lon};LASTFIX=now;POSACC=acc;if(acc<=80)LASTGOOD=now;trackKm();const first=!GOTFIX;GOTFIX=true;GPSERR=0;
+  const gap=now-LASTLIVE;
+  if(first)pushLive(true);else if(S.online&&((J&&gap>=4000)||(POSSP>1.5&&gap>=8000)))pushLive(true);
+  if(first&&S.tab==='home'&&!J&&document.getElementById('gpsw'))home()}
 /* Android app: location keeps coming (foreground service + notification) while the screen is off or another app is open */
 /* The Android apps load this page from velloretaxi.app, so @capacitor/core (and Capacitor.registerPlugin) is not
    there — only the native bridge (nativePromise / nativeCallback / addListener). capPlugin() works with either. */
@@ -1578,11 +1600,11 @@ function startNativeGeo(){
         if(/service not running/i.test(err.message||'')&&BGTRY<8){BGST='retry';BGTRY++;BGP=null;BGW=null;webGeo();setTimeout(()=>{if(S.online&&!BGP){stopWebGeo();startNativeGeo()}},1500);return}
         BGST='err:'+(err.code||err.message||'?');GPSERR=err.code==='NOT_AUTHORIZED'?1:2;
         if(err.code==='NOT_AUTHORIZED'){toast(L('Location அனுமதி கொடுங்க. இல்லைனா customer-க்கு உங்க வண்டி தெரியாது','Allow location so customers can see your vehicle'));try{BGP.openSettings()}catch(e){}}return}
-      if(loc){if(BGST!=='on'&&BGST!=='notif-denied'){BGST='on';BGTRY=0;stopWebGeo()}geoFix(loc.latitude,loc.longitude,loc.accuracy)}}).then(id=>{if(BGP===bgp)BGW=id}).catch(e=>{BGP=null;BGW=null;if(S.online)webGeo();
+      if(loc){if(BGST!=='on'&&BGST!=='notif-denied'){BGST='on';BGTRY=0;stopWebGeo()}geoFix(loc.latitude,loc.longitude,loc.accuracy,loc.bearing,loc.speed)}}).then(id=>{if(BGP===bgp)BGW=id}).catch(e=>{BGP=null;BGW=null;if(S.online)webGeo();
         if(/service not running/i.test((e&&e.message)||'')&&BGTRY<8){BGST='retry';BGTRY++;setTimeout(()=>{if(S.online&&!BGP){stopWebGeo();startNativeGeo()}},1500)}else BGST='err:'+((e&&e.message)||'?')});
     if(n==='denied')BGST='notif-denied';})();
   return true}
-function webGeo(){if(GEO!=null||!navigator.geolocation)return;GEO=navigator.geolocation.watchPosition(p=>geoFix(p.coords.latitude,p.coords.longitude,p.coords.accuracy),()=>{},{enableHighAccuracy:true,maximumAge:0,timeout:20000})}
+function webGeo(){if(GEO!=null||!navigator.geolocation)return;GEO=navigator.geolocation.watchPosition(p=>geoFix(p.coords.latitude,p.coords.longitude,p.coords.accuracy,p.coords.heading,p.coords.speed),()=>{},{enableHighAccuracy:true,maximumAge:0,timeout:20000})}
 function stopWebGeo(){if(GEO!=null){navigator.geolocation.clearWatch(GEO);GEO=null}}
 function stopNativeGeo(){if(BGP&&BGW!=null){try{BGP.removeWatcher({id:BGW})}catch(e){}}BGW=null;BGP=null;BGTRY=0;if(NATIVE())BGST='off'}
 /* The first GPS fix takes a few seconds after the app opens. For the first 10 s we say "finding your location";
@@ -1593,7 +1615,7 @@ function startGeo(){
   if(GEO!=null||BGW||BGP||!navigator.geolocation)return;GPSSINCE=Date.now();
   setTimeout(()=>{if(!GOTFIX&&S.online&&S.tab==='home'&&!J&&document.getElementById('gpsw')&&!document.querySelector('.modal'))home()},GPSGRACE+100);
   if(startNativeGeo())return;
-  GEO=navigator.geolocation.watchPosition(p=>{geoFix(p.coords.latitude,p.coords.longitude,p.coords.accuracy)},
+  GEO=navigator.geolocation.watchPosition(p=>{geoFix(p.coords.latitude,p.coords.longitude,p.coords.accuracy,p.coords.heading,p.coords.speed)},
     e=>{GPSERR=e&&e.code||0;if(S.tab==='home'&&!J&&!GOTFIX&&S.online&&document.getElementById('gpsw')&&e.code===1)home();toast(L('Location அனுமதி கொடுங்க. இல்லைனா customer-க்கு உங்க வண்டி தெரியாது','Allow location so customers can see your vehicle'))},{enableHighAccuracy:true,maximumAge:0,timeout:20000});
 }
 function stopGeo(){stopNativeGeo();if(GEO!=null){navigator.geolocation.clearWatch(GEO);GEO=null}}
