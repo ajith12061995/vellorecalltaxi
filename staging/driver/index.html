@@ -52,7 +52,7 @@
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('../vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV=window.VCT_V='146',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV=window.VCT_V='147',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('../version.json',location.href)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -663,20 +663,20 @@ a.btn{text-decoration:none}
 <div class="app" id="app"><section class="screen" id="splash"><div class="roofsign"><b>TAXI</b><span>வேலூர் டாக்ஸி</span></div><span class="drvtag">DRIVER</span><div class="road"></div><div class="tag">Vellore Taxi · Driver</div></section></div>
 <div class="toast" id="toast"></div>
 
-<script src="../core/report.js?v=146"></script>
-<script src="../core/geo.js?v=146"></script>
-<script src="../core/fare.js?v=146"></script>
-<script src="../core/appget.js?v=146"></script>
-<script src="../core/pin.js?v=146"></script>
-<script src="../core/clock.js?v=146"></script>
-<script src="../core/map.js?v=146"></script>
-<script src="../core/chat.js?v=146"></script>
-<script src="../core/driverchecks.js?v=146"></script>
-<script src="../core/nav.js?v=146"></script>
-<script src="../core/otp.js?v=146"></script>
-<script src="../core/deskmode.js?v=146"></script>
-<script src="../core/refer.js?v=146"></script>
-<script src="../core/weather.js?v=146"></script>
+<script src="../core/report.js?v=147"></script>
+<script src="../core/geo.js?v=147"></script>
+<script src="../core/fare.js?v=147"></script>
+<script src="../core/appget.js?v=147"></script>
+<script src="../core/pin.js?v=147"></script>
+<script src="../core/clock.js?v=147"></script>
+<script src="../core/map.js?v=147"></script>
+<script src="../core/chat.js?v=147"></script>
+<script src="../core/driverchecks.js?v=147"></script>
+<script src="../core/nav.js?v=147"></script>
+<script src="../core/otp.js?v=147"></script>
+<script src="../core/deskmode.js?v=147"></script>
+<script src="../core/refer.js?v=147"></script>
+<script src="../core/weather.js?v=147"></script>
 <script>
 /* shared with the customer app: icons, places, fares, map engine */
 /* small line icons (one stroke style everywhere; no emoji in the interface) */
@@ -1723,8 +1723,8 @@ function liveNative(){if(!OVL||!OVL17||!CL||!CL.user||!CL.fbcfg)return;
     if(!REQUNSUB)listenReq();pushLive(true);if(d&&d.bookingId)wakeRide(String(d.bookingId));
     setTimeout(()=>{if(document.getElementById('offs'))maybeShowReq()},600)})}
   if(!S.online){LIVEN='';return}
-  const c=CL.fbcfg(),rt=CL.user.refreshToken||'',k=CL.phone+'|'+rt.slice(-12);if(!rt||LIVEN===k)return;LIVEN=k;
-  try{OVL.liveStart({apiKey:c.apiKey,project:c.project,phone:CL.phone,refresh:rt}).catch(()=>{LIVEN=''})}catch(e){LIVEN=''}}
+  const c=CL.fbcfg(),rt=CL.user.refreshToken||'',k=CL.phone+'|'+rt.slice(-12)+'|'+me().veh;if(!rt||LIVEN===k)return;LIVEN=k;
+  try{OVL.liveStart({apiKey:c.apiKey,project:c.project,phone:CL.phone,refresh:rt,veh:me().veh}).catch(()=>{LIVEN=''})}catch(e){LIVEN=''}}
 /* a ride push after the phone slept a long time (Doze): the database connection may be waiting minutes to retry, so
    it is started afresh and the pushed ride is read straight from the server. The phone is told the page took care of it
    (rang, or this ride is not for this driver now); if the page cannot answer in time the phone rings by itself (1.0.20). */
