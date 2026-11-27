@@ -51,7 +51,7 @@
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('./vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV=window.VCT_V='141',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV=window.VCT_V='142',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('./version.json',location.href)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -564,18 +564,18 @@ details.faq p{margin:0;padding:0 14px 14px;color:var(--muted);font-size:14px;lin
 <div class="app" id="app"></div>
 <div class="toast" id="toast"></div>
 
-<script src="./core/report.js?v=141"></script>
-<script src="./core/funnel.js?v=141"></script>
-<script src="./core/geo.js?v=141"></script>
-<script src="./core/fare.js?v=141"></script>
-<script src="./core/appget.js?v=141"></script>
-<script src="./core/pin.js?v=141"></script>
-<script src="./core/clock.js?v=141"></script>
-<script src="./core/map.js?v=141"></script>
-<script src="./core/chat.js?v=141"></script>
-<script src="./core/otp.js?v=141"></script>
-<script src="./core/deskmode.js?v=141"></script>
-<script src="./core/weather.js?v=141"></script>
+<script src="./core/report.js?v=142"></script>
+<script src="./core/funnel.js?v=142"></script>
+<script src="./core/geo.js?v=142"></script>
+<script src="./core/fare.js?v=142"></script>
+<script src="./core/appget.js?v=142"></script>
+<script src="./core/pin.js?v=142"></script>
+<script src="./core/clock.js?v=142"></script>
+<script src="./core/map.js?v=142"></script>
+<script src="./core/chat.js?v=142"></script>
+<script src="./core/otp.js?v=142"></script>
+<script src="./core/deskmode.js?v=142"></script>
+<script src="./core/weather.js?v=142"></script>
 <script>
 /* ---------- icons ---------- */
 /* small line icons (one stroke style everywhere; no emoji in the interface) */
@@ -2220,7 +2220,9 @@ function onBooking(b){
     R.drv={ta:b.driverName||'Driver',en:b.driverName||'Driver',plate:b.plate||'',model:b.vehModel||'',rating:'',trips:0,phone:b.driverPhone};
     watchDrv(b.driverPhone);
   }
-  if(b.status==='searching'){if(R.phase!=='search'||!document.getElementById('cxs'))searchingCloud();return}
+  if(b.status==='searching'){if(R.phase!=='search'||!document.getElementById('cxs')){const was=R.phase;searchingCloud();
+      // the server gave this ride to another driver: the first driver's phone went off / out of reach before pickup
+      if(b.reassigned&&was&&was!=='search'&&Date.now()-(+b.reassigned.at||0)<10*60e3)setTimeout(()=>toast(b.reassigned.why==='phoneoff'?L('உங்க driver-ஓட phone switch off ஆயிடுச்சு. வேற driver தேடுறோம்.','Your driver\'s phone switched off. Finding another driver.'):L('Driver-ஐ தொடர்பு கொள்ள முடியல. வேற driver தேடுறோம்.','Could not reach your driver. Finding another driver.')),400)}return}
   if(b.status==='assigned'||b.status==='ontrip'){
     chatStart(R.id);
     if(!CFG.serverPin&&b.status==='assigned'&&b.pinTry&&b.pinTry!==R.lastTry){ // with the server PIN check, a PIN typed into the booking is never confirmed here
