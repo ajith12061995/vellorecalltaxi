@@ -212,9 +212,16 @@ exports.onBookingCreated = onDocumentCreated('bookings/{id}', async ev => {
   if (L.outsideArea(b, c.area)) { await ref.update({ areaFlag: 'outside-local' }); logger.warn('outside local area', { id, veh: b.veh }); }
   if (b.status !== 'searching' || !c.push || !c.push.vapid) return;
   const ds = await db.collection('drivers').where('veh', '==', b.veh).where('online', '==', true).get();
-  const tokens = ds.docs.map(d => d.data().fcm).filter(Boolean).slice(0, 500);
-  if (!tokens.length) return;
+  // 1.0.17+ Android app: a high-priority DATA message (reaches the app in Doze / screen off; the app rings itself, over the
+  // lock screen if locked). Older apps and the web page: the notification as before.
+  const { data: tokData, note: tokens } = L.splitDriverTokens(ds.docs.map(d => d.data()));
+  if (!tokens.length && !tokData.length) return;
   const from = (b.from && (b.from.ta || b.from.en)) || '';
+  if (tokData.length) {
+    const rd = await admin.messaging().sendEachForMulticast({ tokens: tokData, android: { priority: 'high', ttl: 60000 }, data: L.ridePushData(id, b) });
+    logger.info('push data', { sent: rd.successCount, failed: rd.failureCount });
+  }
+  if (!tokens.length) return;
   const r = await admin.messaging().sendEachForMulticast({ tokens,
     webpush: { notification: { title: '🚕 புது Ride / New ride', body: `${from} · ₹${b.fare}${b.tip ? ' + ₹' + b.tip : ''}`, requireInteraction: true, tag: id },
                fcmOptions: { link: SITE + 'driver/' } },

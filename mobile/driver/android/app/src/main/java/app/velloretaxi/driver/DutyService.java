@@ -36,7 +36,8 @@ import android.widget.ImageView;
  *    service, the app is opened again and sent straight to the background ({@link #EXTRA_BG}); the page then carries
  *    on: location to the office, ride requests, ride card. The driver does nothing.
  *
- * Only the driver switches it off (the page calls RideOverlay.online({on:false})). Nothing here talks to the network.
+ * Only the driver switches it off (the page calls RideOverlay.online({on:false})). From 1.0.17 it also runs NativeLive,
+ * which sends the position from the phone itself while the app is not on screen.
  */
 public class DutyService extends Service {
     static final String TAG = "DutyService";
@@ -98,6 +99,7 @@ public class DutyService extends Service {
         // restarted by Android after the process was killed (intent == null): the app's screen is gone, bring it back
         if (intent == null && !appVisible) reopen(500);
         main.removeCallbacks(heal); main.post(heal);
+        NativeLive.get(this).start();   // position from the phone itself while the app is not on screen (1.0.17)
         return START_STICKY;
     }
 
@@ -120,6 +122,7 @@ public class DutyService extends Service {
     }
 
     private void stopAll() {
+        NativeLive.get(this).stop();
         main.removeCallbacks(heal);
         removeBubble();
         try { if (Build.VERSION.SDK_INT >= 24) stopForeground(STOP_FOREGROUND_REMOVE); else stopForeground(true); } catch (Exception e) { /* not foreground */ }
@@ -150,6 +153,16 @@ public class DutyService extends Service {
         if (pi != null) b.setContentIntent(pi);
         if (Build.VERSION.SDK_INT >= 31) b.setForegroundServiceBehavior(Notification.FOREGROUND_SERVICE_IMMEDIATE);
         return b.build();
+    }
+
+    /** a server push arrived while the app's screen process was gone: start the app behind whatever is on screen */
+    static void openBg(Context c) {
+        try {
+            Intent i = new Intent(c.getApplicationContext(), MainActivity.class);
+            i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_NO_ANIMATION);
+            i.putExtra(EXTRA_BG, true);
+            c.getApplicationContext().startActivity(i);
+        } catch (Exception e) { Log.w(TAG, "openBg refused", e); }
     }
 
     /** open the app's screen and let it go straight to the background (MainActivity reads EXTRA_BG) */

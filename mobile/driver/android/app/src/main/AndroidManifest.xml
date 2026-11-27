@@ -35,6 +35,15 @@
         </provider>
         <!-- "On duty": notification + floating icon while the driver is ON; reopens the app if it is swiped away (DutyService) -->
         <service android:name=".DutyService" android:exported="false" android:foregroundServiceType="location" android:stopWithTask="false" />
+        <!-- 1.0.17: a new ride while the phone is locked / screen off shows over the lock screen like an incoming call -->
+        <activity android:name=".RideRingActivity" android:exported="false" android:showWhenLocked="true" android:turnScreenOn="true"
+            android:launchMode="singleTask" android:taskAffinity="app.velloretaxi.driver.ring" android:excludeFromRecents="true"
+            android:theme="@style/AppTheme.NoActionBar" android:screenOrientation="portrait" />
+        <!-- 1.0.17: server pushes (new ride) reach our code even in the background; replaces Capacitor's own service, which it extends -->
+        <service android:name="com.capacitorjs.plugins.pushnotifications.MessagingService" tools:node="remove" />
+        <service android:name=".VctMessagingService" android:exported="false">
+            <intent-filter><action android:name="com.google.firebase.MESSAGING_EVENT" /></intent-filter>
+        </service>
         <!-- plugin service is only used by this app: not exported to other apps -->
         <service android:name="com.equimaps.capacitor_background_geolocation.BackgroundGeolocationService"
             android:exported="false" tools:node="merge" tools:replace="android:exported" />
@@ -47,6 +56,9 @@
     <!-- ride card over other apps while the driver is online (the driver allows it once: "Display over other apps") -->
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.permission.VIBRATE" />
+    <!-- ride over the lock screen (Android 14+: the driver allows "full-screen notifications" once) -->
+    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />

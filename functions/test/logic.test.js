@@ -268,3 +268,12 @@ test('demand map place names skip door numbers', () => {
   const d = L.demandMap([{ from: { lat: 12.97, lon: 79.15, ta: '4', en: '4, Gandhi Nagar' }, createdAt: c }, { from: { lat: 12.97, lon: 79.15, ta: '80', en: '80' }, createdAt: c }], now, 14);
   const all = [...d.m, ...d.a, ...d.e, ...d.n]; assert.equal(all.length, 1); assert.equal(all[0].ta, 'Gandhi Nagar'); assert.equal(all[0].n, 2);
 });
+
+test('new-ride push: 1.0.17+ apps get the data message, others the notification', () => {
+  const r = L.splitDriverTokens([{ fcm: 'a', dev: { app: '1.0.17+' } }, { fcm: 'b', dev: { app: '1.0.16+' } }, { fcm: 'c' }, { fcm: 'd', dev: { app: '1.0.15-' } },
+    { fcm: 'e', dev: { app: '1.0.21+' } }, { dev: { app: '1.0.17+' } }, { fcm: 'f', dev: { app: 'old' } }, { fcm: 'g', dev: { app: '1.1.0+' } }]);
+  assert.deepEqual(r.data, ['a', 'e', 'g']); assert.deepEqual(r.note, ['b', 'c', 'd', 'f']);
+  const d = L.ridePushData('bk1', { veh: 'mini', fare: 150, from: { ta: 'காட்பாடி' }, to: { en: 'CMC' }, custName: 'Kala', custPhone: '+91999' });
+  assert.deepEqual(d, { type: 'ride', bookingId: 'bk1', veh: 'mini', kind: 'ride', fare: '150', tip: '0', from: 'காட்பாடி', to: 'CMC' });
+  assert.ok(Object.values(d).every(v => typeof v === 'string'));
+});

@@ -1,0 +1,36 @@
+package app.velloretaxi.driver;
+
+import android.content.Context;
+import android.util.Log;
+import androidx.annotation.NonNull;
+import com.capacitorjs.plugins.pushnotifications.MessagingService;
+import com.getcapacitor.JSObject;
+import com.google.firebase.messaging.RemoteMessage;
+import java.util.Map;
+
+/**
+ * Pushes from the server (Firebase Cloud Messaging). From 1.0.17 the server sends new rides to this app as a
+ * high-priority DATA message (type=ride), which Android delivers even in Doze / with the screen off, and which reaches
+ * this code instead of becoming a plain system notification:
+ *   - the page is running → it is told at once ("wake"): it fetches the ride and rings (over the lock screen if locked);
+ *   - the page is gone (process restarted) → the app is opened behind the other app; the page starts and rings.
+ * Everything else goes on to Capacitor's push plugin as before.
+ */
+public class VctMessagingService extends MessagingService {
+    @Override
+    public void onMessageReceived(@NonNull RemoteMessage m) {
+        try { handle(this, m.getData()); } catch (Exception e) { Log.w("VctPush", "handle", e); }
+        super.onMessageReceived(m);
+    }
+
+    static void handle(Context c, Map<String, String> d) {
+        String type = d == null ? null : d.get("type");
+        if (type == null || !(type.equals("ride") || type.equals("wake"))) return;
+        boolean on = DutyService.isOn(c);
+        Log.i("VctPush", type + " on=" + on + " visible=" + DutyService.appVisible);
+        if (!on) return;
+        JSObject o = new JSObject(); for (Map.Entry<String, String> e : d.entrySet()) o.put(e.getKey(), e.getValue());
+        if (!RideOverlayPlugin.wake(o)) DutyService.openBg(c);
+        DutyService.setOn(c, true);   // make sure the duty service (and the position sender) is running
+    }
+}

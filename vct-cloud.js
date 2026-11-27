@@ -92,6 +92,8 @@ const api = {
   fs: { doc, getDoc, getDocFromCache, getDocs, setDoc, updateDoc, addDoc, deleteDoc, collection, query, where, orderBy, limit, onSnapshot, serverTimestamp, increment, runTransaction, writeBatch },
   toMs,
   get user() { return auth.currentUser; },
+  // public web config bits the Android driver app needs to send the position itself (NativeLive): not secrets
+  fbcfg() { return { apiKey: firebaseConfig.apiKey, project: firebaseConfig.projectId }; },
   get phone() { return auth.currentUser ? auth.currentUser.phoneNumber : null; },
   // Get the invisible security check ready while the person types the number, so "Send OTP" goes out at once.
   // Safe to call many times; never throws.

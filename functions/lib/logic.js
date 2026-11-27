@@ -311,4 +311,21 @@ function demandMap(bookings, now, days) {
   return out;
 }
 
-module.exports = { placeName, BANDS, bandOf, demandMap, statDay, scoreSample, ownerAlerts, WATCH, istHour, driverWatch, watchMsg, inclKm, enquiryFlood, OUTCAT, outCat, catBata, AHRS, AXH, aHours, planHours, hrsTable, AUTO_GOVT, AREA, autoFare, outsideArea, rentCheck, outCheck, tariffs, rentPrice, istStamp, commissionFor, settle, housekeeping, fareLooksWrong, liveStale, custPush, fareCheck, bookingLimit, nightPct, withNight, crowKm, LIMIT_OPEN, LIMIT_HOUR };
+// New-ride push: which driver tokens get the 1.0.17 data message (app version reported in drivers.dev.app) and which the
+// old notification. Data values must be strings; only what the ring needs (no customer name or phone).
+function splitDriverTokens(drivers) {
+  const data = [], note = [];
+  for (const d of drivers || []) {
+    if (!d || !d.fcm) continue;
+    const app = String((d.dev && d.dev.app) || '');
+    (/^1\.0\.(1[7-9]|[2-9]\d)\+/.test(app) || /^1\.[1-9]/.test(app) ? data : note).push(d.fcm);
+  }
+  return { data: data.slice(0, 500), note: note.slice(0, 500) };
+}
+function ridePushData(id, b) {
+  const s = v => String(v == null ? '' : v).slice(0, 120);
+  return { type: 'ride', bookingId: s(id), veh: s(b.veh), kind: s(b.kind || 'ride'), fare: s(b.fare), tip: s(b.tip || 0),
+    from: s(b.from && (b.from.ta || b.from.en)), to: s(b.to && (b.to.ta || b.to.en)) };
+}
+
+module.exports = { splitDriverTokens, ridePushData, placeName, BANDS, bandOf, demandMap, statDay, scoreSample, ownerAlerts, WATCH, istHour, driverWatch, watchMsg, inclKm, enquiryFlood, OUTCAT, outCat, catBata, AHRS, AXH, aHours, planHours, hrsTable, AUTO_GOVT, AREA, autoFare, outsideArea, rentCheck, outCheck, tariffs, rentPrice, istStamp, commissionFor, settle, housekeeping, fareLooksWrong, liveStale, custPush, fareCheck, bookingLimit, nightPct, withNight, crowKm, LIMIT_OPEN, LIMIT_HOUR };

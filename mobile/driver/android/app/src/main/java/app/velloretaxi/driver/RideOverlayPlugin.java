@@ -11,6 +11,7 @@ import android.media.Ringtone;
 import android.media.RingtoneManager;
 import android.net.Uri;
 import android.os.Build;
+import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.VibrationEffect;
@@ -55,7 +56,9 @@ public class RideOverlayPlugin extends Plugin {
     private Ringtone tone;
     private Vibrator vib;
     private boolean online, visible = true;
-    private String action, actionId, ringId;
+    private static String action, actionId;
+    private String ringId;
+    private static RideOverlayPlugin inst;
     private Runnable timeout;
 
     @Override
@@ -63,6 +66,19 @@ public class RideOverlayPlugin extends Plugin {
         wm = (WindowManager) getContext().getApplicationContext().getSystemService(Context.WINDOW_SERVICE);
         vib = (Vibrator) getContext().getApplicationContext().getSystemService(Context.VIBRATOR_SERVICE);
         android.util.Log.i("RideOverlay", "load " + System.identityHashCode(this));
+        inst = this;
+    }
+
+    /** a button on the lock-screen ride screen (RideRingActivity): remember it for take(), and go quiet */
+    static void pressed(String act, String id) {
+        action = act; actionId = id;
+        RideOverlayPlugin p = inst; if (p != null) p.main.post(p::silence);
+    }
+
+    /** a push from the server (VctMessagingService): wake the page so it checks for rides now */
+    static boolean wake(JSObject data) {
+        RideOverlayPlugin p = inst; if (p == null) return false;
+        try { p.notifyListeners("wake", data, true); return true; } catch (Exception e) { return false; }
     }
 
     private boolean can() { return Build.VERSION.SDK_INT < 23 || Settings.canDrawOverlays(getContext()); }
@@ -106,7 +122,15 @@ public class RideOverlayPlugin extends Plugin {
             ringId = id;
             startSound();
             android.util.Log.i("RideOverlay", "ring visible=" + visible + " can=" + can());
-            if (!visible && can()) showCard(id, title, l1, l2, fare, acc, open, r, secs);
+            if (RideRingActivity.locked(getContext())) {
+                // phone locked / screen off: like an incoming call, the ride comes over the lock screen
+                Bundle bd = new Bundle();
+                bd.putString("id", id); bd.putString("title", title); bd.putString("line1", l1); bd.putString("line2", l2); bd.putString("fare", fare);
+                bd.putString("accept", acc); bd.putString("open", open); bd.putInt("secs", secs);
+                String[] k = {"veh", "pay", "pkm", "pname", "psub", "dkm", "dname", "dsub", "extra"};
+                for (int x = 0; x < k.length; x++) bd.putString(k[x], r[x]);
+                RideRingActivity.open(getContext(), bd);
+            } else if (!visible && can()) showCard(id, title, l1, l2, fare, acc, open, r, secs);
             timeout = this::endRing;
             main.postDelayed(timeout, secs * 1000L);
         });
@@ -138,6 +162,61 @@ public class RideOverlayPlugin extends Plugin {
     @PluginMethod
     public void ready(PluginCall call) {
         if (getActivity() instanceof MainActivity) ((MainActivity) getActivity()).backIfReopened();
+        call.resolve();
+    }
+
+    /* ---------- 1.0.17: position from the phone itself, lock-screen rides ---------- */
+    /** the page gives what the phone needs to send the position itself while the app is not on screen (see NativeLive) */
+    @PluginMethod
+    public void liveStart(PluginCall call) {
+        String key = call.getString("apiKey", ""), proj = call.getString("project", ""), phone = call.getString("phone", ""), rt = call.getString("refresh", "");
+        if (key.isEmpty() || proj.isEmpty() || phone.isEmpty() || rt.isEmpty()) { call.reject("missing"); return; }
+        if (BuildConfig.DEBUG) {   // CI emulator test: point the two Google endpoints at the test server
+            String tb = call.getString("tokenBase", ""), fb = call.getString("fsBase", "");
+            if (!tb.isEmpty()) NativeLive.tokenBase = tb; if (!fb.isEmpty()) NativeLive.fsBase = fb;
+        }
+        NativeLive.setCreds(getContext(), key, proj, phone, rt);
+        if (DutyService.isOn(getContext())) DutyService.setOn(getContext(), true);   // the service starts NativeLive
+        call.resolve();
+    }
+
+    @PluginMethod
+    public void liveStop(PluginCall call) {
+        NativeLive.get(getContext()).stop();
+        if (Boolean.TRUE.equals(call.getBoolean("forget", false))) NativeLive.clearCreds(getContext());
+        call.resolve();
+    }
+
+    @PluginMethod
+    public void liveStatus(PluginCall call) {
+        JSObject r = new JSObject();
+        r.put("running", NativeLive.get(getContext()).isRunning()); r.put("sends", NativeLive.sends); r.put("fails", NativeLive.fails); r.put("err", NativeLive.lastErr);
+        call.resolve(r);
+    }
+
+    /** Android 14+: may rides show over the lock screen ("full-screen notifications")? and the settings screen for it */
+    @PluginMethod
+    public void fsi(PluginCall call) { JSObject r = new JSObject(); r.put("can", RideRingActivity.fsiAllowed(getContext())); call.resolve(r); }
+
+    @PluginMethod
+    public void askFsi(PluginCall call) {
+        try {
+            Intent i = Build.VERSION.SDK_INT >= 34 ? new Intent(Settings.ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT, Uri.parse("package:" + getContext().getPackageName()))
+                    : new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:" + getContext().getPackageName()));
+            i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK); getContext().startActivity(i);
+        } catch (Exception e) { /* no such screen */ }
+        call.resolve();
+    }
+
+    /** CI emulator test only: what a server push does when it arrives */
+    @PluginMethod
+    public void testPush(PluginCall call) {
+        if (!BuildConfig.DEBUG) { call.reject("debug only"); return; }
+        java.util.Map<String, String> m = new java.util.HashMap<>();
+        JSObject d = call.getObject("data", new JSObject());
+        java.util.Iterator<String> it = d.keys(); while (it.hasNext()) { String k = it.next(); m.put(k, d.optString(k)); }
+        final int delay = call.getInt("delay", 0);
+        main.postDelayed(() -> VctMessagingService.handle(getContext(), m), delay);
         call.resolve();
     }
 
@@ -188,6 +267,7 @@ public class RideOverlayPlugin extends Plugin {
         tone = null;
         try { if (vib != null) vib.cancel(); } catch (Exception e) { /* nothing to cancel */ }
         removeCard();
+        RideRingActivity.closeAll(getContext());
         ringId = null;
     }
 

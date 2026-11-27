@@ -38,7 +38,7 @@ jobs:
           arch: x86_64
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
-          script: mkdir -p "$RUNNER_TEMP/shots" && bash tests/android/ovl-emulator.sh mobile/driver/android/app/build/outputs/apk/debug/app-debug.apk "$RUNNER_TEMP/report.log" "$RUNNER_TEMP/shots"
+          script: mkdir -p "$RUNNER_TEMP/shots" && bash tests/android/emu-all.sh mobile/driver/android/app/build/outputs/apk/debug/app-debug.apk "$RUNNER_TEMP/report.log" "$RUNNER_TEMP/shots"
       - name: Screenshots
         if: always()
         uses: actions/upload-artifact@v4
