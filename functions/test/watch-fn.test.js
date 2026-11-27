@@ -9,6 +9,7 @@ const snap = path => ({ exists: store.has(path), data: () => (store.has(path) ? 
 function docRef(path) {
   return { path, id: path.split('/').pop(), get: async () => snap(path),
     set: async (d, o) => { store.set(path, apply(o && o.merge ? store.get(path) : {}, d)); },
+    delete: async () => { store.delete(path); },
     update: async d => { if (!store.has(path)) throw new Error('NOT_FOUND ' + path); store.set(path, apply(store.get(path), d)); } };
 }
 const coll = name => {
@@ -65,4 +66,21 @@ test('night: paused without a push, no reminders; on a job / blocked / office sw
 test('a dead push token is removed, the pause still happens', async () => {
   reset(); drv('D', 4 * 3600e3); failToken = 'tokD'; await run();
   assert.equal(store.get('drivers/D').online, false); assert.equal(store.get('drivers/D').fcm, undefined);
+});
+
+test('owner alerts reach the owner phone: waiting ride once, paused drivers, no ready driver; dead token removed', async () => {
+  reset(); NOW = Date.parse('2026-11-27T05:00:00Z');
+  store.set('staff/+918220201462', { role: 'owner', active: true }); store.set('staff/+918220201462/private/push', { fcm: 'OWN' });
+  store.set('staff/+917000000001', { role: 'staff', active: true }); store.set('staff/+917000000001/private/push', { fcm: 'STAFF' });
+  store.set('bookings/b1', { status: 'searching', kind: 'ride', veh: 'mini', fare: 150, from: { ta: 'காட்பாடி' }, to: { ta: 'CMC' }, createdAt: T(NOW - 3 * 60e3) });
+  drv('P', 4 * 3600e3); drv('W', 12 * 60e3);
+  await run();
+  const own = sent.filter(m => m.token === 'OWN');
+  assert.deepEqual(own.map(m => m.data.kind).sort(), ['noready', 'paused', 'wait']);
+  assert.equal(sent.filter(m => m.token === 'STAFF').length, 0, 'staff do not get owner alerts');
+  assert.equal(own.find(m => m.data.kind === 'wait').webpush.fcmOptions.link.endsWith('/office/'), true);
+  sent = []; NOW += 2 * 60e3; await run();
+  assert.equal(sent.filter(m => m.token === 'OWN').length, 0, 'nothing repeated 2 min later');
+  store.set('staff/+918220201462/private/push', { fcm: 'DEAD' }); failToken = 'DEAD'; NOW += 31 * 60e3; drv('Q', 40 * 60e3); await run();
+  assert.equal(store.get('staff/+918220201462/private/push'), undefined, 'dead owner token removed');
 });

@@ -227,3 +227,15 @@ test('driver watch: ready / nudge once / pause after 3 h / night / skips', () =>
   assert.equal(L.istHour(day), 10); assert.equal(L.istHour(night), 1);
   assert.match(L.watchMsg('pause').body, /3 மணி/); assert.match(L.watchMsg('nudge', 'en').title, /open the app/);
 });
+test('owner alerts: waiting ride once, no-ready every 30 min in the day, paused names', () => {
+  const now = Date.parse('2026-11-27T05:00:00Z'), b = (id, ago, x) => ({ id, status: 'searching', kind: 'ride', veh: 'mini', fare: 120, from: { ta: 'காட்பாடி' }, to: { ta: 'CMC' }, createdAt: T(now - ago), ...x });
+  let r = L.ownerAlerts({ open: [b('a', 3 * 60e3), b('b', 60e3), b('c', 3 * 60e3, { driverPhone: '+91x' }), b('d', 3 * 60e3, { kind: 'outstation' }), b('e', 25 * 60e3)], ready: 2, on: 3, paused: [], sent: {}, now });
+  assert.deepEqual(r.out.map(a => a.tag), ['wait-a']); assert.match(r.out[0].body, /காட்பாடி → CMC · mini · ₹120 · 3 நிமிஷம்/);
+  r = L.ownerAlerts({ open: [b('a', 4 * 60e3)], ready: 2, on: 3, sent: { bk_a: true }, now }); assert.equal(r.out.length, 0, 'once per booking');
+  r = L.ownerAlerts({ open: [], ready: 0, on: 4, sent: {}, now }); assert.equal(r.out[0].kind, 'noready'); assert.equal(r.mark.noready, now);
+  assert.equal(L.ownerAlerts({ open: [], ready: 0, on: 4, sent: { noready: now - 10 * 60e3 }, now }).out.length, 0, 'not within 30 min');
+  assert.equal(L.ownerAlerts({ open: [], ready: 0, on: 4, sent: { noready: now - 31 * 60e3 }, now }).out.length, 1);
+  assert.equal(L.ownerAlerts({ open: [], ready: 0, on: 0, sent: {}, now }).out.length, 0, 'nobody ON: nothing to say');
+  assert.equal(L.ownerAlerts({ open: [], ready: 0, on: 4, sent: {}, now: Date.parse('2026-11-26T20:00:00Z') }).out.length, 0, 'not at night');
+  r = L.ownerAlerts({ open: [], ready: 1, on: 2, paused: ['Ravi', 'Siva'], sent: {}, now }); assert.match(r.out[0].body, /Ravi, Siva/);
+});

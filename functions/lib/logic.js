@@ -247,4 +247,26 @@ const watchMsg = (kind, lang) => {
     : { title: ta ? 'App-ஐ ஒரு தடவை திறங்க' : 'Please open the app', body: ta ? 'நீங்க ON-ல இருக்கீங்க, ஆனா phone-ல இருந்து signal வரல. Ride வராம போகலாம்.' : 'You are ON but your phone is not sending a signal. You may miss rides.' };
 };
 
-module.exports = { WATCH, istHour, driverWatch, watchMsg, inclKm, enquiryFlood, OUTCAT, outCat, catBata, AHRS, AXH, aHours, planHours, hrsTable, AUTO_GOVT, AREA, autoFare, outsideArea, rentCheck, outCheck, tariffs, rentPrice, istStamp, commissionFor, settle, housekeeping, fareLooksWrong, liveStale, custPush, fareCheck, bookingLimit, nightPct, withNight, crowKm, LIMIT_OPEN, LIMIT_HOUR };
+// Owner alerts (push to the owner's phone, sent by housekeeping). Each alert at most once:
+//  wait   — a city ride still searching 2 min after booking (once per booking)
+//  noready — daytime (6:00–23:00 IST), drivers are ON but none has sent a signal in 3 min (at most every 30 min)
+//  paused — the driver watch just switched drivers OFF (names)
+function ownerAlerts({ open, ready, on, paused, sent, now }) {
+  const ms = x => (x && x.toMillis ? x.toMillis() : +x || 0), out = [], mark = {}, h = istHour(now);
+  for (const b of open || []) {
+    if (b.status !== 'searching' || (b.kind && b.kind !== 'ride') || b.driverPhone) continue;
+    const at = ms(b.createdAt); if (!at || now - at < 2 * MIN || now - at > 20 * MIN) continue;
+    if (sent && sent['bk_' + b.id]) continue;
+    const f = (b.from && (b.from.ta || b.from.en)) || '', t = (b.to && (b.to.ta || b.to.en)) || '';
+    out.push({ kind: 'wait', tag: 'wait-' + b.id, title: 'Ride காத்திருக்கு, driver இல்லை', body: `${f}${t ? ' → ' + t : ''} · ${b.veh || ''} · ₹${b.fare || ''} · ${Math.floor((now - at) / MIN)} நிமிஷம்` });
+    mark['bk_' + b.id] = true;
+  }
+  if (h >= 6 && h < 23 && on > 0 && ready === 0 && !(sent && now - ms(sent.noready) < 30 * MIN)) {
+    out.push({ kind: 'noready', tag: 'noready', title: 'இப்போ ரெடி வண்டி இல்லை', body: `ON-ல ${on} பேர், ஆனா யார் phone-ம் signal அனுப்பல. Office → Drivers → தொலைஞ்சது.` });
+    mark.noready = now;
+  }
+  if (paused && paused.length) out.push({ kind: 'paused', tag: 'paused-' + now, title: `${paused.length} driver OFF ஆக்கப்பட்டாங்க`, body: `3 மணி நேரமா signal இல்லை: ${paused.slice(0, 5).join(', ')}${paused.length > 5 ? ' …' : ''}` });
+  return { out, mark };
+}
+
+module.exports = { ownerAlerts, WATCH, istHour, driverWatch, watchMsg, inclKm, enquiryFlood, OUTCAT, outCat, catBata, AHRS, AXH, aHours, planHours, hrsTable, AUTO_GOVT, AREA, autoFare, outsideArea, rentCheck, outCheck, tariffs, rentPrice, istStamp, commissionFor, settle, housekeeping, fareLooksWrong, liveStale, custPush, fareCheck, bookingLimit, nightPct, withNight, crowKm, LIMIT_OPEN, LIMIT_HOUR };

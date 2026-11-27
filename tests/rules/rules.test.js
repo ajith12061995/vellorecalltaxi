@@ -493,3 +493,14 @@ test('office files a driver\'s documents: only the owner, only known slots, only
   await assertFails(getDoc(doc(as.other(), 'driverApps', PH, 'files', 'photo')), 'strangers cannot read');
   await assertSucceeds(getDoc(doc(as.owner(), 'driverApps', PH, 'files', 'photo')));
 });
+
+test('owner push token and server-only watch / alerts records', async () => {
+  await assertSucceeds(setDoc(doc(as.owner(), 'staff', OWNER, 'private', 'push'), { fcm: 'tok', at: serverTimestamp() }));
+  await assertFails(getDoc(doc(as.staff(), 'staff', OWNER, 'private', 'push')));
+  await assertFails(setDoc(doc(as.staff(), 'staff', STAFF, 'private', 'push'), { fcm: 'tok' }));
+  await assertFails(getDoc(doc(as.drv(), 'staff', OWNER, 'private', 'push')));
+  for (const who of ['owner', 'staff', 'drv', 'cust']) {
+    await assertFails(getDoc(doc(as[who](), 'watch', DRV)));
+    await assertFails(setDoc(doc(as[who](), 'alerts', 'owner'), { x: 1 }));
+  }
+});

@@ -70,30 +70,62 @@ exports.housekeeping = onSchedule({ schedule: 'every 2 minutes', timeZone: 'Asia
   const old = await db.collection('purgeBackups').where('at', '<', new Date(now - 30 * 864e5)).limit(5).get();
   for (const r of old.docs) { await db.recursiveDelete(r.ref); n++; }
   logger.info('housekeeping', { changed: n });
-  try { await watchDrivers(now); } catch (e) { logger.error('driver watch', { err: String(e) }); }
+  let w = null;
+  try { w = await watchDrivers(now); } catch (e) { logger.error('driver watch', { err: String(e) }); }
+  try { await ownerAlerts(now, open.docs.map(d => ({ id: d.id, ...d.data() })), w); } catch (e) { logger.error('owner alerts', { err: String(e) }); }
 });
 
 // Driver watch: ON switch on, phone silent. 30 min → one reminder push; 3 h → OFF by the server (autoOff = updatedAt,
 // so the driver app can tell it apart from an office OFF and goes back ON by itself when opened).
 // Off switch: config/app.noWatch = true.
 async function watchDrivers(now) {
-  const c = await cfg(); if (c.noWatch) return;
-  const ds = await db.collection('drivers').where('online', '==', true).get(); if (ds.empty) return;
+  const c = await cfg(), res = { paused: [], ready: 0, on: 0 }; if (c.noWatch) return null;
+  const ds = await db.collection('drivers').where('online', '==', true).get(); if (ds.empty) return res;
   const refs = ds.docs.map(d => [db.doc(`live/${d.id}`), db.doc(`watch/${d.id}`)]).flat();
   const got = await db.getAll(...refs), by = Object.fromEntries(got.map(g => [g.ref.path, g.exists ? g.data() : null]));
   let paused = 0, nudged = 0;
   for (const d of ds.docs) {
-    const drv = d.data(), r = L.driverWatch(drv, by[`live/${d.id}`], by[`watch/${d.id}`], now); if (!r) continue;
+    const drv = d.data(), lv = by[`live/${d.id}`];
+    if (!drv.blocked) { res.on++; if (lv && lv.updatedAt && now - lv.updatedAt.toMillis() <= 3 * 60e3 && !lv.busy && !lv.bk) res.ready++; }
+    const r = L.driverWatch(drv, lv, by[`watch/${d.id}`], now); if (!r) continue;
     if (r.pause) {
       await d.ref.update({ online: false, autoOff: FV.serverTimestamp(), updatedAt: FV.serverTimestamp() });
       await db.doc(`watch/${d.id}`).set({ pausedAt: FV.serverTimestamp(), gapMin: Math.round(r.gap / 60e3) }, { merge: true });
-      paused++; if (r.push) await watchPush(d, drv, 'pause');
+      paused++; res.paused.push(drv.name || d.id); res.on--; if (r.push) await watchPush(d, drv, 'pause');
     } else if (r.nudge) {
       await db.doc(`watch/${d.id}`).set({ nudgeAt: FV.serverTimestamp(), gapMin: Math.round(r.gap / 60e3) }, { merge: true });
       nudged++; await watchPush(d, drv, 'nudge');
     }
   }
   if (paused || nudged) logger.info('driver watch', { paused, nudged });
+  return res;
+}
+
+// Owner alerts → push to every active owner who switched on "alerts on my phone" in the Office
+// (token in staff/{phone}/private/push). Already-sent marks in alerts/owner (server only). Off: config/app.noOwnerPush.
+async function ownerAlerts(now, open, w) {
+  const c = await cfg(); if (c.noOwnerPush) return;
+  const sref = db.doc('alerts/owner'), sent = (await sref.get()).data() || {};
+  const { out, mark } = L.ownerAlerts({ open, ready: w ? w.ready : 1, on: w ? w.on : 0, paused: w ? w.paused : [], sent, now });
+  if (!out.length) return;
+  const os = await db.collection('staff').where('role', '==', 'owner').get();
+  const toks = [];
+  for (const o of os.docs) { if (o.data().active === false) continue; const p = (await db.doc(`staff/${o.id}/private/push`).get()).data(); if (p && p.fcm) toks.push([o.id, p.fcm]); }
+  // keep the marks small: drop booking marks older than a day
+  const keep = Object.fromEntries(Object.entries(sent).filter(([k, v]) => !k.startsWith('bk_') || now - (+v || 0) < 864e5));
+  for (const k of Object.keys(mark)) keep[k] = k.startsWith('bk_') ? now : mark[k];
+  await sref.set(keep);
+  for (const a of out) for (const [ph, tok] of toks) {
+    try {
+      await admin.messaging().send({ token: tok,
+        webpush: { notification: { title: a.title, body: a.body, tag: a.tag, icon: SITE + 'office/icon-192.png', requireInteraction: a.kind !== 'paused' }, fcmOptions: { link: SITE + 'office/' } },
+        data: { kind: a.kind } });
+    } catch (e) {
+      if (/registration-token-not-registered|invalid-registration-token/.test(e.code || e.message || '')) await db.doc(`staff/${ph}/private/push`).delete().catch(() => {});
+      logger.warn('owner push failed', { code: e.code || String(e) });
+    }
+  }
+  logger.info('owner alerts', { sent: out.map(a => a.kind), owners: toks.length });
 }
 async function watchPush(d, drv, kind) {
   if (!drv.fcm) return;
