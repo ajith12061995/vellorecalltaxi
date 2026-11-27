@@ -36,7 +36,7 @@ async def main():
         await D.locator('#ons').click();await pg.wait_for_timeout(3000)
         await of.evaluate("S.sec='drv';DF='all';save();show()");await pg.wait_for_timeout(1200)
         on=await of.evaluate(f"(()=>{{const d=DB.drv.find(x=>x.id==='{did}');return d?lastOnLine(d):''}})()")
-        check('driver online in the app → office card says "Online now"','Online now' in on or 'இப்போ online' in on,on)
+        check('driver online in the app → office card says "Online now"',('Ready' in on or 'ரெடி' in on) and 'class="lastln on"' in on,on)
         df=pg.frame(url=B+'d2.html');await df.evaluate("setOnline(false);home&&home()");await pg.wait_for_timeout(3000)
         await of.evaluate("show()");await pg.wait_for_timeout(1000)
         off=await of.evaluate(f"(()=>{{const d=DB.drv.find(x=>x.id==='{did}');return d?lastOnLine(d):''}})()")

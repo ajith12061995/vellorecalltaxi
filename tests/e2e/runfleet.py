@@ -73,10 +73,10 @@ async def main():
         check('on trip: route to the drop',len(pl)==1 and abs(pl[0][1]['lat']-12.925)<1e-6,pl)
         # filters
         txt=' '.join((await O.locator('#fbar').inner_text()).split())
-        check('filter bar with counts',('No signal 1' in txt or 'Signal இல்லை 1' in txt),txt)
+        check('filter bar with counts (ready / ride / weak / lost)',('Lost 1' in txt or 'தொலைஞ்சது 1' in txt) and ('Ready 1' in txt or 'ரெடி 1' in txt),txt)
         await O.locator('[data-fst=old]').click();await pg.wait_for_timeout(900)
         mk=await of.evaluate(FM)
-        check('"No signal" filter → only the silent bike',[m['lab'][:4] for m in mk]==['3333'],[m['lab'] for m in mk])
+        check('"Lost" filter → only the silent bike',[m['lab'][:4] for m in mk]==['3333'],[m['lab'] for m in mk])
         check('card closes when its vehicle is filtered out',await of.evaluate("document.getElementById('fcard').hidden"))
         await O.locator('[data-fst=all]').click();await O.locator('[data-fvh=auto]').click();await pg.wait_for_timeout(900)
         mk=await of.evaluate(FM)
