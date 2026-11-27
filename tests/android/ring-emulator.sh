@@ -128,6 +128,43 @@ sleep 2; t=$(topact); echo "$t" | grep -q RideRingActivity && bad "ride screen s
 adb shell appops set $PKG SYSTEM_ALERT_WINDOW allow
 adb shell input keyevent KEYCODE_WAKEUP; adb shell wm dismiss-keyguard >/dev/null 2>&1; sleep 2
 
+# ---------- E) 1.0.20: after a long sleep (Doze) the page does not answer the push → the phone rings by itself ----------
+adb shell input keyevent KEYCODE_HOME; sleep 2
+adb logcat -c
+adb shell dumpsys deviceidle force-idle 2>/dev/null | head -1
+adb shell dumpsys deviceidle tempwhitelist -d 60000 $PKG >/dev/null 2>&1   # what a high-priority push grants the app
+cmd push-deaf1; waitlog '^push=sent:push-deaf1' 20 || bad "deaf push not queued"
+adb shell input keyevent KEYCODE_SLEEP; sleep 3
+for i in $(seq 1 40); do adb logcat -d | grep -q "RideFallback: fallback ring push-deaf1" && break; sleep 1; done
+adb logcat -d | grep -q "RideFallback: fallback ring push-deaf1" && ok "page silent (asleep): the phone read the ride and rang by itself" || { bad "no fallback ring"; adb logcat -d | grep -E "RideFallback|NativeLive|VctPush" | tail -15; }
+grep -q '^read=Bearer idt-test push-deaf1' "$LOG" && ok "it read the ride from the server, signed in as the driver (rules apply)" || bad "ride not read: $(grep '^read=' "$LOG" | tail -1)"
+grep '^query=' "$LOG" | tail -1 | grep -q '"driverPhone"' && ok "it checked the driver is not already on a ride" || bad "no busy check"
+sleep 3; awake && ok "screen turned on" || bad "screen stayed off"
+t=$(topact); echo "top: $t"; echo "$t" | grep -q RideRingActivity && ok "ride over the lock screen (from the push itself)" || bad "ride screen not in front"
+has_text "Katpadi Junction" && has_text "₹150" && ok "pickup and fare from the push are shown" || { bad "details missing"; grep -o 'text="[^"]*"' /tmp/ui.xml | head -20; }
+adb exec-out screencap -p > "$OUT/ring-4-fallback.png" 2>/dev/null
+tap_text "Accept" && ok "Accept tapped" || bad "no Accept"
+sleep 3; adb shell wm dismiss-keyguard >/dev/null 2>&1; sleep 4
+waitlog '^take={"action":"accept","id":"push-deaf1"}' 25 && ok "app opened; the page is told: accept push-deaf1 (it accepts with its own checks)" || { bad "accept not passed to the page"; grep '^take=' "$LOG" | tail -2; }
+adb shell input keyevent KEYCODE_HOME; sleep 2; adb logcat -c
+adb shell dumpsys deviceidle tempwhitelist -d 60000 $PKG >/dev/null 2>&1
+cmd push-gone2; waitlog '^push=sent:push-gone2' 20 || bad "gone push not queued"
+adb shell input keyevent KEYCODE_SLEEP; sleep 3
+for i in $(seq 1 30); do adb logcat -d | grep -q "RideFallback: no ring push-gone2" && break; sleep 1; done
+adb logcat -d | grep -q "RideFallback: no ring push-gone2: status:assigned" && ok "ride already taken by someone else: the phone does not ring" || { bad "taken ride: wrong decision"; adb logcat -d | grep RideFallback | tail -5; }
+awake && bad "screen turned on for a taken ride" || ok "screen stays off for it"
+adb shell input keyevent KEYCODE_WAKEUP; adb shell wm dismiss-keyguard >/dev/null 2>&1; sleep 1; adb shell input keyevent KEYCODE_HOME; sleep 2; adb logcat -c
+adb shell dumpsys deviceidle tempwhitelist -d 60000 $PKG >/dev/null 2>&1
+cmd push-far3; waitlog '^push=sent:push-far3' 20 || bad "far push not queued"
+for i in $(seq 1 30); do adb logcat -d | grep -q "RideFallback: no ring push-far3" && break; sleep 1; done
+adb logcat -d | grep -q "RideFallback: no ring push-far3: far" && ok "pickup more than 4 km away: no ring (same as the page)" || { bad "far ride: wrong decision"; adb logcat -d | grep RideFallback | tail -5; }
+adb logcat -c
+cmd push-r99; waitlog '^push=sent:push-r99' 20 || bad "normal push not queued"
+for i in $(seq 1 30); do adb logcat -d | grep -q "RideFallback: page handled push-r99" && break; sleep 1; done
+adb logcat -d | grep -q "RideFallback: page handled push-r99" && ok "page awake and rang: the phone does not ring it a second time" || { bad "page-rung ride not marked"; adb logcat -d | grep RideFallback | tail -5; }
+adb shell dumpsys deviceidle unforce >/dev/null 2>&1
+adb shell input keyevent KEYCODE_WAKEUP; adb shell wm dismiss-keyguard >/dev/null 2>&1; sleep 2
+
 # ---------- OFF stops the phone's own sending ----------
 adb shell am start -n $PKG/.MainActivity >/dev/null; sleep 4
 echo off > tests/android/cmd.txt; sleep 4; adb shell input keyevent KEYCODE_HOME
@@ -135,7 +172,7 @@ c3=$(commits); sleep 40
 [ "$(commits)" -eq "$c3" ] && ok "OFF: the phone stops sending the position" || bad "position still sent after OFF ($c3 → $(commits))"
 rm -f tests/android/cmd.txt
 echo "--- report log (1.0.17 part):"; grep -vE "^(tick|commit)=" "$LOG" | tail -40
-echo "--- NativeLive / RideRing / VctPush / voice log:"; adb logcat -d | grep -E "NativeLive: (started|stopped|write|token)|RideRing|VctPush|RideOverlay: (ring|wake|tts)" | tail -60
+echo "--- NativeLive / RideRing / VctPush / voice log:"; adb logcat -d | grep -E "NativeLive: (started|stopped|write|token)|RideRing|RideFallback|VctPush|RideOverlay: (ring|wake|tts)" | tail -60
 echo "--- crash buffer:"; adb logcat -d -b crash | tail -30
 echo "RESULT $pass passed, $fail failed"
 [ $fail -eq 0 ]

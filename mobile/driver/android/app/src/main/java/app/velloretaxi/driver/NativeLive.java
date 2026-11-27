@@ -191,6 +191,81 @@ final class NativeLive {
 
     private static JSONObject dbl(double v) throws Exception { return new JSONObject().put("doubleValue", v); }
 
+    /* ---------- 1.0.20: the checks before the phone rings a ride by itself (RideFallback) ---------- */
+    static final double R1 = 3, R2 = 4;   // km, the same as the page (LOCAL_R1 / LOCAL_R2)
+
+    /** km from this phone's last position to a pickup point, or -1 if either is unknown */
+    static double lastKm(String lat, String lon) {
+        NativeLive n = inst; Location l = n == null ? null : n.last;
+        try { if (l == null || lat == null || lat.isEmpty() || lon == null || lon.isEmpty()) return -1; return hav(l.getLatitude(), l.getLongitude(), Double.parseDouble(lat), Double.parseDouble(lon)); }
+        catch (Exception e) { return -1; }
+    }
+    static double hav(double a1, double o1, double a2, double o2) {
+        double r = Math.PI / 180, dl = (a2 - a1) * r, dn = (o2 - o1) * r;
+        double h = Math.sin(dl / 2) * Math.sin(dl / 2) + Math.cos(a1 * r) * Math.cos(a2 * r) * Math.sin(dn / 2) * Math.sin(dn / 2);
+        return 6371 * 2 * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h));
+    }
+    private static String sv(JSONObject f, String k) { JSONObject v = f == null ? null : f.optJSONObject(k); return v == null ? "" : v.optString("stringValue", ""); }
+    private static double nv(JSONObject f, String k) {
+        JSONObject v = f == null ? null : f.optJSONObject(k); if (v == null) return Double.NaN;
+        if (v.has("doubleValue")) return v.optDouble("doubleValue", Double.NaN);
+        if (v.has("integerValue")) try { return Double.parseDouble(v.optString("integerValue")); } catch (Exception e) { return Double.NaN; }
+        return Double.NaN;
+    }
+    private static JSONObject mv(JSONObject f, String k) { JSONObject v = f == null ? null : f.optJSONObject(k); v = v == null ? null : v.optJSONObject("mapValue"); return v == null ? null : v.optJSONObject("fields"); }
+
+    /**
+     * Read the ride (signed in as this driver; the database rules apply) and decide like the page: null = ring now,
+     * "wait:&lt;ms&gt;" = 3–4 km, its turn comes later, anything else = why not. Runs on the caller's thread (not the main one).
+     */
+    String checkRide(String id) {
+        try {
+            if (!hasCreds(ctx)) return "no sign-in";
+            String tok = token(); if (tok == null) return "token";
+            String proj = pref("proj"), phone = pref("phone");
+            String base = fsBase + "/v1/projects/" + proj + "/databases/(default)/documents";
+            StringBuilder out = new StringBuilder();
+            int code = http("GET", base + "/bookings/" + URLEncoder.encode(id, "UTF-8"), null, null, tok, out);
+            if (code == 404) return "gone";
+            if (code != 200) { if (code == 401 || code == 403) { idToken = null; tokenExp = 0; } return "read:" + code; }
+            JSONObject f = new JSONObject(out.toString()).optJSONObject("fields");
+            if (f == null) return "empty";
+            String st = sv(f, "status"); if (!"searching".equals(st)) return "status:" + st;
+            String kind = sv(f, "kind"); if ("outstation".equals(kind) || "rental".equals(kind)) return "kind:" + kind;
+            JSONObject ex = f.optJSONObject("exclude"); ex = ex == null ? null : ex.optJSONObject("arrayValue");
+            if (ex != null && ex.optJSONArray("values") != null) { JSONArray vs = ex.optJSONArray("values"); for (int i = 0; i < vs.length(); i++) if (phone.equals(vs.optJSONObject(i).optString("stringValue"))) return "excluded"; }
+            long now = System.currentTimeMillis();
+            double when = nv(f, "when");
+            if (!Double.isNaN(when) && now - when > 15 * 60000) return "stale";
+            JSONObject from = mv(f, "from");
+            double plat = nv(from, "lat"), plon = nv(from, "lon"), tip = nv(f, "tip");
+            Location l = last;
+            if (l != null && !Double.isNaN(plat) && !Double.isNaN(plon)) {
+                double km = hav(l.getLatitude(), l.getLongitude(), plat, plon);
+                if (km > R2) return "far:" + Math.round(km * 10) / 10.0;
+                if (km > R1 && !(tip > 0)) { long due = (long) (Double.isNaN(when) ? now : when) + RideFallback.WAVE_MS - now; if (due > 0) return "wait:" + due; }
+            }
+            // already on a ride (assigned now, or on the trip): the page offers nothing new then
+            JSONObject q = new JSONObject().put("structuredQuery", new JSONObject()
+                    .put("from", new JSONArray().put(new JSONObject().put("collectionId", "bookings")))
+                    .put("where", new JSONObject().put("fieldFilter", new JSONObject().put("field", new JSONObject().put("fieldPath", "driverPhone"))
+                            .put("op", "EQUAL").put("value", new JSONObject().put("stringValue", phone))))
+                    .put("orderBy", new JSONArray().put(new JSONObject().put("field", new JSONObject().put("fieldPath", "createdAt")).put("direction", "DESCENDING")))
+                    .put("limit", 10));
+            out.setLength(0);
+            code = http("POST", base + ":runQuery", "application/json", q.toString(), tok, out);
+            if (code != 200) return "busy?:" + code;
+            JSONArray rows = new JSONArray(out.toString());
+            for (int i = 0; i < rows.length(); i++) {
+                JSONObject d = rows.optJSONObject(i); d = d == null ? null : d.optJSONObject("document"); if (d == null) continue;
+                JSONObject bf = d.optJSONObject("fields"); String s2 = sv(bf, "status");
+                double w2 = nv(bf, "when");
+                if ("ontrip".equals(s2) || ("assigned".equals(s2) && (Double.isNaN(w2) || w2 <= now + 45 * 60000))) return "busy";
+            }
+            return null;
+        } catch (Exception e) { Log.w(TAG, "checkRide", e); return "error:" + e.getClass().getSimpleName(); }
+    }
+
     /** a fresh ID token from the sign-in refresh token (valid 1 h; renewed 5 min before it ends) */
     private String token() throws Exception {
         if (idToken != null && System.currentTimeMillis() < tokenExp - 300000) return idToken;
@@ -208,14 +283,18 @@ final class NativeLive {
         return idToken;
     }
 
-    private static int http(String url, String type, String body, String bearer, StringBuilder out) throws Exception {
+    private static int http(String url, String type, String body, String bearer, StringBuilder out) throws Exception { return http("POST", url, type, body, bearer, out); }
+
+    private static int http(String method, String url, String type, String body, String bearer, StringBuilder out) throws Exception {
         HttpURLConnection c = (HttpURLConnection) new URL(url).openConnection();
         try {
-            c.setConnectTimeout(15000); c.setReadTimeout(15000); c.setRequestMethod("POST"); c.setDoOutput(true);
-            c.setRequestProperty("Content-Type", type);
+            c.setConnectTimeout(10000); c.setReadTimeout(10000); c.setRequestMethod(method);
             if (bearer != null) c.setRequestProperty("Authorization", "Bearer " + bearer);
-            byte[] b = body.getBytes("UTF-8");
-            try (OutputStream os = c.getOutputStream()) { os.write(b); }
+            if (body != null) {
+                c.setDoOutput(true); c.setRequestProperty("Content-Type", type);
+                byte[] b = body.getBytes("UTF-8");
+                try (OutputStream os = c.getOutputStream()) { os.write(b); }
+            }
             int code = c.getResponseCode();
             if (out != null) {
                 InputStream is = code < 400 ? c.getInputStream() : c.getErrorStream();

@@ -88,6 +88,7 @@ public class RideOverlayPlugin extends Plugin {
     /** a button on the lock-screen ride screen (RideRingActivity): remember it for take(), and go quiet */
     static void pressed(String act, String id) {
         action = act; actionId = id;
+        RideFallback.stopTone();
         RideOverlayPlugin p = inst; if (p != null) p.main.post(p::silence);
     }
 
@@ -143,25 +144,48 @@ public class RideOverlayPlugin extends Plugin {
         // 1.0.16 card (Rapido-like); older pages send only title / line1 / line2 / fare
         final String[] r = { call.getString("veh", ""), call.getString("pay", ""), call.getString("pkm", ""), call.getString("pname", ""), call.getString("psub", ""),
                 call.getString("dkm", ""), call.getString("dname", ""), call.getString("dsub", ""), call.getString("extra", "") };
-        main.post(() -> {
-            endRing();
-            ringId = id;
-            announce(id, say, sayEn);
-            android.util.Log.i("RideOverlay", "ring visible=" + visible + " can=" + can());
-            if (RideRingActivity.locked(getContext())) {
-                // phone locked / screen off: like an incoming call, the ride comes over the lock screen
-                Bundle bd = new Bundle();
-                bd.putString("id", id); bd.putString("title", title); bd.putString("line1", l1); bd.putString("line2", l2); bd.putString("fare", fare);
-                bd.putString("accept", acc); bd.putString("open", open); bd.putInt("secs", secs);
-                String[] k = {"veh", "pay", "pkm", "pname", "psub", "dkm", "dname", "dsub", "extra"};
-                for (int x = 0; x < k.length; x++) bd.putString(k[x], r[x]);
-                RideRingActivity.open(getContext(), bd);
-            } else if (!visible && can()) showCard(id, title, l1, l2, fare, acc, open, r, secs);
-            timeout = this::endRing;
-            main.postDelayed(timeout, secs * 1000L);
-        });
+        RideFallback.handled(id);   // the page rang it: the phone does not ring it a second time
+        Bundle bd = new Bundle();
+        bd.putString("id", id); bd.putString("title", title); bd.putString("line1", l1); bd.putString("line2", l2); bd.putString("fare", fare);
+        bd.putString("accept", acc); bd.putString("open", open); bd.putInt("secs", secs);
+        String[] k = {"veh", "pay", "pkm", "pname", "psub", "dkm", "dname", "dsub", "extra"};
+        for (int x = 0; x < k.length; x++) bd.putString(k[x], r[x]);
+        main.post(() -> doRing(bd, say, sayEn, false));
         call.resolve();
     }
+
+    /** ring one ride: over the lock screen when locked, else the card over other apps (or the ride screen if no card) */
+    private void doRing(Bundle bd, String say, String sayEn, boolean fromPhone) {
+        final String id = bd.getString("id", "");
+        final int secs = bd.getInt("secs", 20);
+        endRing();
+        ringId = id;
+        announce(id, say, sayEn);
+        android.util.Log.i("RideOverlay", "ring visible=" + visible + " can=" + can() + " phone=" + fromPhone);
+        if (RideRingActivity.locked(getContext()) || (fromPhone && !(!visible && can()))) {
+            // phone locked / screen off: like an incoming call, the ride comes over the lock screen
+            RideRingActivity.open(getContext(), bd);
+        } else if (!visible && can()) {
+            String[] r = { bd.getString("veh", ""), bd.getString("pay", ""), bd.getString("pkm", ""), bd.getString("pname", ""), bd.getString("psub", ""),
+                    bd.getString("dkm", ""), bd.getString("dname", ""), bd.getString("dsub", ""), bd.getString("extra", "") };
+            showCard(id, bd.getString("title", "New ride"), bd.getString("line1", ""), bd.getString("line2", ""), bd.getString("fare", ""),
+                    bd.getString("accept", "Accept"), bd.getString("open", "Open"), r, secs);
+        }
+        timeout = this::endRing;
+        main.postDelayed(timeout, secs * 1000L);
+    }
+
+    /** 1.0.20: the phone rings a ride by itself (RideFallback) — the page did not answer the push in time */
+    static void nativeRing(Context a, Bundle bd, String say, String sayEn) {
+        RideOverlayPlugin p = inst;
+        if (p != null) { p.main.post(() -> p.doRing(bd, say, sayEn, true)); return; }
+        RideFallback.playTone(a);           // no page at all: the ride screen with a plain ringtone
+        RideRingActivity.open(a, bd);
+    }
+
+    /** 1.0.20: the page took care of a pushed ride (rang it, or it is not for this driver now) */
+    @PluginMethod
+    public void seen(PluginCall call) { RideFallback.handled(call.getString("id", "")); call.resolve(); }
 
     @PluginMethod
     public void stop(PluginCall call) { main.post(this::endRing); call.resolve(); }
@@ -324,6 +348,7 @@ public class RideOverlayPlugin extends Plugin {
 
     private void endRing() {
         if (timeout != null) { main.removeCallbacks(timeout); timeout = null; }
+        RideFallback.stopTone();
         try { if (tts != null) tts.stop(); } catch (Exception e) { /* not speaking */ }
         try { if (tone != null) tone.stop(); } catch (Exception e) { /* already stopped */ }
         tone = null;

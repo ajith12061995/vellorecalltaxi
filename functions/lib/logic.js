@@ -336,7 +336,9 @@ function splitDriverTokens(drivers) {
 function ridePushData(id, b) {
   const s = v => String(v == null ? '' : v).slice(0, 120);
   return { type: 'ride', bookingId: s(id), veh: s(b.veh), kind: s(b.kind || 'ride'), fare: s(b.fare), tip: s(b.tip || 0),
-    from: s(b.from && (b.from.ta || b.from.en)), to: s(b.to && (b.to.ta || b.to.en)) };
+    from: s(b.from && (b.from.ta || b.from.en)), to: s(b.to && (b.to.ta || b.to.en)),
+    // 1.0.20: the phone rings by itself if the page sleeps too long — it needs the pickup point (distance) and the time
+    flat: s(b.from && b.from.lat), flon: s(b.from && b.from.lon), when: s(b.when || '') };
 }
 
 // Driver subscription (27 Nov, owner's decision): instead of commission a driver may buy a day / week / month plan from

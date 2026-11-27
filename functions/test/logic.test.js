@@ -274,7 +274,10 @@ test('new-ride push: 1.0.17+ apps get the data message, others the notification'
     { fcm: 'e', dev: { app: '1.0.21+' } }, { dev: { app: '1.0.17+' } }, { fcm: 'f', dev: { app: 'old' } }, { fcm: 'g', dev: { app: '1.1.0+' } }]);
   assert.deepEqual(r.data, ['a', 'e', 'g']); assert.deepEqual(r.note, ['b', 'c', 'd', 'f']);
   const d = L.ridePushData('bk1', { veh: 'mini', fare: 150, from: { ta: 'காட்பாடி' }, to: { en: 'CMC' }, custName: 'Kala', custPhone: '+91999' });
-  assert.deepEqual(d, { type: 'ride', bookingId: 'bk1', veh: 'mini', kind: 'ride', fare: '150', tip: '0', from: 'காட்பாடி', to: 'CMC' });
+  assert.deepEqual(d, { type: 'ride', bookingId: 'bk1', veh: 'mini', kind: 'ride', fare: '150', tip: '0', from: 'காட்பாடி', to: 'CMC', flat: '', flon: '', when: '' });
+  const d2 = L.ridePushData('bk2', { veh: 'auto', fare: 60, tip: 10, when: 1795800000000, from: { en: 'Katpadi', lat: 12.9716, lon: 79.159 }, to: { ta: 'சிஎம்சி' } });
+  assert.equal(d2.flat, '12.9716'); assert.equal(d2.flon, '79.159'); assert.equal(d2.when, '1795800000000'); assert.equal(d2.tip, '10');
+  assert.ok(!('custPhone' in d2) && !('custName' in d) && !('custPhone' in d), 'no customer details in a push');
   assert.ok(Object.values(d).every(v => typeof v === 'string'));
 });
 

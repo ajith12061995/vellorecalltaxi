@@ -32,5 +32,6 @@ public class VctMessagingService extends MessagingService {
         JSObject o = new JSObject(); for (Map.Entry<String, String> e : d.entrySet()) o.put(e.getKey(), e.getValue());
         if (!RideOverlayPlugin.wake(o)) DutyService.openBg(c);
         DutyService.setOn(c, true);   // make sure the duty service (and the position sender) is running
+        RideFallback.onPush(c, d);    // 1.0.20: if the page does not ring in a few seconds, the phone rings by itself
     }
 }
