@@ -108,7 +108,7 @@ final class NativeLive {
 
     private void onFix(Location l) {
         if (!running) return;
-        Log.d(TAG, "fix " + l.getProvider() + " acc=" + (l.hasAccuracy() ? Math.round(l.getAccuracy()) : -1) + " visible=" + DutyService.appVisible);
+        Log.d(TAG, "fix " + l.getProvider() + " " + String.format(java.util.Locale.US, "%.4f,%.4f", l.getLatitude(), l.getLongitude()) + " acc=" + (l.hasAccuracy() ? Math.round(l.getAccuracy()) : -1) + " visible=" + DutyService.appVisible);
         if (l.hasAccuracy() && l.getAccuracy() > 80 && last != null && last.hasAccuracy() && last.getAccuracy() <= 80
                 && l.getTime() - last.getTime() < 30000) return;   // a poor reading right after a good one
         last = l;
