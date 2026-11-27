@@ -57,7 +57,7 @@ import sys,json;l=sys.stdin.read();j=json.loads(l[l.index('{'):]);w=j['writes'][
 assert abs(f['lat']['doubleValue']-12.9716)<0.001 and abs(f['lon']['doubleValue']-79.159)<0.001, f
 assert len(f['gh']['stringValue'])==7
 assert f['online']['booleanValue'] is True
-assert sorted(w['updateMask']['fieldPaths'])==sorted(['lat','lon','gh','hd','sp','acc','online']), w['updateMask']
+assert sorted(w['updateMask']['fieldPaths'])==sorted(['lat','lon','gh','hd','sp','acc','online','bat','chg','pwr']), w['updateMask']
 assert w['updateTransforms'][0]=={'fieldPath':'updatedAt','setToServerValue':'REQUEST_TIME'}
 print('gh',f['gh']['stringValue'])" && ok "position, geohash, online, server time; busy / bk / veh left to the page (update mask)" || bad "write body wrong"
 GH=$(python3 -c "

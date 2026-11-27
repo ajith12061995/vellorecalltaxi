@@ -101,6 +101,7 @@ exports.housekeeping = onSchedule({ schedule: 'every 2 minutes', timeZone: 'Asia
   logger.info('housekeeping', { changed: n });
   let w = null;
   try { w = await watchDrivers(now); } catch (e) { logger.error('driver watch', { err: String(e) }); }
+  try { if (w) w.moved = await reassignRides(now); } catch (e) { logger.error('reassign', { err: String(e) }); }
   try { await ownerAlerts(now, open.docs.map(d => ({ id: d.id, ...d.data() })), w); } catch (e) { logger.error('owner alerts', { err: String(e) }); }
   try { await demandRefresh(now); } catch (e) { logger.error('demand map', { err: String(e) }); }
 });
@@ -124,7 +125,7 @@ async function watchDrivers(now) {
       await d.ref.update({ online: false, autoOff: FV.serverTimestamp(), updatedAt: FV.serverTimestamp() });
       await db.doc(`watch/${d.id}`).set({ pausedAt: FV.serverTimestamp(), gapMin: Math.round(r.gap / 60e3) }, { merge: true });
       if (day[d.id]) day[d.id].off = FV.increment(1);
-      paused++; res.paused.push(drv.name || d.id); res.on--; if (r.push) await watchPush(d, drv, 'pause');
+      paused++; if (!r.off) res.paused.push(drv.name || d.id); res.on--; if (r.push) await watchPush(d, drv, 'pause');
     } else if (r.nudge) {
       await db.doc(`watch/${d.id}`).set({ nudgeAt: FV.serverTimestamp(), gapMin: Math.round(r.gap / 60e3) }, { merge: true });
       nudged++; await watchPush(d, drv, 'nudge');
@@ -133,6 +134,38 @@ async function watchDrivers(now) {
   if (Object.keys(day).length) await db.doc(`stats/${L.statDay(now)}`).set(day, { merge: true });
   if (paused || nudged) logger.info('driver watch', { paused, nudged });
   return res;
+}
+
+// Rides whose driver's phone went off / silent before pickup go back to "searching" for the other drivers (this driver is
+// excluded); the customer and the owner are told. On a trip nothing is changed — the owner is told once.
+async function reassignRides(now) {
+  const c = await cfg(); if (c.noReassign) return [];
+  const bs = await db.collection('bookings').where('status', 'in', ['assigned', 'ontrip']).get();
+  const moved = [];
+  for (const d of bs.docs) {
+    const b = d.data(); if (!b.driverPhone) continue;
+    const [ls, ds] = await Promise.all([db.doc(`live/${b.driverPhone}`).get(), db.doc(`drivers/${b.driverPhone}`).get()]);
+    const r = L.reassignCheck(b, ls.exists ? ls.data() : null, ds.exists ? ds.data() : null, now); if (!r) continue;
+    if (r.alert) {
+      const ar = db.doc('alerts/owner'), a = (await ar.get()).data() || {};
+      if (!a['trip_' + d.id]) { await ar.set({ ['trip_' + d.id]: now }, { merge: true }); moved.push({ id: d.id, b, alert: true }); }
+      continue;
+    }
+    const ok = await db.runTransaction(async tx => {
+      const fresh = await tx.get(d.ref), x = fresh.data();
+      if (!x || x.status !== 'assigned' || x.arrivedAt || x.driverPhone !== b.driverPhone) return false;   // changed meanwhile
+      tx.update(d.ref, { status: 'searching', driverPhone: null, driverName: null, plate: null, vehModel: null, assignedAt: null, arrivedAt: null, pinTry: null,
+        exclude: [...new Set([...(x.exclude || []), b.driverPhone])], when: now, reopenedAt: now,
+        reassigned: { why: r.why, from: b.driverPhone, at: now, gapMin: Math.round(r.gap / 60e3) }, updatedAt: FV.serverTimestamp() });
+      if (r.why === 'phoneoff') tx.update(db.doc(`drivers/${b.driverPhone}`), { online: false, autoOff: FV.serverTimestamp(), updatedAt: FV.serverTimestamp() });
+      return true;
+    });
+    if (!ok) continue;
+    moved.push({ id: d.id, b, why: r.why });
+    logger.warn('ride reassigned', { id: d.id, driver: b.driverPhone, why: r.why, gapMin: Math.round(r.gap / 60e3) });
+    try { if (c.push && c.push.vapid) await pushNewRide(d.id, { ...b, exclude: [...new Set([...(b.exclude || []), b.driverPhone])] }); } catch (e) { logger.warn('reassign push', { err: String(e) }); }
+  }
+  return moved;
 }
 
 // Demand map (config/demand, read by the driver app and the Office): rebuilt once an hour from the last 14 days.
@@ -150,7 +183,7 @@ async function demandRefresh(now) {
 async function ownerAlerts(now, open, w) {
   const c = await cfg(); if (c.noOwnerPush) return;
   const sref = db.doc('alerts/owner'), sent = (await sref.get()).data() || {};
-  const { out, mark } = L.ownerAlerts({ open, ready: w ? w.ready : 1, on: w ? w.on : 0, paused: w ? w.paused : [], sent, now });
+  const { out, mark } = L.ownerAlerts({ open, ready: w ? w.ready : 1, on: w ? w.on : 0, paused: w ? w.paused : [], sent, now, moved: w ? w.moved : [] });
   if (!out.length) return;
   const os = await db.collection('staff').where('role', '==', 'owner').get();
   const toks = [];
@@ -240,7 +273,14 @@ exports.onBookingCreated = onDocumentCreated('bookings/{id}', async ev => {
   // 3) a city ride outside the local area (should have been outstation): flag it for the office, don't block
   if (L.outsideArea(b, c.area)) { await ref.update({ areaFlag: 'outside-local' }); logger.warn('outside local area', { id, veh: b.veh }); }
   if (b.status !== 'searching' || !c.push || !c.push.vapid) return;
-  const ds = await db.collection('drivers').where('veh', '==', b.veh).where('online', '==', true).get();
+  await pushNewRide(id, b);
+});
+
+// New-ride push to the drivers of that vehicle who are ON (also used when a ride is given to another driver).
+async function pushNewRide(id, b) {
+  const ex = new Set(b.exclude || []);
+  const ds0 = await db.collection('drivers').where('veh', '==', b.veh).where('online', '==', true).get();
+  const ds = { docs: ds0.docs.filter(d => !ex.has(d.id)) };
   // 1.0.17+ Android app: a high-priority DATA message (reaches the app in Doze / screen off; the app rings itself, over the
   // lock screen if locked). Older apps and the web page: the notification as before.
   const { data: tokData, note: tokens } = L.splitDriverTokens(ds.docs.map(d => d.data()));
@@ -257,7 +297,7 @@ exports.onBookingCreated = onDocumentCreated('bookings/{id}', async ev => {
     android: { priority: 'high', ttl: 60000, notification: { title: '🚕 புது Ride / New ride', body: `${from} · ₹${b.fare}${b.tip ? ' + ₹' + b.tip : ''}`, channelId: 'rides', tag: id, sound: 'default', defaultVibrateTimings: true } },
     data: { bookingId: id } });
   logger.info('push', { sent: r.successCount, failed: r.failureCount });
-});
+}
 
 // Customer push: driver found / arrived / trip started / completed / cancelled by driver or office.
 // Token on users/{uid}.fcm (saved by the customer app after the customer allows notifications). Same switch as

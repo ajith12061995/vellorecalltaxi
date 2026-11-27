@@ -523,3 +523,14 @@ test('subscription plan: only the server (or the owner) sets it; a driver or sta
   await assertSucceeds(updateDoc(doc(as.owner(), 'drivers', DRV), { sub: plan }));
   await assertFails(addDoc(collection(as.drv(), 'ledger'), { type: 'sub', driverPhone: DRV, price: 1 }));
 });
+
+test('live: battery, charging and phone-off state from the driver app (1.0.19)', async () => {
+  await seed(db => setDoc(doc(db, 'live', DRV), { lat: 12.9, lon: 79.1, online: true, updatedAt: serverTimestamp() }));
+  await assertSucceeds(updateDoc(doc(as.drv(), 'live', DRV), { bat: 37, chg: false, pwr: 'on', updatedAt: serverTimestamp() }));
+  await assertSucceeds(updateDoc(doc(as.drv(), 'live', DRV), { pwr: 'off', bat: 2, updatedAt: serverTimestamp() }));
+  await assertFails(updateDoc(doc(as.drv(), 'live', DRV), { bat: 101 }));
+  await assertFails(updateDoc(doc(as.drv(), 'live', DRV), { bat: 'full' }));
+  await assertFails(updateDoc(doc(as.drv(), 'live', DRV), { pwr: 'maybe' }));
+  await assertFails(updateDoc(doc(as.drv(), 'live', DRV), { chg: 'yes' }));
+  await assertFails(updateDoc(doc(as.drv(), 'live', DRV2), { pwr: 'off' }));
+});

@@ -58,6 +58,9 @@ function custPush(before, after, lang) {
   else if (after.arrivedAt && !b.arrivedAt && after.status === 'assigned') r = { ...m('📍 Driver வந்துட்டார்', '📍 Driver has arrived', `${who} pickup இடத்துல காத்திருக்கார். PIN-ஐ driver-கிட்ட சொல்லுங்க`, `${who} is waiting at the pickup. Tell the driver your PIN`), kind: 'arrived' };
   else if (after.status === 'ontrip' && b.status !== 'ontrip') r = { ...m('▶️ Trip ஆரம்பம்', '▶️ Trip started', 'பாதுகாப்பான பயணம்! Live-ஆ app-ல பார்க்கலாம்', 'Have a safe ride! Follow it live in the app'), kind: 'ontrip' };
   else if (after.status === 'done' && b.status !== 'done') { const f = after.fareFinal || after.fare; r = { ...m('✅ Trip முடிஞ்சது', '✅ Trip completed', `மொத்தம் ₹${f}. நன்றி! Driver-க்கு rating கொடுங்க`, `Total ₹${f}. Thank you! Please rate your driver`), kind: 'done' }; }
+  else if (after.status === 'searching' && b.status === 'assigned' && after.reassigned) r = { ...m('🔄 வேற driver தேடுறோம்', '🔄 Finding you another driver',
+    after.reassigned.why === 'phoneoff' ? 'உங்க driver-ஓட phone switch off ஆயிடுச்சு. உடனே வேற driver-ஐ தேடுறோம்.' : 'உங்க driver-ஐ தொடர்பு கொள்ள முடியல. உடனே வேற driver-ஐ தேடுறோம்.',
+    after.reassigned.why === 'phoneoff' ? 'Your driver\'s phone switched off. We are finding another driver now.' : 'We could not reach your driver. We are finding another driver now.'), kind: 'reassigned' };
   else if (after.status === 'cancelled' && b.status !== 'cancelled' && !/^(customer|nodriver)$/.test(after.cancelReason || '')) r = { ...m('❌ Booking cancel ஆச்சு', '❌ Booking cancelled', 'மன்னிக்கவும். App-ல மறுபடி book பண்ணலாம்', 'Sorry. You can book again in the app'), kind: 'cancelled' };
   return r;
 }
@@ -237,6 +240,7 @@ function driverWatch(drv, live, w, now) {
   const at = Math.max(ms(live && live.updatedAt), ms(drv.updatedAt));
   if (!at) return null;
   const gap = now - at, day = istHour(now) >= 6 && istHour(now) < 23;
+  if (live && live.pwr === 'off' && gap >= 2 * MIN) return { pause: true, push: false, gap, off: true };   // the phone said it was switched off
   if (gap >= WATCH.pause) return { pause: true, push: day, gap };
   if (gap >= WATCH.nudge && day && !(w && ms(w.nudgeAt) > at)) return { nudge: true, gap };
   return null;
@@ -252,7 +256,7 @@ const watchMsg = (kind, lang) => {
 //  wait   — a city ride still searching 2 min after booking (once per booking)
 //  noready — daytime (6:00–23:00 IST), drivers are ON but none has sent a signal in 3 min (at most every 30 min)
 //  paused — the driver watch just switched drivers OFF (names)
-function ownerAlerts({ open, ready, on, paused, sent, now }) {
+function ownerAlerts({ open, ready, on, paused, sent, now, moved }) {
   const ms = x => (x && x.toMillis ? x.toMillis() : +x || 0), out = [], mark = {}, h = istHour(now);
   for (const b of open || []) {
     if (b.status !== 'searching' || (b.kind && b.kind !== 'ride') || b.driverPhone) continue;
@@ -265,6 +269,12 @@ function ownerAlerts({ open, ready, on, paused, sent, now }) {
   if (h >= 6 && h < 23 && on > 0 && ready === 0 && !(sent && now - ms(sent.noready) < 30 * MIN)) {
     out.push({ kind: 'noready', tag: 'noready', title: 'இப்போ ரெடி வண்டி இல்லை', body: `ON-ல ${on} பேர், ஆனா யார் phone-ம் signal அனுப்பல. Office → Drivers → தொலைஞ்சது.` });
     mark.noready = now;
+  }
+  for (const x of moved || []) {
+    const b = x.b || {}, f = (b.from && (b.from.ta || b.from.en)) || '', who = b.driverName || b.driverPhone || '';
+    out.push(x.alert
+      ? { kind: 'tripoff', tag: 'tripoff-' + x.id, title: 'Trip-ல இருக்கிற driver phone off', body: `${who} · ${f} · customer-ஐ அழைங்க` }
+      : { kind: 'moved', tag: 'moved-' + x.id, title: 'Ride வேற driver-க்கு மாத்தப்பட்டது', body: `${who} ${x.why === 'phoneoff' ? 'phone switch off' : 'தொடர்பு இல்லை'} · ${f}` });
   }
   if (paused && paused.length) out.push({ kind: 'paused', tag: 'paused-' + now, title: `${paused.length} driver OFF ஆக்கப்பட்டாங்க`, body: `3 மணி நேரமா signal இல்லை: ${paused.slice(0, 5).join(', ')}${paused.length > 5 ? ' …' : ''}` });
   return { out, mark };
@@ -352,4 +362,25 @@ function buySubDecide(drv, cfg, plan, now) {
   return { ok: true, price, walletAfter: wallet - price, sub: { plan, veh: drv.veh, price, from: now, until: now + SUBDUR[plan] } };
 }
 
-module.exports = { SUBDUR, subActive, subPrice, buySubDecide, splitDriverTokens, ridePushData, placeName, BANDS, bandOf, demandMap, statDay, scoreSample, ownerAlerts, WATCH, istHour, driverWatch, watchMsg, inclKm, enquiryFlood, OUTCAT, outCat, catBata, AHRS, AXH, aHours, planHours, hrsTable, AUTO_GOVT, AREA, autoFare, outsideArea, rentCheck, outCheck, tariffs, rentPrice, istStamp, commissionFor, settle, housekeeping, fareLooksWrong, liveStale, custPush, fareCheck, bookingLimit, nightPct, withNight, crowKm, LIMIT_OPEN, LIMIT_HOUR };
+// A ride whose driver went silent before pickup (27 Nov, owner): the customer must not wait for a driver who cannot come.
+//  - the phone said it was being switched off (live.pwr = "off", app 1.0.19+) and stayed silent 2 min → give the ride
+//    to another driver (2 min so a quick restart does not lose the ride);
+//  - an app that sends its position itself (1.0.17+) has been silent 5 min while going to pickup → same.
+//  Only local rides, assigned, driver not yet at pickup, assigned at least 2 min ago. On a trip: never — the owner is told.
+// Old apps (1.0.16 and before) go quiet in the background on their own, so silence alone is not trusted for them.
+const REASSIGN = { off: 2 * MIN, silent: 5 * MIN };
+const newApp = drv => /^1\.0\.(1[7-9]|[2-9]\d)\+/.test(String((drv && drv.dev && drv.dev.app) || '')) || /^1\.[1-9]/.test(String((drv && drv.dev && drv.dev.app) || ''));
+function reassignCheck(b, live, drv, now) {
+  if (!b || !b.driverPhone || !live) return null;
+  const ms = x => (x && x.toMillis ? x.toMillis() : +x || 0), at = ms(live.updatedAt), asg = ms(b.assignedAt), gap = now - at;
+  if (b.status === 'ontrip') return live.pwr === 'off' && gap >= REASSIGN.off ? { alert: 'ontrip-off', gap } : null;
+  if (b.status !== 'assigned' || b.arrivedAt) return null;
+  if (b.kind && b.kind !== 'ride' && b.kind !== 'schedule') return null;
+  if (b.when && +b.when > now + 45 * MIN) return null;            // a ride for later: there is time
+  if (!asg || now - asg < 2 * MIN) return null;
+  if (live.pwr === 'off' && gap >= REASSIGN.off) return { why: 'phoneoff', gap };
+  if (newApp(drv) && gap >= REASSIGN.silent && now - asg >= REASSIGN.silent) return { why: 'nosignal', gap };
+  return null;
+}
+
+module.exports = { REASSIGN, reassignCheck, SUBDUR, subActive, subPrice, buySubDecide, splitDriverTokens, ridePushData, placeName, BANDS, bandOf, demandMap, statDay, scoreSample, ownerAlerts, WATCH, istHour, driverWatch, watchMsg, inclKm, enquiryFlood, OUTCAT, outCat, catBata, AHRS, AXH, aHours, planHours, hrsTable, AUTO_GOVT, AREA, autoFare, outsideArea, rentCheck, outCheck, tariffs, rentPrice, istStamp, commissionFor, settle, housekeeping, fareLooksWrong, liveStale, custPush, fareCheck, bookingLimit, nightPct, withNight, crowKm, LIMIT_OPEN, LIMIT_HOUR };

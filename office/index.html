@@ -1006,7 +1006,7 @@ function kpisInner(){
   return `    <div><small>${L('முடிந்த பயணம்','Rides done')}</small><b>${today.length}</b></div>
     <div><small>${L('வசூல்','Fares')}</small><b>${inr(rev)}</b></div>
     <div><small>${L(`Commission (${DB.cfg.comm}%)`,`Commission (${DB.cfg.comm}%)`)}</small><b>${inr(comm)}</b></div>
-    <button data-go="drv" data-df="sig" class="rtile ${CL&&rn.ready===0?'hot':''}"><small>${L('இப்போ ரெடி','Ready now')}</small><b>${rn.ready}<span>/${DB.drv.length}</span></b><small id="kpisig">${L(`Ride-ல ${rn.pickup+rn.trip} · பலவீனம் ${rn.weak} · தொலைஞ்சது ${rn.lost+rn.paused} · OFF ${rn.off}`,`On ride ${rn.pickup+rn.trip} · weak ${rn.weak} · lost ${rn.lost+rn.paused} · OFF ${rn.off}`)}</small></button>
+    <button data-go="drv" data-df="sig" class="rtile ${CL&&rn.ready===0?'hot':''}"><small>${L('இப்போ ரெடி','Ready now')}</small><b>${rn.ready}<span>/${DB.drv.length}</span></b><small id="kpisig">${L(`Ride-ல ${rn.pickup+rn.trip} · Network இல்லை ${rn.weak+rn.lost} · Phone off ${rn.poff} · OFF ${rn.off+rn.paused}`,`On ride ${rn.pickup+rn.trip} · no network ${rn.weak+rn.lost} · phone off ${rn.poff} · OFF ${rn.off+rn.paused}`)}</small></button>
     <button data-go="book" class="${badge('book')?'hot':''}"><small>${L('Driver தேவை','Need a driver')}</small><b>${badge('book')}</b></button>
     <button data-go="sup" class="${badge('sup')?'hot':''}"><small>${L('Open requests','Open requests')}</small><b>${badge('sup')}</b></button>`;
 }
@@ -1114,7 +1114,7 @@ function dash(){setTimeout(bindFleet,0);
    ${ownerPushHtml()}<div class="kpis" id="kpis">${kpisInner()}</div>${myReqHtml()}
    <section class="panel fleetp" id="fleet">${fleetHtml()}</section>
    <div class="dgrid">
-    <section class="panel mappanel"><div class="ph"><h3>${L('எல்லா வண்டியும்','Fleet map')}</h3><div class="legend">${['ready','pickup','trip','weak','lost'].map(k=>`<span><i style="background:${RST[k].c}"></i>${L(RST[k].ta,RST[k].en)}</span>`).join('')}</div></div>
+    <section class="panel mappanel"><div class="ph"><h3>${L('எல்லா வண்டியும்','Fleet map')}</h3><div class="legend">${['ready','pickup','trip','weak','poff'].map(k=>`<span><i style="background:${RST[k].c}"></i>${L(RST[k].ta,RST[k].en)}</span>`).join('')}</div></div>
       <div class="fbar" id="fbar"></div>
       <div class="omap"><canvas class="map" id="map"></canvas><div class="fcard" id="fcard" hidden></div><div class="zoomctl" style="bottom:12px"><button class="chipbtn" id="zi">+</button><button class="chipbtn" id="zo">−</button></div></div></section>
     <div class="dcol">
@@ -1195,7 +1195,7 @@ function nearDrivers(b,n){const p=b.fromC&&b.fromC.lat!=null?{lat:+b.fromC.lat,l
 let R0AT=0;
 function readyCheck(){if(!CL||!DB||!DB.drv||!DB.drv.length)return;const h=new Date().getHours();if(h<6||h>=23)return;
   const n=rcount();if(n.ready>0){R0AT=0;return}if(Date.now()-R0AT<30*60e3)return;R0AT=Date.now();
-  ncard('drv',X('warn'),L('இப்போ ரெடி வண்டி இல்லை','No driver is ready right now'),L(`ON ${n.weak+n.lost} பேர், ஆனா phone பதில் இல்ல. Drivers → தொலைஞ்சது-ல WhatsApp அனுப்புங்க.`,`${n.weak+n.lost} are ON but their phones are silent. Drivers → Lost: send them the WhatsApp fix.`),()=>{S.sec='drv';DF='lost';save();show()},120000)}
+  ncard('drv',X('warn'),L('இப்போ ரெடி வண்டி இல்லை','No driver is ready right now'),L(`ON ${n.weak+n.lost+n.poff} பேர்: Network இல்லை ${n.weak+n.lost}, phone off ${n.poff}. Drivers-ல பாருங்க.`,`${n.weak+n.lost+n.poff} are ON: no network ${n.weak+n.lost}, phone off ${n.poff}. See Drivers.`),()=>{S.sec='drv';DF='lost';save();show()},120000)}
 setInterval(readyCheck,60e3);setTimeout(readyCheck,20e3);
 function ringUnlock(){try{if(!RAC)RAC=new (window.AudioContext||window.webkitAudioContext)();if(RAC.state==='suspended')RAC.resume()}catch(e){}}
 ['click','keydown','touchstart'].forEach(ev=>document.addEventListener(ev,ringUnlock,{passive:true}));
@@ -1233,14 +1233,14 @@ function ringCheck(){
 function liveRows(list){return list.length?list.map(b=>{const d=drvById(b.driver);return `<div class="lrow"><div><b>${kTag(b)}${b.id} · ${pn(b.from)} → ${pn(b.to)}</b><small>${vname(b.veh)} · ${d?d[S.lang]+' · '+d.plate:L('Driver இல்லை','No driver')} · ${b.status==='scheduled'||isFut(b)?''+dt(b.when):ago(b.created)}</small>${cdHtml(b)}</div>${stPillB(b)}${b.dispatch&&b.dispatch.review&&b.status==='searching'?`<button class="btn sm yellow" data-rv="${b.id}">${L('சரிபார்','Review')}</button>`:''}${(b.status==='searching'||b.status==='scheduled'&&!b.driver)?`<button class="btn sm" data-as="${b.id}">${L('Assign','Assign')}</button>`:''}</div>`}).join(''):`<p class="muted" style="margin:0">${L('இப்போ live booking இல்லை','No live bookings right now')}</p>`}
 /* ---------- Live fleet map (dashboard): filter by state / vehicle, tap a vehicle for its card, follow it, see its route ---------- */
 let FSEL=null,FFOL=false,FMAP=null,FF={st:'all',veh:'all'};
-const fleetOld=d=>!!CL&&(rstate(d)==='weak'||rstate(d)==='lost');
+const fleetOld=d=>!!CL&&(rstate(d)==='weak'||rstate(d)==='lost'||rstate(d)==='poff');
 const fleetVehGroup=v=>v==='auto'?'auto':v==='bike'?'bike':'car';
 function fleetList(){return DB.drv.filter(d=>d.status!=='off'&&(!CL||d.hasPos)).filter(d=>{const old=fleetOld(d);
   const r=rstate(d);if(FF.st==='avail'&&r!=='ready')return false;if(FF.st==='busy'&&r!=='pickup'&&r!=='trip')return false;if(FF.st==='weak'&&r!=='weak')return false;if(FF.st==='old'&&r!=='lost')return false;
   if(FF.veh!=='all'&&fleetVehGroup(d.veh)!==FF.veh)return false;return true})}
 function fleetBar(){const el=document.getElementById('fbar');if(!el)return;const all=DB.drv.filter(d=>d.status!=='off'&&(!CL||d.hasPos));
   const R=d=>rstate(d),n={all:all.length,avail:all.filter(d=>R(d)==='ready').length,busy:all.filter(d=>R(d)==='pickup'||R(d)==='trip').length,weak:all.filter(d=>R(d)==='weak').length,old:all.filter(d=>R(d)==='lost').length};
-  const st=[['all',L('எல்லாம்','All')],['avail',L('ரெடி','Ready')],['busy',L('Ride-ல','On a ride')],['weak',L('பலவீனம்','Weak')],['old',L('தொலைஞ்சது','Lost')]];
+  const st=[['all',L('எல்லாம்','All')],['avail',L('ரெடி','Ready')],['busy',L('Ride-ல','On a ride')],['weak',L('Network இல்லை','No network')],['old',L('Phone off / நீண்ட நேரம்','Phone off / long')]];
   const vh=[['all',L('எல்லா வண்டி','All vehicles')],['car',L('கார்','Car')],['auto',L('ஆட்டோ','Auto')],['bike',L('பைக்','Bike')]];
   el.innerHTML=st.map(([k,t])=>`<button class="fchip${FF.st===k?' on':''}" data-fst="${k}">${t} <b>${n[k]}</b></button>`).join('')+'<span class="fsep"></span>'+
     vh.map(([k,t])=>`<button class="fchip${FF.veh===k?' on':''}" data-fvh="${k}">${t}</button>`).join('');
@@ -1465,11 +1465,15 @@ const sigNow=d=>d.status!=='off'&&(!CL||d.status!=='avail'||(d.sig!=null&&d.sig<
    weak = ON, silent 3–30 min; lost = ON, silent over 30 min; paused = the server switched it off after 3 h of silence
    (it comes back when the driver opens the app); off; pickup / trip = on a ride. */
 const RST={ready:{c:'#1E8A5A',ta:'ரெடி',en:'Ready'},pickup:{c:'#F2A900',ta:'Pickup-க்கு',en:'To pickup'},trip:{c:'#12664A',ta:'பயணத்தில்',en:'On trip'},
-  weak:{c:'#E07B00',ta:'பலவீனம்',en:'Weak signal'},lost:{c:'#9AA5A0',ta:'தொலைஞ்சது',en:'Lost'},paused:{c:'#B5BDB9',ta:'இடைநிறுத்தம்',en:'Paused'},off:{c:'#C9D1CD',ta:'OFF',en:'OFF'}};
+  weak:{c:'#E07B00',ta:'Network இல்லை',en:'No network'},lost:{c:'#9AA5A0',ta:'Network இல்லை · நீண்ட நேரம்',en:'No network · long'},poff:{c:'#5E6A64',ta:'Phone switch off',en:'Phone switched off'},
+  paused:{c:'#B5BDB9',ta:'இடைநிறுத்தம்',en:'Paused'},off:{c:'#C9D1CD',ta:'OFF',en:'OFF'}};
+/* app 1.0.19 tells us when the phone is being switched off (pwr off) and its battery %: a silent phone is then "switched
+   off" (said by the phone, or battery ≤ 3 % and not charging at the last signal) — otherwise it is a network gap. */
+const phoneOff=d=>d.pwr==='off'||(d.bat>=0&&d.bat<=3&&!d.chg);
 function rstate(d){if(d.status==='trip'||d.status==='pickup')return d.status;
   if(d.status==='off')return d.autoOff&&Date.now()-d.autoOff<24*36e5?'paused':'off';
-  if(!CL)return 'ready';if(d.sig!=null&&d.sig<=3*60e3)return 'ready';if(d.sig!=null&&d.sig<=30*60e3)return 'weak';return 'lost'}
-const rcount=()=>{const n={ready:0,pickup:0,trip:0,weak:0,lost:0,paused:0,off:0};DB.drv.filter(d=>!d.blocked).forEach(d=>n[rstate(d)]++);return n};
+  if(!CL)return 'ready';if(d.sig!=null&&d.sig<=3*60e3)return 'ready';if(phoneOff(d))return 'poff';if(d.sig!=null&&d.sig<=30*60e3)return 'weak';return 'lost'}
+const rcount=()=>{const n={ready:0,pickup:0,trip:0,weak:0,lost:0,poff:0,paused:0,off:0};DB.drv.filter(d=>!d.blocked).forEach(d=>n[rstate(d)]++);return n};
 /* why a driver is not ready, in plain words, from the phone report (drivers.dev) and the signal */
 function rwhy(d){const st=rstate(d),o=[],v=devOf(d.id);
   if(st==='ready'||st==='trip'||st==='pickup'||st==='off')return o;
@@ -1478,7 +1482,9 @@ function rwhy(d){const st=rstate(d),o=[],v=devOf(d.id);
   if(v&&v.pwr===false)o.push({k:'pwr',ta:'Battery தடை',en:'Battery restricted'});
   if(v&&v.loc&&v.loc!=='granted'&&v.loc!=='?')o.push({k:'loc',ta:'Location அனுமதி இல்லை',en:'No location permission'});
   if(!v)o.push({k:'norep',ta:'Phone report இல்லை (பழைய app?)',en:'No phone report (old app?)'});
-  if(!o.length)o.push({k:'dead',ta:'Phone off / data இல்லை',en:'Phone off / no data'});
+  if(st==='poff')o.unshift(d.pwr==='off'?{k:'poff',ta:'Driver phone-ஐ switch off பண்ணிட்டாரு (phone சொன்னது)',en:'The phone was switched off (reported by the phone)'}:{k:'bat',ta:`Battery தீர்ந்துடுச்சு (கடைசியா ${d.bat}%)`,en:`Battery ran out (last ${d.bat}%)`});
+  else if(v&&/^1\.0\.(19|[2-9]\d)/.test(String(d.appv||''))||d.bat>=0)o.unshift({k:'net',ta:`Network இல்லை, phone ON-ல இருக்கு${d.bat>=0?` (battery ${d.bat}%)`:''}`,en:`No network, phone is on${d.bat>=0?` (battery ${d.bat}%)`:''}`});
+  if(!o.length)o.push({k:'dead',ta:'Network இல்லை அல்லது phone off (பழைய app-ல சொல்ல முடியாது)',en:'No network or phone off (the old app cannot tell)'});
   if(st==='paused')o.unshift({k:'paused',ta:'3 மணி நேரம் signal இல்லாததால server இடைநிறுத்தியது',en:'Paused by the server after 3 h without signal'});
   return o}
 /* the WhatsApp message that fixes exactly what is wrong (the owner sends it himself) */
@@ -1507,15 +1513,15 @@ function drivers(){
   const H=histOk?HIST.rows:[],SX={};DB.drv.forEach(d=>SX[d.id]=drvStats(d,H));
   const q=DQ.trim().toLowerCase(),nWarn=DB.drv.filter(d=>SX[d.id].flags.length).length;
   const wk=Date.now()-7*DAY,drove=new Set(DB.bk.filter(b=>b.status==='done'&&(b.done||b.when)>=wk).map(b=>b.driver));
-  const DFF={all:()=>true,on:d=>d.status!=='off',sig:d=>rstate(d)==='ready'||rstate(d)==='trip'||rstate(d)==='pickup',weak:d=>rstate(d)==='weak',lost:d=>rstate(d)==='lost'||rstate(d)==='paused',off:d=>d.status==='off',warn:d=>SX[d.id].flags.length,blk:d=>d.blocked,
+  const DFF={all:()=>true,on:d=>d.status!=='off',sig:d=>rstate(d)==='ready'||rstate(d)==='trip'||rstate(d)==='pickup',weak:d=>rstate(d)==='weak',lost:d=>rstate(d)==='lost'||rstate(d)==='paused'||rstate(d)==='poff',off:d=>d.status==='off',warn:d=>SX[d.id].flags.length,blk:d=>d.blocked,
     cant:d=>d.blocked||d.wallet<DB.cfg.minbal||Object.values(d.docs||{}).some(v=>v<0),idle:d=>d.status==='off'&&!drove.has(d.id),
     nev:d=>!d.blocked&&d.status==='off'&&!lastOnMs(d.id),ph:d=>!d.blocked&&(devIssues(d.id)||[]).length>0,away:d=>!d.blocked&&d.status==='off'&&lastOnMs(d.id)&&Date.now()-lastOnMs(d.id)>3*DAY};
   const dl=DB.drv.filter(d=>!DV||d.veh===DV).filter(DFF[DF]||DFF.all).filter(d=>!q||(d.en+' '+d.phone+' '+d.plate+' '+d.model).toLowerCase().includes(q)).sort((a,b)=>(SX[b.id].flags.length-SX[a.id].flags.length)||((b.status!=='off')-(a.status!=='off')));
   const rn=rcount(),rdy=rn.ready+rn.pickup+rn.trip;
-  main().innerHTML=`${head('Drivers',L(`${DB.drv.length} drivers · ரெடி ${rdy} · பலவீனம் ${rn.weak} · தொலைஞ்சது ${rn.lost+rn.paused} · OFF ${rn.off}`,`${DB.drv.length} drivers · ready ${rdy} · weak ${rn.weak} · lost ${rn.lost+rn.paused} · OFF ${rn.off}`),S.role==='owner'?`<button class="btn yellow hd" id="ad">+ ${L('Driver சேர்','Add driver')}</button>`:'')}
+  main().innerHTML=`${head('Drivers',L(`${DB.drv.length} drivers · ரெடி ${rdy} · Network இல்லை ${rn.weak+rn.lost} · Phone off ${rn.poff} · OFF ${rn.off+rn.paused}`,`${DB.drv.length} drivers · ready ${rdy} · no network ${rn.weak+rn.lost} · phone off ${rn.poff} · OFF ${rn.off+rn.paused}`),S.role==='owner'?`<button class="btn yellow hd" id="ad">+ ${L('Driver சேர்','Add driver')}</button>`:'')}
    <div class="srow"><input id="dq" class="sbox" placeholder="${L('பெயர், நம்பர், வண்டி எண் தேடு','Search name, number or plate')}" value="${esc(DQ)}"></div>
    ${DV||DF==='cant'||DF==='idle'?`<div class="fchip">${DV?vname(DV):''}${DF==='cant'?''+L('Online வர முடியாதவங்க','Can’t go online'):DF==='idle'?''+L('7 நாளா ஓட்டாதவங்க','Not driven in 7 days'):''} <button id="dvx">✕ ${L('எல்லா வண்டியும்','All vehicles')}</button></div>`:''}
-   <div class="tabs">${[['all',L('எல்லாம்','All'),DB.drv.length],['on','ON',DB.drv.filter(d=>d.status!=='off').length],['sig',L('ரெடி','Ready'),rdy],['weak',L('பலவீனம்','Weak'),rn.weak],['lost',L('தொலைஞ்சது','Lost'),rn.lost+rn.paused],['off','Offline',DB.drv.filter(d=>d.status==='off').length],['warn',''+L('கவனிக்க','Watch'),nWarn],['ph',L('Phone சரி பண்ணணும்','Phone to fix'),DB.drv.filter(DFF.ph).length],['nev',''+L('Online வராதவங்க','Never online'),DB.drv.filter(DFF.nev).length],['away',''+L('3 நாளா வரலை','Away 3+ days'),DB.drv.filter(DFF.away).length],['blk',''+L('தடை','Blocked'),DB.drv.filter(d=>d.blocked).length]].map(([id,l,n])=>`<button class="${DF===id?'on':''}" data-df="${id}">${l} <em>${n}</em></button>`).join('')}</div>
+   <div class="tabs">${[['all',L('எல்லாம்','All'),DB.drv.length],['on','ON',DB.drv.filter(d=>d.status!=='off').length],['sig',L('ரெடி','Ready'),rdy],['weak',L('Network இல்லை','No network'),rn.weak],['lost',L('Phone off / நீண்ட நேரம்','Phone off / long'),rn.lost+rn.paused+rn.poff],['off','Offline',DB.drv.filter(d=>d.status==='off').length],['warn',''+L('கவனிக்க','Watch'),nWarn],['ph',L('Phone சரி பண்ணணும்','Phone to fix'),DB.drv.filter(DFF.ph).length],['nev',''+L('Online வராதவங்க','Never online'),DB.drv.filter(DFF.nev).length],['away',''+L('3 நாளா வரலை','Away 3+ days'),DB.drv.filter(DFF.away).length],['blk',''+L('தடை','Blocked'),DB.drv.filter(d=>d.blocked).length]].map(([id,l,n])=>`<button class="${DF===id?'on':''}" data-df="${id}">${l} <em>${n}</em></button>`).join('')}</div>
    ${histOk?'':`<p class="muted" style="margin:0 0 10px;font-size:12.5px">${L('30 நாள் கணக்கு ஏற்றுது…','Loading 30-day stats…')}</p>`}
    <div class="cards">${dl.map(d=>{const st=SX[d.id];const tdy=DB.bk.filter(b=>b.driver===d.id&&b.status==='done'&&isToday(b.done||b.when));const exp=Object.entries(d.docs).filter(([k,v])=>v<30);
     return `<div class="dcard ${d.blocked?'blk':''}"><div class="dtop"><span class="vi">${I[d.veh]}</span><div><b>${d[S.lang]}</b><small>+91 ${d.phone}</small></div>${d.blocked?`<em class="dst off">${L('தடை','Blocked')}</em>`:rPill(d)}</div>
@@ -2560,7 +2566,7 @@ function remap(liveOnly){
       status:busy[d._id]==='ontrip'?'trip':busy[d._id]?'pickup':online?'avail':'off',lat:l.lat!=null?l.lat:P.home.lat,lon:l.lon!=null?l.lon:P.home.lon,
       wallet:+d.wallet||0,rating:rsum[d._id]?+(rsum[d._id].s/rsum[d._id].n).toFixed(1):(d.rating||5),docs:{dl:days('dl'),rc:days('rc'),ins:days('ins'),permit:days('permit'),fc:days('fc')},blocked:!!d.blocked,
       svc:d.svc||null,prio:d.prio||'auto',year:vYear(d),wk:wk[d._id]||0,sig,hasPos:l.lat!=null&&l.lon!=null,
-      hd:liveHd(d._id,l),sp:+l.sp||0,acc:+l.acc||0,bk:l.bk||'',autoOff:d.autoOff?CL.toMs(d.autoOff):0,sub:d.sub&&d.sub.until?{plan:String(d.sub.plan||''),until:CL.toMs(d.sub.until)||0}:null}});
+      hd:liveHd(d._id,l),sp:+l.sp||0,acc:+l.acc||0,bk:l.bk||'',pwr:l.pwr==='off'?'off':(l.pwr?'on':''),bat:typeof l.bat==='number'?l.bat:-1,chg:!!l.chg,autoOff:d.autoOff?CL.toMs(d.autoOff):0,sub:d.sub&&d.sub.until?{plan:String(d.sub.plan||''),until:CL.toMs(d.sub.until)||0}:null}});
   DB.rch=[...RAWR,...RAWRP.filter(x=>!RAWR.some(y=>y._id===x._id))].filter(r=>DB.drv.some(d=>d.id===r.driverPhone)).map(r=>({id:r._id,driver:r.driverPhone,amt:+r.amt||0,utr:r.utr||'',method:r.method||'',date:r.date||CL.toMs(r.createdAt),status:r.status||'pending'})).sort((a,b)=>b.date-a.date);
   DB.sup=RAWT.map(t=>({id:'R'+t._id.slice(0,5).toUpperCase(),_id:t._id,type:t.type||'callback',cust:t.cust||'—',phone:digits(t.phone),title:t.title||{ta:'',en:''},trip:esc(t.trip||''),
     date:t.date||CL.toMs(t.createdAt),status:t.status||'open',note:t.note||'',lat:num(t.lat),lon:num(t.lon)}))

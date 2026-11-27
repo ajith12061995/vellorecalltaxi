@@ -14,6 +14,9 @@ SEED="""(()=>{const t=Date.now(),D=(ph,name,veh,plate,online,extra)=>MOCK.store.
   D('+919999900024','Silent Siva','mini','TN 23 AA 2404',true);Lv('+919999900024',2*864e5,12.9200,79.1500,'mini');
   D('+919999900025','Paused Prabhu','mini','TN 23 AA 2505',false,{autoOff:{__ms:t-36e5}});
   D('+919999900026','Off Om','mini','TN 23 AA 2606',false);
+  D('+919999900027','Poweroff Pandi','mini','TN 23 AA 2707',true);MOCK.store.set('live/+919999900027',{lat:12.95,lon:79.14,online:true,busy:false,bk:'',veh:'mini',pwr:'off',bat:61,updatedAt:{__ms:t-6*60e3}});
+  D('+919999900028','Battery Bala','mini','TN 23 AA 2808',true);MOCK.store.set('live/+919999900028',{lat:12.95,lon:79.14,online:true,busy:false,bk:'',veh:'mini',pwr:'on',bat:2,chg:false,updatedAt:{__ms:t-8*60e3}});
+  D('+919999900029','Network Naveen','mini','TN 23 AA 2909',true);MOCK.store.set('live/+919999900029',{lat:12.95,lon:79.14,online:true,busy:false,bk:'',veh:'mini',pwr:'on',bat:64,chg:false,updatedAt:{__ms:t-7*60e3}});
 })()"""
 async def main():
     async with async_playwright() as p:
@@ -26,6 +29,11 @@ async def main():
         await O.locator('#otp').fill('123456');await pg.wait_for_timeout(2500)
         st=await of.evaluate("Object.fromEntries(DB.drv.filter(d=>d.id.startsWith('+9199999000')&&+d.id.slice(-2)>=21&&+d.id.slice(-2)<=26).map(d=>[d.en.split(' ')[0],rstate(d)]))")
         check('states: ready / weak / lost / lost / paused / off',st=={'Ready':'ready','Weak':'weak','Lost':'lost','Silent':'lost','Paused':'paused','Off':'off'},st)
+        st2=await of.evaluate("Object.fromEntries(['27','28','29'].map(k=>{const d=DB.drv.find(x=>x.id==='+9199999000'+k);return [k,[rstate(d),rwhy(d)[0]&&rwhy(d)[0].k]]}))")
+        check('phone said it was switched off → "Phone switched off"',st2['27']==['poff','poff'],st2['27'])
+        check('battery 2 % and not charging at the last signal → phone off, "battery ran out"',st2['28']==['poff','bat'],st2['28'])
+        check('silent with 64 % battery → "No network, phone is on" (not "lost")',st2['29']==['weak','net'],st2['29'])
+        check('labels never say weak / lost',await of.evaluate("JSON.stringify(RST).includes('பலவீனம்')||JSON.stringify(RST).includes('தொலைஞ்சது')")==False)
         why=await of.evaluate("Object.fromEntries(['22','23','24','25'].map(k=>{const d=DB.drv.find(x=>x.id==='+9199999000'+k);return [k,rwhy(d).map(x=>x.k)]}))")
         check('reason: weak + battery restricted → "Battery"',why['22']==['pwr'],why['22'])
         check('reason: lost + old app → "Old app"',why['23']==['app'],why['23'])
@@ -41,16 +49,16 @@ async def main():
         await of.evaluate("S.sec='dash';save();show()");await pg.wait_for_timeout(1200)
         n=await of.evaluate("rcount()")
         tile=' '.join((await O.locator('.rtile').inner_text()).split())
-        check('dashboard: "Ready now" with weak / lost / OFF counts',(f"{n['ready']}/" in tile) and ('weak '+str(n['weak']) in tile or 'பலவீனம் '+str(n['weak']) in tile),tile)
+        check('dashboard: "Ready now" with no-network / phone-off / OFF counts (no "weak" / "lost" words)',(f"{n['ready']}/" in tile) and ('Network இல்லை '+str(n['weak']+n['lost']) in tile or 'no network '+str(n['weak']+n['lost']) in tile) and 'பலவீனம்' not in tile and 'தொலைஞ்சது' not in tile,tile)
         await O.locator('.rtile').click();await pg.wait_for_timeout(900)
         check('tapping it opens Drivers on the Ready tab',await of.evaluate("S.sec==='drv'&&DF==='sig'"))
         # drivers page: lost tab with reasons and the WhatsApp fix link
         await O.locator('[data-df=lost]').click();await pg.wait_for_timeout(800)
         txt=' '.join((await O.locator('.cards').inner_text()).split())
-        check('Lost tab: Lokesh (old app), Siva (no report), Prabhu (paused)',all(x in txt for x in ['Lost Lokesh','Silent Siva','Paused Prabhu']) and 'Ready Ravi' not in txt and 'Weak Wasim' not in txt,txt[:200])
+        check('Long / phone-off tab: Lokesh (old app), Siva (no report), Prabhu (paused), Pandi (switched off)',all(x in txt for x in ['Lost Lokesh','Silent Siva','Paused Prabhu','Poweroff Pandi']) and 'Ready Ravi' not in txt and 'Weak Wasim' not in txt,txt[:200])
         check('Lost tab: reason and WhatsApp fix on the card',('Old app' in txt or 'பழைய app' in txt) and await O.locator('.cards a[href^="https://wa.me/919999900023"]').count()==1)
         await O.locator('[data-df=weak]').click();await pg.wait_for_timeout(600)
-        check('Weak tab: only Wasim',' '.join((await O.locator('.cards').inner_text()).split()).count('Wasim')>=1 and await O.locator('.dcard').count()==1)
+        ct=' '.join((await O.locator('.cards').inner_text()).split());check('No-network tab: Wasim and Naveen (both silent, phone on)',('Wasim' in ct) and ('Naveen' in ct) and await O.locator('.dcard').count()==2,ct[:200])
         # a city ride waiting 50 s with no driver → bar with the 3 nearest drivers, ready first
         await pg.evaluate("""MOCK.store.set('bookings/bkw1',{status:'searching',kind:'ride',veh:'mini',fare:120,km:3,custName:'Kala',from:{ta:'காட்பாடி',en:'Katpadi',lat:12.9700,lon:79.1400},to:{ta:'CMC',en:'CMC',lat:12.9250,lon:79.1350},createdAt:{__ms:Date.now()-50e3},when:Date.now()-50e3,src:'app'});
           MOCK.fs.setDoc({path:'bookings/bkw1'},MOCK.store.get('bookings/bkw1'))""")

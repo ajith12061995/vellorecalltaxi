@@ -2220,7 +2220,9 @@ function onBooking(b){
     R.drv={ta:b.driverName||'Driver',en:b.driverName||'Driver',plate:b.plate||'',model:b.vehModel||'',rating:'',trips:0,phone:b.driverPhone};
     watchDrv(b.driverPhone);
   }
-  if(b.status==='searching'){if(R.phase!=='search'||!document.getElementById('cxs'))searchingCloud();return}
+  if(b.status==='searching'){if(R.phase!=='search'||!document.getElementById('cxs')){const was=R.phase;searchingCloud();
+      // the server gave this ride to another driver: the first driver's phone went off / out of reach before pickup
+      if(b.reassigned&&was&&was!=='search'&&Date.now()-(+b.reassigned.at||0)<10*60e3)setTimeout(()=>toast(b.reassigned.why==='phoneoff'?L('உங்க driver-ஓட phone switch off ஆயிடுச்சு. வேற driver தேடுறோம்.','Your driver\'s phone switched off. Finding another driver.'):L('Driver-ஐ தொடர்பு கொள்ள முடியல. வேற driver தேடுறோம்.','Could not reach your driver. Finding another driver.')),400)}return}
   if(b.status==='assigned'||b.status==='ontrip'){
     chatStart(R.id);
     if(!CFG.serverPin&&b.status==='assigned'&&b.pinTry&&b.pinTry!==R.lastTry){ // with the server PIN check, a PIN typed into the booking is never confirmed here

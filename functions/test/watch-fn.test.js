@@ -19,7 +19,9 @@ const coll = name => {
       return { docs, size: docs.length, empty: !docs.length, forEach: fn => docs.forEach(fn) }; } });
   return q([]);
 };
-const db = { doc: docRef, collection: coll, getAll: async (...r) => r.map(x => snap(x.path)), recursiveDelete: async () => {},
+const db = { doc: docRef, collection: coll,
+  runTransaction: async fn => { const q = []; const r = await fn({ get: x => x.get(), update: (x, d) => q.push(() => x.update(d)), set: (x, d) => q.push(() => x.set(d)) }); for (const f of q) await f(); return r; },
+  getAll: async (...r) => r.map(x => snap(x.path)), recursiveDelete: async () => {},
   batch: () => { const ops = []; return { update: (r, d) => ops.push([r, d]), commit: async () => { for (const [r, d] of ops) await r.update(d); } }; } };
 let sent = [], failToken = '';
 const mocks = {
@@ -107,4 +109,32 @@ test('demand map written to config/demand at most once an hour', async () => {
   store.set('bookings/k2', { status: 'done', from: { lat: 12.97, lon: 79.159, ta: 'காட்பாடி', en: 'Katpadi' }, createdAt: T(NOW - 864e5) });
   NOW += 10 * 60e3; await run(); assert.equal(store.get('config/demand').total, 1, 'not rebuilt within the hour');
   NOW += 55 * 60e3; await run(); assert.equal(store.get('config/demand').total, 2);
+});
+
+test('ride before pickup: driver phone switched off → back to searching for others, driver excluded and paused, owner told', async () => {
+  reset(); NOW = Date.parse('2026-11-27T05:00:00Z');
+  store.set('staff/+918220201462', { role: 'owner', active: true }); store.set('staff/+918220201462/private/push', { fcm: 'OWN' });
+  drv('X', 3 * 60e3, { dev: { app: '1.0.17+' }, name: 'Xavier' }); store.set('live/X', { updatedAt: T(NOW - 3 * 60e3), pwr: 'off', bat: 40 });
+  store.set('bookings/r1', { status: 'assigned', kind: 'ride', driverPhone: 'X', driverName: 'Xavier', plate: 'TN', assignedAt: T(NOW - 6 * 60e3), when: NOW - 6 * 60e3, from: { ta: 'காட்பாடி' }, customerUid: 'u1' });
+  store.set('bookings/r2', { status: 'ontrip', kind: 'ride', driverPhone: 'Y', driverName: 'Yusuf', assignedAt: T(NOW - 20 * 60e3), from: { ta: 'CMC' } });
+  store.set('drivers/Y', { online: true, dev: { app: '1.0.17+' } }); store.set('live/Y', { updatedAt: T(NOW - 3 * 60e3), pwr: 'off', busy: true, bk: 'r2' });
+  await run();
+  const r1 = store.get('bookings/r1');
+  assert.equal(r1.status, 'searching'); assert.equal(r1.driverPhone, undefined); assert.deepEqual(r1.exclude, ['X']); assert.equal(r1.reassigned.why, 'phoneoff');
+  assert.equal(store.get('drivers/X').online, false, 'phone-off driver paused');
+  assert.equal(store.get('bookings/r2').status, 'ontrip', 'trip untouched');
+  const kinds = sent.filter(m => m.token === 'OWN').map(m => m.data.kind).sort();
+  assert.ok(kinds.includes('moved') && kinds.includes('tripoff'), kinds.join());
+  sent = []; NOW += 2 * 60e3; await run();
+  assert.equal(sent.filter(m => m.token === 'OWN' && m.data.kind === 'tripoff').length, 0, 'trip alert once');
+});
+test('old app silent 10 min before pickup: not moved (its silence is not trusted); noReassign switch stops it', async () => {
+  reset(); NOW = Date.parse('2026-11-27T05:00:00Z');
+  drv('O', 10 * 60e3, { dev: { app: '1.0.16+' } });
+  store.set('bookings/r3', { status: 'assigned', kind: 'ride', driverPhone: 'O', assignedAt: T(NOW - 12 * 60e3), when: NOW - 12 * 60e3 });
+  await run(); assert.equal(store.get('bookings/r3').status, 'assigned');
+  reset(); drv('N', 10 * 60e3, { dev: { app: '1.0.17+' } }); store.set('config/app', { noReassign: true });
+  store.set('bookings/r4', { status: 'assigned', kind: 'ride', driverPhone: 'N', assignedAt: T(NOW - 12 * 60e3), when: NOW - 12 * 60e3 });
+  await run(); assert.equal(store.get('bookings/r4').status, 'assigned');
+  store.set('config/app', {}); await run(); assert.equal(store.get('bookings/r4').status, 'searching'); assert.equal(store.get('bookings/r4').reassigned.why, 'nosignal');
 });

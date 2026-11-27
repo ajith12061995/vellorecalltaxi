@@ -1797,7 +1797,8 @@ function watchJob(id){
   if(JOBUNSUB)JOBUNSUB();
   JOBUNSUB=F().onSnapshot(F().doc(CL.db,'bookings',id),s=>{
     if(!J||J.id!==id||!s.exists())return;const b=s.data();J.b=b;if(b.status!=='done')J.tip=+b.tip||0;
-    if(b.status==='cancelled'||(b.driverPhone&&b.driverPhone!==CL.phone)){stopJob();J=null;pushLive(true);home();toast(L('இந்த ride ரத்து / மாற்றப்பட்டது','This ride was cancelled or reassigned'));return}
+    if(b.status==='cancelled'||b.status==='searching'||!b.driverPhone||b.driverPhone!==CL.phone){stopJob();J=null;pushLive(true);home();
+      toast(b.reassigned&&b.reassigned.from===CL.phone?L('உங்க phone-ஐ தொடர்பு கொள்ள முடியாததால இந்த ride வேற driver-க்கு மாத்தப்பட்டது','Your phone could not be reached, so this ride went to another driver'):L('இந்த ride ரத்து / மாற்றப்பட்டது','This ride was cancelled or reassigned'));return}
     if(b.status==='ontrip'&&(document.getElementById('pinb')||document.getElementById('arr')||document.getElementById('st'))){clearTimeout(J.waitPin);onTrip();toast(L('PIN சரி! Trip ஆரம்பம்','PIN verified. Trip started'))}
   },()=>{});
 }

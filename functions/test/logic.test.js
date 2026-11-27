@@ -300,3 +300,26 @@ test('subscription: price, decision, active window, no commission while it runs'
   assert.equal(L.settle({ fare: 300, comm: 0, commLocal: true }, 10, false, true).mismatch, false);
   assert.equal(L.settle({ fare: 300, comm: 30, commLocal: true }, 10, false, true).mismatch, true);
 });
+
+test('reassign: phone off before pickup → other driver; new app silent 5 min → other driver; old app / trip / arrived → no', () => {
+  const now = Date.parse('2026-11-27T12:00:00Z'), b = x => ({ status: 'assigned', kind: 'ride', driverPhone: '+91d', assignedAt: T(now - 6 * 60e3), when: now - 6 * 60e3, ...x });
+  const lv = (ago, x) => ({ updatedAt: T(now - ago), ...x }), NEW = { dev: { app: '1.0.17+' } }, OLD = { dev: { app: '1.0.16+' } };
+  assert.equal(L.reassignCheck(b(), lv(3 * 60e3, { pwr: 'off' }), OLD, now).why, 'phoneoff', 'switched off (said by the phone) 3 min ago');
+  assert.equal(L.reassignCheck(b(), lv(60e3, { pwr: 'off' }), NEW, now), null, 'only 1 min: maybe a restart');
+  assert.equal(L.reassignCheck(b(), lv(6 * 60e3, { pwr: 'on' }), NEW, now).why, 'nosignal');
+  assert.equal(L.reassignCheck(b(), lv(6 * 60e3, { pwr: 'on' }), OLD, now), null, 'old app: silence alone not trusted');
+  assert.equal(L.reassignCheck(b(), lv(4 * 60e3), NEW, now), null, 'under 5 min');
+  assert.equal(L.reassignCheck(b({ arrivedAt: T(now - 60e3) }), lv(9 * 60e3, { pwr: 'off' }), NEW, now), null, 'at pickup already');
+  assert.equal(L.reassignCheck(b({ kind: 'outstation' }), lv(9 * 60e3, { pwr: 'off' }), NEW, now), null);
+  assert.equal(L.reassignCheck(b({ when: now + 2 * 3600e3 }), lv(9 * 60e3, { pwr: 'off' }), NEW, now), null, 'ride for later');
+  assert.equal(L.reassignCheck(b({ assignedAt: T(now - 60e3) }), lv(9 * 60e3, { pwr: 'off' }), NEW, now), null, 'just assigned');
+  assert.deepEqual(L.reassignCheck(b({ status: 'ontrip' }), lv(3 * 60e3, { pwr: 'off' }), NEW, now), { alert: 'ontrip-off', gap: 3 * 60e3 }, 'on a trip: alert only');
+  assert.equal(L.reassignCheck(b({ status: 'ontrip' }), lv(30 * 60e3), NEW, now), null);
+  assert.equal(L.reassignCheck(b(), null, NEW, now), null);
+  const d = L.driverWatch({ online: true }, lv(3 * 60e3, { pwr: 'off' }), null, now);
+  assert.equal(d.pause, true); assert.equal(d.off, true); assert.equal(d.push, false);
+  const m = L.custPush({ status: 'assigned' }, { status: 'searching', customerUid: 'u', reassigned: { why: 'phoneoff' } }, 'ta');
+  assert.equal(m.kind, 'reassigned'); assert.match(m.body, /switch off/);
+  const a = L.ownerAlerts({ open: [], ready: 1, on: 1, sent: {}, now, moved: [{ id: 'b1', why: 'phoneoff', b: { driverName: 'Ravi', from: { ta: 'காட்பாடி' } } }, { id: 'b2', alert: true, b: { driverName: 'Siva', from: { ta: 'CMC' } } }] });
+  assert.deepEqual(a.out.map(x => x.kind), ['moved', 'tripoff']); assert.match(a.out[0].body, /Ravi phone switch off · காட்பாடி/);
+});
