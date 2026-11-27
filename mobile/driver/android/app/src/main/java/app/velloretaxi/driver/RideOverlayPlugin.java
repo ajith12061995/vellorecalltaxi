@@ -79,7 +79,9 @@ public class RideOverlayPlugin extends Plugin {
     static boolean wake(JSObject data) {
         RideOverlayPlugin p = inst; if (p == null || p.getBridge() == null) { android.util.Log.i("RideOverlay", "wake: no page"); return false; }
         // a window event in the page ("vctwake"): needs no listener registered on this side, so it reaches whatever page is loaded
-        final String json = data.toString();
+        // the push fields go as one JSON text in e.vct (a field named like an Event property, e.g. "type", would break the event)
+        JSObject ev = new JSObject(); ev.put("vct", data.toString());
+        final String json = ev.toString();
         p.main.post(() -> { try { p.getBridge().triggerWindowJSEvent("vctwake", json); } catch (Exception e) { android.util.Log.w("RideOverlay", "wake event", e); } });
         try { if (p.hasListeners("wake")) p.notifyListeners("wake", data, false); } catch (Exception e) { /* page listener is optional */ }
         android.util.Log.i("RideOverlay", "wake sent");
