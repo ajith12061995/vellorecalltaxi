@@ -269,4 +269,13 @@ function ownerAlerts({ open, ready, on, paused, sent, now }) {
   return { out, mark };
 }
 
-module.exports = { ownerAlerts, WATCH, istHour, driverWatch, watchMsg, inclKm, enquiryFlood, OUTCAT, outCat, catBata, AHRS, AXH, aHours, planHours, hrsTable, AUTO_GOVT, AREA, autoFare, outsideArea, rentCheck, outCheck, tariffs, rentPrice, istStamp, commissionFor, settle, housekeeping, fareLooksWrong, liveStale, custPush, fareCheck, bookingLimit, nightPct, withNight, crowKm, LIMIT_OPEN, LIMIT_HOUR };
+// Driver scorecard samples (every housekeeping run = 2 minutes): per IST day, per driver, minutes ON, minutes with a
+// fresh signal (ready or on a job) and how many times the server switched them OFF. Stored in stats/d<YYYYMMDD>.
+const statDay = now => { const d = new Date(now + 330 * MIN); return 'd' + d.getUTCFullYear() + String(d.getUTCMonth() + 1).padStart(2, '0') + String(d.getUTCDate()).padStart(2, '0'); };
+function scoreSample(drv, live, now, step) {
+  if (!drv || drv.online !== true || drv.blocked) return null;
+  const fresh = !!(live && live.updatedAt && now - live.updatedAt.toMillis() <= 3 * MIN);
+  return { on: step, act: fresh ? step : 0, job: fresh && (live.busy || live.bk) ? step : 0 };
+}
+
+module.exports = { statDay, scoreSample, ownerAlerts, WATCH, istHour, driverWatch, watchMsg, inclKm, enquiryFlood, OUTCAT, outCat, catBata, AHRS, AXH, aHours, planHours, hrsTable, AUTO_GOVT, AREA, autoFare, outsideArea, rentCheck, outCheck, tariffs, rentPrice, istStamp, commissionFor, settle, housekeeping, fareLooksWrong, liveStale, custPush, fareCheck, bookingLimit, nightPct, withNight, crowKm, LIMIT_OPEN, LIMIT_HOUR };

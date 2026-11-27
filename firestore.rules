@@ -38,6 +38,12 @@ service cloud.firestore {
       allow write: if isOwner();
     }
 
+    // Driver scorecard samples (minutes ON / with signal / on a job, server OFF count) — written only by the server
+    match /stats/{day} {
+      allow read: if isStaff();
+      allow write: if false;
+    }
+
     // Office logins (name, role, active, shift). Personal details and resume / ID proof: owner only.
     match /staff/{ph} {
       allow read: if isStaff() || (signedIn() && phone() == ph);

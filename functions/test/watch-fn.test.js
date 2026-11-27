@@ -4,7 +4,7 @@ const store = new Map(); let NOW = Date.parse('2026-11-27T05:00:00Z'); // 10:30 
 const T = ms => ({ toMillis: () => ms, __ms: ms });
 const TS = () => ({ __ts: true });
 const fix = v => (v && v.__ts ? T(NOW) : v);
-const apply = (cur, d) => { const o = { ...(cur || {}) }; for (const [k, v] of Object.entries(d)) { if (v === null) delete o[k]; else o[k] = fix(v); } return o; };
+const apply = (cur, d) => { const o = { ...(cur || {}) }; for (const [k, v] of Object.entries(d)) { if (v === null) delete o[k]; else if (v && v.__inc != null) o[k] = (+o[k] || 0) + v.__inc; else if (v && typeof v === 'object' && !v.__ts && !v.toMillis && !Array.isArray(v)) o[k] = apply(o[k], v); else o[k] = fix(v); } return o; };
 const snap = path => ({ exists: store.has(path), data: () => (store.has(path) ? { ...store.get(path) } : undefined), ref: docRef(path), id: path.split('/').pop() });
 function docRef(path) {
   return { path, id: path.split('/').pop(), get: async () => snap(path),
@@ -24,7 +24,7 @@ const db = { doc: docRef, collection: coll, getAll: async (...r) => r.map(x => s
 let sent = [], failToken = '';
 const mocks = {
   'firebase-admin': { initializeApp() {}, firestore: () => db, messaging: () => ({ send: async m => { if (m.token === failToken) { const e = new Error('x'); e.code = 'messaging/registration-token-not-registered'; throw e; } sent.push(m); } }), auth: () => ({}) },
-  'firebase-admin/firestore': { FieldValue: { serverTimestamp: TS, increment: n => n, delete: () => null } },
+  'firebase-admin/firestore': { FieldValue: { serverTimestamp: TS, increment: n => ({ __inc: n }), delete: () => null } },
   'firebase-functions/v2/firestore': { onDocumentUpdated: (o, h) => h, onDocumentCreated: (o, h) => h, onDocumentWritten: (o, h) => h },
   'firebase-functions/v2/scheduler': { onSchedule: (o, h) => h },
   'firebase-functions/v2/https': { onCall: (o, h) => h, onRequest: (o, h) => h, HttpsError: Error },
@@ -83,4 +83,19 @@ test('owner alerts reach the owner phone: waiting ride once, paused drivers, no 
   assert.equal(sent.filter(m => m.token === 'OWN').length, 0, 'nothing repeated 2 min later');
   store.set('staff/+918220201462/private/push', { fcm: 'DEAD' }); failToken = 'DEAD'; NOW += 31 * 60e3; drv('Q', 40 * 60e3); await run();
   assert.equal(store.get('staff/+918220201462/private/push'), undefined, 'dead owner token removed');
+});
+
+test('scorecard: minutes ON / with signal / on a job per IST day, and server OFF count', async () => {
+  reset(); NOW = Date.parse('2026-11-27T05:00:00Z');
+  drv('R', 60e3); drv('S', 20 * 60e3); drv('J', 60e3); store.set('live/J', { busy: true, bk: 'b9', updatedAt: T(NOW - 60e3) }); drv('O', 4 * 3600e3); drv('B', 60e3, { blocked: true });
+  store.set('drivers/F', { online: false });
+  await run(); NOW += 2 * 60e3; await run();
+  const st = store.get('stats/d20261127');
+  assert.deepEqual(st.R, { on: 4, act: 4, job: 0 });
+  assert.deepEqual(st.S, { on: 4, act: 0, job: 0 });
+  assert.deepEqual(st.J, { on: 4, act: 4, job: 4 });
+  assert.deepEqual(st.O, { on: 2, act: 0, job: 0, off: 1 }, 'switched off on the first run, not counted after');
+  assert.equal(st.B, undefined); assert.equal(st.F, undefined);
+  NOW = Date.parse('2026-11-27T18:35:00Z'); await run(); // 00:05 IST next day
+  assert.ok(store.get('stats/d20261128'), 'new IST day → new record');
 });

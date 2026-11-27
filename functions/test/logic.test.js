@@ -239,3 +239,10 @@ test('owner alerts: waiting ride once, no-ready every 30 min in the day, paused 
   assert.equal(L.ownerAlerts({ open: [], ready: 0, on: 4, sent: {}, now: Date.parse('2026-11-26T20:00:00Z') }).out.length, 0, 'not at night');
   r = L.ownerAlerts({ open: [], ready: 1, on: 2, paused: ['Ravi', 'Siva'], sent: {}, now }); assert.match(r.out[0].body, /Ravi, Siva/);
 });
+
+test('scorecard helpers', () => {
+  assert.equal(L.statDay(Date.parse('2026-11-27T18:29:00Z')), 'd20261127'); assert.equal(L.statDay(Date.parse('2026-11-27T18:31:00Z')), 'd20261128');
+  const now = 1e12; assert.deepEqual(L.scoreSample({ online: true }, { updatedAt: T(now - 60e3) }, now, 2), { on: 2, act: 2, job: 0 });
+  assert.equal(L.scoreSample({ online: false }, null, now, 2), null);
+  assert.deepEqual(L.scoreSample({ online: true }, null, now, 2), { on: 2, act: 0, job: 0 });
+});

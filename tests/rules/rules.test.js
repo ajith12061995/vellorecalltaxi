@@ -504,3 +504,12 @@ test('owner push token and server-only watch / alerts records', async () => {
     await assertFails(setDoc(doc(as[who](), 'alerts', 'owner'), { x: 1 }));
   }
 });
+
+test('driver scorecard stats: office reads, nobody writes', async () => {
+  await seed(db => setDoc(doc(db, 'stats', 'd20261127'), { [DRV]: { on: 10, act: 8, job: 2 } }));
+  await assertSucceeds(getDoc(doc(as.owner(), 'stats', 'd20261127')));
+  await assertSucceeds(getDoc(doc(as.staff(), 'stats', 'd20261127')));
+  await assertFails(getDoc(doc(as.drv(), 'stats', 'd20261127')));
+  await assertFails(getDoc(doc(as.cust(), 'stats', 'd20261127')));
+  await assertFails(setDoc(doc(as.owner(), 'stats', 'd20261127'), { x: 1 }));
+});

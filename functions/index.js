@@ -83,20 +83,24 @@ async function watchDrivers(now) {
   const ds = await db.collection('drivers').where('online', '==', true).get(); if (ds.empty) return res;
   const refs = ds.docs.map(d => [db.doc(`live/${d.id}`), db.doc(`watch/${d.id}`)]).flat();
   const got = await db.getAll(...refs), by = Object.fromEntries(got.map(g => [g.ref.path, g.exists ? g.data() : null]));
-  let paused = 0, nudged = 0;
+  let paused = 0, nudged = 0; const day = {};
   for (const d of ds.docs) {
     const drv = d.data(), lv = by[`live/${d.id}`];
+    const smp = L.scoreSample(drv, lv, now, 2);
+    if (smp) day[d.id] = { on: FV.increment(smp.on), act: FV.increment(smp.act), job: FV.increment(smp.job) };
     if (!drv.blocked) { res.on++; if (lv && lv.updatedAt && now - lv.updatedAt.toMillis() <= 3 * 60e3 && !lv.busy && !lv.bk) res.ready++; }
     const r = L.driverWatch(drv, lv, by[`watch/${d.id}`], now); if (!r) continue;
     if (r.pause) {
       await d.ref.update({ online: false, autoOff: FV.serverTimestamp(), updatedAt: FV.serverTimestamp() });
       await db.doc(`watch/${d.id}`).set({ pausedAt: FV.serverTimestamp(), gapMin: Math.round(r.gap / 60e3) }, { merge: true });
+      if (day[d.id]) day[d.id].off = FV.increment(1);
       paused++; res.paused.push(drv.name || d.id); res.on--; if (r.push) await watchPush(d, drv, 'pause');
     } else if (r.nudge) {
       await db.doc(`watch/${d.id}`).set({ nudgeAt: FV.serverTimestamp(), gapMin: Math.round(r.gap / 60e3) }, { merge: true });
       nudged++; await watchPush(d, drv, 'nudge');
     }
   }
+  if (Object.keys(day).length) await db.doc(`stats/${L.statDay(now)}`).set(day, { merge: true });
   if (paused || nudged) logger.info('driver watch', { paused, nudged });
   return res;
 }
