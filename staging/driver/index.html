@@ -50,7 +50,7 @@
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('../vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV=window.VCT_V='138',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV=window.VCT_V='139',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('../version.json',location.href)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -661,20 +661,20 @@ a.btn{text-decoration:none}
 <div class="app" id="app"><section class="screen" id="splash"><div class="roofsign"><b>TAXI</b><span>வேலூர் டாக்ஸி</span></div><span class="drvtag">DRIVER</span><div class="road"></div><div class="tag">Vellore Taxi · Driver</div></section></div>
 <div class="toast" id="toast"></div>
 
-<script src="../core/report.js?v=138"></script>
-<script src="../core/geo.js?v=138"></script>
-<script src="../core/fare.js?v=138"></script>
-<script src="../core/appget.js?v=138"></script>
-<script src="../core/pin.js?v=138"></script>
-<script src="../core/clock.js?v=138"></script>
-<script src="../core/map.js?v=138"></script>
-<script src="../core/chat.js?v=138"></script>
-<script src="../core/driverchecks.js?v=138"></script>
-<script src="../core/nav.js?v=138"></script>
-<script src="../core/otp.js?v=138"></script>
-<script src="../core/deskmode.js?v=138"></script>
-<script src="../core/refer.js?v=138"></script>
-<script src="../core/weather.js?v=138"></script>
+<script src="../core/report.js?v=139"></script>
+<script src="../core/geo.js?v=139"></script>
+<script src="../core/fare.js?v=139"></script>
+<script src="../core/appget.js?v=139"></script>
+<script src="../core/pin.js?v=139"></script>
+<script src="../core/clock.js?v=139"></script>
+<script src="../core/map.js?v=139"></script>
+<script src="../core/chat.js?v=139"></script>
+<script src="../core/driverchecks.js?v=139"></script>
+<script src="../core/nav.js?v=139"></script>
+<script src="../core/otp.js?v=139"></script>
+<script src="../core/deskmode.js?v=139"></script>
+<script src="../core/refer.js?v=139"></script>
+<script src="../core/weather.js?v=139"></script>
 <script>
 /* shared with the customer app: icons, places, fares, map engine */
 /* small line icons (one stroke style everywhere; no emoji in the interface) */
@@ -821,7 +821,7 @@ function go(html,after){cancelAnimationFrame(mapLoop);clearInterval(TK);clearTim
 function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(toast.h);toast.h=setTimeout(()=>el.classList.remove('show'),2600)}
 const isToday=ts=>new Date(ts).toDateString()===new Date().toDateString();
 const onMinutes=()=>Math.round((DS.onMs+(S.online?Date.now()-S.onSince:0))/6e4);
-function setOnline(v){if(v===S.online)return;if(v){S.onSince=Date.now()}else{DS.onMs+=Date.now()-S.onSince;saveDS()}S.online=v;save();if(CL)goLive(v);awakeTick();ovlOnline()}
+function setOnline(v){if(v===S.online)return;if(v){S.onSince=Date.now()}else{DS.onMs+=Date.now()-S.onSince;saveDS()}S.online=v;save();if(CL)goLive(v);awakeTick();ovlOnline();setTimeout(liveNative,300)}
 /* Battery: the screen is held on only while it is needed — during a ride / navigation / a ringing request, or while
    online on a phone where ride alerts cannot arrive as notifications (then an open, lit app is the only way to hear a ride). */
 let PUSHOK=false;
@@ -1037,6 +1037,7 @@ function home(){setTimeout(demandHint,60);
      ${pushReady()&&(CL.nativePush&&CL.nativePush()?!lsGet('vct_fcm'):Notification.permission==='default')?`<button class="warn" id="pushon" style="text-align:left;border:0;width:100%">${X('bell')} ${L('Phone lock ஆனாலும் ride alert வரணுமா? இங்கே தொட்டு Allow கொடுங்க','Get ride alerts even when the phone is locked: tap and Allow')}</button>`:''}
      ${OVL&&!OVLCAN?`<button class="warn" id="ovlon" style="text-align:left;border:0;width:100%">${X('mobile')} ${L('வேற app-ல இருந்தாலும், phone பேசினாலும் ride card திரை மேல வரணுமா? இங்கே தொட்டு "Display over other apps" Allow கொடுங்க','Show the ride card over other apps and during calls: tap and allow "Display over other apps"')}</button>`:''}
      ${OVL&&OVLCAN&&S.online&&OVLPWR===false?`<button class="warn" id="pwron" style="text-align:left;border:0;width:100%">${X('bolt')} ${L('Phone app-ஐ நிறுத்தாம இருக்க: இங்கே தொட்டு → Battery → "No restrictions" / "Allow background activity" தேர்வு பண்ணுங்க. Realme / Oppo / Vivo-ல "Auto launch"-உம் ON பண்ணுங்க.','So the phone never stops the app: tap → Battery → "No restrictions" / "Allow background activity". On Realme / Oppo / Vivo also turn on "Auto launch".')}</button>`:''}
+     ${OVL&&OVL17&&S.online&&OVLFSI===false?`<button class="warn" id="fsion" style="text-align:left;border:0;width:100%">${X('bell')} ${L('Phone lock-ல இருந்தாலும் ride screen-ல வரணுமா? இங்கே தொட்டு "Full screen notifications" / "முழுத் திரை அறிவிப்பு" ON பண்ணுங்க','Show rides over the lock screen: tap and turn on "Full screen notifications"')}</button>`:''}
      ${S.online&&CL?`<p class="stayon" id="stayon">${X('check',14)} ${L('நீங்க OFF பண்ற வரை Online-லயே இருப்பீங்க. App-ஐ மூடினாலும், phone பேசினாலும் Offline ஆகாது.','You stay online until you switch OFF — even if you close the app or take a call.')}</p>`:''}${S.online&&CL&&!J?'<div id="demhint" hidden></div>':''}
      <div id="appget" hidden></div>
      ${upcHtml()}
@@ -1056,6 +1057,7 @@ function home(){setTimeout(demandHint,60);
     {const pb=document.getElementById('pushon');if(pb)pb.onclick=()=>enablePush(true)}
     {const ob=document.getElementById('ovlon');if(ob)ob.onclick=()=>{try{OVL.ask()}catch(e){}}}
     {const pb=document.getElementById('pwron');if(pb)pb.onclick=()=>{try{OVL.askPower().catch(()=>{})}catch(e){}}}
+    {const fb=document.getElementById('fsion');if(fb)fb.onclick=()=>{try{OVL.askFsi().catch(()=>{})}catch(e){}}}
     const gr=document.getElementById('gpsr');if(gr)gr.onclick=()=>{stopGeo();GPSERR=0;startGeo();try{navigator.geolocation.getCurrentPosition(p=>{POS={lat:p.coords.latitude,lon:p.coords.longitude};GOTFIX=true;pushLive(true);if(S.tab==='home'&&!J)home()},e=>{GPSERR=e.code;toast(L('Location இன்னும் கிடைக்கல','Still no location'))},{enableHighAccuracy:true,timeout:15000,maximumAge:0})}catch(e){}};
     if(S.online){bindTap('offs',()=>confirmOff(()=>{setOnline(false);home();toast(L('Offline ஆயிட்டீங்க','You are offline'))}));
       if(CL)maybeShowReq();else{document.getElementById('dreq').onclick=()=>incoming()}}
@@ -1396,7 +1398,7 @@ function profileTab(){
     document.getElementById('lg').onclick=()=>{S.lang=S.lang==='ta'?'en':'ta';save();profileTab()};
     document.getElementById('th').onclick=()=>{const r=document.documentElement;r.dataset.theme=r.dataset.theme==='dark'?'light':'dark';profileTab()};
     const sw=document.getElementById('sw');if(sw)sw.onclick=()=>{setOnline(false);pickProfile()};
-    document.getElementById('lo').onclick=()=>{setOnline(false);if(CL){stopAllD();DME=null;CL.logout()}S.logged=false;S.pid=null;save();login()};
+    document.getElementById('lo').onclick=()=>{setOnline(false);if(OVL&&OVL17)try{OVL.liveStop({forget:true}).catch(()=>{})}catch(e){}LIVEN='';if(CL){stopAllD();DME=null;CL.logout()}S.logged=false;S.pid=null;save();login()};
     const da=document.getElementById('delacc');if(da)da.onclick=()=>modal(`<h3>${L('Account நீக்க கோரிக்கை அனுப்பவா?','Send an account deletion request?')}</h3>
       <p style="margin:0;line-height:1.55">${L('Office உங்க wallet பணம், நிலுவை எல்லாத்தையும் settle பண்ணிட்டு 7 நாளுக்குள்ள உங்க account, documents-ஐ நீக்கும். அதுவரை ride எடுக்க முடியாது.','The office settles your wallet and dues, then deletes your account and documents within 7 days. You cannot take rides after this.')}</p>
       <button class="btn" id="dno">${L('வேண்டாம்','Cancel')}</button><button class="btn ghost" id="dyes" style="color:var(--danger)">${L('ஆமா, கோரிக்கை அனுப்பு','Yes, send request')}</button>`,(m,close)=>{
@@ -1652,7 +1654,18 @@ function ovlOnline(){if(OVL)try{OVL.online({on:!!S.online}).catch(()=>{})}catch(
    back behind the driver's other app (1.0.16+; older apps have no ready()) */
 let OVLREADY=false,OVLPWR=null;
 /* is the app free of the phone's battery limits? (1.0.16+; unknown on older apps → no tip) */
-function ovlPower(){if(!OVL)return;try{OVL.power().then(r=>{const f=!!(r&&r.free),ch=f!==OVLPWR;OVLPWR=f;devReport('1.0.16+',r&&r.maker);if(ch&&!J&&!document.querySelector('.modal')&&document.getElementById('offs'))home()}).catch(()=>devReport('1.0.15-'))}catch(e){devReport('1.0.15-')}}
+function ovlPower(){if(!OVL)return;try{OVL.power().then(r=>{const f=!!(r&&r.free),ch=f!==OVLPWR;OVLPWR=f;const mk=r&&r.maker;
+  // 1.0.17+: rides over the lock screen + position from the phone itself (fsi() exists only there)
+  OVL.fsi().then(x=>{const c=!!(x&&x.can),ch2=c!==OVLFSI;OVLFSI=c;OVL17=true;devReport('1.0.17+',mk);liveNative();if((ch||ch2)&&!J&&!document.querySelector('.modal')&&document.getElementById('offs'))home()})
+    .catch(()=>{OVL17=false;devReport('1.0.16+',mk);if(ch&&!J&&!document.querySelector('.modal')&&document.getElementById('offs'))home()})}).catch(()=>devReport('1.0.15-'))}catch(e){devReport('1.0.15-')}}
+/* 1.0.17: while ON, the phone sends the position itself when the app is not on screen (locked, another app open) — the
+   page hands over the sign-in once per ON (see NativeLive.java). A server push about a new ride wakes the page ("wake"). */
+let OVL17=false,OVLFSI=null,LIVEN='',WAKEL=false;
+function liveNative(){if(!OVL||!OVL17||!CL||!CL.user||!CL.fbcfg)return;
+  if(!WAKEL){WAKEL=true;window.addEventListener('vctwake',()=>{if(!CL||!S.online)return;if(!REQUNSUB)listenReq();pushLive(true);setTimeout(()=>{if(document.getElementById('offs'))maybeShowReq()},600)})}
+  if(!S.online){LIVEN='';return}
+  const c=CL.fbcfg(),rt=CL.user.refreshToken||'',k=CL.phone+'|'+rt.slice(-12);if(!rt||LIVEN===k)return;LIVEN=k;
+  try{OVL.liveStart({apiKey:c.apiKey,project:c.project,phone:CL.phone,refresh:rt}).catch(()=>{LIVEN=''})}catch(e){LIVEN=''}}
 /* tell the office how this phone is set up (app version, over-other-apps, battery, location, notifications), so the office
    can see which driver needs to update or allow something — written only when something changed, or twice a day */
 let DEVBUSY=false;
