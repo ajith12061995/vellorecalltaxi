@@ -282,6 +282,14 @@ function scoreSample(drv, live, now, step) {
 // Bands: m 5–11, a 11–16, e 16–21, n 21–5. Top 8 cells per band, each named by its most common pickup name.
 const BANDS = ['m', 'a', 'e', 'n'];
 const bandOf = h => (h >= 5 && h < 11 ? 'm' : h >= 11 && h < 16 ? 'a' : h >= 16 && h < 21 ? 'e' : 'n');
+// A usable place name: the first address part that is not a door number ("4", "15/5", "No. 12", "80B")
+function placeName(v) {
+  for (const part of String(v || '').split(',')) {
+    const t = part.trim();
+    if (t.length >= 3 && !/^(no\.?\s*)?[\d\s\/\-]+[a-z]?$/i.test(t)) return t.slice(0, 40);
+  }
+  return '';
+}
 function demandMap(bookings, now, days) {
   const ms = x => (x && x.toMillis ? x.toMillis() : +x || 0), from = now - (days || 14) * 864e5, cells = {};
   for (const b of bookings || []) {
@@ -291,7 +299,7 @@ function demandMap(bookings, now, days) {
     const band = bandOf(istHour(at)), la = Math.round(f.lat / 0.005) * 0.005, lo = Math.round(f.lon / 0.005) * 0.005, k = band + la.toFixed(3) + lo.toFixed(3);
     const c = cells[k] || (cells[k] = { band, n: 0, sl: 0, so: 0, names: {} });
     c.n++; c.sl += f.lat; c.so += f.lon;
-    const nm = (f.ta || f.en || '').slice(0, 40), ne = (f.en || f.ta || '').slice(0, 40);
+    const nm = placeName(f.ta) || placeName(f.en), ne = placeName(f.en) || nm;
     if (nm) { const o = c.names[nm] || (c.names[nm] = { n: 0, en: ne }); o.n++; }
   }
   const out = { m: [], a: [], e: [], n: [] };
@@ -303,4 +311,4 @@ function demandMap(bookings, now, days) {
   return out;
 }
 
-module.exports = { BANDS, bandOf, demandMap, statDay, scoreSample, ownerAlerts, WATCH, istHour, driverWatch, watchMsg, inclKm, enquiryFlood, OUTCAT, outCat, catBata, AHRS, AXH, aHours, planHours, hrsTable, AUTO_GOVT, AREA, autoFare, outsideArea, rentCheck, outCheck, tariffs, rentPrice, istStamp, commissionFor, settle, housekeeping, fareLooksWrong, liveStale, custPush, fareCheck, bookingLimit, nightPct, withNight, crowKm, LIMIT_OPEN, LIMIT_HOUR };
+module.exports = { placeName, BANDS, bandOf, demandMap, statDay, scoreSample, ownerAlerts, WATCH, istHour, driverWatch, watchMsg, inclKm, enquiryFlood, OUTCAT, outCat, catBata, AHRS, AXH, aHours, planHours, hrsTable, AUTO_GOVT, AREA, autoFare, outsideArea, rentCheck, outCheck, tariffs, rentPrice, istStamp, commissionFor, settle, housekeeping, fareLooksWrong, liveStale, custPush, fareCheck, bookingLimit, nightPct, withNight, crowKm, LIMIT_OPEN, LIMIT_HOUR };

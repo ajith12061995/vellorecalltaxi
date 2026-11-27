@@ -260,3 +260,11 @@ test('demand map: cells per time of day, named by the usual pickup, last 14 days
   assert.equal(d.e.length, 1); assert.equal(d.n.length, 1); assert.equal(d.a.length, 0);
   assert.equal(L.bandOf(4), 'n'); assert.equal(L.bandOf(5), 'm'); assert.equal(L.bandOf(11), 'a'); assert.equal(L.bandOf(16), 'e'); assert.equal(L.bandOf(21), 'n');
 });
+
+test('demand map place names skip door numbers', () => {
+  assert.equal(L.placeName('4, Gandhi Road, Katpadi'), 'Gandhi Road'); assert.equal(L.placeName('15/5'), ''); assert.equal(L.placeName('No. 12, CMC'), 'CMC');
+  assert.equal(L.placeName('80B, Amman Koil St'), 'Amman Koil St'); assert.equal(L.placeName('Katpadi Junction'), 'Katpadi Junction');
+  const now = Date.parse('2026-11-27T12:00:00Z'), c = T(now - 3600e3);
+  const d = L.demandMap([{ from: { lat: 12.97, lon: 79.15, ta: '4', en: '4, Gandhi Nagar' }, createdAt: c }, { from: { lat: 12.97, lon: 79.15, ta: '80', en: '80' }, createdAt: c }], now, 14);
+  const all = [...d.m, ...d.a, ...d.e, ...d.n]; assert.equal(all.length, 1); assert.equal(all[0].ta, 'Gandhi Nagar'); assert.equal(all[0].n, 2);
+});
