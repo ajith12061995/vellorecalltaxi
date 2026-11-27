@@ -46,11 +46,12 @@
 .nmenu small{padding:0 12px 8px;color:var(--muted);font-size:11px}
 .agcard{display:grid;grid-template-columns:1fr auto;align-items:start;gap:8px 6px;background:#FFF6D6;border:1.5px solid #FFC21A;border-radius:16px;padding:10px 10px 10px 14px;margin:10px 0;color:#0B4A36}.agtxt{flex:1;min-width:0}.agtxt b{display:block;font-size:15px}.agtxt small{display:block;font-size:12.5px;color:#4b5a54;line-height:1.35}.agbtn{grid-column:1/-1;grid-row:2;justify-self:start;background:#0B4A36;color:#FFC21A;border:0;border-radius:12px;padding:9px 12px;font:inherit;font-weight:700;font-size:14px;text-decoration:none;white-space:nowrap;cursor:pointer}.agx{grid-column:2;grid-row:1;background:none;border:0;font-size:22px;line-height:1;color:#6b7a73;padding:4px 6px;cursor:pointer}
 .demhint{margin:10px 2px 0;padding:10px 12px;border:1px solid #F2D27A;background:#FFF9E6;border-radius:12px;display:grid;gap:6px;font-size:13px}.demhint b{display:flex;gap:6px;align-items:center}.demhint a{display:flex;justify-content:space-between;gap:8px;color:inherit;text-decoration:none;padding:6px 0;border-top:1px solid #F3E3B0}.demhint a small{color:#6b5a2a;white-space:nowrap}
+.nextcard{position:fixed;left:10px;right:10px;bottom:calc(14px + env(safe-area-inset-bottom));z-index:60;background:var(--surface,#fff);border:2px solid #F5B800;border-radius:16px;padding:12px 14px;box-shadow:0 10px 30px rgba(0,0,0,.22);display:grid;gap:10px}.nextcard .nh{display:flex;justify-content:space-between;align-items:center;font-size:14px}.nextcard .nh span{font-weight:800;color:#B07A00}.nextcard .nb{display:flex;justify-content:space-between;gap:10px;align-items:center}.nextcard .nb b{display:block;font-size:16px}.nextcard .nb small{display:block;color:var(--muted,#66706B);font-size:12.5px}.nextcard .nb em{font-style:normal;font-size:22px;font-weight:800}.nextcard .na{display:grid;grid-template-columns:1fr 2fr;gap:10px}.nextcard .na button{height:46px;border-radius:12px;font-weight:700}
 </style>
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('../vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV=window.VCT_V='139',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV=window.VCT_V='140',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('../version.json',location.href)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -661,20 +662,20 @@ a.btn{text-decoration:none}
 <div class="app" id="app"><section class="screen" id="splash"><div class="roofsign"><b>TAXI</b><span>வேலூர் டாக்ஸி</span></div><span class="drvtag">DRIVER</span><div class="road"></div><div class="tag">Vellore Taxi · Driver</div></section></div>
 <div class="toast" id="toast"></div>
 
-<script src="../core/report.js?v=139"></script>
-<script src="../core/geo.js?v=139"></script>
-<script src="../core/fare.js?v=139"></script>
-<script src="../core/appget.js?v=139"></script>
-<script src="../core/pin.js?v=139"></script>
-<script src="../core/clock.js?v=139"></script>
-<script src="../core/map.js?v=139"></script>
-<script src="../core/chat.js?v=139"></script>
-<script src="../core/driverchecks.js?v=139"></script>
-<script src="../core/nav.js?v=139"></script>
-<script src="../core/otp.js?v=139"></script>
-<script src="../core/deskmode.js?v=139"></script>
-<script src="../core/refer.js?v=139"></script>
-<script src="../core/weather.js?v=139"></script>
+<script src="../core/report.js?v=140"></script>
+<script src="../core/geo.js?v=140"></script>
+<script src="../core/fare.js?v=140"></script>
+<script src="../core/appget.js?v=140"></script>
+<script src="../core/pin.js?v=140"></script>
+<script src="../core/clock.js?v=140"></script>
+<script src="../core/map.js?v=140"></script>
+<script src="../core/chat.js?v=140"></script>
+<script src="../core/driverchecks.js?v=140"></script>
+<script src="../core/nav.js?v=140"></script>
+<script src="../core/otp.js?v=140"></script>
+<script src="../core/deskmode.js?v=140"></script>
+<script src="../core/refer.js?v=140"></script>
+<script src="../core/weather.js?v=140"></script>
 <script>
 /* shared with the customer app: icons, places, fares, map engine */
 /* small line icons (one stroke style everywhere; no emoji in the interface) */
@@ -1389,6 +1390,7 @@ function profileTab(){
     <div class="sec"><h3>${L('அமைப்புகள்','Settings')}</h3></div>
     <div class="recent"><button class="row" id="lg"><span class="ic">அ</span><div><b>${L('மொழி','Language')}</b><small>${S.lang==='ta'?'தமிழ்':'English'}</small></div></button>
       ${NATIVE()?`<div class="row" id="bgst"><span class="ic">${X('pin',20)}</span><div><b>${L('Background location','Background location')}</b><small>${bgText()}</small></div></div>`:''}
+      ${NATIVE()&&OVL17?`<button class="row" id="vc"><span class="ic">${X('bell',20)}</span><div><b>${L('Ride வந்தா குரல் அறிவிப்பு','Say the ride out loud')}</b><small>${voiceOn()?L('ON — இடமும் கட்டணமும் சொல்லும்','On — says the place and the fare'):'Off'}</small></div></button>`:''}
       <button class="row" id="th"><span class="ic">${X('moon',20)}</span><div><b>Dark mode</b><small>${document.documentElement.dataset.theme==='dark'?'On':'Off'}</small></div></button>
       ${CL?'':`<button class="row" id="sw"><span class="ic">${I.navHome}</span><div><b>${L('வேற வண்டி (demo)','Switch vehicle (demo)')}</b><small>${L('Owner assign பண்றது','Assigned by owner')}</small></div></button>`}
       <button class="row" id="lo"><span class="ic" style="color:var(--danger)">${X('power',20)}</span><div><b style="color:var(--danger)">Logout</b><small>+91 ${S.phone}</small></div></button>
@@ -1396,6 +1398,7 @@ function profileTab(){
     <p class="fine muted"><a href="../privacy/#drivers" target="_blank" rel="noopener" style="color:inherit">${L('தனியுரிமை & விதிமுறைகள்','Privacy & Terms')}</a> · Vellore Taxi Driver · v${window.VCT_V||''}</p></div>`),()=>{
     bindNav();
     document.getElementById('lg').onclick=()=>{S.lang=S.lang==='ta'?'en':'ta';save();profileTab()};
+    {const vb=document.getElementById('vc');if(vb)vb.onclick=()=>{try{localStorage.setItem('vct_voice',voiceOn()?'off':'on')}catch(e){}profileTab()}}
     document.getElementById('th').onclick=()=>{const r=document.documentElement;r.dataset.theme=r.dataset.theme==='dark'?'light':'dark';profileTab()};
     const sw=document.getElementById('sw');if(sw)sw.onclick=()=>{setOnline(false);pickProfile()};
     document.getElementById('lo').onclick=()=>{setOnline(false);if(OVL&&OVL17)try{OVL.liveStop({forget:true}).catch(()=>{})}catch(e){}LIVEN='';if(CL){stopAllD();DME=null;CL.logout()}S.logged=false;S.pid=null;save();login()};
@@ -1691,7 +1694,17 @@ function ovlRing(j){if(!OVL||!j||!j.id)return;try{const amt=Math.round((+j.fare|
     line2:L(`Pickup ${(+j.away||0).toFixed(1)} கி.மீ · பயணம் ${(+j.km||0).toFixed(1)} கி.மீ`,`Pickup ${(+j.away||0).toFixed(1)} km · trip ${(+j.km||0).toFixed(1)} km`),
     fare:amt>0?'₹'+amt:'',accept:L('ஏற்கிறேன்','Accept'),open:L('பார்க்க','View'),secs:20,
     veh:(v[S.lang]||v.en||L('புது Ride','New ride'))+kind,pay,pkm:km(j.away),pname:String(pf[S.lang]||''),psub:sub(pf),dkm:km(j.km),dname:String(pt[S.lang]||''),dsub:sub(pt),
-    extra:(+j.tip||0)>0?L(`Tip ₹${Math.round(+j.tip)} சேர்த்து`,`incl. ₹${Math.round(+j.tip)} tip`):''}).catch(()=>{})}catch(e){}}
+    extra:(+j.tip||0)>0?L(`Tip ₹${Math.round(+j.tip)} சேர்த்து`,`incl. ₹${Math.round(+j.tip)} tip`):'',
+    ...rideSay(j,amt,pf,b)}).catch(()=>{})}catch(e){}}
+/* 1.0.17: the phone says the ride out loud before the ringtone (Tamil; English if the phone has no Tamil voice) — the driver
+   hears where and how much without looking at the screen. Off in Me → Settings. No customer name or phone is said. */
+const voiceOn=()=>{try{return localStorage.getItem('vct_voice')!=='off'}catch(e){return true}};
+function rideSay(j,amt,pf,b){if(!voiceOn())return{say:'',sayEn:''};
+  const km=n=>{const v=Math.round((+n||0)*10)/10;return v<1?Math.round(v*1000)+'':String(v)},near=(+j.away||0)<1;
+  const k=b.kind==='outstation'?['வெளியூர் சவாரி','Outstation ride']:b.kind==='rental'?['வாடகை சவாரி','Rental ride']:['புது சவாரி','New ride'];
+  const pt=pf.ta||pf.en||'',pe=pf.en||pf.ta||'';
+  return{say:`${k[0]}. ${pt}. ${near?km(j.away)+' மீட்டர்':km(j.away)+' கிலோமீட்டர்'} தூரம். ${amt>0?amt+' ரூபாய்.':''}`.trim(),
+    sayEn:`${k[1]}. ${pe}. ${near?km(j.away)+' metres':km(j.away)+' kilometres'} away. ${amt>0?amt+' rupees.':''}`.trim()}}
 function ovlStop(){if(OVL)try{OVL.stop().catch(()=>{})}catch(e){}}
 function ovlTake(){if(!OVL)return;try{OVL.take().then(r=>{if(r&&r.action==='accept'&&J&&String(J.id||'')===String(r.id||'')){const a=document.getElementById('acc');if(a)a.click()}}).catch(()=>{})}catch(e){}}
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){ovlInit();ovlTake()}});
@@ -1712,6 +1725,7 @@ function listenReq(){
 }
 function maybeShowReq(){
   if(!CL||!S.online||J||SHOWING||document.querySelector('.modal'))return;
+  if(NEXT){nextGo();return} // a next ride is already accepted: it starts first, no new request meanwhile
   const now=VCTCLK.now(),b=REQS.find(x=>offerAt(x)<=now&&canOffer(x));if(!b)return;
   SHOWING=b.id;incoming(buildJ(b,b.id));
 }
@@ -1860,6 +1874,40 @@ function offerAt(b){
   if(svcAllowed(k))return Infinity; // driver switched this service off
   return fall?open+(k==='out'?3:1)*gap:Infinity;
 }
+/* "Next ride before this one ends" (27 Nov, like Rapido's next order): while a LOCAL trip is running and the drop is
+   within 2 km, a waiting local ride whose pickup is within 2.5 km of this drop is offered on a small card over the trip
+   screen. Accept assigns it to this driver at once (same check as a normal accept: still waiting); it starts by itself
+   when this trip is finished. One at a time; Decline / 20 s → it is not offered again. */
+const NEXT_R_DROP=2,NEXT_R_PICK=2.5,NEXT_SECS=20;let NEXT=null,NEXTSHOW=null,NEXTT=null;
+const isLocalB=b=>b&&(!b.kind||b.kind==='ride'||b.kind==='schedule')&&!isFutB(b);
+function nextCheck(){
+  if(!CL||!S.online||!J||!J.id||!J.b||J.b.status!=='ontrip'||!isLocalB(J.b)||NEXT||NEXTSHOW||!P.drop||P.drop.lat==null)return;
+  if(hav(POS,P.drop)>NEXT_R_DROP)return;
+  const now=VCTCLK.now(),c=REQS.filter(b=>b.id!==J.id&&isLocalB(b)&&b.from&&b.from.lat!=null&&canOffer(b)&&offerAt(b)!==Infinity&&!(b.when&&now-b.when>15*60e3)
+    &&hav(P.drop,b.from)<=NEXT_R_PICK).sort((a,b)=>hav(P.drop,a.from)-hav(P.drop,b.from))[0];
+  if(c)nextShow(c)}
+function nextJ(b){P.npick={ta:b.from.ta,en:b.from.en,addr:String(b.from.addr||''),lat:b.from.lat,lon:b.from.lon,ic:'pin'};
+  const tl=b.to&&b.to.lat!=null?b.to:b.from;P.ndrop={ta:(b.to||{}).ta||'',en:(b.to||{}).en||'',addr:String((b.to||{}).addr||''),lat:tl.lat,lon:tl.lon,ic:'pin'};
+  return{id:b.id,b,from:'npick',to:'ndrop',fare:+b.fare||0,tip:+b.tip||0,km:+b.km||hav(P.npick,P.ndrop)*1.3,pay:b.pay||'cash',away:hav(P.drop,P.npick)*1.3}}
+function nextShow(b){const n=nextJ(b);NEXTSHOW=n;nextHide(true);
+  const el=document.createElement('div');el.id='nextcard';el.className='nextcard';el.setAttribute('role','alertdialog');
+  el.innerHTML=`<div class="nh"><b>${X('repeat',16)} ${L('அடுத்த ride · இந்த trip முடிஞ்சதும்','Next ride · after this trip')}</b><span id="nxt">${NEXT_SECS}</span></div>
+    <div class="nb"><div><small>${L('உங்க drop-ல இருந்து','From your drop')} ${n.away.toFixed(1)} ${L('கி.மீ','km')}</small><b>${esc(P.npick[S.lang]||P.npick.ta||'')}</b><small>→ ${esc(P.ndrop[S.lang]||P.ndrop.ta||'')} · ${n.km.toFixed(1)} ${L('கி.மீ','km')}</small></div><em>${inr(Math.round(n.fare+n.tip))}</em></div>
+    <div class="na"><button class="ghost" id="nxno">${L('வேண்டாம்','Decline')}</button><button class="accbtn" id="nxok">${L('ஏற்கிறேன்','Accept')}</button></div>`;
+  document.body.appendChild(el);ovlRing(n);beep();
+  let t=NEXT_SECS;NEXTT=setInterval(()=>{t--;const c=document.getElementById('nxt');if(c)c.textContent=t;if(t<=0){missReq(b);nextHide()}},1000);
+  el.querySelector('#nxno').onclick=()=>{missReq(b);nextHide()};
+  el.querySelector('#nxok').onclick=()=>nextAccept(n)}
+function nextHide(keep){clearInterval(NEXTT);NEXTT=null;const e=document.getElementById('nextcard');if(e)e.remove();if(!keep){NEXTSHOW=null;ovlStop()}}
+async function nextAccept(n){const d=me(),id=n.id;const bt=document.getElementById('nxok');if(bt)bt.disabled=true;ovlStop();
+  try{await F().runTransaction(CL.db,async tx=>{const ref=F().doc(CL.db,'bookings',id);const s=await tx.get(ref);
+      if(!s.exists()||s.data().status!=='searching')throw new Error('taken');
+      tx.update(ref,{status:'assigned',driverPhone:CL.phone,driverName:d.en,plate:d.plate,vehModel:d.model,assignedAt:ts(),updatedAt:ts()})});
+    NEXT={id,b:{...n.b,status:'assigned'}};nextHide();toast(L('அடுத்த ride உறுதி. இந்த trip முடிஞ்சதும் தானா தொடங்கும்','Next ride confirmed. It starts when this trip ends'))}
+  catch(e){MISS.set(id,{n:99});nextHide();toast(e&&e.message==='taken'?L('இந்த ride-ஐ வேற driver எடுத்துட்டாங்க','Another driver took this ride'):CL.errText(e,S.lang==='ta'))}}
+/* the trip has ended (no job, no screen open on top): the next ride starts */
+function nextGo(){if(!CL||J||!NEXT||document.querySelector('.modal')||document.getElementById('cl'))return;const n=NEXT;NEXT=null;GONOW.add(n.id);adoptJob({id:n.id,...n.b})}
+setInterval(()=>{try{if(NEXTSHOW&&(!J||!J.b||J.b.status!=='ontrip'))nextHide();nextCheck();nextGo()}catch(e){}},3000);
 setInterval(()=>{if(CL&&S.online&&document.getElementById('offs'))maybeShowReq();
   if(CL&&!J&&UPC.length&&!isFutB(UPC[0])&&!document.querySelector('.modal')){const b=UPC.shift();GONOW.add(b.id);adoptJob(b)}},3000);
 function smgrHtml(){
