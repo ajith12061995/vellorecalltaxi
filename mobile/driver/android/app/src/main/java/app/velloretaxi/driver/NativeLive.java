@@ -186,6 +186,28 @@ final class NativeLive {
         try { t.join(4000); } catch (InterruptedException e) { /* time is up */ }
     }
 
+    /**
+     * 1.0.21: a ride push reached this phone — written to live/{phone} as pk (ride id) + pkAt (server time), so the office
+     * (and we) can see for sure whether a missed ride never reached the phone or reached it and did not show.
+     */
+    void pushSeen(final String id) {
+        if (id == null || id.isEmpty() || !hasCreds(ctx)) return;
+        new Thread(() -> {
+            try {
+                String tok = token(); if (tok == null) return;
+                String proj = pref("proj"), phone = pref("phone");
+                JSONObject f = new JSONObject().put("pk", new JSONObject().put("stringValue", id.length() > 40 ? id.substring(0, 40) : id));
+                JSONObject w = new JSONObject()
+                        .put("update", new JSONObject().put("name", "projects/" + proj + "/databases/(default)/documents/live/" + phone).put("fields", f))
+                        .put("updateMask", new JSONObject().put("fieldPaths", new JSONArray().put("pk")))
+                        .put("updateTransforms", new JSONArray().put(new JSONObject().put("fieldPath", "pkAt").put("setToServerValue", "REQUEST_TIME")));
+                int code = http(fsBase + "/v1/projects/" + proj + "/databases/(default)/documents:commit", "application/json",
+                        new JSONObject().put("writes", new JSONArray().put(w)).toString(), tok, null);
+                Log.i(TAG, "push seen " + id + " " + code);
+            } catch (Exception e) { Log.w(TAG, "push seen failed", e); }
+        }, "vct-pk").start();
+    }
+
     /** network came back after a gap: send the position at once (not at the next 30 s beat) */
     void networkBack() { if (running && h != null && last != null) h.post(() -> { sentAt = 0; send(last); }); }
 

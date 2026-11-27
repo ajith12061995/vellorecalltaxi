@@ -241,7 +241,7 @@ exports.weatherTick = onSchedule({ schedule: '7,37 * * * *', timeZone: 'Asia/Kol
   } catch (e) { logger.warn('weather failed', { message: String(e && e.message || e) }); }
 });
 
-exports.onBookingCreated = onDocumentCreated('bookings/{id}', async ev => {
+exports.onBookingCreated = onDocumentCreated({ document: 'bookings/{id}', timeoutSeconds: 150 }, async ev => {
   const b = ev.data.data(); if (!b) return;
   const c = await cfg(), id = ev.params.id, ref = ev.data.ref;
   const now = b.createdAt && b.createdAt.toMillis ? b.createdAt.toMillis() : Date.now();
@@ -274,10 +274,19 @@ exports.onBookingCreated = onDocumentCreated('bookings/{id}', async ev => {
   if (L.outsideArea(b, c.area)) { await ref.update({ areaFlag: 'outside-local' }); logger.warn('outside local area', { id, veh: b.veh }); }
   if (b.status !== 'searching' || !c.push || !c.push.vapid) return;
   await pushNewRide(id, b);
+  // 4) while nobody has taken it, the ride is pushed again (like Rapido re-offering an order): a phone that slept
+  // through the first push, or got it late, rings on the next one. Data message only (1.0.17+ apps), at most 4 times.
+  if (c.noRepush) return;
+  for (const wait of L.REPUSH) {
+    await new Promise(r => setTimeout(r, wait * 1000));
+    const s = await ref.get(); const nb = s.exists ? s.data() : null;
+    if (!L.repushNow(nb)) break;
+    await pushNewRide(id, nb, { dataOnly: true, round: wait }).catch(e => logger.warn('repush', { id, err: String(e) }));
+  }
 });
 
 // New-ride push to the drivers of that vehicle who are ON (also used when a ride is given to another driver).
-async function pushNewRide(id, b) {
+async function pushNewRide(id, b, o = {}) {
   const ex = new Set(b.exclude || []);
   const ds0 = await db.collection('drivers').where('veh', '==', b.veh).where('online', '==', true).get();
   const ds = { docs: ds0.docs.filter(d => !ex.has(d.id)) };
@@ -288,9 +297,9 @@ async function pushNewRide(id, b) {
   const from = (b.from && (b.from.ta || b.from.en)) || '';
   if (tokData.length) {
     const rd = await admin.messaging().sendEachForMulticast({ tokens: tokData, android: { priority: 'high', ttl: 60000 }, data: L.ridePushData(id, b) });
-    logger.info('push data', { sent: rd.successCount, failed: rd.failureCount });
+    logger.info('push data', { id, round: o.round || 0, sent: rd.successCount, failed: rd.failureCount });
   }
-  if (!tokens.length) return;
+  if (!tokens.length || o.dataOnly) return;
   const r = await admin.messaging().sendEachForMulticast({ tokens,
     webpush: { notification: { title: '🚕 புது Ride / New ride', body: `${from} · ₹${b.fare}${b.tip ? ' + ₹' + b.tip : ''}`, requireInteraction: true, tag: id },
                fcmOptions: { link: SITE + 'driver/' } },

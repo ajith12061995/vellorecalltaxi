@@ -534,3 +534,12 @@ test('live: battery, charging and phone-off state from the driver app (1.0.19)',
   await assertFails(updateDoc(doc(as.drv(), 'live', DRV), { chg: 'yes' }));
   await assertFails(updateDoc(doc(as.drv(), 'live', DRV2), { pwr: 'off' }));
 });
+
+test('live: the last ride push the phone received (1.0.21)', async () => {
+  await seed(db => setDoc(doc(db, 'live', DRV), { lat: 12.9, lon: 79.1, online: true, updatedAt: serverTimestamp() }));
+  await assertSucceeds(updateDoc(doc(as.drv(), 'live', DRV), { pk: 'bkAbc123', pkAt: serverTimestamp() }));
+  await assertFails(updateDoc(doc(as.drv(), 'live', DRV), { pk: 'x'.repeat(41) }));
+  await assertFails(updateDoc(doc(as.drv(), 'live', DRV), { pk: 12 }));
+  await assertFails(updateDoc(doc(as.drv(), 'live', DRV), { pkAt: 'now' }));
+  await assertFails(updateDoc(doc(as.drv(), 'live', DRV2), { pk: 'bk1' }));
+});

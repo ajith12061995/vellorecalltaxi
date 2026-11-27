@@ -29,6 +29,7 @@ public class VctMessagingService extends MessagingService {
         boolean on = DutyService.isOn(c);
         Log.i("VctPush", type + " on=" + on + " visible=" + DutyService.appVisible);
         if (!on) return;
+        if ("ride".equals(type)) NativeLive.get(c).pushSeen(d.get("bookingId"));   // 1.0.21: tell the server this phone got it
         JSObject o = new JSObject(); for (Map.Entry<String, String> e : d.entrySet()) o.put(e.getKey(), e.getValue());
         if (!RideOverlayPlugin.wake(o)) DutyService.openBg(c);
         DutyService.setOn(c, true);   // make sure the duty service (and the position sender) is running

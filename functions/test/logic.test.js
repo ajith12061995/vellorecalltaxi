@@ -326,3 +326,15 @@ test('reassign: phone off before pickup → other driver; new app silent 5 min �
   const a = L.ownerAlerts({ open: [], ready: 1, on: 1, sent: {}, now, moved: [{ id: 'b1', why: 'phoneoff', b: { driverName: 'Ravi', from: { ta: 'காட்பாடி' } } }, { id: 'b2', alert: true, b: { driverName: 'Siva', from: { ta: 'CMC' } } }] });
   assert.deepEqual(a.out.map(x => x.kind), ['moved', 'tripoff']); assert.match(a.out[0].body, /Ravi phone switch off · காட்பாடி/);
 });
+
+test('ride pushed again only while nobody has taken it (local rides)', () => {
+  assert.ok(L.REPUSH.length >= 3 && L.REPUSH.reduce((a, b) => a + b, 0) <= 120, 'within the function time');
+  assert.equal(L.repushNow({ status: 'searching' }), true);
+  assert.equal(L.repushNow({ status: 'searching', kind: 'ride' }), true);
+  assert.equal(L.repushNow({ status: 'assigned', driverPhone: '+91' }), false);
+  assert.equal(L.repushNow({ status: 'searching', driverPhone: '+91' }), false);
+  assert.equal(L.repushNow({ status: 'cancelled' }), false);
+  assert.equal(L.repushNow({ status: 'searching', kind: 'outstation' }), false, 'outstation has its own dispatch rounds');
+  assert.equal(L.repushNow({ status: 'searching', kind: 'rental' }), false);
+  assert.equal(L.repushNow(null), false);
+});

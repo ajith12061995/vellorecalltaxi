@@ -177,6 +177,7 @@ public class RideOverlayPlugin extends Plugin {
 
     /** 1.0.20: the phone rings a ride by itself (RideFallback) — the page did not answer the push in time */
     static void nativeRing(Context a, Bundle bd, String say, String sayEn) {
+        RideFallback.handled(bd.getString("id", ""));   // the same ride pushed again is not rung a second time
         RideOverlayPlugin p = inst;
         if (p != null) { p.main.post(() -> p.doRing(bd, say, sayEn, true)); return; }
         RideFallback.playTone(a);           // no page at all: the ride screen with a plain ringtone

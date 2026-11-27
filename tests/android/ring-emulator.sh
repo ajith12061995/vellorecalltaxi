@@ -137,6 +137,7 @@ cmd push-deaf1; waitlog '^push=sent:push-deaf1' 20 || bad "deaf push not queued"
 adb shell input keyevent KEYCODE_SLEEP; sleep 3
 for i in $(seq 1 40); do adb logcat -d | grep -q "RideFallback: fallback ring push-deaf1" && break; sleep 1; done
 adb logcat -d | grep -q "RideFallback: fallback ring push-deaf1" && ok "page silent (asleep): the phone read the ride and rang by itself" || { bad "no fallback ring"; adb logcat -d | grep -E "RideFallback|NativeLive|VctPush" | tail -15; }
+grep '^commit=' "$LOG" | grep -q '"pk":{"stringValue":"push-deaf1"}' && grep '^commit=' "$LOG" | grep 'push-deaf1' | grep -q '"fieldPath":"pkAt","setToServerValue":"REQUEST_TIME"' && ok "the phone told the server it got the push (pk + server time)" || bad "no push receipt: $(grep '^commit=' "$LOG" | grep -o '"pk"[^}]*}' | tail -1)"
 grep -q '^read=Bearer idt-test push-deaf1' "$LOG" && ok "it read the ride from the server, signed in as the driver (rules apply)" || bad "ride not read: $(grep '^read=' "$LOG" | tail -1)"
 grep '^query=' "$LOG" | tail -1 | grep -q '"driverPhone"' && ok "it checked the driver is not already on a ride" || bad "no busy check"
 sleep 3; awake && ok "screen turned on" || bad "screen stayed off"

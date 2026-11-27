@@ -1727,7 +1727,7 @@ async function wakeRide(id){if(WAKEN.has(id))return;WAKEN.add(id);setTimeout(()=
     // shown straight from this fresh read (the live list may still be catching up; it is not changed here)
     if(!SHOWING&&!NEXT&&!document.querySelector('.modal')&&document.getElementById('offs')&&offerAt(b)<=VCTCLK.now()){SHOWING=id;incoming(buildJ(b,id))}
     if(SHOWING===id)seen(); // rang here (a later turn, 3–4 km, is left to the phone too if the page sleeps by then)
-  }catch(e){/* no answer in time: the phone rings by itself */}}
+  }catch(e){WAKEN.delete(id);/* no answer in time: the phone rings by itself; the next push of this ride is tried again */}}
 /* "Accept" on a ride the phone rang by itself (the page was asleep): read it, same checks as any request, then accept */
 async function takeNative(id){try{if(!CL)await cloudP;if(!CL||!S.online||J||document.querySelector('.modal'))return;
   const s=await F().getDoc(F().doc(CL.db,'bookings',id));if(!s.exists())return;const b={id,...s.data()};

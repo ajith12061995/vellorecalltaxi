@@ -333,6 +333,9 @@ function splitDriverTokens(drivers) {
   }
   return { data: data.slice(0, 500), note: note.slice(0, 500) };
 }
+// Ride pushed again while nobody has taken it (seconds after the first push; the customer's search is ~2–3 min).
+const REPUSH = [20, 20, 25, 35];
+const repushNow = b => !!b && b.status === 'searching' && !b.driverPhone && (b.kind || 'ride') !== 'outstation' && (b.kind || 'ride') !== 'rental';
 function ridePushData(id, b) {
   const s = v => String(v == null ? '' : v).slice(0, 120);
   return { type: 'ride', bookingId: s(id), veh: s(b.veh), kind: s(b.kind || 'ride'), fare: s(b.fare), tip: s(b.tip || 0),
@@ -385,4 +388,4 @@ function reassignCheck(b, live, drv, now) {
   return null;
 }
 
-module.exports = { REASSIGN, reassignCheck, SUBDUR, subActive, subPrice, buySubDecide, splitDriverTokens, ridePushData, placeName, BANDS, bandOf, demandMap, statDay, scoreSample, ownerAlerts, WATCH, istHour, driverWatch, watchMsg, inclKm, enquiryFlood, OUTCAT, outCat, catBata, AHRS, AXH, aHours, planHours, hrsTable, AUTO_GOVT, AREA, autoFare, outsideArea, rentCheck, outCheck, tariffs, rentPrice, istStamp, commissionFor, settle, housekeeping, fareLooksWrong, liveStale, custPush, fareCheck, bookingLimit, nightPct, withNight, crowKm, LIMIT_OPEN, LIMIT_HOUR };
+module.exports = { REPUSH, repushNow, REASSIGN, reassignCheck, SUBDUR, subActive, subPrice, buySubDecide, splitDriverTokens, ridePushData, placeName, BANDS, bandOf, demandMap, statDay, scoreSample, ownerAlerts, WATCH, istHour, driverWatch, watchMsg, inclKm, enquiryFlood, OUTCAT, outCat, catBata, AHRS, AXH, aHours, planHours, hrsTable, AUTO_GOVT, AREA, autoFare, outsideArea, rentCheck, outCheck, tariffs, rentPrice, istStamp, commissionFor, settle, housekeeping, fareLooksWrong, liveStale, custPush, fareCheck, bookingLimit, nightPct, withNight, crowKm, LIMIT_OPEN, LIMIT_HOUR };
