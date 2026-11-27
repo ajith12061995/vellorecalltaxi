@@ -277,3 +277,26 @@ test('new-ride push: 1.0.17+ apps get the data message, others the notification'
   assert.deepEqual(d, { type: 'ride', bookingId: 'bk1', veh: 'mini', kind: 'ride', fare: '150', tip: '0', from: 'காட்பாடி', to: 'CMC' });
   assert.ok(Object.values(d).every(v => typeof v === 'string'));
 });
+
+test('subscription: price, decision, active window, no commission while it runs', () => {
+  const cfg = { subs: { auto: { day: 49, week: 299, month: 0 }, mini: { day: 99, week: '599', month: 1999 } } };
+  assert.equal(L.subPrice(cfg, 'mini', 'week'), 599); assert.equal(L.subPrice(cfg, 'auto', 'month'), 0); assert.equal(L.subPrice(cfg, 'suv', 'day'), 0); assert.equal(L.subPrice({}, 'mini', 'day'), 0);
+  const now = Date.parse('2026-11-27T12:00:00Z'), D = (x) => ({ veh: 'mini', wallet: 500, ...x });
+  assert.deepEqual(L.buySubDecide(D(), cfg, 'day', now), { ok: true, price: 99, walletAfter: 401, sub: { plan: 'day', veh: 'mini', price: 99, from: now, until: now + 864e5 } });
+  assert.equal(L.buySubDecide(D(), cfg, 'month', now).why, 'wallet'); assert.equal(L.buySubDecide(D(), cfg, 'month', now).need, 1499);
+  assert.equal(L.buySubDecide(D({ wallet: 1999 }), cfg, 'month', now).sub.until, now + 30 * 864e5);
+  assert.equal(L.buySubDecide(D({ veh: 'auto' }), cfg, 'month', now).why, 'off', 'price 0 = not offered');
+  assert.equal(L.buySubDecide(D(), cfg, 'year', now).why, 'plan');
+  assert.equal(L.buySubDecide(D({ blocked: true }), cfg, 'day', now).why, 'blocked');
+  assert.equal(L.buySubDecide(null, cfg, 'day', now).why, 'driver');
+  assert.equal(L.buySubDecide(D({ sub: { from: T(now - 3600e3), until: T(now + 3600e3) } }), cfg, 'day', now).why, 'active');
+  assert.equal(L.buySubDecide(D({ sub: { from: T(now - 2 * 864e5), until: T(now - 1) } }), cfg, 'day', now).ok, true, 'ended plan → can buy again');
+  assert.equal(L.buySubDecide(D({ wallet: 99 }), cfg, 'day', now).walletAfter, 0, 'exactly enough');
+  const sub = { from: T(now), until: T(now + 864e5) };
+  assert.equal(L.subActive(sub, now), true); assert.equal(L.subActive(sub, now + 864e5), false); assert.equal(L.subActive(sub, now - 1), false); assert.equal(L.subActive(null, now), false);
+  // server mode: no commission taken while subscribed; app mode: an app that still took commission is flagged
+  assert.deepEqual(L.settle({ fare: 300 }, 10, true, true), { trip: 300, comm: 0, taken: 0, walletDelta: 0, mismatch: false });
+  assert.equal(L.settle({ fare: 300 }, 10, true, false).walletDelta, -30);
+  assert.equal(L.settle({ fare: 300, comm: 0, commLocal: true }, 10, false, true).mismatch, false);
+  assert.equal(L.settle({ fare: 300, comm: 30, commLocal: true }, 10, false, true).mismatch, true);
+});

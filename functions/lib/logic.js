@@ -15,8 +15,9 @@ function commissionFor(b, pct) {
 // Server mode: the server takes the whole commission. What the booking says the app took is NOT trusted
 // (a modified app could claim it took commission without doing so); in server mode the security rules stop
 // drivers from changing their own wallet, so nothing was taken on the phone.
-function settle(b, pct, serverComm) {
-  const { trip, comm } = commissionFor(b, pct);
+function settle(b, pct, serverComm, subOn) {
+  const { trip } = commissionFor(b, pct);
+  const comm = subOn ? 0 : commissionFor(b, pct).comm;   // a driver on a subscription pays no commission
   const claimed = b.commLocal ? n(b.comm) : 0;          // what the driver app says it took (app mode only)
   const walletDelta = serverComm ? -comm : 0;
   return { trip, comm, taken: serverComm ? 0 : claimed, walletDelta, mismatch: !serverComm && !!b.commLocal && n(b.comm) !== comm };
@@ -328,4 +329,27 @@ function ridePushData(id, b) {
     from: s(b.from && (b.from.ta || b.from.en)), to: s(b.to && (b.to.ta || b.to.en)) };
 }
 
-module.exports = { splitDriverTokens, ridePushData, placeName, BANDS, bandOf, demandMap, statDay, scoreSample, ownerAlerts, WATCH, istHour, driverWatch, watchMsg, inclKm, enquiryFlood, OUTCAT, outCat, catBata, AHRS, AXH, aHours, planHours, hrsTable, AUTO_GOVT, AREA, autoFare, outsideArea, rentCheck, outCheck, tariffs, rentPrice, istStamp, commissionFor, settle, housekeeping, fareLooksWrong, liveStale, custPush, fareCheck, bookingLimit, nightPct, withNight, crowKm, LIMIT_OPEN, LIMIT_HOUR };
+// Driver subscription (27 Nov, owner's decision): instead of commission a driver may buy a day / week / month plan from
+// the wallet (price per vehicle type in config/app.subs, set by the owner; 0 / empty = not offered). While it runs, rides
+// done carry no commission; when it ends the driver is back on commission by itself. Bought only through the server.
+const SUBDUR = { day: 864e5, week: 7 * 864e5, month: 30 * 864e5 };
+const tms = x => (x && x.toMillis ? x.toMillis() : +x || 0);
+const subActive = (sub, at) => !!sub && tms(sub.from) <= at && tms(sub.until) > at;
+function subPrice(cfg, veh, plan) {
+  const v = cfg && cfg.subs && cfg.subs[veh], p = v ? Math.round(+v[plan] || 0) : 0;
+  return p > 0 && p <= 100000 ? p : 0;
+}
+function buySubDecide(drv, cfg, plan, now) {
+  if (!SUBDUR[plan]) return { ok: false, why: 'plan' };
+  if (!drv) return { ok: false, why: 'driver' };
+  if (drv.blocked) return { ok: false, why: 'blocked' };
+  if (!drv.veh) return { ok: false, why: 'veh' };
+  const price = subPrice(cfg, drv.veh, plan);
+  if (!price) return { ok: false, why: 'off' };
+  if (subActive(drv.sub, now)) return { ok: false, why: 'active' };
+  const wallet = Math.round(+drv.wallet || 0);
+  if (wallet < price) return { ok: false, why: 'wallet', need: price - wallet };
+  return { ok: true, price, walletAfter: wallet - price, sub: { plan, veh: drv.veh, price, from: now, until: now + SUBDUR[plan] } };
+}
+
+module.exports = { SUBDUR, subActive, subPrice, buySubDecide, splitDriverTokens, ridePushData, placeName, BANDS, bandOf, demandMap, statDay, scoreSample, ownerAlerts, WATCH, istHour, driverWatch, watchMsg, inclKm, enquiryFlood, OUTCAT, outCat, catBata, AHRS, AXH, aHours, planHours, hrsTable, AUTO_GOVT, AREA, autoFare, outsideArea, rentCheck, outCheck, tariffs, rentPrice, istStamp, commissionFor, settle, housekeeping, fareLooksWrong, liveStale, custPush, fareCheck, bookingLimit, nightPct, withNight, crowKm, LIMIT_OPEN, LIMIT_HOUR };

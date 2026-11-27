@@ -80,6 +80,15 @@
       async pushToken(v,sw,sc){if(!v)return null;(window.__pushReg=window.__pushReg||[]).push(sw+'|'+sc);return 'tok-'+(user&&user.uid||'x')},
       // same decisions as functions/index.js verifyPin
       async call(name,data){if(window.MOCK&&MOCK.down)throw{code:'functions/unavailable'};if(window.MOCK&&MOCK.fnDown)throw{code:'functions/internal'};
+        // same decisions as functions/lib/logic.js buySubDecide + functions/index.js buySub
+        if(name==='buySub'){if(!user)throw{code:'functions/unauthenticated'};const ph=user.phoneNumber,dp='drivers/'+ph,d=store.get(dp),cfg=store.get('config/app')||{},plan=String(data&&data.plan||''),DUR={day:864e5,week:7*864e5,month:30*864e5},now=Date.now();
+          if(!DUR[plan])return{ok:false,why:'plan'};if(!d)return{ok:false,why:'driver'};if(d.blocked)return{ok:false,why:'blocked'};if(!d.veh)return{ok:false,why:'veh'};
+          const v=cfg.subs&&cfg.subs[d.veh],price=v?Math.round(+v[plan]||0):0;if(!(price>0))return{ok:false,why:'off'};
+          const ms=x=>x&&x.__ms!=null?x.__ms:(x&&x.toMillis?x.toMillis():+x||0);if(d.sub&&ms(d.sub.from)<=now&&ms(d.sub.until)>now)return{ok:false,why:'active'};
+          const w=Math.round(+d.wallet||0);if(w<price)return{ok:false,why:'wallet',need:price-w};
+          const lid='sub'+(++seq);write(dp,{wallet:w-price,sub:{plan,veh:d.veh,price,from:{__ms:now},until:{__ms:now+DUR[plan]},id:lid}},true);
+          write('ledger/'+lid,{type:'sub',driverPhone:ph,plan,veh:d.veh,price,walletDelta:-price,from:{__ms:now},until:{__ms:now+DUR[plan]},at:{__ms:now}},false);notify();
+          return{ok:true,plan,price,until:now+DUR[plan],id:lid}}
         if(name==='deleteMyAccount'){if(!user)throw{code:'functions/unauthenticated'};const ph=user.phoneNumber;
           if(ph&&store.get('drivers/'+ph)){store.set('deletionRequests/'+ph,{kind:'driver',phone:ph,uid:user.uid,status:'pending'});return{queued:true}}
           const mine=[...store.keys()].filter(k=>/^bookings\/[^/]+$/.test(k)&&store.get(k).customerUid===user.uid);

@@ -47,11 +47,12 @@
 .agcard{display:grid;grid-template-columns:1fr auto;align-items:start;gap:8px 6px;background:#FFF6D6;border:1.5px solid #FFC21A;border-radius:16px;padding:10px 10px 10px 14px;margin:10px 0;color:#0B4A36}.agtxt{flex:1;min-width:0}.agtxt b{display:block;font-size:15px}.agtxt small{display:block;font-size:12.5px;color:#4b5a54;line-height:1.35}.agbtn{grid-column:1/-1;grid-row:2;justify-self:start;background:#0B4A36;color:#FFC21A;border:0;border-radius:12px;padding:9px 12px;font:inherit;font-weight:700;font-size:14px;text-decoration:none;white-space:nowrap;cursor:pointer}.agx{grid-column:2;grid-row:1;background:none;border:0;font-size:22px;line-height:1;color:#6b7a73;padding:4px 6px;cursor:pointer}
 .demhint{margin:10px 2px 0;padding:10px 12px;border:1px solid #F2D27A;background:#FFF9E6;border-radius:12px;display:grid;gap:6px;font-size:13px}.demhint b{display:flex;gap:6px;align-items:center}.demhint a{display:flex;justify-content:space-between;gap:8px;color:inherit;text-decoration:none;padding:6px 0;border-top:1px solid #F3E3B0}.demhint a small{color:#6b5a2a;white-space:nowrap}
 .nextcard{position:fixed;left:10px;right:10px;bottom:calc(14px + env(safe-area-inset-bottom));z-index:60;background:var(--surface,#fff);border:2px solid #F5B800;border-radius:16px;padding:12px 14px;box-shadow:0 10px 30px rgba(0,0,0,.22);display:grid;gap:10px}.nextcard .nh{display:flex;justify-content:space-between;align-items:center;font-size:14px}.nextcard .nh span{font-weight:800;color:#B07A00}.nextcard .nb{display:flex;justify-content:space-between;gap:10px;align-items:center}.nextcard .nb b{display:block;font-size:16px}.nextcard .nb small{display:block;color:var(--muted,#66706B);font-size:12.5px}.nextcard .nb em{font-style:normal;font-size:22px;font-weight:800}.nextcard .na{display:grid;grid-template-columns:1fr 2fr;gap:10px}.nextcard .na button{height:46px;border-radius:12px;font-weight:700}
+.subcard{margin:12px 0 0;padding:12px 14px;border:1px solid var(--line,#DDE3DF);border-radius:14px;display:grid;gap:10px}.subcard b{display:flex;gap:6px;align-items:center;font-size:15px}.subcard small{display:block;color:var(--muted,#66706B);font-size:12.5px;margin-top:2px}.subcard.on{border-color:#1E8A5A;background:#EEF7F1}.subplans{display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:8px}.subp{border:1.5px solid #F5B800;background:#FFF9E6;border-radius:12px;padding:10px 6px;display:grid;gap:2px;text-align:center;color:inherit;font:inherit}.subp em{font-style:normal;font-weight:800;font-size:18px}.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
 </style>
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('../vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV=window.VCT_V='140',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV=window.VCT_V='141',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('../version.json',location.href)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -662,20 +663,20 @@ a.btn{text-decoration:none}
 <div class="app" id="app"><section class="screen" id="splash"><div class="roofsign"><b>TAXI</b><span>வேலூர் டாக்ஸி</span></div><span class="drvtag">DRIVER</span><div class="road"></div><div class="tag">Vellore Taxi · Driver</div></section></div>
 <div class="toast" id="toast"></div>
 
-<script src="../core/report.js?v=140"></script>
-<script src="../core/geo.js?v=140"></script>
-<script src="../core/fare.js?v=140"></script>
-<script src="../core/appget.js?v=140"></script>
-<script src="../core/pin.js?v=140"></script>
-<script src="../core/clock.js?v=140"></script>
-<script src="../core/map.js?v=140"></script>
-<script src="../core/chat.js?v=140"></script>
-<script src="../core/driverchecks.js?v=140"></script>
-<script src="../core/nav.js?v=140"></script>
-<script src="../core/otp.js?v=140"></script>
-<script src="../core/deskmode.js?v=140"></script>
-<script src="../core/refer.js?v=140"></script>
-<script src="../core/weather.js?v=140"></script>
+<script src="../core/report.js?v=141"></script>
+<script src="../core/geo.js?v=141"></script>
+<script src="../core/fare.js?v=141"></script>
+<script src="../core/appget.js?v=141"></script>
+<script src="../core/pin.js?v=141"></script>
+<script src="../core/clock.js?v=141"></script>
+<script src="../core/map.js?v=141"></script>
+<script src="../core/chat.js?v=141"></script>
+<script src="../core/driverchecks.js?v=141"></script>
+<script src="../core/nav.js?v=141"></script>
+<script src="../core/otp.js?v=141"></script>
+<script src="../core/deskmode.js?v=141"></script>
+<script src="../core/refer.js?v=141"></script>
+<script src="../core/weather.js?v=141"></script>
 <script>
 /* shared with the customer app: icons, places, fares, map engine */
 /* small line icons (one stroke style everywhere; no emoji in the interface) */
@@ -795,6 +796,11 @@ const padr=k=>{const a=P[k]&&P[k].addr;return a&&a!==P[k][S.lang]?`<small class=
 const inr=n=>'₹'+Math.round(n).toLocaleString('en-IN');
 const esc=v=>String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
 let COMM=10,MINBAL=100;
+/* Subscription (27 Nov): while the driver's plan runs (bought in Wallet, checked by the server), rides carry no commission
+   and a low wallet does not stop going online (nothing is taken from it). When it ends, commission applies again. */
+const subOn=at=>{const x=DME&&DME.sub,t=at||Date.now();return !!(x&&x.from<=t&&x.until>t)};
+const commPct=()=>subOn()?0:COMM;
+const lowWallet=()=>!subOn()&&DS.wallet<MINBAL;
 const DPROF=[
   {id:'auto',ta:'செல்வம் R',en:'Selvam R',plate:'TN 23 Q 7788',model:'Bajaj RE',veh:'auto',rating:4.8},
   {id:'sedan',ta:'ரவிக்குமார் M',en:'Ravikumar M',plate:'TN 23 CA 3344',model:'Swift Dzire',veh:'sedan',rating:4.9},
@@ -835,7 +841,7 @@ setInterval(awakeTick,5000);
 function resumeWhy(){return DME.blocked?L('உங்க account நிறுத்தி வைக்கப்பட்டிருக்கு. Owner-ஐ தொடர்பு கொள்ளுங்க','Your account is on hold. Contact the owner')
     :docState().expired.length?L('காலாவதி ஆன document: ','Expired: ')+docState().expired.join(', ')
     :(CFGD.reqConsent&&needSign())?L('ஒப்பந்தத்தை ஏத்துக்கிட்டு Online போங்க','Accept the agreement to go online')
-    :DS.wallet<MINBAL?L('Wallet குறைவு. Recharge பண்ணிட்டு Online போங்க','Wallet is low. Recharge to go online'):''}
+    :lowWallet()?L('Wallet குறைவு. Recharge பண்ணிட்டு Online போங்க','Wallet is low. Recharge to go online'):''}
 /* Demand hint (config/demand, built hourly by the server): the busiest pickup places right now, nearest first among the top ones */
 let DEMD=null,DEMAT=0;
 const dBand=()=>{const h=new Date(Date.now()+330*60e3).getUTCHours();return h>=5&&h<11?'m':h>=11&&h<16?'a':h>=16&&h<21?'e':'n'};
@@ -1023,7 +1029,7 @@ function bindNav(){app.querySelectorAll('.nav button').forEach(b=>b.onclick=()=>
 
 /* ---------- home ---------- */
 function home(){setTimeout(demandHint,60);
-  NOANIM=!!(document.getElementById('ons')||document.getElementById('offs'));S.tab='home';const d=me(),today=DS.trips.filter(x=>isToday(x.date)),net=today.reduce((a,x)=>a+x.net,0);const low=DS.wallet<MINBAL;
+  NOANIM=!!(document.getElementById('ons')||document.getElementById('offs'));S.tab='home';const d=me(),today=DS.trips.filter(x=>isToday(x.date)),net=today.reduce((a,x)=>a+x.net,0);const low=lowWallet();
   go(shell(`<div class="mapwrap"><canvas class="map" id="map"></canvas>
      <div class="topbar"><button class="chipbtn menub" id="menu" aria-label="Menu">${X('menu',20)}${unread()?'<i class="mdot"></i>':''}</button><button class="tpill" id="tpill"><span class="stdot ${S.online?'on':''}"></span><b>${today.length} ${L('trips','trips')}</b><span>${inr(net)}</span><i>›</i></button><div style="flex:1"></div>
        <button class="chipbtn ${low?'lowbal':''}" id="wb">${I.navWallet.replace('<svg ','<svg width="18" height="18" ')} ${inr(DS.wallet)}</button></div>
@@ -1063,7 +1069,7 @@ function home(){setTimeout(demandHint,60);
     if(S.online){bindTap('offs',()=>confirmOff(()=>{setOnline(false);home();toast(L('Offline ஆயிட்டீங்க','You are offline'))}));
       if(CL)maybeShowReq();else{document.getElementById('dreq').onclick=()=>incoming()}}
     {const sg=document.getElementById('sgn');if(sg)sg.onclick=()=>signAgreement()}
-    if(!S.online)bindTap('ons',()=>{if(CFGD.reqConsent&&needSign()){signAgreement(()=>home());return}if(DME&&DME.blocked){toast(L('உங்க account நிறுத்தி வைக்கப்பட்டிருக்கு. Owner-ஐ தொடர்பு கொள்ளுங்க','Your account is on hold. Contact the owner'));home();return}{const ds=docState();if(ds.expired.length){toast(L('காலாவதி ஆன document: ','Expired: ')+ds.expired.join(', ')+L('. புதுப்பிச்சு office-க்கு அனுப்புங்க','. Renew it and tell the office'));home();return}}if(DS.wallet<MINBAL){toast(L('Wallet recharge பண்ணிட்டு Online போங்க','Recharge your wallet to go online'));home();return}setOnline(true);home();toast(L('Online! Ride request வந்தா சத்தம் வரும்','You are online. Requests will ring'))});
+    if(!S.online)bindTap('ons',()=>{if(CFGD.reqConsent&&needSign()){signAgreement(()=>home());return}if(DME&&DME.blocked){toast(L('உங்க account நிறுத்தி வைக்கப்பட்டிருக்கு. Owner-ஐ தொடர்பு கொள்ளுங்க','Your account is on hold. Contact the owner'));home();return}{const ds=docState();if(ds.expired.length){toast(L('காலாவதி ஆன document: ','Expired: ')+ds.expired.join(', ')+L('. புதுப்பிச்சு office-க்கு அனுப்புங்க','. Renew it and tell the office'));home();return}}if(lowWallet()){toast(L('Wallet recharge பண்ணிட்டு Online போங்க','Recharge your wallet to go online'));home();return}setOnline(true);home();toast(L('Online! Ride request வந்தா சத்தம் வரும்','You are online. Requests will ring'))});
   });
 }
 
@@ -1215,7 +1221,7 @@ function tripActual(o){const b=J.b||{},now=Date.now(),st=CL&&CL.toMs(b.startedAt
   return Object.assign({km:J.gpsKm>0.5?+J.gpsKm.toFixed(1):+(J.km||0).toFixed(1),mins:Math.max(0,Math.round((now-st)/6e4)),waitMin:ar&&st>ar?Math.round((st-ar)/6e4):0},J.adj||{},o||{})}
 // bill more than 1.5 × the booked fare and at least ₹50 above it (same rule as the office alert)
 function billBig(){const f=J.fin||finNow(),q=+(J.b&&J.b.fare)||0;return q>0&&f.total>q*1.5&&f.total-q>=50}
-function finNow(){J.fin=FARE.final(J.b,tripActual());J.comm=FARE.comm(J.fin.trip,COMM);return J.fin}
+function finNow(){J.fin=FARE.final(J.b,tripActual());J.comm=FARE.comm(J.fin.trip,commPct());return J.fin}
 function tripEndSheet(after){
   const k=J.b&&J.b.kind,need=k==='rental'||k==='outstation',a=tripActual(),gps=J.gpsKm>0.5?Math.round(J.gpsKm):0;
   modal(`<h3>${L('Trip முடிவு விவரம்','Trip end details')}</h3>
@@ -1277,7 +1283,7 @@ function collect(){
       DS.wallet-=J.comm;saveDS();
       document.getElementById('pay').hidden=true;const sm=document.getElementById('sum');sm.hidden=false;sm.style.display='flex'};
     app.querySelectorAll('[data-s]').forEach(b=>b.onclick=()=>{stars=+b.dataset.s;if(J&&J.id)cUpd({custRating:stars});app.querySelectorAll('[data-s]').forEach(x=>x.classList.toggle('on',+x.dataset.s<=stars))});
-    document.getElementById('next').onclick=()=>{stopJob();J=null;if(DS.wallet<MINBAL){setOnline(false);home();toast(L('Wallet குறைவு. Recharge பண்ணிட்டு Online போங்க','Wallet is low. Recharge to go online'));return}home()};
+    document.getElementById('next').onclick=()=>{stopJob();J=null;if(lowWallet()){setOnline(false);home();toast(L('Wallet குறைவு. Recharge பண்ணிட்டு Online போங்க','Wallet is low. Recharge to go online'));return}home()};
     document.getElementById('off').onclick=()=>{stopJob();J=null;setOnline(false);home()};
   });
 }
@@ -1327,13 +1333,15 @@ function tripSheet(x){if(!x)return;const g=x.net+x.comm,tip=g-x.fare,cash=x.pay=
 function walletTab(){
   go(shell(`<div class="head pad"><h2>Wallet</h2></div><div class="body pad" style="padding-top:4px">
     <div class="walcard"><small>${L('Wallet இருப்பு','Wallet balance')}</small><b>${inr(DS.wallet)}</b>
-      <span>${L(`Online போக குறைந்தது ${inr(MINBAL)} இருக்கணும்.`,`Keep at least ${inr(MINBAL)} to go online.`)}</span>
+      <span>${subOn()?L('Subscription ஓடுது: commission இல்லை, குறைந்தபட்ச இருப்பு தேவையில்லை.','Subscription running: no commission, no minimum balance.'):L(`Online போக குறைந்தது ${inr(MINBAL)} இருக்கணும்.`,`Keep at least ${inr(MINBAL)} to go online.`)}</span>
       <button class="btn yellow" id="rc">+ ${L('Recharge பண்ணு','Recharge')}</button></div>
+    ${subCardHtml()}
     ${DS.pending.length?`<div class="sec"><h3>${L('Approval-க்கு காத்திருக்கு','Waiting for approval')}</h3></div><div class="recent">${DS.pending.map((p,i)=>`<div class="row"><span class="ic in">+</span><div><b>${inr(p.amt)} · UTR ${esc(p.utr)}</b><small>${L('Owner பார்த்து approve பண்ணுவாங்க','Your owner will verify and approve')}</small></div>${CL?'':`<button class="demo sm" data-ap="${i}">${L('Demo: approve','Demo: approve')}</button>`}</div>`).join('')}</div>`:''}
     <div class="sec"><h3>${L('பரிவர்த்தனைகள்','Transactions')}</h3></div>
     <div class="recent">${DS.tx.slice(0,40).map(x=>`<div class="row"><span class="ic ${x.amt>0?'in':'out'}">${x.amt>0?'+':'−'}</span><div><b>${esc(x[S.lang])}</b><small>${new Date(x.date).toLocaleString(S.lang==='ta'?'ta-IN':'en-IN',{day:'numeric',month:'short',hour:'numeric',minute:'2-digit'})}</small></div><b class="${x.amt>0?'pos':''}" style="flex:none">${x.amt>0?'+':'−'}${inr(Math.abs(x.amt))}</b></div>`).join('')}</div>
   </div>`),()=>{
     bindNav();document.getElementById('rc').onclick=recharge;
+    app.querySelectorAll('[data-sub]').forEach(b=>b.onclick=()=>subBuy(b.dataset.sub));
     app.querySelectorAll('[data-ap]').forEach(b=>b.onclick=()=>{const p=DS.pending.splice(+b.dataset.ap,1)[0];DS.wallet+=p.amt;DS.tx.unshift({amt:p.amt,ta:'Recharge (Owner approve)',en:'Recharge (approved by owner)',date:Date.now()});saveDS();walletTab();toast(L(`${inr(p.amt)} wallet-ல சேர்ந்தது`,`${inr(p.amt)} added to wallet`))});
   });
 }
@@ -1470,7 +1478,7 @@ async function loadMe(){
   applyMe(s.data());S.phone=(CL.phone||'').replace('+91','');S.logged=true;S.pid='cloud';save();
   WELC=welcomeDue(s.data());
   DS={wallet:DS.wallet,tx:[],trips:[],pending:[],onMs:0,onDay:new Date().toDateString()};
-  watchMe();watchCfgD();watchWxD();watchMine();watchRch();
+  watchMe();watchCfgD();watchWxD();watchMine();watchRch();watchSubs();
   VCTCLK.sync(F(),F().doc(CL.db,'live',CL.phone)); // learn the server time once
   return true;
 }
@@ -1479,7 +1487,7 @@ async function loadMe(){
 const DOCNM={dl:['ஓட்டுநர் உரிமம்','Driving licence'],rc:['RC','RC'],ins:['Insurance','Insurance'],permit:['Permit','Permit'],fc:['FC','FC']};
 function docState(){const out={expired:[],soon:[]};if(!DME||!DME.docs)return out;const now=Date.now();
   Object.entries(DME.docs).forEach(([k,t])=>{if(!t||!DOCNM[k])return;const nm=DOCNM[k][S.lang==='ta'?0:1],d=Math.ceil((t-now)/864e5);if(t<now)out.expired.push(nm);else if(d<=15)out.soon.push(`${nm} (${d} ${L('நாள்','days')})`)});return out}
-function applyMe(d){const pv=DME&&DME.veh;if(REQUNSUB&&pv&&d.veh&&pv!==d.veh){REQUNSUB();REQUNSUB=null;setTimeout(()=>{if(S.online)listenReq()},0)}DME={id:CL.phone,ta:d.name||'Driver',en:d.name||'Driver',plate:d.plate||'',model:d.model||'',veh:d.veh||'auto',rating:RATE||d.rating||5,docs:d.docs||null,blocked:!!d.blocked,upi:d.upi||'',svc:d.svc||null,prio:d.prio||'auto',year:+d.year||+((String(d.model||'').match(/\b(19|20)\d\d\b/)||[''])[0])||0,consent:d.consent||null,onl:!!d.online};DS.wallet=+d.wallet||0}
+function applyMe(d){const pv=DME&&DME.veh;if(REQUNSUB&&pv&&d.veh&&pv!==d.veh){REQUNSUB();REQUNSUB=null;setTimeout(()=>{if(S.online)listenReq()},0)}DME={id:CL.phone,ta:d.name||'Driver',en:d.name||'Driver',plate:d.plate||'',model:d.model||'',veh:d.veh||'auto',rating:RATE||d.rating||5,docs:d.docs||null,blocked:!!d.blocked,upi:d.upi||'',svc:d.svc||null,prio:d.prio||'auto',year:+d.year||+((String(d.model||'').match(/\b(19|20)\d\d\b/)||[''])[0])||0,consent:d.consent||null,onl:!!d.online,sub:d.sub&&d.sub.until?{plan:String(d.sub.plan||''),price:+d.sub.price||0,from:CL.toMs(d.sub.from)||0,until:CL.toMs(d.sub.until)||0}:null};DS.wallet=+d.wallet||0}
 function watchMe(){UNS.push(F().onSnapshot(F().doc(CL.db,'drivers',CL.phone),s=>{const live=!(s.metadata&&s.metadata.fromCache);
   if(!s.exists()){if(live&&ME_CACHED){ME_CACHED=false;if(S.online)setOnline(false);stopAllD();DME=null;notDriver()}return}
   const before=DS.wallet;applyMe(s.data());
@@ -1493,7 +1501,7 @@ let WXD=null;
 function wxHtmlD(){return CL?VCTWX.html(WXD,Date.now(),'driver',S.lang):''}
 function watchWxD(){UNS.push(F().onSnapshot(F().doc(CL.db,'config','weather'),s=>{WXD=s.exists()?s.data():null;const el=document.getElementById('wx');if(el)el.outerHTML=wxHtmlD()},()=>{}))}
 function watchCfgD(){UNS.push(F().onSnapshot(F().doc(CL.db,'config','app'),s=>{if(!s.exists())return;const d=s.data();
-  if(window.APPGET)APPGET.setPlay(d.play);if(d.comm!=null)COMM=+d.comm;if(d.minbal!=null)MINBAL=+d.minbal;CFGD.upi=d.upi||'';CFGD.office=d.driverHelp||d.office||''; /* drivers call the driver help line when the office has set one */CFGD.serverComm=!!d.serverComm;CFGD.serverPin=!!d.serverPin;CFGD.reqConsent=!!d.reqConsent;CFGD.extNav=!!d.extNav;CFGD.rzp=!!d.rzp&&(!Array.isArray(d.rzpTesters)||!d.rzpTesters.length||d.rzpTesters.includes(CL&&CL.phone));CFGD.showFee=!!d.showFee;CFGD.wait=d.wait||null;CFGD.push=d.push||null;
+  if(window.APPGET)APPGET.setPlay(d.play);if(d.comm!=null)COMM=+d.comm;if(d.minbal!=null)MINBAL=+d.minbal;CFGD.subs=d.subs||null;CFGD.upi=d.upi||'';CFGD.office=d.driverHelp||d.office||''; /* drivers call the driver help line when the office has set one */CFGD.serverComm=!!d.serverComm;CFGD.serverPin=!!d.serverPin;CFGD.reqConsent=!!d.reqConsent;CFGD.extNav=!!d.extNav;CFGD.rzp=!!d.rzp&&(!Array.isArray(d.rzpTesters)||!d.rzpTesters.length||d.rzpTesters.includes(CL&&CL.phone));CFGD.showFee=!!d.showFee;CFGD.wait=d.wait||null;CFGD.push=d.push||null;
   {const na=Array.isArray(d.announce)?d.announce:[],top=na[0];const fresh=top&&(!ANN[0]||ANN[0].id!==top.id)&&top.t>seenAt();ANN=na;
    if(fresh&&ANN.length&&!J&&!document.querySelector('.modal')){beep();toast((top.title||L('Office அறிவிப்பு','Office notice')));if(S.tab==='home'&&document.getElementById('menu'))home()}}if(d.dispatch)Object.assign(DISP,d.dispatch);
   if(d.fares)VEH.forEach(v=>{const f=d.fares[v.id];if(f&&v.id!=='auto'){if(f.base!=null)v.base=+f.base;if(f.per!=null)v.per=+f.per;v.incl=+f.incl>0?+f.incl:undefined}})},()=>{}))}
@@ -1518,10 +1526,38 @@ function watchRch(){UNS.push(F().onSnapshot(F().query(F().collection(CL.db,'rech
   rebuildTx();
   if(!J&&!document.querySelector('.modal')&&S.tab==='wallet')walletTab();
 },()=>{}))}
+/* subscription purchases (ledger entries the server wrote; the driver may read their own) */
+let SUBL=[];const SUBN={day:['நாள்','Day','24 மணி நேரம்','24 hours'],week:['வாரம்','Week','7 நாள்','7 days'],month:['மாதம்','Month','30 நாள்','30 days']};
+function watchSubs(){UNS.push(F().onSnapshot(F().query(F().collection(CL.db,'ledger'),F().where('driverPhone','==',CL.phone),F().where('type','==','sub')),snap=>{
+  SUBL=snap.docs.map(d=>{const x=d.data();return{plan:String(x.plan||''),price:+x.price||0,at:CL.toMs(x.at)||CL.toMs(x.from)||0}});rebuildTx();if(S.tab==='wallet'&&!document.querySelector('.modal'))walletTab()},()=>{}))}
+const subPrices=()=>{const v=CFGD.subs&&DME&&CFGD.subs[DME.veh];return['day','week','month'].map(k=>[k,v?Math.round(+v[k]||0):0]).filter(x=>x[1]>0)};
+const tFmt=ms=>new Date(ms).toLocaleString(S.lang==='ta'?'ta-IN':'en-IN',{day:'numeric',month:'short',hour:'numeric',minute:'2-digit'});
+function subCardHtml(){const on=subOn(),pl=subPrices();if(!CL||(!on&&!pl.length))return '';
+  if(on){const x=DME.sub,left=x.until-Date.now(),h=Math.floor(left/36e5),m=Math.floor(left%36e5/60e3);
+    return `<div class="subcard on"><div><b>${X('check',16)} Subscription ON · ${L((SUBN[x.plan]||[x.plan])[0],(SUBN[x.plan]||[0,x.plan])[1])}</b>
+      <small>${L(`${tFmt(x.until)} வரை commission இல்லை · இன்னும் ${h>=24?Math.floor(h/24)+' நாள் ':''}${h%24} மணி ${m} நிமி`,`No commission until ${tFmt(x.until)} · ${h>=24?Math.floor(h/24)+' d ':''}${h%24} h ${m} min left`)}</small>
+      <small>${L('முடிஞ்சதும் தானா commission mode-க்கு மாறும்.','When it ends you are back on commission automatically.')}</small></div></div>`}
+  return `<div class="subcard"><div><b>Subscription</b><small>${L(`இப்போ: Commission mode (${COMM}%). Plan வாங்கினா அந்த நேரத்துல முடிக்கிற ride-களுக்கு commission இல்லை.`,`Now: commission (${COMM}%). With a plan, rides you finish during it carry no commission.`)}</small></div>
+    <div class="subplans">${pl.map(([k,p])=>`<button class="subp" data-sub="${k}"><b>${L(SUBN[k][0],SUBN[k][1])}</b><em>${inr(p)}</em><small>${L(SUBN[k][2],SUBN[k][3])}</small></button>`).join('')}</div></div>`}
+function subBuy(plan){const pr=(subPrices().find(x=>x[0]===plan)||[])[1];if(!pr)return;const short=pr-DS.wallet;
+  modal(`<h3>${L(`Subscription · ${SUBN[plan][0]}`,`Subscription · ${SUBN[plan][1]}`)}</h3>
+    ${short>0?`<p>${L(`இதுக்கு ${inr(pr)} வேணும். Wallet-ல ${inr(DS.wallet)} தான் இருக்கு, இன்னும் ${inr(short)} recharge பண்ணுங்க.`,`This costs ${inr(pr)}. Your wallet has ${inr(DS.wallet)}; recharge ${inr(short)} more.`)}</p>
+      <div class="row2"><button class="btn ghost" id="sbn">${L('மூடு','Close')}</button><button class="btn yellow" id="sbr">+ Recharge</button></div>`
+    :`<p>${L(`<b>${inr(pr)}</b> உங்க wallet-ல இருந்து எடுக்கப்படும் (${inr(DS.wallet)} → ${inr(DS.wallet-pr)}).`,`<b>${inr(pr)}</b> will be taken from your wallet (${inr(DS.wallet)} → ${inr(DS.wallet-pr)}).`)}</p>
+      <p>${L(`இப்போ இருந்து ${SUBN[plan][2]}க்கு நீங்க முடிக்கிற ride-களுக்கு commission இல்லை. முடிஞ்சதும் தானா commission mode-க்கு மாறும். வாங்கின பிறகு பணம் திரும்ப கிடைக்காது.`,`For ${SUBN[plan][3]} from now, rides you finish carry no commission. Then you are back on commission automatically. Not refundable once bought.`)}</p>
+      <p class="err" id="sbe"></p><div class="row2"><button class="btn ghost" id="sbn">${L('வேண்டாம்','Cancel')}</button><button class="btn yellow" id="sby">${L(`${inr(pr)} கொடுத்து வாங்கு`,`Buy for ${inr(pr)}`)}</button></div>`}`,(m,close)=>{
+    m.querySelector('#sbn').onclick=close;
+    const r=m.querySelector('#sbr');if(r)r.onclick=()=>{close();recharge()};
+    const y=m.querySelector('#sby');if(y)y.onclick=async()=>{y.disabled=true;const e=m.querySelector('#sbe');
+      try{const res=await CL.call('buySub',{plan});
+        if(res&&res.ok){close();toast(L(`Subscription ON. ${tFmt(res.until)} வரை commission இல்லை.`,`Subscription on. No commission until ${tFmt(res.until)}.`));DME.sub={plan,price:res.price,from:Date.now(),until:res.until};walletTab();return}
+        const why=res&&res.why;e.textContent=why==='wallet'?L(`Wallet-ல இன்னும் ${inr(res.need||0)} வேணும்`,`You need ${inr(res.need||0)} more in the wallet`):why==='active'?L('ஏற்கனவே ஒரு plan ஓடிக்கிட்டு இருக்கு','A plan is already running'):why==='off'?L('இந்த plan இப்போ இல்லை','This plan is not offered now'):why==='blocked'?L('உங்க account நிறுத்தி வைக்கப்பட்டிருக்கு','Your account is on hold'):L('வாங்க முடியல. மறுபடி முயற்சி பண்ணுங்க','Could not buy. Please try again');y.disabled=false}
+      catch(er){e.textContent=CL.errText(er,S.lang==='ta');y.disabled=false}}})}
 function rebuildTx(){
   DS.tx=[...RCH.filter(r=>r.status==='approved').map(r=>({amt:+r.amt,ta:r.method==='razorpay'?'Recharge (Razorpay)':'Recharge (Owner approve)',en:r.method==='razorpay'?'Recharge (Razorpay)':'Recharge (approved)',date:CL.toMs(r.approvedAt)||r.date||0})),
     ...RCH.filter(r=>r.status==='rejected').map(r=>({amt:0,ta:`Recharge நிராகரிப்பு · UTR ${r.utr}`,en:`Recharge rejected · UTR ${r.utr}`,date:CL.toMs(r.approvedAt)||r.date||0})),
-    ...(FEE()?DS.trips.filter(t=>t.comm>0).map(t=>({amt:-t.comm,ta:`VCT கட்டணம்: ${t.to.ta}`,en:`VCT fee: ${t.to.en}`,date:t.date})):[])].sort((a,b)=>b.date-a.date);
+    ...(FEE()?DS.trips.filter(t=>t.comm>0).map(t=>({amt:-t.comm,ta:`VCT கட்டணம்: ${t.to.ta}`,en:`VCT fee: ${t.to.en}`,date:t.date})):[]),
+    ...SUBL.map(x=>({amt:-x.price,ta:`Subscription · ${SUBN[x.plan]?SUBN[x.plan][0]:x.plan}`,en:`Subscription · ${SUBN[x.plan]?SUBN[x.plan][1]:x.plan}`,date:x.at}))].sort((a,b)=>b.date-a.date);
 }
 function stopAllD(){UNS.forEach(u=>{try{u()}catch(e){}});UNS=[];if(REQUNSUB){REQUNSUB();REQUNSUB=null}stopJob();stopGeo()}
 
@@ -1736,7 +1772,7 @@ function buildJ(b,id){
   const trip=(b.path&&b.path.length>1)?b.path:[{lat:P.pick.lat,lon:P.pick.lon},{lat:P.drop.lat,lon:P.drop.lon}];
   const fare=+b.fare||0;
   let gk=0,adj=null;try{gk=+localStorage.getItem('vct_km_'+id)||0;adj=JSON.parse(localStorage.getItem('vct_adj_'+id)||'null')}catch(e){}
-  return{id,gpsKm:gk,adj,from:'pick',to:'drop',km:+b.km||hav(P.pick,P.drop)*1.3,fare,tip:+b.tip||0,comm:Math.round(fare*COMM/100),pay:b.pay||'cash',
+  return{id,gpsKm:gk,adj,from:'pick',to:'drop',km:+b.km||hav(P.pick,P.drop)*1.3,fare,tip:+b.tip||0,comm:Math.round(fare*commPct()/100),pay:b.pay||'cash',
     cust:b.rider&&b.rider.name?{ta:esc(b.rider.name)+' (பயணி)',en:esc(b.rider.name)+' (rider)',rating:'—'}:{ta:esc(b.custName||'Customer'),en:esc(b.custName||'Customer'),rating:'—'},pin:null,app:!!b.customerUid,away:hav(POS,P.pick)*1.3,
     approach:[{...POS},{lat:POS.lat,lon:P.pick.lon},{lat:P.pick.lat,lon:P.pick.lon}],trip,b};
 }
@@ -1934,7 +1970,7 @@ const seenAt=()=>{try{return +localStorage.getItem('vct_drv_seen')||0}catch(e){r
 function notes(){
   const out=[],now=Date.now();
   ANN.forEach(a=>out.push({t:a.t||0,k:'office',ic:X('horn',22),title:a.title||'',msg:a.msg||''}));
-  if(DS.wallet<MINBAL)out.push({t:now,k:'acct',ic:X('wallet',22),title:L('Wallet குறைவு','Low wallet'),msg:L(`Wallet-ல ${inr(DS.wallet)} தான் இருக்கு. Online போக குறைந்தது ${inr(MINBAL)} வேணும். Recharge பண்ணுங்க.`,`Only ${inr(DS.wallet)} in your wallet. You need ${inr(MINBAL)} to go online. Please recharge.`),go:'wallet'});
+  if(lowWallet())out.push({t:now,k:'acct',ic:X('wallet',22),title:L('Wallet குறைவு','Low wallet'),msg:L(`Wallet-ல ${inr(DS.wallet)} தான் இருக்கு. Online போக குறைந்தது ${inr(MINBAL)} வேணும். Recharge பண்ணுங்க.`,`Only ${inr(DS.wallet)} in your wallet. You need ${inr(MINBAL)} to go online. Please recharge.`),go:'wallet'});
   const ds=docState();ds.expired.forEach(n=>out.push({t:now,k:'acct',ic:X('block',22),title:L('Document காலாவதி','Document expired'),msg:L(`${n} காலாவதி ஆயிடுச்சு. புது copy-ஐ office-க்கு அனுப்புங்க.`,`${n} has expired. Send the renewed copy to the office.`),go:'docs'}));
   ds.soon.forEach(n=>out.push({t:now-1,k:'acct',ic:X('warn',22),title:L('சீக்கிரம் காலாவதி','Expiring soon'),msg:n,go:'docs'}));
   UPC.forEach(b=>out.push({t:CL&&b.assignedAt?CL.toMs(b.assignedAt):now-2,k:'trip',ic:X(b.kind==='outstation'?'road':'clock',22),title:L('வரவிருக்கும் பயணம்','Upcoming trip'),msg:`${whenTxt(b.when)} · ${(b.from||{})[S.lang]||''} → ${(b.to||{})[S.lang]||''} · ${inr(+b.fare||0)}`}));

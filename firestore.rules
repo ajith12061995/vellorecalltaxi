@@ -88,7 +88,7 @@ service cloud.firestore {
     match /drivers/{ph} {
       allow read: if isStaff() || (signedIn() && phone() == ph);
       allow create, delete: if isOwner();
-      allow update: if isOwner() || (isStaff() && !changes().hasAny(['wallet', 'blocked']))
+      allow update: if isOwner() || (isStaff() && !changes().hasAny(['wallet', 'blocked', 'sub']))   // sub = subscription plan: server (buySub) or owner only
         || (signedIn() && phone() == ph
             && changes().hasOnly(['online', 'lat', 'lon', 'updatedAt', 'wallet', 'fcm', 'fcmAt', 'consent', 'dev'])
             // the phone's own setup, shown to the office: app version, permissions — short values and server time only

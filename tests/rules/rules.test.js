@@ -513,3 +513,13 @@ test('driver scorecard stats: office reads, nobody writes', async () => {
   await assertFails(getDoc(doc(as.cust(), 'stats', 'd20261127')));
   await assertFails(setDoc(doc(as.owner(), 'stats', 'd20261127'), { x: 1 }));
 });
+
+test('subscription plan: only the server (or the owner) sets it; a driver or staff cannot', async () => {
+  await seed(db => setDoc(doc(db, 'drivers', DRV), { name: 'D', veh: 'mini', wallet: 500, online: false }));
+  const plan = { plan: 'month', veh: 'mini', price: 1, from: new Date(), until: new Date(Date.now() + 864e5 * 30) };
+  await assertFails(updateDoc(doc(as.drv(), 'drivers', DRV), { sub: plan }));
+  await assertFails(updateDoc(doc(as.drv(), 'drivers', DRV), { sub: plan, wallet: 499 }));
+  await assertFails(updateDoc(doc(as.staff(), 'drivers', DRV), { sub: plan }));
+  await assertSucceeds(updateDoc(doc(as.owner(), 'drivers', DRV), { sub: plan }));
+  await assertFails(addDoc(collection(as.drv(), 'ledger'), { type: 'sub', driverPhone: DRV, price: 1 }));
+});

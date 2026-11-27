@@ -1,6 +1,7 @@
 /* Vellore Taxi — Cloud Functions (needs the Firebase Blaze plan). Region: asia-south1 (Mumbai).
    Every function is safe to deploy while the apps keep working the old way:
-   - onBookingDone   : writes one ledger entry per finished trip. Takes / corrects the commission from the
+   - onBookingDone   : writes one ledger entry per finished trip (no commission while the driver's subscription runs).
+   - buySub          : callable; a driver buys a day / week / month subscription from the wallet (prices: config/app.subs). Takes / corrects the commission from the
                        driver wallet ONLY when config/app.serverComm is true (switch it on after deploying).
    - housekeeping    : every 2 minutes — sends scheduled local rides to drivers 30 min before pickup,
                        closes local searches nobody took for 15 min, marks drivers whose app went quiet as offline;
@@ -45,16 +46,44 @@ exports.onBookingDone = onDocumentUpdated('bookings/{id}', async ev => {
   const before = ev.data.before.data(), after = ev.data.after.data(), id = ev.params.id;
   if (!after || after.status !== 'done' || (before && before.status === 'done') || !after.driverPhone) return;
   const c = await cfg(), pct = c.comm != null ? +c.comm : 10, server = !!c.serverComm;
-  const s = L.settle(after, pct, server);
+  const doneMs = after.doneAt && after.doneAt.toMillis ? after.doneAt.toMillis() : Date.now();
+  let s = null;
   await db.runTransaction(async tx => {
     const lref = db.doc(`ledger/${id}`);
     if ((await tx.get(lref)).exists) return;                  // already settled (function retried)
+    const dsnap = await tx.get(db.doc(`drivers/${after.driverPhone}`)), sub = dsnap.exists ? dsnap.data().sub : null;
+    const subOn = L.subActive(sub, doneMs);
+    s = L.settle(after, pct, server, subOn);
     tx.set(lref, { bookingId: id, driverPhone: after.driverPhone, trip: s.trip, comm: s.comm, takenByApp: s.taken,
-      walletDelta: s.walletDelta, pct, mode: server ? 'server' : 'app', mismatch: !!s.mismatch, at: FV.serverTimestamp() });
+      walletDelta: s.walletDelta, pct, mode: server ? 'server' : 'app', mismatch: !!s.mismatch, ...(subOn ? { sub: sub.plan, subUntil: sub.until } : {}), at: FV.serverTimestamp() });
     if (s.walletDelta) tx.update(db.doc(`drivers/${after.driverPhone}`), { wallet: FV.increment(s.walletDelta), updatedAt: FV.serverTimestamp() });
     tx.update(ev.data.after.ref, { ledgerAt: FV.serverTimestamp(), ...(server ? { comm: s.comm } : {}) });
   });
-  if (s.mismatch) logger.warn('commission mismatch', { id, driver: after.driverPhone, app: after.comm, expected: s.comm });
+  if (s && s.mismatch) logger.warn('commission mismatch', { id, driver: after.driverPhone, app: after.comm, expected: s.comm });
+});
+
+// Driver buys a subscription plan from the wallet (driver app → Wallet). All checks and the wallet change happen here,
+// in one transaction, with a ledger entry; the driver's phone cannot write drivers/{phone}.sub (security rules).
+exports.buySub = onCall({ enforceAppCheck: AC_ENFORCE }, async req => {
+  acLog('buySub', req);
+  const me = req.auth && req.auth.token.phone_number;
+  if (!me) throw new HttpsError('unauthenticated', 'login first');
+  const plan = String((req.data && req.data.plan) || '');
+  const c = await cfg();
+  const dref = db.doc(`drivers/${me}`);
+  const r = await db.runTransaction(async tx => {
+    const d = await tx.get(dref);
+    const now = Date.now(), dec = L.buySubDecide(d.exists ? d.data() : null, c, plan, now);
+    if (!dec.ok) return dec;
+    const lref = db.collection('ledger').doc();
+    tx.update(dref, { wallet: FV.increment(-dec.price), sub: { ...dec.sub, from: new Date(dec.sub.from), until: new Date(dec.sub.until), id: lref.id }, updatedAt: FV.serverTimestamp() });
+    tx.set(lref, { type: 'sub', driverPhone: me, plan, veh: dec.sub.veh, price: dec.price, walletDelta: -dec.price,
+      from: new Date(dec.sub.from), until: new Date(dec.sub.until), at: FV.serverTimestamp() });
+    return { ok: true, plan, price: dec.price, until: dec.sub.until, id: lref.id };
+  });
+  if (!r.ok) logger.info('buySub refused', { driver: me, plan, why: r.why });
+  else logger.info('buySub', { driver: me, plan, price: r.price });
+  return r;
 });
 
 exports.housekeeping = onSchedule({ schedule: 'every 2 minutes', timeZone: 'Asia/Kolkata' }, async () => {
