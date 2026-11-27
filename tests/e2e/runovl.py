@@ -13,6 +13,7 @@ BRIDGE="""(()=>{window.__calls=[];window.__can=%s;window.__take={action:null,id:
     if(p==='RideOverlay'&&m==='status')return Promise.resolve({can:window.__can});
     if(m==='checkPermissions')return Promise.resolve({location:'granted',receive:'granted'});
     if(p==='RideOverlay'&&m==='power')return Promise.resolve({free:false,maker:'realme'});
+    if(p==='RideOverlay'&&m==='fsi')return window.__v17?Promise.resolve({can:window.__fsi!==false}):Promise.reject(new Error('not implemented'));
     if(p==='RideOverlay'&&m==='take'){const t=window.__take;window.__take={action:null,id:null};return Promise.resolve(t)}
     return Promise.resolve({})},
   nativeCallback:(p,m,o,cb)=>{__calls.push([p,m,o]);if(m==='addWatcher')window.__cb=cb;return String(++n)},
@@ -85,6 +86,20 @@ async def main():
         check('battery limited (power free:false) → tip with a button to the settings',await D.locator('#pwron').count()==1)
         await D.locator('#pwron').click();await pg.wait_for_timeout(300)
         check('tip opens the app settings (askPower)',any(c[0]=='askPower' for c in await ov()))
+        # 1.0.17 app: lock-screen rides + position from the phone itself
+        await df.evaluate("window.__v17=true;window.__fsi=false;S.online=true;ovlPower()");await pg.wait_for_timeout(1200)
+        ls=[c[1] for c in await ov() if c[0]=='liveStart']
+        check('1.0.17 app detected and reported to the office',(await pg.evaluate("MOCK.store.get('drivers/+919999900002').dev.app"))=='1.0.17+')
+        check('ON: the page hands the sign-in to the phone once (key, project, phone, refresh token)',len(ls)==1 and ls[0].get('apiKey')=='key-mock' and ls[0].get('project')=='proj-mock' and ls[0].get('phone')=='+919999900002' and ls[0].get('refresh','').startswith('rt-mock'),ls)
+        await df.evaluate("ovlPower()");await pg.wait_for_timeout(800)
+        check('…not again while nothing changed',len([c for c in await ov() if c[0]=='liveStart'])==1)
+        await df.evaluate("window.__lp=0;const f=pushLive;window.pushLive=function(){__lp++;return f.apply(this,arguments)}");
+        await df.evaluate("window.dispatchEvent(new Event('vctwake'))");await pg.wait_for_timeout(300)
+        check('server push wakes the page (vctwake): position sent at once',await df.evaluate("__lp")>=1)
+        await df.evaluate("J=null;document.querySelectorAll('.modal').forEach(m=>m.remove());home()");await pg.wait_for_timeout(600)
+        check('full-screen alerts off → the driver is shown how to allow them',await D.locator('#fsion').count()==1)
+        await D.locator('#fsion').click();await pg.wait_for_timeout(300)
+        check('tap → opens the setting',any(c[0]=='askFsi' for c in await ov()))
         check('no page errors',not errs,errs[:2])
         await b.close()
     print('RESULT','PASS' if all(res) else 'FAIL',f'{sum(res)}/{len(res)}')

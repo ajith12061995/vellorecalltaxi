@@ -74,8 +74,8 @@ print(gh(12.9716,79.159))")
 echo "$L1" | grep -q "\"stringValue\":\"$GH\"" && ok "geohash is the same as the page's ($GH)" || bad "geohash differs from the page's ($GH): ${L1:0:300}"
 c1=$(commits); for k in 1 2 3; do adb emu geo fix 79.1700 12.9850 30 >/dev/null 2>&1; sleep 2; done
 adb shell dumpsys location 2>/dev/null | grep -iE "last location|Location\[gps" | head -4
-for i in $(seq 1 25); do [ "$(commits)" -gt "$c1" ] && grep '^commit=' "$LOG" | tail -1 | grep -q '12.985' && break; sleep 1; done
-grep '^commit=' "$LOG" | tail -1 | grep -q '12.985' && ok "driver moves → new position sent" || { bad "moved position not sent"; grep '^commit=' "$LOG" | grep -o '"lat":{"doubleValue":[0-9.]*' | uniq -c; adb logcat -d | grep "NativeLive: fix" | tail -6; }
+for i in $(seq 1 25); do [ "$(commits)" -gt "$c1" ] && grep '^commit=' "$LOG" | tail -1 | grep -qE '"lat":\{"doubleValue":12\.98[45]' && break; sleep 1; done
+grep '^commit=' "$LOG" | tail -1 | grep -qE '"lat":\{"doubleValue":12\.98[45]' && ok "driver moves → new position sent" || { bad "moved position not sent"; grep '^commit=' "$LOG" | grep -o '"lat":{"doubleValue":[0-9.]*' | uniq -c; adb logcat -d | grep "NativeLive: fix" | tail -6; }
 c2=$(commits); sleep 35
 [ "$(commits)" -gt "$c2" ] && ok "standing still: signal still sent at least every 30 s ($c2 → $(commits))" || bad "no heartbeat while standing ($c2 → $(commits))"
 adb exec-out screencap -p > "$OUT/ring-0-home.png" 2>/dev/null

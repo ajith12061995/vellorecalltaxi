@@ -29,8 +29,8 @@ let offDone=false,lastCmd='';setInterval(()=>{fetch('/tests/android/cmd.txt?'+Da
   if(c.startsWith('push'))call('testPush',{data:{type:'ride',bookingId:c},delay:12000}).then(()=>rep('push','sent:'+c)).catch(e=>rep('push','ERR '+e));
 }).catch(()=>{})},1500);
 // 1.0.17: a server push wakes the page ("wake"); like the driver page, it then rings for that ride
-try{C.addListener('RideOverlay','wake',d=>{rep('wake',(d&&d.bookingId)||'?');call('ring',{id:(d&&d.bookingId)||'r',title:'New ride!',fare:'₹150',accept:'Accept',open:'Later',secs:40,
-  veh:'Mini',pay:'Cash',pkm:'1.1 km',pname:'Katpadi Junction',psub:'Katpadi',dkm:'5.0 km',dname:'CMC Hospital',dsub:'Vellore'}).then(()=>rep('ring2','sent:'+document.visibilityState)).catch(e=>rep('ring2','ERR '+e))})}catch(e){rep('wake','ERR '+e)}
+window.addEventListener('vctwake',d=>{rep('wake',(d&&d.bookingId)||'?');call('ring',{id:(d&&d.bookingId)||'r',title:'New ride!',fare:'₹150',accept:'Accept',open:'Later',secs:40,
+  veh:'Mini',pay:'Cash',pkm:'1.1 km',pname:'Katpadi Junction',psub:'Katpadi',dkm:'5.0 km',dname:'CMC Hospital',dsub:'Vellore'}).then(()=>rep('ring2','sent:'+document.visibilityState)).catch(e=>rep('ring2','ERR '+e))});
 document.addEventListener('visibilitychange',async()=>{rep('vis',document.visibilityState);
   if(document.visibilityState==='visible'){try{const t=await call('take');rep('take',JSON.stringify(t));st.textContent='TAKE:'+JSON.stringify(t);if(t&&t.action)await call('stop')}catch(e){rep('take','ERR '+e)}}});
 </script>

@@ -1662,7 +1662,7 @@ function ovlPower(){if(!OVL)return;try{OVL.power().then(r=>{const f=!!(r&&r.free
    page hands over the sign-in once per ON (see NativeLive.java). A server push about a new ride wakes the page ("wake"). */
 let OVL17=false,OVLFSI=null,LIVEN='',WAKEL=false;
 function liveNative(){if(!OVL||!OVL17||!CL||!CL.user||!CL.fbcfg)return;
-  if(!WAKEL){WAKEL=true;try{OVL.addListener('wake',()=>{if(!CL||!S.online)return;if(!REQUNSUB)listenReq();pushLive(true);setTimeout(()=>{if(document.getElementById('offs'))maybeShowReq()},600)}).catch(()=>{})}catch(e){}}
+  if(!WAKEL){WAKEL=true;window.addEventListener('vctwake',()=>{if(!CL||!S.online)return;if(!REQUNSUB)listenReq();pushLive(true);setTimeout(()=>{if(document.getElementById('offs'))maybeShowReq()},600)})}
   if(!S.online){LIVEN='';return}
   const c=CL.fbcfg(),rt=CL.user.refreshToken||'',k=CL.phone+'|'+rt.slice(-12);if(!rt||LIVEN===k)return;LIVEN=k;
   try{OVL.liveStart({apiKey:c.apiKey,project:c.project,phone:CL.phone,refresh:rt}).catch(()=>{LIVEN=''})}catch(e){LIVEN=''}}
