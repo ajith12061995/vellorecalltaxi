@@ -52,7 +52,7 @@
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('../vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV=window.VCT_V='142',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV=window.VCT_V='143',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('../version.json',location.href)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -663,20 +663,20 @@ a.btn{text-decoration:none}
 <div class="app" id="app"><section class="screen" id="splash"><div class="roofsign"><b>TAXI</b><span>வேலூர் டாக்ஸி</span></div><span class="drvtag">DRIVER</span><div class="road"></div><div class="tag">Vellore Taxi · Driver</div></section></div>
 <div class="toast" id="toast"></div>
 
-<script src="../core/report.js?v=142"></script>
-<script src="../core/geo.js?v=142"></script>
-<script src="../core/fare.js?v=142"></script>
-<script src="../core/appget.js?v=142"></script>
-<script src="../core/pin.js?v=142"></script>
-<script src="../core/clock.js?v=142"></script>
-<script src="../core/map.js?v=142"></script>
-<script src="../core/chat.js?v=142"></script>
-<script src="../core/driverchecks.js?v=142"></script>
-<script src="../core/nav.js?v=142"></script>
-<script src="../core/otp.js?v=142"></script>
-<script src="../core/deskmode.js?v=142"></script>
-<script src="../core/refer.js?v=142"></script>
-<script src="../core/weather.js?v=142"></script>
+<script src="../core/report.js?v=143"></script>
+<script src="../core/geo.js?v=143"></script>
+<script src="../core/fare.js?v=143"></script>
+<script src="../core/appget.js?v=143"></script>
+<script src="../core/pin.js?v=143"></script>
+<script src="../core/clock.js?v=143"></script>
+<script src="../core/map.js?v=143"></script>
+<script src="../core/chat.js?v=143"></script>
+<script src="../core/driverchecks.js?v=143"></script>
+<script src="../core/nav.js?v=143"></script>
+<script src="../core/otp.js?v=143"></script>
+<script src="../core/deskmode.js?v=143"></script>
+<script src="../core/refer.js?v=143"></script>
+<script src="../core/weather.js?v=143"></script>
 <script>
 /* shared with the customer app: icons, places, fares, map engine */
 /* small line icons (one stroke style everywhere; no emoji in the interface) */
@@ -1028,7 +1028,11 @@ function shell(content){
 function bindNav(){app.querySelectorAll('.nav button').forEach(b=>b.onclick=()=>{S.tab=b.dataset.tab;({home,earn:earnTab,wallet:walletTab,me:profileTab})[S.tab]()})}
 
 /* ---------- home ---------- */
-function home(){setTimeout(demandHint,60);
+/* safety net: a ride that is this driver's (fresh read) never sits behind the home screen */
+let MYCHK=0;function mineCheck(){if(!CL||J||!MYACT||Date.now()-MYCHK<4000)return;MYCHK=Date.now();const id=MYACT.id;
+  F().getDoc(F().doc(CL.db,'bookings',id)).then(s=>{if(J||!s.exists())return;const b={id,...s.data()};
+    if(b.driverPhone===CL.phone&&(b.status==='ontrip'||(b.status==='assigned'&&!isFutB(b)))&&!document.querySelector('.modal'))adoptJob(b)}).catch(()=>{})}
+function home(){setTimeout(demandHint,60);setTimeout(mineCheck,1500);
   NOANIM=!!(document.getElementById('ons')||document.getElementById('offs'));S.tab='home';const d=me(),today=DS.trips.filter(x=>isToday(x.date)),net=today.reduce((a,x)=>a+x.net,0);const low=lowWallet();
   go(shell(`<div class="mapwrap"><canvas class="map" id="map"></canvas>
      <div class="topbar"><button class="chipbtn menub" id="menu" aria-label="Menu">${X('menu',20)}${unread()?'<i class="mdot"></i>':''}</button><button class="tpill" id="tpill"><span class="stdot ${S.online?'on':''}"></span><b>${today.length} ${L('trips','trips')}</b><span>${inr(net)}</span><i>›</i></button><div style="flex:1"></div>
@@ -1505,6 +1509,7 @@ function watchCfgD(){UNS.push(F().onSnapshot(F().doc(CL.db,'config','app'),s=>{i
   {const na=Array.isArray(d.announce)?d.announce:[],top=na[0];const fresh=top&&(!ANN[0]||ANN[0].id!==top.id)&&top.t>seenAt();ANN=na;
    if(fresh&&ANN.length&&!J&&!document.querySelector('.modal')){beep();toast((top.title||L('Office அறிவிப்பு','Office notice')));if(S.tab==='home'&&document.getElementById('menu'))home()}}if(d.dispatch)Object.assign(DISP,d.dispatch);
   if(d.fares)VEH.forEach(v=>{const f=d.fares[v.id];if(f&&v.id!=='auto'){if(f.base!=null)v.base=+f.base;if(f.per!=null)v.per=+f.per;v.incl=+f.incl>0?+f.incl:undefined}})},()=>{}))}
+let MYACT=null; // this driver's ride in progress, as last seen (watchMine)
 /* this driver's trips: newest 300 only (needs the index in firestore.indexes.json; without it, falls back to all trips) */
 function watchMine(full){const q=full?F().query(F().collection(CL.db,'bookings'),F().where('driverPhone','==',CL.phone))
     :F().query(F().collection(CL.db,'bookings'),F().where('driverPhone','==',CL.phone),F().orderBy('createdAt','desc'),F().limit(300));
@@ -1515,7 +1520,7 @@ function watchMine(full){const q=full?F().query(F().collection(CL.db,'bookings')
   rebuildTx();
   {const wk=Date.now()-7*864e5;DS.cx7=all.filter(b=>b.status==='cancelled'&&/^driver/.test(b.cancelReason||'')&&(CL.toMs(b.updatedAt)||b.when||0)>=wk).length}
   const upk=UPC.map(u=>u.id).join();UPC=all.filter(b=>b.status==='assigned'&&isFutB(b)&&!b.arrivedAt&&!GONOW.has(b.id)).sort((a,b)=>a.when-b.when);
-  const act=all.find(b=>b.status==='ontrip'||(b.status==='assigned'&&!UPC.some(u=>u.id===b.id)));
+  const act=all.find(b=>b.status==='ontrip'||(b.status==='assigned'&&!UPC.some(u=>u.id===b.id)));MYACT=act||null;
   if(act&&!J)adoptJob(act);
   else if(!J&&upk!==UPC.map(u=>u.id).join()&&!document.querySelector('.modal')&&S.tab==='home'&&(document.getElementById('ons')||document.getElementById('offs')))home();
   if(!J&&!document.querySelector('.modal')&&S.tab==='earn')earnTab();
@@ -1777,16 +1782,26 @@ function buildJ(b,id){
     approach:[{...POS},{lat:POS.lat,lon:P.pick.lon},{lat:P.pick.lat,lon:P.pick.lon}],trip,b};
 }
 let ACCEPTING=null;
+/* Accept can arrive twice (lock-screen card + the page's own button, or a transaction retried after its first commit
+   already went through): a ride that is already this driver's counts as accepted, never as "taken by another driver" */
+let ACCBUSY=null;
 async function acceptCloud(){
-  const id=J.id,d=me();ACCEPTING=id;
+  if(!J||!J.id)return;const id=J.id,d=me();if(ACCBUSY===id)return;ACCBUSY=id;ACCEPTING=id;
   try{
     await F().runTransaction(CL.db,async tx=>{const ref=F().doc(CL.db,'bookings',id);const s=await tx.get(ref);
+      if(s.exists()&&s.data().status==='assigned'&&s.data().driverPhone===CL.phone)return; // already mine
       if(!s.exists()||s.data().status!=='searching')throw new Error('taken');
       tx.update(ref,{status:'assigned',driverPhone:CL.phone,driverName:d.en,plate:d.plate,vehModel:d.model,assignedAt:ts(),updatedAt:ts()})});
     SHOWING=null;
     if(J.b&&isFutB(J.b)){const w=J.b.when;J=null;clearInterval(TK);home();toast(L(`Trip உறுதி: ${whenTxt(w)}. நேரம் வந்ததும் "Pickup-க்கு கிளம்பு" அழுத்துங்க`,`Trip confirmed for ${whenTxt(w)}. Tap "Leave for pickup" when it is time`));return}
-    watchJob(id);pushLive(true);toPickup();
-  }catch(e){SHOWING=null;MISS.set(id,{n:99});J=null;home();toast(e&&e.message==='taken'?L('இந்த ride-ஐ வேற driver எடுத்துட்டாங்க','Another driver took this ride'):CL.errText(e,S.lang==='ta'))}
+    if(!J||J.id!==id)return;watchJob(id);pushLive(true);toPickup();
+  }catch(e){
+    // before giving up, look again: if the ride is this driver's after all, carry on with it
+    let b=null;try{const s=await F().getDoc(F().doc(CL.db,'bookings',id));if(s.exists())b={id,...s.data()}}catch(e2){}
+    SHOWING=null;
+    if(b&&b.driverPhone===CL.phone&&(b.status==='assigned'||b.status==='ontrip')){if(!J||J.id!==id){stopJob();J=null;adoptJob(b)}else{J.b=b;watchJob(id);pushLive(true);if(b.status==='ontrip')onTrip();else if(b.arrivedAt)atPickup();else toPickup()}return}
+    if(J&&J.id===id){MISS.set(id,{n:99});J=null;home();toast(e&&e.message==='taken'?L('இந்த ride-ஐ வேற driver எடுத்துட்டாங்க','Another driver took this ride'):CL.errText(e,S.lang==='ta'))}
+  }finally{if(ACCBUSY===id)ACCBUSY=null}
 }
 function adoptJob(b){
   J=buildJ(b,b.id);watchJob(b.id);beep();if(CL&&!S.online)setOnline(true); // a driver in a trip is on duty (also after reopening the app)
