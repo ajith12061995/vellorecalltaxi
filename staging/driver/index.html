@@ -52,7 +52,7 @@
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('../vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV=window.VCT_V='145',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV=window.VCT_V='146',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('../version.json',location.href)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -663,20 +663,20 @@ a.btn{text-decoration:none}
 <div class="app" id="app"><section class="screen" id="splash"><div class="roofsign"><b>TAXI</b><span>வேலூர் டாக்ஸி</span></div><span class="drvtag">DRIVER</span><div class="road"></div><div class="tag">Vellore Taxi · Driver</div></section></div>
 <div class="toast" id="toast"></div>
 
-<script src="../core/report.js?v=145"></script>
-<script src="../core/geo.js?v=145"></script>
-<script src="../core/fare.js?v=145"></script>
-<script src="../core/appget.js?v=145"></script>
-<script src="../core/pin.js?v=145"></script>
-<script src="../core/clock.js?v=145"></script>
-<script src="../core/map.js?v=145"></script>
-<script src="../core/chat.js?v=145"></script>
-<script src="../core/driverchecks.js?v=145"></script>
-<script src="../core/nav.js?v=145"></script>
-<script src="../core/otp.js?v=145"></script>
-<script src="../core/deskmode.js?v=145"></script>
-<script src="../core/refer.js?v=145"></script>
-<script src="../core/weather.js?v=145"></script>
+<script src="../core/report.js?v=146"></script>
+<script src="../core/geo.js?v=146"></script>
+<script src="../core/fare.js?v=146"></script>
+<script src="../core/appget.js?v=146"></script>
+<script src="../core/pin.js?v=146"></script>
+<script src="../core/clock.js?v=146"></script>
+<script src="../core/map.js?v=146"></script>
+<script src="../core/chat.js?v=146"></script>
+<script src="../core/driverchecks.js?v=146"></script>
+<script src="../core/nav.js?v=146"></script>
+<script src="../core/otp.js?v=146"></script>
+<script src="../core/deskmode.js?v=146"></script>
+<script src="../core/refer.js?v=146"></script>
+<script src="../core/weather.js?v=146"></script>
 <script>
 /* shared with the customer app: icons, places, fares, map engine */
 /* small line icons (one stroke style everywhere; no emoji in the interface) */
@@ -1491,10 +1491,23 @@ async function loadMe(){
 const DOCNM={dl:['ஓட்டுநர் உரிமம்','Driving licence'],rc:['RC','RC'],ins:['Insurance','Insurance'],permit:['Permit','Permit'],fc:['FC','FC']};
 function docState(){const out={expired:[],soon:[]};if(!DME||!DME.docs)return out;const now=Date.now();
   Object.entries(DME.docs).forEach(([k,t])=>{if(!t||!DOCNM[k])return;const nm=DOCNM[k][S.lang==='ta'?0:1],d=Math.ceil((t-now)/864e5);if(t<now)out.expired.push(nm);else if(d<=15)out.soon.push(`${nm} (${d} ${L('நாள்','days')})`)});return out}
-function applyMe(d){const pv=DME&&DME.veh;if(REQUNSUB&&pv&&d.veh&&pv!==d.veh){REQUNSUB();REQUNSUB=null;setTimeout(()=>{if(S.online)listenReq()},0)}DME={id:CL.phone,ta:d.name||'Driver',en:d.name||'Driver',plate:d.plate||'',model:d.model||'',veh:d.veh||'auto',rating:RATE||d.rating||5,docs:d.docs||null,blocked:!!d.blocked,upi:d.upi||'',svc:d.svc||null,prio:d.prio||'auto',year:+d.year||+((String(d.model||'').match(/\b(19|20)\d\d\b/)||[''])[0])||0,consent:d.consent||null,onl:!!d.online,sub:d.sub&&d.sub.until?{plan:String(d.sub.plan||''),price:+d.sub.price||0,from:CL.toMs(d.sub.from)||0,until:CL.toMs(d.sub.until)||0}:null};DS.wallet=+d.wallet||0}
+/* 27 Nov: rides were never pushed to a phone whose token was not on the driver record (the page trusted its own saved copy).
+   Now: whenever the record has no token, or a different one, the token is read again and saved; why it failed is reported. */
+let PUSHWHY='',PUSHTRY=0;
+function ensurePush(){if(!CL||!CL.phone||!DME||!S.logged||document.getElementById('ph')||document.querySelector('.otp'))return;const now=Date.now();if(now-PUSHTRY<60e3)return;
+  if(DME.fcm&&DME.fcm===lsGet('vct_fcm'))return;PUSHTRY=now;
+  if(!CFGD.push||!CFGD.push.vapid)return; // pushes not switched on in Office Settings: nothing to save yet
+  if(!pushReady()){PUSHWHY=NATIVE()&&!(CL.nativePush&&CL.nativePush())?'noua':'nosupport';pushNote();return}
+  try{localStorage.removeItem('vct_fcm')}catch(e){}
+  enablePush(false).then(ok=>{PUSHWHY=ok?'':(PUSHWHY||'notoken');pushNote()}).catch(e=>{PUSHWHY='err';pushNote()})}
+/* the reason goes with the phone setup report the office already sees (dev.notif), e.g. "granted·notoken" */
+setInterval(()=>{try{ensurePush()}catch(e){}},30e3);
+let PUSHNOTED='';
+function pushNote(){if(PUSHWHY===PUSHNOTED)return;PUSHNOTED=PUSHWHY;try{localStorage.removeItem('vct_dev')}catch(e){}setTimeout(()=>{if(OVL)ovlPower();else devReport(NATIVE()?'app':'web')},500)}
+function applyMe(d){const pv=DME&&DME.veh;if(REQUNSUB&&pv&&d.veh&&pv!==d.veh){REQUNSUB();REQUNSUB=null;setTimeout(()=>{if(S.online)listenReq()},0)}DME={id:CL.phone,ta:d.name||'Driver',en:d.name||'Driver',plate:d.plate||'',model:d.model||'',veh:d.veh||'auto',rating:RATE||d.rating||5,docs:d.docs||null,blocked:!!d.blocked,upi:d.upi||'',svc:d.svc||null,prio:d.prio||'auto',year:+d.year||+((String(d.model||'').match(/\b(19|20)\d\d\b/)||[''])[0])||0,consent:d.consent||null,onl:!!d.online,fcm:String(d.fcm||''),sub:d.sub&&d.sub.until?{plan:String(d.sub.plan||''),price:+d.sub.price||0,from:CL.toMs(d.sub.from)||0,until:CL.toMs(d.sub.until)||0}:null};DS.wallet=+d.wallet||0}
 function watchMe(){UNS.push(F().onSnapshot(F().doc(CL.db,'drivers',CL.phone),s=>{const live=!(s.metadata&&s.metadata.fromCache);
   if(!s.exists()){if(live&&ME_CACHED){ME_CACHED=false;if(S.online)setOnline(false);stopAllD();DME=null;notDriver()}return}
-  const before=DS.wallet;applyMe(s.data());
+  const before=DS.wallet;applyMe(s.data());setTimeout(ensurePush,3000);
   if(live&&ME_CACHED){ME_CACHED=false;if(S.online&&!J){const why=resumeWhy();if(why){setOnline(false);F().updateDoc(F().doc(CL.db,'drivers',CL.phone),{online:false,updatedAt:ts()}).catch(()=>{});setTimeout(()=>toast(why),700);if(S.tab==='home'&&!document.querySelector('.modal'))home()}}}
   {const md=s.data(),tm=x=>x&&x.toMillis?x.toMillis():0;if(live&&!ME_CACHED&&S.online&&!J&&md.online===false&&tm(md.autoOff)&&tm(md.autoOff)===tm(md.updatedAt)&&!resumeWhy()){F().updateDoc(F().doc(CL.db,'drivers',CL.phone),{online:true,updatedAt:ts()}).catch(()=>{});pushLive(true);toast(L('Signal திரும்ப வந்தது. நீங்க ON-ல இருக்கீங்க','Signal is back. You are ON'))}}
   if(DME.blocked&&S.online){setOnline(false);toast(L('உங்க account நிறுத்தி வைக்கப்பட்டிருக்கு','Your account is on hold'))}
@@ -1576,8 +1589,8 @@ const pushReady=()=>!!(CL&&CFGD.push&&CFGD.push.vapid&&(NATIVE()?(CL.nativePush&
 async function enablePush(ask){if(!pushReady())return false;
   const NAT=CL.nativePush&&CL.nativePush();
   if(!NAT&&Notification.permission!=='granted'){if(!ask)return false;if(await Notification.requestPermission()!=='granted'){toast(L('Notification அனுமதி கொடுக்கல','Notifications not allowed'));return false}}
-  const t=NAT?await CL.nativePushToken():await CL.pushToken(CFGD.push.vapid,'./fcm-sw.js','./fcm/');if(!t){if(ask)toast(L('இந்த phone-ல push வேலை செய்யாது','Push is not supported on this phone'));return false}
-  if(t!==localStorage.getItem('vct_fcm')){await F().updateDoc(F().doc(CL.db,'drivers',CL.phone),{fcm:t,fcmAt:ts()}).catch(()=>{});try{localStorage.setItem('vct_fcm',t)}catch(e){}}
+  const t=NAT?await CL.nativePushToken():await CL.pushToken(CFGD.push.vapid,'./fcm-sw.js','./fcm/');if(!t){PUSHWHY='notoken';if(ask)toast(L('இந்த phone-ல push வேலை செய்யாது','Push is not supported on this phone'));return false}
+  if(t!==localStorage.getItem('vct_fcm')||!DME||DME.fcm!==t){let saved=true;await F().updateDoc(F().doc(CL.db,'drivers',CL.phone),{fcm:t,fcmAt:ts()}).catch(()=>{saved=false});if(!saved){PUSHWHY='save';return false}try{localStorage.setItem('vct_fcm',t)}catch(e){}if(DME)DME.fcm=t}
   PUSHOK=true;if(ask){toast(L('சரி! Phone lock-லயும் ride alert வரும்','Done! Ride alerts will come even when locked'));home()}return true}
 function goLive(on){
   F().updateDoc(F().doc(CL.db,'drivers',CL.phone),{online:on,updatedAt:ts()}).catch(()=>{});
@@ -1742,6 +1755,7 @@ async function devReport(app,mk){if(!CL||!CL.phone||DEVBUSY)return;DEVBUSY=true;
     else if(navigator.permissions){loc=(await navigator.permissions.query({name:'geolocation'})).state}}catch(e){}
   let notif='?';try{const P=capPlugin('PushNotifications');if(P){const r=await P.checkPermissions();notif=String(r&&r.receive||'?')}}catch(e){}
   const os=((navigator.userAgent.match(/Android [0-9.]+/)||[''])[0]).slice(0,20);
+  if(PUSHWHY)notif=(notif+'·'+PUSHWHY);
   const d={app:String(app).slice(0,20),ovl:!!OVLCAN,pwr:OVLPWR!==false,loc:loc.slice(0,20),notif:notif.slice(0,20),os,mk:String(mk||'').slice(0,30)};
   const key=JSON.stringify(d),old=(()=>{try{return JSON.parse(localStorage.getItem('vct_dev')||'{}')}catch(e){return{}}})();
   if(old.k===key&&Date.now()-(old.t||0)<12*3600e3)return;
