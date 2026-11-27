@@ -223,4 +223,28 @@ function bookingLimit(lim, openNow, now) {
 const enquiryFlood = (same, all) => same > 3 ? 'auto: more than 3 from this number in an hour' : all > 40 ? 'auto: more than 40 in an hour' : null;
 const istStamp = ms => new Date(ms + 19800000).toISOString().slice(0, 16).replace('T', '_').replace(':', '');
 
-module.exports = { inclKm, enquiryFlood, OUTCAT, outCat, catBata, AHRS, AXH, aHours, planHours, hrsTable, AUTO_GOVT, AREA, autoFare, outsideArea, rentCheck, outCheck, tariffs, rentPrice, istStamp, commissionFor, settle, housekeeping, fareLooksWrong, liveStale, custPush, fareCheck, bookingLimit, nightPct, withNight, crowKm, LIMIT_OPEN, LIMIT_HOUR };
+// Driver watch (every 2 min): a driver whose ON switch is still on but whose phone has sent nothing.
+//  ≥30 min silent → one reminder push per silent spell (6:00–23:00 IST only, never at night)
+//  ≥3 h silent    → switched OFF by the server (autoOff), with a push saying why (push only 6:00–23:00 IST).
+// Skipped: blocked drivers, a driver on a job (live.busy / live.bk). The driver app goes back ON by itself when opened.
+const WATCH = { nudge: 30 * MIN, pause: 3 * 60 * MIN };
+const istHour = now => new Date(now + 330 * MIN).getUTCHours();
+function driverWatch(drv, live, w, now) {
+  if (!drv || drv.online !== true || drv.blocked) return null;
+  if (live && (live.busy || live.bk)) return null;
+  const ms = x => (x && x.toMillis ? x.toMillis() : 0);
+  const at = Math.max(ms(live && live.updatedAt), ms(drv.updatedAt));
+  if (!at) return null;
+  const gap = now - at, day = istHour(now) >= 6 && istHour(now) < 23;
+  if (gap >= WATCH.pause) return { pause: true, push: day, gap };
+  if (gap >= WATCH.nudge && day && !(w && ms(w.nudgeAt) > at)) return { nudge: true, gap };
+  return null;
+}
+const watchMsg = (kind, lang) => {
+  const ta = lang !== 'en';
+  return kind === 'pause'
+    ? { title: ta ? 'நீங்க OFF ஆக்கப்பட்டீங்க' : 'You were switched OFF', body: ta ? '3 மணி நேரமா உங்க phone-ல இருந்து signal வரல. App-ஐ திறந்தா தானா மறுபடி ON ஆகும்.' : 'No signal from your phone for 3 hours. Open the app and you will be ON again.' }
+    : { title: ta ? 'App-ஐ ஒரு தடவை திறங்க' : 'Please open the app', body: ta ? 'நீங்க ON-ல இருக்கீங்க, ஆனா phone-ல இருந்து signal வரல. Ride வராம போகலாம்.' : 'You are ON but your phone is not sending a signal. You may miss rides.' };
+};
+
+module.exports = { WATCH, istHour, driverWatch, watchMsg, inclKm, enquiryFlood, OUTCAT, outCat, catBata, AHRS, AXH, aHours, planHours, hrsTable, AUTO_GOVT, AREA, autoFare, outsideArea, rentCheck, outCheck, tariffs, rentPrice, istStamp, commissionFor, settle, housekeeping, fareLooksWrong, liveStale, custPush, fareCheck, bookingLimit, nightPct, withNight, crowKm, LIMIT_OPEN, LIMIT_HOUR };

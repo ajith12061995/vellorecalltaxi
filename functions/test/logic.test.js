@@ -205,3 +205,25 @@ test('enquiryFlood: more than 3 from one number or 40 in total per hour', () => 
   assert.match(L.enquiryFlood(4, 4), /more than 3/);
   assert.match(L.enquiryFlood(1, 41), /more than 40/);
 });
+
+test('driver watch: ready / nudge once / pause after 3 h / night / skips', () => {
+  const day = Date.parse('2026-11-27T05:00:00Z'), night = Date.parse('2026-11-26T20:00:00Z'); // 10:30 and 01:30 IST
+  const D = { online: true }, Lv = ago => ({ updatedAt: T(day - ago) });
+  assert.equal(L.driverWatch(D, Lv(5 * 60e3), null, day), null);
+  assert.deepEqual(L.driverWatch(D, Lv(31 * 60e3), null, day), { nudge: true, gap: 31 * 60e3 });
+  assert.equal(L.driverWatch(D, Lv(40 * 60e3), { nudgeAt: T(day - 9 * 60e3) }, day), null, 'already reminded this spell');
+  assert.equal(L.driverWatch(D, Lv(40 * 60e3), { nudgeAt: T(day - 50 * 60e3) }, day).nudge, true, 'new silent spell');
+  const p = L.driverWatch(D, Lv(3 * 3600e3), null, day); assert.equal(p.pause, true); assert.equal(p.push, true);
+  const nl = { updatedAt: T(night - 31 * 60e3) };
+  assert.equal(L.driverWatch(D, nl, null, night), null, 'no reminder at night');
+  assert.deepEqual(L.driverWatch(D, { updatedAt: T(night - 4 * 3600e3) }, null, night), { pause: true, push: false, gap: 4 * 3600e3 });
+  assert.equal(L.driverWatch({ online: false }, Lv(5 * 3600e3), null, day), null);
+  assert.equal(L.driverWatch({ online: true, blocked: true }, Lv(5 * 3600e3), null, day), null);
+  assert.equal(L.driverWatch(D, { ...Lv(5 * 3600e3), busy: true }, null, day), null, 'on a job');
+  assert.equal(L.driverWatch(D, { ...Lv(5 * 3600e3), bk: 'b1' }, null, day), null, 'on a job');
+  assert.equal(L.driverWatch({ online: true, updatedAt: T(day - 60e3) }, Lv(5 * 3600e3), null, day), null, 'driver doc newer than live');
+  assert.equal(L.driverWatch({ online: true, updatedAt: T(day - 4 * 3600e3) }, null, null, day).pause, true, 'no live doc');
+  assert.equal(L.driverWatch(D, null, null, day), null, 'no time at all');
+  assert.equal(L.istHour(day), 10); assert.equal(L.istHour(night), 1);
+  assert.match(L.watchMsg('pause').body, /3 மணி/); assert.match(L.watchMsg('nudge', 'en').title, /open the app/);
+});

@@ -49,7 +49,7 @@
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('../vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV=window.VCT_V='133',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV=window.VCT_V='134',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('../version.json',location.href)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -660,20 +660,20 @@ a.btn{text-decoration:none}
 <div class="app" id="app"><section class="screen" id="splash"><div class="roofsign"><b>TAXI</b><span>வேலூர் டாக்ஸி</span></div><span class="drvtag">DRIVER</span><div class="road"></div><div class="tag">Vellore Taxi · Driver</div></section></div>
 <div class="toast" id="toast"></div>
 
-<script src="../core/report.js?v=133"></script>
-<script src="../core/geo.js?v=133"></script>
-<script src="../core/fare.js?v=133"></script>
-<script src="../core/appget.js?v=133"></script>
-<script src="../core/pin.js?v=133"></script>
-<script src="../core/clock.js?v=133"></script>
-<script src="../core/map.js?v=133"></script>
-<script src="../core/chat.js?v=133"></script>
-<script src="../core/driverchecks.js?v=133"></script>
-<script src="../core/nav.js?v=133"></script>
-<script src="../core/otp.js?v=133"></script>
-<script src="../core/deskmode.js?v=133"></script>
-<script src="../core/refer.js?v=133"></script>
-<script src="../core/weather.js?v=133"></script>
+<script src="../core/report.js?v=134"></script>
+<script src="../core/geo.js?v=134"></script>
+<script src="../core/fare.js?v=134"></script>
+<script src="../core/appget.js?v=134"></script>
+<script src="../core/pin.js?v=134"></script>
+<script src="../core/clock.js?v=134"></script>
+<script src="../core/map.js?v=134"></script>
+<script src="../core/chat.js?v=134"></script>
+<script src="../core/driverchecks.js?v=134"></script>
+<script src="../core/nav.js?v=134"></script>
+<script src="../core/otp.js?v=134"></script>
+<script src="../core/deskmode.js?v=134"></script>
+<script src="../core/refer.js?v=134"></script>
+<script src="../core/weather.js?v=134"></script>
 <script>
 /* shared with the customer app: icons, places, fares, map engine */
 /* small line icons (one stroke style everywhere; no emoji in the interface) */
@@ -1468,6 +1468,7 @@ function watchMe(){UNS.push(F().onSnapshot(F().doc(CL.db,'drivers',CL.phone),s=>
   if(!s.exists()){if(live&&ME_CACHED){ME_CACHED=false;if(S.online)setOnline(false);stopAllD();DME=null;notDriver()}return}
   const before=DS.wallet;applyMe(s.data());
   if(live&&ME_CACHED){ME_CACHED=false;if(S.online&&!J){const why=resumeWhy();if(why){setOnline(false);F().updateDoc(F().doc(CL.db,'drivers',CL.phone),{online:false,updatedAt:ts()}).catch(()=>{});setTimeout(()=>toast(why),700);if(S.tab==='home'&&!document.querySelector('.modal'))home()}}}
+  {const md=s.data(),tm=x=>x&&x.toMillis?x.toMillis():0;if(live&&!ME_CACHED&&S.online&&!J&&md.online===false&&tm(md.autoOff)&&tm(md.autoOff)===tm(md.updatedAt)&&!resumeWhy()){F().updateDoc(F().doc(CL.db,'drivers',CL.phone),{online:true,updatedAt:ts()}).catch(()=>{});pushLive(true);toast(L('Signal திரும்ப வந்தது. நீங்க ON-ல இருக்கீங்க','Signal is back. You are ON'))}}
   if(DME.blocked&&S.online){setOnline(false);toast(L('உங்க account நிறுத்தி வைக்கப்பட்டிருக்கு','Your account is on hold'))}
   if(S.online&&!J&&docState().expired.length){setOnline(false);toast(L('ஒரு document காலாவதி ஆயிடுச்சு. Offline ஆக்கப்பட்டீங்க','A document has expired. You have been taken offline'))}
   if(!J&&!document.querySelector('.modal')){if(S.tab==='wallet'&&before!==DS.wallet)walletTab();else if(S.tab==='home'&&(document.getElementById('ons')||(document.getElementById('ons')||document.getElementById('offs'))))home()}},()=>{}))}

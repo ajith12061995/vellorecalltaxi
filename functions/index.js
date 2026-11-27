@@ -3,7 +3,8 @@
    - onBookingDone   : writes one ledger entry per finished trip. Takes / corrects the commission from the
                        driver wallet ONLY when config/app.serverComm is true (switch it on after deploying).
    - housekeeping    : every 2 minutes — sends scheduled local rides to drivers 30 min before pickup,
-                       closes local searches nobody took for 15 min, marks drivers whose app went quiet as offline.
+                       closes local searches nobody took for 15 min, marks drivers whose app went quiet as offline;
+                       driver watch: 30 min silent → reminder push, 3 h silent → driver switched OFF (config/app.noWatch stops it).
                        Set config/app.serverOps = true so office screens stop doing the same.
    - onBookingCreated: corrects app fares below the price list (city rides, rentals, outstation); push to nearby drivers
                        (only drivers who allowed notifications; needs config/app.push.vapid).
@@ -69,7 +70,44 @@ exports.housekeeping = onSchedule({ schedule: 'every 2 minutes', timeZone: 'Asia
   const old = await db.collection('purgeBackups').where('at', '<', new Date(now - 30 * 864e5)).limit(5).get();
   for (const r of old.docs) { await db.recursiveDelete(r.ref); n++; }
   logger.info('housekeeping', { changed: n });
+  try { await watchDrivers(now); } catch (e) { logger.error('driver watch', { err: String(e) }); }
 });
+
+// Driver watch: ON switch on, phone silent. 30 min → one reminder push; 3 h → OFF by the server (autoOff = updatedAt,
+// so the driver app can tell it apart from an office OFF and goes back ON by itself when opened).
+// Off switch: config/app.noWatch = true.
+async function watchDrivers(now) {
+  const c = await cfg(); if (c.noWatch) return;
+  const ds = await db.collection('drivers').where('online', '==', true).get(); if (ds.empty) return;
+  const refs = ds.docs.map(d => [db.doc(`live/${d.id}`), db.doc(`watch/${d.id}`)]).flat();
+  const got = await db.getAll(...refs), by = Object.fromEntries(got.map(g => [g.ref.path, g.exists ? g.data() : null]));
+  let paused = 0, nudged = 0;
+  for (const d of ds.docs) {
+    const drv = d.data(), r = L.driverWatch(drv, by[`live/${d.id}`], by[`watch/${d.id}`], now); if (!r) continue;
+    if (r.pause) {
+      await d.ref.update({ online: false, autoOff: FV.serverTimestamp(), updatedAt: FV.serverTimestamp() });
+      await db.doc(`watch/${d.id}`).set({ pausedAt: FV.serverTimestamp(), gapMin: Math.round(r.gap / 60e3) }, { merge: true });
+      paused++; if (r.push) await watchPush(d, drv, 'pause');
+    } else if (r.nudge) {
+      await db.doc(`watch/${d.id}`).set({ nudgeAt: FV.serverTimestamp(), gapMin: Math.round(r.gap / 60e3) }, { merge: true });
+      nudged++; await watchPush(d, drv, 'nudge');
+    }
+  }
+  if (paused || nudged) logger.info('driver watch', { paused, nudged });
+}
+async function watchPush(d, drv, kind) {
+  if (!drv.fcm) return;
+  const m = L.watchMsg(kind, drv.lang === 'en' ? 'en' : 'ta'), tag = 'watch-' + kind;
+  try {
+    await admin.messaging().send({ token: drv.fcm,
+      webpush: { notification: { title: m.title, body: m.body, tag, icon: SITE + 'icon-192.png' }, fcmOptions: { link: SITE + 'driver/' } },
+      android: { priority: 'high', notification: { title: m.title, body: m.body, tag, sound: 'default' } },
+      data: { kind: tag } });
+  } catch (e) {
+    if (/registration-token-not-registered|invalid-registration-token/.test(e.code || e.message || '')) await d.ref.update({ fcm: FV.delete() }).catch(() => {});
+    logger.warn('watch push failed', { driver: d.id, code: e.code || String(e) });
+  }
+}
 
 // Weather line in the apps: every 30 minutes read MET Norway's forecast for Vellore and keep a tiny summary in
 // config/weather (signed-in users can read config/*; only this function writes it). A failure changes nothing:
