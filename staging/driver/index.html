@@ -52,7 +52,7 @@
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('../vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV=window.VCT_V='143',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV=window.VCT_V='144',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('../version.json',location.href)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -663,20 +663,20 @@ a.btn{text-decoration:none}
 <div class="app" id="app"><section class="screen" id="splash"><div class="roofsign"><b>TAXI</b><span>வேலூர் டாக்ஸி</span></div><span class="drvtag">DRIVER</span><div class="road"></div><div class="tag">Vellore Taxi · Driver</div></section></div>
 <div class="toast" id="toast"></div>
 
-<script src="../core/report.js?v=143"></script>
-<script src="../core/geo.js?v=143"></script>
-<script src="../core/fare.js?v=143"></script>
-<script src="../core/appget.js?v=143"></script>
-<script src="../core/pin.js?v=143"></script>
-<script src="../core/clock.js?v=143"></script>
-<script src="../core/map.js?v=143"></script>
-<script src="../core/chat.js?v=143"></script>
-<script src="../core/driverchecks.js?v=143"></script>
-<script src="../core/nav.js?v=143"></script>
-<script src="../core/otp.js?v=143"></script>
-<script src="../core/deskmode.js?v=143"></script>
-<script src="../core/refer.js?v=143"></script>
-<script src="../core/weather.js?v=143"></script>
+<script src="../core/report.js?v=144"></script>
+<script src="../core/geo.js?v=144"></script>
+<script src="../core/fare.js?v=144"></script>
+<script src="../core/appget.js?v=144"></script>
+<script src="../core/pin.js?v=144"></script>
+<script src="../core/clock.js?v=144"></script>
+<script src="../core/map.js?v=144"></script>
+<script src="../core/chat.js?v=144"></script>
+<script src="../core/driverchecks.js?v=144"></script>
+<script src="../core/nav.js?v=144"></script>
+<script src="../core/otp.js?v=144"></script>
+<script src="../core/deskmode.js?v=144"></script>
+<script src="../core/refer.js?v=144"></script>
+<script src="../core/weather.js?v=144"></script>
 <script>
 /* shared with the customer app: icons, places, fares, map engine */
 /* small line icons (one stroke style everywhere; no emoji in the interface) */
@@ -1706,10 +1706,34 @@ function ovlPower(){if(!OVL)return;try{OVL.power().then(r=>{const f=!!(r&&r.free
    page hands over the sign-in once per ON (see NativeLive.java). A server push about a new ride wakes the page ("wake"). */
 let OVL17=false,OVLFSI=null,LIVEN='',WAKEL=false;
 function liveNative(){if(!OVL||!OVL17||!CL||!CL.user||!CL.fbcfg)return;
-  if(!WAKEL){WAKEL=true;window.addEventListener('vctwake',()=>{if(!CL||!S.online)return;if(!REQUNSUB)listenReq();pushLive(true);setTimeout(()=>{if(document.getElementById('offs'))maybeShowReq()},600)})}
+  if(!WAKEL){WAKEL=true;window.addEventListener('vctwake',e=>{if(!CL||!S.online)return;let d={};try{d=JSON.parse(e.vct||'{}')}catch(x){}
+    if(!REQUNSUB)listenReq();pushLive(true);if(d&&d.bookingId)wakeRide(String(d.bookingId));
+    setTimeout(()=>{if(document.getElementById('offs'))maybeShowReq()},600)})}
   if(!S.online){LIVEN='';return}
   const c=CL.fbcfg(),rt=CL.user.refreshToken||'',k=CL.phone+'|'+rt.slice(-12);if(!rt||LIVEN===k)return;LIVEN=k;
   try{OVL.liveStart({apiKey:c.apiKey,project:c.project,phone:CL.phone,refresh:rt}).catch(()=>{LIVEN=''})}catch(e){LIVEN=''}}
+/* a ride push after the phone slept a long time (Doze): the database connection may be waiting minutes to retry, so
+   it is started afresh and the pushed ride is read straight from the server. The phone is told the page took care of it
+   (rang, or this ride is not for this driver now); if the page cannot answer in time the phone rings by itself (1.0.20). */
+const WAKEN=new Set();
+async function wakeRide(id){if(WAKEN.has(id))return;WAKEN.add(id);setTimeout(()=>WAKEN.delete(id),60e3);
+  const seen=()=>{try{OVL&&OVL.seen&&OVL.seen({id}).catch(()=>{})}catch(e){}};
+  try{
+    const fs=F();if(fs.disableNetwork&&fs.enableNetwork){try{await fs.disableNetwork(CL.db)}catch(e){}try{await fs.enableNetwork(CL.db)}catch(e){}}
+    const rd=fs.getDocFromServer||fs.getDoc;
+    const s=await Promise.race([rd(fs.doc(CL.db,'bookings',id)),new Promise((_,r)=>setTimeout(()=>r(new Error('slow')),5000))]);
+    if(!s.exists()){seen();return}const b={id,...s.data()};
+    if(b.status!=='searching'||b.veh!==me().veh||J||!canOffer(b)||offerAt(b)===Infinity){seen();return}
+    // shown straight from this fresh read (the live list may still be catching up; it is not changed here)
+    if(!SHOWING&&!NEXT&&!document.querySelector('.modal')&&document.getElementById('offs')&&offerAt(b)<=VCTCLK.now()){SHOWING=id;incoming(buildJ(b,id))}
+    if(SHOWING===id)seen(); // rang here (a later turn, 3–4 km, is left to the phone too if the page sleeps by then)
+  }catch(e){/* no answer in time: the phone rings by itself */}}
+/* "Accept" on a ride the phone rang by itself (the page was asleep): read it, same checks as any request, then accept */
+async function takeNative(id){try{if(!CL)await cloudP;if(!CL||!S.online||J||document.querySelector('.modal'))return;
+  const s=await F().getDoc(F().doc(CL.db,'bookings',id));if(!s.exists())return;const b={id,...s.data()};
+  if(b.status==='assigned'&&b.driverPhone===CL.phone){adoptJob(b);return}
+  if(b.status!=='searching'||b.veh!==me().veh||!canOffer(b)||offerAt(b)===Infinity){toast(L('இந்த ride-ஐ வேற driver எடுத்துட்டாங்க, அல்லது ரத்து ஆயிடுச்சு','Another driver took this ride, or it was cancelled'));return}
+  if(J)return;SHOWING=id;J=buildJ(b,id);acceptCloud()}catch(e){toast(CL?CL.errText(e,S.lang==='ta'):String(e))}}
 /* tell the office how this phone is set up (app version, over-other-apps, battery, location, notifications), so the office
    can see which driver needs to update or allow something — written only when something changed, or twice a day */
 let DEVBUSY=false;
@@ -1747,7 +1771,8 @@ function rideSay(j,amt,pf,b){if(!voiceOn())return{say:'',sayEn:''};
   return{say:`${k[0]}. ${pt}. ${near?km(j.away)+' மீட்டர்':km(j.away)+' கிலோமீட்டர்'} தூரம். ${amt>0?amt+' ரூபாய்.':''}`.trim(),
     sayEn:`${k[1]}. ${pe}. ${near?km(j.away)+' metres':km(j.away)+' kilometres'} away. ${amt>0?amt+' rupees.':''}`.trim()}}
 function ovlStop(){if(OVL)try{OVL.stop().catch(()=>{})}catch(e){}}
-function ovlTake(){if(!OVL)return;try{OVL.take().then(r=>{if(r&&r.action==='accept'&&J&&String(J.id||'')===String(r.id||'')){const a=document.getElementById('acc');if(a)a.click()}}).catch(()=>{})}catch(e){}}
+function ovlTake(){if(!OVL)return;try{OVL.take().then(r=>{if(!r||r.action!=='accept'||!r.id)return;const id=String(r.id);
+  if(J&&String(J.id||'')===id){const a=document.getElementById('acc');if(a)a.click()}else if(!J)takeNative(id)}).catch(()=>{})}catch(e){}}
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){ovlInit();ovlTake()}});
 setTimeout(ovlInit,1500);
 /* driver's own UPI QR (customer pays the driver directly) */
@@ -1760,7 +1785,11 @@ function listenReq(){
   REQUNSUB=F().onSnapshot(F().query(F().collection(CL.db,'bookings'),F().where('status','==','searching'),F().where('veh','==',me().veh)),snap=>{
     REQS=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(a.when||0)-(b.when||0));
     {const cur=REQS.find(x=>x.id===SHOWING),rf=document.getElementById('rqf');if(cur&&J&&J.id===SHOWING&&rf&&(+cur.tip||0)!==(J.tip||0)){J.tip=+cur.tip||0;J.b=cur;rf.innerHTML=reqFareHtml();beep()}}
-    if(SHOWING&&SHOWING!==ACCEPTING&&!REQS.some(b=>b.id===SHOWING)&&document.getElementById('acc')){SHOWING=null;J=null;home();toast(L('இந்த ride-ஐ வேற driver எடுத்துட்டாங்க, அல்லது ரத்து ஆயிடுச்சு','Another driver took this ride, or it was cancelled'));return}
+    if(SHOWING&&SHOWING!==ACCEPTING&&!REQS.some(b=>b.id===SHOWING)&&document.getElementById('acc')){
+      const gone=()=>{SHOWING=null;J=null;home();toast(L('இந்த ride-ஐ வேற driver எடுத்துட்டாங்க, அல்லது ரத்து ஆயிடுச்சு','Another driver took this ride, or it was cancelled'))};
+      if(!WAKEN.has(SHOWING)){gone();return}
+      // shown from a push while this list was still catching up: look at the ride itself before taking it away
+      const sid=SHOWING;F().getDoc(F().doc(CL.db,'bookings',sid)).then(x=>{if(SHOWING===sid&&!(x.exists()&&x.data().status==='searching')&&document.getElementById('acc'))gone()}).catch(()=>{})}
     if(document.getElementById('offs'))maybeShowReq();
   },e=>console.warn(e));
 }
