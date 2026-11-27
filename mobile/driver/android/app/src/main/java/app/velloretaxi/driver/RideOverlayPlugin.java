@@ -234,6 +234,14 @@ public class RideOverlayPlugin extends Plugin {
         call.resolve();
     }
 
+    /** CI emulator test only: what the phone does when it is being switched off */
+    @PluginMethod
+    public void testShutdown(PluginCall call) {
+        if (!debug()) { call.reject("debug only"); return; }
+        new Thread(() -> NativeLive.get(getContext()).shuttingDown()).start();
+        call.resolve();
+    }
+
     /** CI emulator test only: what a server push does when it arrives */
     @PluginMethod
     public void testPush(PluginCall call) {

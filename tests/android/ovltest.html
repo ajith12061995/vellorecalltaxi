@@ -25,6 +25,7 @@ let offDone=false,lastCmd='';setInterval(()=>{fetch('/tests/android/cmd.txt?'+Da
   if(c==='on'){offDone=false;call('online',{on:true}).then(()=>rep('on2','sent')).catch(e=>rep('on2','ERR '+e))}
   if(c==='live')call('liveStart',{apiKey:'key-test',project:'proj-test',phone:'+919999900002',refresh:'rt-test',tokenBase:'http://10.0.2.2:8080/fake',fsBase:'http://10.0.2.2:8080/fake'}).then(()=>rep('live','sent')).catch(e=>rep('live','ERR '+e));
   if(c==='livestatus')call('liveStatus').then(r=>rep('livestatus',JSON.stringify(r))).catch(e=>rep('livestatus','ERR '+e));
+  if(c==='shutdown')call('testShutdown').then(()=>rep('shutdown','sent')).catch(e=>rep('shutdown','ERR '+e));
   if(c==='voice')call('voice').then(r=>rep('voice',JSON.stringify(r))).catch(e=>rep('voice','ERR '+e));
   if(c==='fsi')call('fsi').then(r=>rep('fsi',JSON.stringify(r))).catch(e=>rep('fsi','ERR '+e));
   if(c.startsWith('push'))call('testPush',{data:{type:'ride',bookingId:c},delay:12000}).then(()=>rep('push','sent:'+c)).catch(e=>rep('push','ERR '+e));

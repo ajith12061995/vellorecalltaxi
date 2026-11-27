@@ -133,9 +133,13 @@ final class NativeLive {
             f.put("sp", dbl(l.hasSpeed() ? Math.round(Math.max(0, l.getSpeed()) * 36) / 10.0 : 0));
             f.put("acc", dbl(l.hasAccuracy() ? Math.round(l.getAccuracy()) : 0));
             f.put("online", new JSONObject().put("booleanValue", true));
+            int[] bt = battery(ctx);
+            if (bt[0] >= 0) f.put("bat", new JSONObject().put("integerValue", String.valueOf(bt[0])));
+            f.put("chg", new JSONObject().put("booleanValue", bt[1] == 1));
+            f.put("pwr", new JSONObject().put("stringValue", "on"));
             JSONObject w = new JSONObject()
                     .put("update", new JSONObject().put("name", doc).put("fields", f))
-                    .put("updateMask", new JSONObject().put("fieldPaths", new JSONArray().put("lat").put("lon").put("gh").put("hd").put("sp").put("acc").put("online")))
+                    .put("updateMask", new JSONObject().put("fieldPaths", new JSONArray().put("lat").put("lon").put("gh").put("hd").put("sp").put("acc").put("online").put("bat").put("chg").put("pwr")))
                     .put("updateTransforms", new JSONArray().put(new JSONObject().put("fieldPath", "updatedAt").put("setToServerValue", "REQUEST_TIME")));
             JSONObject body = new JSONObject().put("writes", new JSONArray().put(w));
             int code = http(fsBase + "/v1/projects/" + proj + "/databases/(default)/documents:commit", "application/json", body.toString(), tok, null);
@@ -143,6 +147,47 @@ final class NativeLive {
             else { fails++; lastErr = "write:" + code; if (code == 401 || code == 403) { idToken = null; tokenExp = 0; } Log.w(TAG, "write " + code); }
         } catch (Exception e) { fails++; lastErr = "write:" + e.getClass().getSimpleName(); Log.w(TAG, "send failed", e); }
     }
+
+    /** battery % (−1 unknown) and charging (1/0), from the sticky battery broadcast — no permission needed */
+    static int[] battery(Context c) {
+        try {
+            android.content.Intent b = c.registerReceiver(null, new android.content.IntentFilter(android.content.Intent.ACTION_BATTERY_CHANGED));
+            if (b == null) return new int[]{-1, 0};
+            int lv = b.getIntExtra(android.os.BatteryManager.EXTRA_LEVEL, -1), sc = b.getIntExtra(android.os.BatteryManager.EXTRA_SCALE, 100);
+            int st = b.getIntExtra(android.os.BatteryManager.EXTRA_STATUS, -1);
+            boolean chg = st == android.os.BatteryManager.BATTERY_STATUS_CHARGING || st == android.os.BatteryManager.BATTERY_STATUS_FULL;
+            return new int[]{ lv < 0 || sc <= 0 ? -1 : Math.round(lv * 100f / sc), chg ? 1 : 0 };
+        } catch (Exception e) { return new int[]{-1, 0}; }
+    }
+
+    /**
+     * The phone is being switched off (power button → Power off / Restart, or the battery is empty): tell the office
+     * right now — pwr = "off" — so it can say "phone switched off" instead of guessing, and a waiting ride can go to
+     * another driver at once. Android gives only a few seconds here, so this is one short write, at most ~4 s.
+     */
+    void shuttingDown() {
+        if (!DutyService.isOn(ctx) || !hasCreds(ctx)) return;
+        Thread t = new Thread(() -> {
+            try {
+                String tok = token(); if (tok == null) return;
+                String proj = pref("proj"), phone = pref("phone");
+                JSONObject f = new JSONObject().put("pwr", new JSONObject().put("stringValue", "off"));
+                int[] bt = battery(ctx); if (bt[0] >= 0) f.put("bat", new JSONObject().put("integerValue", String.valueOf(bt[0])));
+                JSONObject w = new JSONObject()
+                        .put("update", new JSONObject().put("name", "projects/" + proj + "/databases/(default)/documents/live/" + phone).put("fields", f))
+                        .put("updateMask", new JSONObject().put("fieldPaths", new JSONArray().put("pwr").put("bat")))
+                        .put("updateTransforms", new JSONArray().put(new JSONObject().put("fieldPath", "updatedAt").put("setToServerValue", "REQUEST_TIME")));
+                int code = http(fsBase + "/v1/projects/" + proj + "/databases/(default)/documents:commit", "application/json",
+                        new JSONObject().put("writes", new JSONArray().put(w)).toString(), tok, null);
+                Log.i(TAG, "shutdown sent " + code);
+            } catch (Exception e) { Log.w(TAG, "shutdown send failed", e); }
+        });
+        t.start();
+        try { t.join(4000); } catch (InterruptedException e) { /* time is up */ }
+    }
+
+    /** network came back after a gap: send the position at once (not at the next 30 s beat) */
+    void networkBack() { if (running && h != null && last != null) h.post(() -> { sentAt = 0; send(last); }); }
 
     private static JSONObject dbl(double v) throws Exception { return new JSONObject().put("doubleValue", v); }
 

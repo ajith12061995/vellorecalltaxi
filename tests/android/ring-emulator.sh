@@ -77,6 +77,19 @@ c1=$(commits); for k in 1 2 3; do adb emu geo fix 79.1700 12.9850 30 >/dev/null 
 adb shell dumpsys location 2>/dev/null | grep -iE "last location|Location\[gps" | head -4
 for i in $(seq 1 25); do [ "$(commits)" -gt "$c1" ] && grep '^commit=' "$LOG" | tail -1 | grep -qE '"lat":\{"doubleValue":12\.98[45]' && break; sleep 1; done
 grep '^commit=' "$LOG" | tail -1 | grep -qE '"lat":\{"doubleValue":12\.98[45]' && ok "driver moves → new position sent" || { bad "moved position not sent"; grep '^commit=' "$LOG" | grep -o '"lat":{"doubleValue":[0-9.]*' | uniq -c; adb logcat -d | grep "NativeLive: fix" | tail -6; }
+adb emu power capacity 37 >/dev/null 2>&1; adb emu power status discharging >/dev/null 2>&1; sleep 1
+c2=$(commits); sleep 35
+grep '^commit=' "$LOG" | tail -1 | grep -q '"bat":{"integerValue":"37"}' && ok "battery % goes with the position (37%)" || bad "no battery % in the write: $(grep '^commit=' "$LOG" | tail -1 | grep -o '"bat":[^}]*}' )"
+grep '^commit=' "$LOG" | tail -1 | grep -q '"pwr":{"stringValue":"on"}' && grep '^commit=' "$LOG" | tail -1 | grep -q '"chg":{"booleanValue":false}' && ok "phone on, not charging" || bad "pwr / chg missing"
+# the phone is being switched off: one last write says so (system broadcast if the emulator lets us send it, else the same code path)
+c4=$(commits); adb root >/dev/null 2>&1; sleep 2; adb shell am broadcast -a android.intent.action.ACTION_SHUTDOWN >/dev/null 2>&1
+for i in $(seq 1 8); do grep '^commit=' "$LOG" | tail -3 | grep -q '"pwr":{"stringValue":"off"}' && break; sleep 1; done
+if grep '^commit=' "$LOG" | tail -3 | grep -q '"pwr":{"stringValue":"off"}'; then ok "power-off broadcast → 'phone switched off' sent at once (real system broadcast)"
+else echo "INFO the emulator did not deliver ACTION_SHUTDOWN from the shell; using the same code path"; cmd shutdown; waitlog '^shutdown=sent' 15
+  for i in $(seq 1 10); do grep '^commit=' "$LOG" | tail -3 | grep -q '"pwr":{"stringValue":"off"}' && break; sleep 1; done
+  grep '^commit=' "$LOG" | tail -3 | grep -q '"pwr":{"stringValue":"off"}' && ok "switching off → 'phone switched off' sent at once" || bad "no 'switched off' write"; fi
+grep '^commit=' "$LOG" | grep '"pwr":{"stringValue":"off"}' | tail -1 | grep -q '"fieldPaths":\["pwr","bat"\]' && ok "the switched-off write changes only pwr and battery" || bad "switched-off write mask wrong"
+sleep 31; grep '^commit=' "$LOG" | tail -1 | grep -q '"pwr":{"stringValue":"on"}' && ok "still running (emulator not really off): next write says on again" || bad "no 'on' write after"
 c2=$(commits); sleep 35
 [ "$(commits)" -gt "$c2" ] && ok "standing still: signal still sent at least every 30 s ($c2 → $(commits))" || bad "no heartbeat while standing ($c2 → $(commits))"
 adb exec-out screencap -p > "$OUT/ring-0-home.png" 2>/dev/null

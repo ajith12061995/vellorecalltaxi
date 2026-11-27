@@ -76,10 +76,30 @@ public class DutyService extends Service {
     /* ---------- service ---------- */
     @Override public IBinder onBind(Intent i) { return null; }
 
+    /* 1.0.19: phone switching off → NativeLive tells the office ("phone switched off"); network back → position at once */
+    private final android.content.BroadcastReceiver power = new android.content.BroadcastReceiver() {
+        @Override public void onReceive(Context c, Intent i) {
+            Log.i(TAG, "power " + i.getAction());
+            final PendingResult pr = goAsync();
+            new Thread(() -> { try { NativeLive.get(c).shuttingDown(); } finally { pr.finish(); } }).start();
+        }
+    };
+    private android.net.ConnectivityManager.NetworkCallback netCb;
+
     @Override
     public void onCreate() {
         super.onCreate();
         inst = this;
+        try {
+            android.content.IntentFilter f = new android.content.IntentFilter(Intent.ACTION_SHUTDOWN);
+            f.addAction("android.intent.action.QUICKBOOT_POWEROFF"); f.addAction("com.htc.intent.action.QUICKBOOT_POWEROFF");
+            if (Build.VERSION.SDK_INT >= 33) registerReceiver(power, f, Context.RECEIVER_EXPORTED); else registerReceiver(power, f);
+        } catch (Exception e) { Log.w(TAG, "power receiver", e); }
+        try {
+            android.net.ConnectivityManager cm = (android.net.ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
+            netCb = new android.net.ConnectivityManager.NetworkCallback() { @Override public void onAvailable(android.net.Network n) { NativeLive.get(DutyService.this).networkBack(); } };
+            if (Build.VERSION.SDK_INT >= 24) cm.registerDefaultNetworkCallback(netCb);
+        } catch (Exception e) { netCb = null; }
         wm = (WindowManager) getApplicationContext().getSystemService(Context.WINDOW_SERVICE);
         Log.i(TAG, "create");
     }
@@ -115,6 +135,8 @@ public class DutyService extends Service {
     @Override
     public void onDestroy() {
         Log.i(TAG, "destroy");
+        try { unregisterReceiver(power); } catch (Exception e) { /* not registered */ }
+        try { if (netCb != null) ((android.net.ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE)).unregisterNetworkCallback(netCb); } catch (Exception e) { /* none */ }
         main.removeCallbacks(heal);
         removeBubble();
         if (inst == this) inst = null;
