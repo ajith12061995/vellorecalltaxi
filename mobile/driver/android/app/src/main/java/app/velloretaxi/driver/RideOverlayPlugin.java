@@ -77,8 +77,8 @@ public class RideOverlayPlugin extends Plugin {
 
     /** a push from the server (VctMessagingService): wake the page so it checks for rides now */
     static boolean wake(JSObject data) {
-        RideOverlayPlugin p = inst; if (p == null) return false;
-        try { p.notifyListeners("wake", data, true); return true; } catch (Exception e) { return false; }
+        RideOverlayPlugin p = inst; if (p == null) { android.util.Log.i("RideOverlay", "wake: no page"); return false; }
+        try { android.util.Log.i("RideOverlay", "wake listeners=" + p.hasListeners("wake")); p.notifyListeners("wake", data, true); return true; } catch (Exception e) { return false; }
     }
 
     /** a debug build (the CI emulator test app); the Play Store app is never debuggable */

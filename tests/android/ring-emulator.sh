@@ -50,7 +50,7 @@ for i in $(seq 1 40); do [ "$(commits)" -gt "$c0" ] && break; sleep 1; done
 grep -q '^token=grant_type=refresh_token&refresh_token=rt-test' "$LOG" && ok "sign-in token swapped at the token endpoint (refresh token from the page)" || bad "no token swap seen"
 L1=$(grep '^commit=' "$LOG" | tail -1)
 echo "$L1" | grep -q '^commit=Bearer idt-test ' && ok "write is signed with the ID token (database rules apply)" || bad "write not signed: ${L1:0:80}"
-echo "$L1" | grep -q 'documents/live/+919999900002"' && ok "writes this driver's live/{phone} record" || bad "wrong record: ${L1:0:200}"
+echo "$L1" | sed 's#\\/#/#g' | grep -q 'documents/live/+919999900002"' && ok "writes this driver's live/{phone} record" || bad "wrong record: ${L1:0:200}"
 echo "$L1" | python3 -c "
 import sys,json;l=sys.stdin.read();j=json.loads(l[l.index('{'):]);w=j['writes'][0];f=w['update']['fields']
 assert abs(f['lat']['doubleValue']-12.9716)<0.001 and abs(f['lon']['doubleValue']-79.159)<0.001, f
@@ -119,7 +119,8 @@ echo off > tests/android/cmd.txt; sleep 4; adb shell input keyevent KEYCODE_HOME
 c3=$(commits); sleep 40
 [ "$(commits)" -eq "$c3" ] && ok "OFF: the phone stops sending the position" || bad "position still sent after OFF ($c3 → $(commits))"
 rm -f tests/android/cmd.txt
-echo "--- NativeLive / RideRing / VctPush log:"; adb logcat -d | grep -E "NativeLive|RideRing|VctPush|RideOverlay: ring" | tail -40
+echo "--- report log (1.0.17 part):"; grep -vE "^(tick|commit)=" "$LOG" | tail -40
+echo "--- NativeLive / RideRing / VctPush log:"; adb logcat -d | grep -E "NativeLive|RideRing|VctPush|RideOverlay: (ring|wake)|Capacitor/Console" | tail -60
 echo "--- crash buffer:"; adb logcat -d -b crash | tail -30
 echo "RESULT $pass passed, $fail failed"
 [ $fail -eq 0 ]
