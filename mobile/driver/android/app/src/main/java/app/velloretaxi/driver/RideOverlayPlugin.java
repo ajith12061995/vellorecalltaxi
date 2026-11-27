@@ -81,6 +81,8 @@ public class RideOverlayPlugin extends Plugin {
         try { p.notifyListeners("wake", data, true); return true; } catch (Exception e) { return false; }
     }
 
+    /** a debug build (the CI emulator test app); the Play Store app is never debuggable */
+    private boolean debug() { return (getContext().getApplicationInfo().flags & android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0; }
     private boolean can() { return Build.VERSION.SDK_INT < 23 || Settings.canDrawOverlays(getContext()); }
     private int dp(float v) { return Math.round(TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, v, getContext().getResources().getDisplayMetrics())); }
     private int type() { return Build.VERSION.SDK_INT >= 26 ? WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY : WindowManager.LayoutParams.TYPE_PHONE; }
@@ -171,7 +173,7 @@ public class RideOverlayPlugin extends Plugin {
     public void liveStart(PluginCall call) {
         String key = call.getString("apiKey", ""), proj = call.getString("project", ""), phone = call.getString("phone", ""), rt = call.getString("refresh", "");
         if (key.isEmpty() || proj.isEmpty() || phone.isEmpty() || rt.isEmpty()) { call.reject("missing"); return; }
-        if (BuildConfig.DEBUG) {   // CI emulator test: point the two Google endpoints at the test server
+        if (debug()) {   // CI emulator test: point the two Google endpoints at the test server
             String tb = call.getString("tokenBase", ""), fb = call.getString("fsBase", "");
             if (!tb.isEmpty()) NativeLive.tokenBase = tb; if (!fb.isEmpty()) NativeLive.fsBase = fb;
         }
@@ -211,7 +213,7 @@ public class RideOverlayPlugin extends Plugin {
     /** CI emulator test only: what a server push does when it arrives */
     @PluginMethod
     public void testPush(PluginCall call) {
-        if (!BuildConfig.DEBUG) { call.reject("debug only"); return; }
+        if (!debug()) { call.reject("debug only"); return; }
         java.util.Map<String, String> m = new java.util.HashMap<>();
         JSObject d = call.getObject("data", new JSObject());
         java.util.Iterator<String> it = d.keys(); while (it.hasNext()) { String k = it.next(); m.put(k, d.optString(k)); }
