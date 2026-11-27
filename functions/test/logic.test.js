@@ -246,3 +246,17 @@ test('scorecard helpers', () => {
   assert.equal(L.scoreSample({ online: false }, null, now, 2), null);
   assert.deepEqual(L.scoreSample({ online: true }, null, now, 2), { on: 2, act: 0, job: 0 });
 });
+
+test('demand map: cells per time of day, named by the usual pickup, last 14 days only', () => {
+  const now = Date.parse('2026-11-27T12:00:00Z'), at = (dIST, h) => T(Date.parse(`2026-11-${dIST}T${String(h).padStart(2, '0')}:10:00+05:30`));
+  const B = (lat, lon, ta, en, c, x) => ({ from: { lat, lon, ta, en }, createdAt: c, ...x });
+  const bk = [B(12.9716, 79.1590, 'காட்பாடி ரயில் நிலையம்', 'Katpadi Junction', at(26, 7)), B(12.9717, 79.1591, 'காட்பாடி ரயில் நிலையம்', 'Katpadi Junction', at(25, 9)),
+    B(12.9718, 79.1589, 'காட்பாடி', 'Katpadi', at(24, 8)), B(12.9246, 79.1353, 'CMC', 'CMC', at(26, 7)), B(12.9246, 79.1353, 'CMC', 'CMC', at(26, 18)),
+    B(12.9246, 79.1353, 'CMC', 'CMC', at(26, 23)), B(12.9246, 79.1353, 'CMC', 'CMC', at(1, 7)), B(12.9, 79.1, 'x', 'x', at(26, 7), { cancelReason: 'limit' }), { from: {}, createdAt: at(26, 7) }];
+  bk[6].createdAt = T(now - 20 * 864e5);
+  const d = L.demandMap(bk, now, 14);
+  assert.equal(d.m.length, 2); assert.equal(d.m[0].n, 3); assert.equal(d.m[0].ta, 'காட்பாடி ரயில் நிலையம்'); assert.equal(d.m[0].en, 'Katpadi Junction');
+  assert.equal(d.m[1].ta, 'CMC'); assert.equal(d.m[1].n, 1, 'older than 14 days not counted');
+  assert.equal(d.e.length, 1); assert.equal(d.n.length, 1); assert.equal(d.a.length, 0);
+  assert.equal(L.bandOf(4), 'n'); assert.equal(L.bandOf(5), 'm'); assert.equal(L.bandOf(11), 'a'); assert.equal(L.bandOf(16), 'e'); assert.equal(L.bandOf(21), 'n');
+});

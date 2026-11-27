@@ -73,6 +73,7 @@ exports.housekeeping = onSchedule({ schedule: 'every 2 minutes', timeZone: 'Asia
   let w = null;
   try { w = await watchDrivers(now); } catch (e) { logger.error('driver watch', { err: String(e) }); }
   try { await ownerAlerts(now, open.docs.map(d => ({ id: d.id, ...d.data() })), w); } catch (e) { logger.error('owner alerts', { err: String(e) }); }
+  try { await demandRefresh(now); } catch (e) { logger.error('demand map', { err: String(e) }); }
 });
 
 // Driver watch: ON switch on, phone silent. 30 min → one reminder push; 3 h → OFF by the server (autoOff = updatedAt,
@@ -103,6 +104,16 @@ async function watchDrivers(now) {
   if (Object.keys(day).length) await db.doc(`stats/${L.statDay(now)}`).set(day, { merge: true });
   if (paused || nudged) logger.info('driver watch', { paused, nudged });
   return res;
+}
+
+// Demand map (config/demand, read by the driver app and the Office): rebuilt once an hour from the last 14 days.
+async function demandRefresh(now) {
+  const ref = db.doc('config/demand'), cur = (await ref.get()).data();
+  if (cur && cur.at && now - cur.at.toMillis() < 60 * 60e3) return;
+  const s = await db.collection('bookings').where('createdAt', '>=', new Date(now - 14 * 864e5)).get();
+  const bands = L.demandMap(s.docs.map(d => d.data()), now, 14);
+  await ref.set({ at: FV.serverTimestamp(), days: 14, total: s.size, bands });
+  logger.info('demand map', { bookings: s.size });
 }
 
 // Owner alerts → push to every active owner who switched on "alerts on my phone" in the Office

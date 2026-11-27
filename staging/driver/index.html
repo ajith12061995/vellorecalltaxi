@@ -45,11 +45,12 @@
 .nmenu a,.nmenu button{padding:12px;border:0;background:none;text-align:left;font:inherit;font-weight:700;color:inherit;text-decoration:none}
 .nmenu small{padding:0 12px 8px;color:var(--muted);font-size:11px}
 .agcard{display:grid;grid-template-columns:1fr auto;align-items:start;gap:8px 6px;background:#FFF6D6;border:1.5px solid #FFC21A;border-radius:16px;padding:10px 10px 10px 14px;margin:10px 0;color:#0B4A36}.agtxt{flex:1;min-width:0}.agtxt b{display:block;font-size:15px}.agtxt small{display:block;font-size:12.5px;color:#4b5a54;line-height:1.35}.agbtn{grid-column:1/-1;grid-row:2;justify-self:start;background:#0B4A36;color:#FFC21A;border:0;border-radius:12px;padding:9px 12px;font:inherit;font-weight:700;font-size:14px;text-decoration:none;white-space:nowrap;cursor:pointer}.agx{grid-column:2;grid-row:1;background:none;border:0;font-size:22px;line-height:1;color:#6b7a73;padding:4px 6px;cursor:pointer}
+.demhint{margin:10px 2px 0;padding:10px 12px;border:1px solid #F2D27A;background:#FFF9E6;border-radius:12px;display:grid;gap:6px;font-size:13px}.demhint b{display:flex;gap:6px;align-items:center}.demhint a{display:flex;justify-content:space-between;gap:8px;color:inherit;text-decoration:none;padding:6px 0;border-top:1px solid #F3E3B0}.demhint a small{color:#6b5a2a;white-space:nowrap}
 </style>
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('../vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV=window.VCT_V='136',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV=window.VCT_V='137',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('../version.json',location.href)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -660,20 +661,20 @@ a.btn{text-decoration:none}
 <div class="app" id="app"><section class="screen" id="splash"><div class="roofsign"><b>TAXI</b><span>வேலூர் டாக்ஸி</span></div><span class="drvtag">DRIVER</span><div class="road"></div><div class="tag">Vellore Taxi · Driver</div></section></div>
 <div class="toast" id="toast"></div>
 
-<script src="../core/report.js?v=136"></script>
-<script src="../core/geo.js?v=136"></script>
-<script src="../core/fare.js?v=136"></script>
-<script src="../core/appget.js?v=136"></script>
-<script src="../core/pin.js?v=136"></script>
-<script src="../core/clock.js?v=136"></script>
-<script src="../core/map.js?v=136"></script>
-<script src="../core/chat.js?v=136"></script>
-<script src="../core/driverchecks.js?v=136"></script>
-<script src="../core/nav.js?v=136"></script>
-<script src="../core/otp.js?v=136"></script>
-<script src="../core/deskmode.js?v=136"></script>
-<script src="../core/refer.js?v=136"></script>
-<script src="../core/weather.js?v=136"></script>
+<script src="../core/report.js?v=137"></script>
+<script src="../core/geo.js?v=137"></script>
+<script src="../core/fare.js?v=137"></script>
+<script src="../core/appget.js?v=137"></script>
+<script src="../core/pin.js?v=137"></script>
+<script src="../core/clock.js?v=137"></script>
+<script src="../core/map.js?v=137"></script>
+<script src="../core/chat.js?v=137"></script>
+<script src="../core/driverchecks.js?v=137"></script>
+<script src="../core/nav.js?v=137"></script>
+<script src="../core/otp.js?v=137"></script>
+<script src="../core/deskmode.js?v=137"></script>
+<script src="../core/refer.js?v=137"></script>
+<script src="../core/weather.js?v=137"></script>
 <script>
 /* shared with the customer app: icons, places, fares, map engine */
 /* small line icons (one stroke style everywhere; no emoji in the interface) */
@@ -834,6 +835,16 @@ function resumeWhy(){return DME.blocked?L('உங்க account நிறுத�
     :docState().expired.length?L('காலாவதி ஆன document: ','Expired: ')+docState().expired.join(', ')
     :(CFGD.reqConsent&&needSign())?L('ஒப்பந்தத்தை ஏத்துக்கிட்டு Online போங்க','Accept the agreement to go online')
     :DS.wallet<MINBAL?L('Wallet குறைவு. Recharge பண்ணிட்டு Online போங்க','Wallet is low. Recharge to go online'):''}
+/* Demand hint (config/demand, built hourly by the server): the busiest pickup places right now, nearest first among the top ones */
+let DEMD=null,DEMAT=0;
+const dBand=()=>{const h=new Date(Date.now()+330*60e3).getUTCHours();return h>=5&&h<11?'m':h>=11&&h<16?'a':h>=16&&h<21?'e':'n'};
+async function demandHint(){const el=document.getElementById('demhint');if(!el||!CL)return;
+  if(!DEMD||Date.now()-DEMAT>30*60e3){DEMAT=Date.now();try{const sn=await F().getDoc(F().doc(CL.db,'config','demand'));DEMD=sn.exists()?sn.data():{}}catch(e){DEMD=DEMD||{}}}
+  const el2=document.getElementById('demhint');if(!el2)return;
+  const top=((DEMD.bands||{})[dBand()]||[]).filter(p=>p.n>=2).slice(0,5).map(p=>({...p,km:hav(POS,p)*1.3})).sort((a,b)=>b.n-a.n||a.km-b.km).slice(0,3);
+  if(!top.length){el2.hidden=true;return}
+  el2.hidden=false;el2.className='demhint';
+  el2.innerHTML=`<b>${X('pin',14)} ${L('இந்த நேரத்துல ride அதிகம் வர்ற இடம்','Busy pickup places at this time')}</b>${top.map(p=>`<a href="https://www.google.com/maps/dir/?api=1&destination=${p.lat},${p.lon}" target="_blank" rel="noopener"><span>${esc(p[S.lang]||p.ta||p.en)}</span><small>${p.km<1?Math.round(p.km*1000)+' மீ':p.km.toFixed(1)+' km'} · ${L(`${DEMD.days||14} நாள்ல ${p.n} ride`,`${p.n} rides in ${DEMD.days||14} days`)}</small></a>`).join('')}`}
 function resumeOnline(){
   if(!CL||S.online||!DME)return;if(!(WASON||DME.onl))return;WASON=false;
   const why=resumeWhy();
@@ -1010,7 +1021,7 @@ function shell(content){
 function bindNav(){app.querySelectorAll('.nav button').forEach(b=>b.onclick=()=>{S.tab=b.dataset.tab;({home,earn:earnTab,wallet:walletTab,me:profileTab})[S.tab]()})}
 
 /* ---------- home ---------- */
-function home(){
+function home(){setTimeout(demandHint,60);
   NOANIM=!!(document.getElementById('ons')||document.getElementById('offs'));S.tab='home';const d=me(),today=DS.trips.filter(x=>isToday(x.date)),net=today.reduce((a,x)=>a+x.net,0);const low=DS.wallet<MINBAL;
   go(shell(`<div class="mapwrap"><canvas class="map" id="map"></canvas>
      <div class="topbar"><button class="chipbtn menub" id="menu" aria-label="Menu">${X('menu',20)}${unread()?'<i class="mdot"></i>':''}</button><button class="tpill" id="tpill"><span class="stdot ${S.online?'on':''}"></span><b>${today.length} ${L('trips','trips')}</b><span>${inr(net)}</span><i>›</i></button><div style="flex:1"></div>
@@ -1026,7 +1037,7 @@ function home(){
      ${pushReady()&&(CL.nativePush&&CL.nativePush()?!lsGet('vct_fcm'):Notification.permission==='default')?`<button class="warn" id="pushon" style="text-align:left;border:0;width:100%">${X('bell')} ${L('Phone lock ஆனாலும் ride alert வரணுமா? இங்கே தொட்டு Allow கொடுங்க','Get ride alerts even when the phone is locked: tap and Allow')}</button>`:''}
      ${OVL&&!OVLCAN?`<button class="warn" id="ovlon" style="text-align:left;border:0;width:100%">${X('mobile')} ${L('வேற app-ல இருந்தாலும், phone பேசினாலும் ride card திரை மேல வரணுமா? இங்கே தொட்டு "Display over other apps" Allow கொடுங்க','Show the ride card over other apps and during calls: tap and allow "Display over other apps"')}</button>`:''}
      ${OVL&&OVLCAN&&S.online&&OVLPWR===false?`<button class="warn" id="pwron" style="text-align:left;border:0;width:100%">${X('bolt')} ${L('Phone app-ஐ நிறுத்தாம இருக்க: இங்கே தொட்டு → Battery → "No restrictions" / "Allow background activity" தேர்வு பண்ணுங்க. Realme / Oppo / Vivo-ல "Auto launch"-உம் ON பண்ணுங்க.','So the phone never stops the app: tap → Battery → "No restrictions" / "Allow background activity". On Realme / Oppo / Vivo also turn on "Auto launch".')}</button>`:''}
-     ${S.online&&CL?`<p class="stayon" id="stayon">${X('check',14)} ${L('நீங்க OFF பண்ற வரை Online-லயே இருப்பீங்க. App-ஐ மூடினாலும், phone பேசினாலும் Offline ஆகாது.','You stay online until you switch OFF — even if you close the app or take a call.')}</p>`:''}
+     ${S.online&&CL?`<p class="stayon" id="stayon">${X('check',14)} ${L('நீங்க OFF பண்ற வரை Online-லயே இருப்பீங்க. App-ஐ மூடினாலும், phone பேசினாலும் Offline ஆகாது.','You stay online until you switch OFF — even if you close the app or take a call.')}</p>`:''}${S.online&&CL&&!J?'<div id="demhint" hidden></div>':''}
      <div id="appget" hidden></div>
      ${upcHtml()}
      ${SHOW_SMGR?smgrHtml():''}

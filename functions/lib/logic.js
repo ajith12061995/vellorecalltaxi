@@ -278,4 +278,29 @@ function scoreSample(drv, live, now, step) {
   return { on: step, act: fresh ? step : 0, job: fresh && (live.busy || live.bk) ? step : 0 };
 }
 
-module.exports = { statDay, scoreSample, ownerAlerts, WATCH, istHour, driverWatch, watchMsg, inclKm, enquiryFlood, OUTCAT, outCat, catBata, AHRS, AXH, aHours, planHours, hrsTable, AUTO_GOVT, AREA, autoFare, outsideArea, rentCheck, outCheck, tariffs, rentPrice, istStamp, commissionFor, settle, housekeeping, fareLooksWrong, liveStale, custPush, fareCheck, bookingLimit, nightPct, withNight, crowKm, LIMIT_OPEN, LIMIT_HOUR };
+// Demand map: where rides are booked, per time of day (IST), from the last 14 days of bookings. Cells ≈ 550 m.
+// Bands: m 5–11, a 11–16, e 16–21, n 21–5. Top 8 cells per band, each named by its most common pickup name.
+const BANDS = ['m', 'a', 'e', 'n'];
+const bandOf = h => (h >= 5 && h < 11 ? 'm' : h >= 11 && h < 16 ? 'a' : h >= 16 && h < 21 ? 'e' : 'n');
+function demandMap(bookings, now, days) {
+  const ms = x => (x && x.toMillis ? x.toMillis() : +x || 0), from = now - (days || 14) * 864e5, cells = {};
+  for (const b of bookings || []) {
+    const f = b && b.from, at = ms(b && b.createdAt);
+    if (!f || typeof f.lat !== 'number' || typeof f.lon !== 'number' || !at || at < from || at > now) continue;
+    if (b.cancelReason === 'limit') continue;
+    const band = bandOf(istHour(at)), la = Math.round(f.lat / 0.005) * 0.005, lo = Math.round(f.lon / 0.005) * 0.005, k = band + la.toFixed(3) + lo.toFixed(3);
+    const c = cells[k] || (cells[k] = { band, n: 0, sl: 0, so: 0, names: {} });
+    c.n++; c.sl += f.lat; c.so += f.lon;
+    const nm = (f.ta || f.en || '').slice(0, 40), ne = (f.en || f.ta || '').slice(0, 40);
+    if (nm) { const o = c.names[nm] || (c.names[nm] = { n: 0, en: ne }); o.n++; }
+  }
+  const out = { m: [], a: [], e: [], n: [] };
+  for (const c of Object.values(cells)) {
+    const best = Object.entries(c.names).sort((x, y) => y[1].n - x[1].n)[0];
+    out[c.band].push({ lat: +(c.sl / c.n).toFixed(5), lon: +(c.so / c.n).toFixed(5), n: c.n, ta: best ? best[0] : '', en: best ? best[1].en : '' });
+  }
+  for (const k of BANDS) out[k] = out[k].sort((x, y) => y.n - x.n).slice(0, 8);
+  return out;
+}
+
+module.exports = { BANDS, bandOf, demandMap, statDay, scoreSample, ownerAlerts, WATCH, istHour, driverWatch, watchMsg, inclKm, enquiryFlood, OUTCAT, outCat, catBata, AHRS, AXH, aHours, planHours, hrsTable, AUTO_GOVT, AREA, autoFare, outsideArea, rentCheck, outCheck, tariffs, rentPrice, istStamp, commissionFor, settle, housekeeping, fareLooksWrong, liveStale, custPush, fareCheck, bookingLimit, nightPct, withNight, crowKm, LIMIT_OPEN, LIMIT_HOUR };

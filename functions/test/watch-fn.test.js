@@ -16,7 +16,7 @@ const coll = name => {
   const q = (filters) => ({ where: (f, op, v) => q([...filters, [f, op, v]]), limit: () => q(filters),
     get: async () => { const docs = [...store.keys()].filter(k => k.startsWith(name + '/') && k.split('/').length === 2).map(snap)
       .filter(s => filters.every(([f, op, v]) => { const x = s.data()[f]; return op === '==' ? x === v : op === 'in' ? v.includes(x) : op === '<' ? false : true; }));
-      return { docs, empty: !docs.length, forEach: fn => docs.forEach(fn) }; } });
+      return { docs, size: docs.length, empty: !docs.length, forEach: fn => docs.forEach(fn) }; } });
   return q([]);
 };
 const db = { doc: docRef, collection: coll, getAll: async (...r) => r.map(x => snap(x.path)), recursiveDelete: async () => {},
@@ -98,4 +98,13 @@ test('scorecard: minutes ON / with signal / on a job per IST day, and server OFF
   assert.equal(st.B, undefined); assert.equal(st.F, undefined);
   NOW = Date.parse('2026-11-27T18:35:00Z'); await run(); // 00:05 IST next day
   assert.ok(store.get('stats/d20261128'), 'new IST day → new record');
+});
+
+test('demand map written to config/demand at most once an hour', async () => {
+  reset(); NOW = Date.parse('2026-11-27T05:00:00Z');
+  store.set('bookings/k1', { status: 'done', from: { lat: 12.97, lon: 79.159, ta: 'காட்பாடி', en: 'Katpadi' }, createdAt: T(NOW - 864e5) });
+  await run(); const d = store.get('config/demand'); assert.equal(d.days, 14); assert.equal(d.total, 1);
+  store.set('bookings/k2', { status: 'done', from: { lat: 12.97, lon: 79.159, ta: 'காட்பாடி', en: 'Katpadi' }, createdAt: T(NOW - 864e5) });
+  NOW += 10 * 60e3; await run(); assert.equal(store.get('config/demand').total, 1, 'not rebuilt within the hour');
+  NOW += 55 * 60e3; await run(); assert.equal(store.get('config/demand').total, 2);
 });

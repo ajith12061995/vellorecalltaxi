@@ -111,6 +111,7 @@ function makeCanvasMap(cv,o={}){
       const lx=Math.min(Math.max(x+10,6),W-tw-10),ly=(isDest||isFrom)?y-34:y-8;
       ctx.fillStyle=c('--surface');ctx.globalAlpha=.88;ctx.beginPath();ctx.roundRect(lx-4,ly-12,tw+8,17,5);ctx.fill();ctx.globalAlpha=1;
       ctx.fillStyle=big?c('--fg'):c('--map-label');ctx.fillText(lb,lx,ly)});
+    if(o.heat)o.heat().forEach(h=>{const x=X(h.lon),y=Y(h.lat),r=heatPx(h.n);ctx.fillStyle='rgba(245,184,0,.38)';ctx.strokeStyle='#E07B00';ctx.lineWidth=2;ctx.beginPath();ctx.arc(x,y,r,0,7);ctx.fill();ctx.stroke();ctx.fillStyle='#5A3A00';ctx.font='700 12px Hind Madurai, sans-serif';ctx.textAlign='center';ctx.fillText(String(h.n),x,y+4);ctx.textAlign='left'});
     (o.pins||[]).forEach(q=>{const x=X(q.lon),y=Y(q.lat);ctx.fillStyle=q.col;ctx.beginPath();ctx.arc(x,y-18,11,0,7);ctx.fill();ctx.beginPath();ctx.moveTo(x-7,y-12);ctx.lineTo(x,y);ctx.lineTo(x+7,y-12);ctx.fill();ctx.fillStyle='#FFC21A';ctx.beginPath();ctx.arc(x,y-18,5,0,7);ctx.fill()});
     if(o.fleet)o.fleet().forEach(f=>{const x=X(f.lon),y=Y(f.lat);if(x<-20||x>W+20||y<-20||y>H+20)return;
       ctx.fillStyle='rgba(19,40,79,.25)';ctx.beginPath();ctx.arc(x,y+2,12,0,7);ctx.fill();
@@ -148,6 +149,8 @@ const LF=window.L&&window.L.map?window.L:null;
 const REALMAP=(!!LF||!!(window.GMAPS_KEY&&((window.google&&window.google.maps)||window.MAPS_READY)))&&/^https?:/.test(location.protocol);
 const zFromS=s=>Math.max(3,Math.min(19,Math.log2(s*360/256)));
 const sFromZ=z=>256*Math.pow(2,z)/360;
+/* demand map circles: radius grows with the square root of the count (area ∝ count) */
+const heatPx=n=>Math.round(9+Math.sqrt(Math.max(1,n))*6),heatM=n=>Math.round(120+Math.sqrt(Math.max(1,n))*110);
 function makeMap(cv,o={}){return GMAP()?makeGoogleMap(cv,o):(LF&&REALMAP)?makeLeafletMap(cv,o):makeCanvasMap(cv,o)}
 /* top-view vehicle markers for the live map */
 const TOPI={car:`<ellipse cx="12" cy="23" rx="11" ry="20" fill="#000" opacity=".2"/><path d="M5 4 Q12 0 19 4 Q22 6 22 12 L22 36 Q22 42 16 42 L8 42 Q2 42 2 36 L2 12 Q2 6 5 4 Z" fill="#FFFFFF" stroke="#9aa7a0" stroke-width=".8"/><path d="M5 12 Q12 9 19 12 L18 17 Q12 15 6 17 Z" fill="#2b3a44"/><rect x="5.5" y="17" width="13" height="15" rx="2" fill="#0B4A36"/><rect x="9" y="22" width="6" height="4" rx="1" fill="#FFC21A"/><path d="M6 32 Q12 34 18 32 L18 36 Q12 37 6 36 Z" fill="#2b3a44"/><rect x="3" y="4.5" width="4" height="2" rx="1" fill="#FFF7C2"/><rect x="17" y="4.5" width="4" height="2" rx="1" fill="#FFF7C2"/>`,auto:`<ellipse cx="13" cy="19" rx="11" ry="16" fill="#000" opacity=".18"/><path d="M13 2 L22 9 L22 31 Q22 34 19 34 L7 34 Q4 34 4 31 L4 9 Z" fill="#FFC21A" stroke="#8a6a00" stroke-width=".8"/><rect x="5.5" y="12" width="15" height="18" rx="3" fill="#0B4A36"/><path d="M8 8 L18 8 L20 11 L6 11 Z" fill="#2b3a44"/>`,bike:`<ellipse cx="8" cy="19" rx="6" ry="16" fill="#000" opacity=".18"/><rect x="6" y="2" width="4" height="9" rx="2" fill="#20262A"/><rect x="6" y="25" width="4" height="9" rx="2" fill="#20262A"/><rect x="3.5" y="9" width="9" height="17" rx="4" fill="#FFFFFF" stroke="#9aa7a0" stroke-width=".7"/><rect x="1" y="9" width="14" height="2" rx="1" fill="#20262A"/><rect x="5" y="14" width="6" height="8" rx="3" fill="#0B4A36"/>`,van:`<rect x="1" y="3" width="24" height="44" rx="5" fill="#000" opacity=".18"/><rect x="2" y="1" width="22" height="45" rx="4.5" fill="#FFFFFF" stroke="#9aa7a0" stroke-width=".8"/><path d="M4.5 6 Q13 3.5 21.5 6 L20.5 11 Q13 9.5 5.5 11 Z" fill="#2b3a44"/><rect x="5" y="12.5" width="16" height="27" rx="2" fill="#0B4A36"/><rect x="7" y="16" width="12" height="2" rx="1" fill="#FFC21A"/><rect x="7" y="23" width="12" height="2" rx="1" fill="#FFC21A"/><rect x="7" y="30" width="12" height="2" rx="1" fill="#FFC21A"/><rect x="5.5" y="41" width="15" height="3" rx="1.2" fill="#2b3a44"/><rect x="3.5" y="1.8" width="4" height="2" rx="1" fill="#FFF7C2"/><rect x="18.5" y="1.8" width="4" height="2" rx="1" fill="#FFF7C2"/>`};
@@ -170,7 +173,7 @@ function glideTo(mk,to,get,set){if(mk._to&&mk._to.lat===to.lat&&mk._to.lon===to.
   if(!a||Math.abs(a.lat-to.lat)+Math.abs(a.lon-to.lon)>.02||typeof requestAnimationFrame!=='function'||document.hidden){set(to);return}
   const t0=performance.now(),D=1200,st=t=>{const k=Math.min(1,(t-t0)/D),e=k*(2-k);set({lat:a.lat+(to.lat-a.lat)*e,lon:a.lon+(to.lon-a.lon)*e});mk._g=k<1?requestAnimationFrame(st):0};
   mk._g=requestAnimationFrame(st)}
-function makeLeafletMap(cv,o={}){
+function makeLeafletMap(cv,o={}){let heatK='',heatL=[];
   const host=document.createElement('div');host.className='map lmap';cv.replaceWith(host);
   const m=LF.map(host,{zoomControl:false,zoomSnap:.25,attributionControl:true}).setView([P.home.lat,P.home.lon],14);
   m.attributionControl.setPrefix(false);
@@ -195,6 +198,7 @@ function makeLeafletMap(cv,o={}){
     const list=(o.pins||[]).slice();
     if(o.path&&o.path.length){const a=P[o.path[0]],b=P[o.path[o.path.length-1]];if(a)list.push({lat:a.lat,lon:a.lon,col:'#1E8A5A'});if(b&&o.path.length>1)list.push({lat:b.lat,lon:b.lon,col:'#121212'})}
     setPins(list.filter(p=>p&&p.lat!=null));
+    if(o.heat){const hs=o.heat(),hk=JSON.stringify(hs);if(hk!==heatK){heatK=hk;heatL.forEach(c=>c.remove());heatL=hs.map(h=>LF.circleMarker([h.lat,h.lon],{radius:heatPx(h.n),color:'#E07B00',weight:2,fillColor:'#F5B800',fillOpacity:.38,interactive:false}).addTo(m).bindTooltip(String(h.n),{permanent:true,direction:'center',className:'lheat'}))}}
     if(!o.driver&&!o.fleet&&P.home){if(!me)me=LF.marker([P.home.lat,P.home.lon],{icon:ic('<i class="lme"></i>',18,18,9,9),interactive:false,keyboard:false}).addTo(m);else me.setLatLng([P.home.lat,P.home.lon]);
       if(P.home.acc){if(!acc)acc=LF.circle([P.home.lat,P.home.lon],{radius:P.home.acc,stroke:false,fillColor:'#2C5196',fillOpacity:.14,interactive:false}).addTo(m);else{acc.setLatLng([P.home.lat,P.home.lon]);acc.setRadius(P.home.acc)}}}
     const lc=o.line?o.line():(o.path&&o.path.length>1?o.path.map(k=>P[k]).filter(Boolean):null);
@@ -286,7 +290,7 @@ const FICON={};
 const gIcon=(svg,w,h,ax,ay)=>({url:'data:image/svg+xml;charset=UTF-8,'+encodeURIComponent(svg),scaledSize:new google.maps.Size(w,h),anchor:new google.maps.Point(ax,ay)});
 const gPinSvg=col=>`<svg xmlns="http://www.w3.org/2000/svg" width="46" height="60" viewBox="0 0 46 60"><path d="M23 58C23 58 4 36 4 22a19 19 0 0138 0c0 14-19 36-19 36z" fill="${col}" stroke="#fff" stroke-width="3"/><circle cx="23" cy="22" r="8" fill="#FFC21A"/></svg>`;
 function bearing(a,b){const r=Math.PI/180,y=Math.sin((b.lon-a.lon)*r)*Math.cos(b.lat*r),x=Math.cos(a.lat*r)*Math.sin(b.lat*r)-Math.sin(a.lat*r)*Math.cos(b.lat*r)*Math.cos((b.lon-a.lon)*r);return(Math.atan2(y,x)/r+360)%360}
-function makeGoogleMap(cv,o={}){
+function makeGoogleMap(cv,o={}){let heatK='',heatL=[];
   const g=google.maps;const host=document.createElement('div');host.className='map lmap gmap';cv.replaceWith(host);
   const m=new g.Map(host,{center:{lat:P.home.lat,lng:P.home.lon},zoom:15,disableDefaultUI:true,clickableIcons:false,gestureHandling:'greedy',keyboardShortcuts:false});
   if(o.sat!==false&&!o.fleet){const b=document.createElement('button');b.className='gsat';b.type='button';b.textContent=S.lang==='ta'?'செயற்கைக்கோள்':'Satellite';
@@ -307,6 +311,8 @@ function makeGoogleMap(cv,o={}){
     const list=(o.pins||[]).slice();
     if(o.path&&o.path.length){const a=P[o.path[0]],b=P[o.path[o.path.length-1]];if(a)list.push({lat:a.lat,lon:a.lon,col:'#1E8A5A'});if(b&&o.path.length>1)list.push({lat:b.lat,lon:b.lon,col:'#121212'})}
     setPins(list.filter(p=>p&&p.lat!=null));
+    if(o.heat){const hs=o.heat(),hk=JSON.stringify(hs);if(hk!==heatK){heatK=hk;heatL.forEach(c=>c.setMap(null));heatL=hs.flatMap(h=>[new g.Circle({map:m,center:{lat:h.lat,lng:h.lon},radius:heatM(h.n),strokeColor:'#E07B00',strokeWeight:2,fillColor:'#F5B800',fillOpacity:.38,clickable:false}),
+      new g.Marker({map:m,position:{lat:h.lat,lng:h.lon},clickable:false,zIndex:60,icon:{path:g.SymbolPath.CIRCLE,scale:0},label:{text:String(h.n),color:'#5A3A00',fontWeight:'700',fontSize:'12px'}})])}}
     if(!o.driver&&!o.fleet&&P.home){const pos={lat:P.home.lat,lng:P.home.lon};
       if(!me){me=new g.Marker({map:m,position:pos,clickable:false,zIndex:150,icon:{path:g.SymbolPath.CIRCLE,scale:8,fillColor:'#2C5196',fillOpacity:1,strokeColor:'#fff',strokeWeight:3}});
         acc=new g.Circle({map:m,center:pos,radius:P.home.acc||0,strokeOpacity:0,fillColor:'#2C5196',fillOpacity:.14,clickable:false})}
