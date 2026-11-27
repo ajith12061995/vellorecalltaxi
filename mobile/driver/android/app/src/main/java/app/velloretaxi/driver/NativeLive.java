@@ -67,6 +67,7 @@ final class NativeLive {
                 .putString("key", apiKey).putString("proj", project).putString("phone", phone).putString("rt", refresh).apply();
         NativeLive n = get(c); n.idToken = null; n.tokenExp = 0;
     }
+    static void setVeh(Context c, String veh) { if (veh != null && veh.length() > 0 && veh.length() <= 20) c.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putString("veh", veh).apply(); }
     static void clearCreds(Context c) { c.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().clear().apply(); NativeLive n = get(c); n.idToken = null; n.tokenExp = 0; }
     private String pref(String k) { return ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(k, ""); }
     static boolean hasCreds(Context c) { SharedPreferences p = c.getSharedPreferences(PREFS, Context.MODE_PRIVATE); return p.getString("rt", "").length() > 0 && p.getString("phone", "").length() > 0; }
@@ -86,6 +87,8 @@ final class NativeLive {
             fused.getLastLocation().addOnSuccessListener(l -> { if (l != null) h.post(() -> onFix(l)); });
         } catch (Exception e) { Log.w(TAG, "location updates refused", e); lastErr = "loc:" + e.getClass().getSimpleName(); }
         h.removeCallbacks(beat); h.postDelayed(beat, 30000);
+        h.removeCallbacks(poll); h.postDelayed(poll, POLL_MS);
+        saveToken(null);
         Log.i(TAG, "started");
     }
 
@@ -93,7 +96,7 @@ final class NativeLive {
         if (!running) return;
         running = false;
         try { if (fused != null && cb != null) fused.removeLocationUpdates(cb); } catch (Exception e) { /* gone */ }
-        if (h != null) h.removeCallbacks(beat);
+        if (h != null) { h.removeCallbacks(beat); h.removeCallbacks(poll); }
         Log.i(TAG, "stopped");
     }
 
@@ -206,6 +209,79 @@ final class NativeLive {
                 Log.i(TAG, "push seen " + id + " " + code);
             } catch (Exception e) { Log.w(TAG, "push seen failed", e); }
         }, "vct-pk").start();
+    }
+
+    /* ---------- 1.0.22: push address saved by the phone itself ---------- */
+    static volatile String tokenState = "";   // "" not tried, "ok", "none", "err:<code>", "nosignin"
+    /** this phone's FCM token → drivers/{phone}.fcm (+ fcmAt server time); token null = ask Google for it */
+    void saveToken(final String given) {
+        if (!hasCreds(ctx)) { tokenState = "nosignin"; return; }
+        if (given != null && given.length() > 0) { new Thread(() -> writeToken(given), "vct-tok").start(); return; }
+        try {
+            com.google.firebase.messaging.FirebaseMessaging.getInstance().getToken()
+                    .addOnSuccessListener(t -> { if (t == null || t.isEmpty()) { tokenState = "none"; return; } new Thread(() -> writeToken(t), "vct-tok").start(); })
+                    .addOnFailureListener(e -> { tokenState = "none:" + e.getClass().getSimpleName(); Log.w(TAG, "fcm token", e); });
+        } catch (Exception e) { tokenState = "none:" + e.getClass().getSimpleName(); Log.w(TAG, "fcm token", e); }
+    }
+    private String lastTok = "";
+    private void writeToken(String t) {
+        try {
+            if (t.equals(lastTok) && "ok".equals(tokenState)) return;
+            String tok = token(); if (tok == null) { tokenState = "err:signin"; return; }
+            String proj = pref("proj"), phone = pref("phone");
+            JSONObject w = new JSONObject()
+                    .put("update", new JSONObject().put("name", "projects/" + proj + "/databases/(default)/documents/drivers/" + phone)
+                            .put("fields", new JSONObject().put("fcm", new JSONObject().put("stringValue", t))))
+                    .put("updateMask", new JSONObject().put("fieldPaths", new JSONArray().put("fcm")))
+                    .put("currentDocument", new JSONObject().put("exists", true))
+                    .put("updateTransforms", new JSONArray().put(new JSONObject().put("fieldPath", "fcmAt").put("setToServerValue", "REQUEST_TIME")));
+            int code = http(fsBase + "/v1/projects/" + proj + "/databases/(default)/documents:commit", "application/json",
+                    new JSONObject().put("writes", new JSONArray().put(w)).toString(), tok, null);
+            if (code == 200) { lastTok = t; tokenState = "ok"; } else { tokenState = "err:" + code; if (code == 401 || code == 403) { idToken = null; tokenExp = 0; } }
+            Log.i(TAG, "token saved " + code);
+        } catch (Exception e) { tokenState = "err:" + e.getClass().getSimpleName(); Log.w(TAG, "token save", e); }
+    }
+
+    /* ---------- 1.0.22: the phone looks for waiting rides itself (works even when a push never arrives) ---------- */
+    static long POLL_MS = 15000;
+    static volatile int polls = 0, found = 0;
+    private final java.util.LinkedHashSet<String> seenRides = new java.util.LinkedHashSet<>();
+    private final Runnable poll = new Runnable() { @Override public void run() {
+        if (!running) return;
+        try { if (!DutyService.appVisible && DutyService.isOn(ctx)) pollOnce(); } catch (Exception e) { Log.w(TAG, "poll", e); }
+        h.postDelayed(this, POLL_MS);
+    } };
+    private void pollOnce() throws Exception {
+        String veh = pref("veh"); if (veh.isEmpty()) return;      // an older page that does not say the vehicle type: push only
+        String tok = token(); if (tok == null) return;
+        String proj = pref("proj");
+        JSONObject f1 = new JSONObject().put("fieldFilter", new JSONObject().put("field", new JSONObject().put("fieldPath", "status")).put("op", "EQUAL").put("value", new JSONObject().put("stringValue", "searching")));
+        JSONObject f2 = new JSONObject().put("fieldFilter", new JSONObject().put("field", new JSONObject().put("fieldPath", "veh")).put("op", "EQUAL").put("value", new JSONObject().put("stringValue", veh)));
+        JSONObject q = new JSONObject().put("structuredQuery", new JSONObject()
+                .put("from", new JSONArray().put(new JSONObject().put("collectionId", "bookings")))
+                .put("where", new JSONObject().put("compositeFilter", new JSONObject().put("op", "AND").put("filters", new JSONArray().put(f1).put(f2))))
+                .put("limit", 5));
+        StringBuilder out = new StringBuilder();
+        int code = http("POST", fsBase + "/v1/projects/" + proj + "/databases/(default)/documents:runQuery", "application/json", q.toString(), tok, out);
+        polls++;
+        if (code != 200) { if (code == 401 || code == 403) { idToken = null; tokenExp = 0; } Log.w(TAG, "poll " + code); return; }
+        JSONArray rows = new JSONArray(out.toString());
+        for (int i = 0; i < rows.length(); i++) {
+            JSONObject d = rows.optJSONObject(i); d = d == null ? null : d.optJSONObject("document"); if (d == null) continue;
+            String id = d.optString("name"); id = id.substring(id.lastIndexOf('/') + 1);
+            if (id.isEmpty() || seenRides.contains(id)) continue;
+            seenRides.add(id); if (seenRides.size() > 60) { java.util.Iterator<String> it = seenRides.iterator(); it.next(); it.remove(); }
+            JSONObject f = d.optJSONObject("fields"), from = mv(f, "from"), to = mv(f, "to");
+            java.util.Map<String, String> m = new java.util.HashMap<>();
+            m.put("type", "ride"); m.put("bookingId", id); m.put("veh", veh); m.put("kind", sv(f, "kind"));
+            double fare = nv(f, "fare"), tip = nv(f, "tip"), w = nv(f, "when"), la = nv(from, "lat"), lo = nv(from, "lon");
+            m.put("fare", Double.isNaN(fare) ? "" : String.valueOf(Math.round(fare))); m.put("tip", Double.isNaN(tip) ? "0" : String.valueOf(Math.round(tip)));
+            m.put("from", sv(from, "ta").isEmpty() ? sv(from, "en") : sv(from, "ta")); m.put("to", sv(to, "ta").isEmpty() ? sv(to, "en") : sv(to, "ta"));
+            m.put("flat", Double.isNaN(la) ? "" : String.valueOf(la)); m.put("flon", Double.isNaN(lo) ? "" : String.valueOf(lo)); m.put("when", Double.isNaN(w) ? "" : String.valueOf((long) w));
+            found++;
+            Log.i(TAG, "poll found " + id);
+            RideFallback.onPush(ctx, m);   // same checks and the same single ring as a pushed ride
+        }
     }
 
     /** network came back after a gap: send the position at once (not at the next 30 s beat) */

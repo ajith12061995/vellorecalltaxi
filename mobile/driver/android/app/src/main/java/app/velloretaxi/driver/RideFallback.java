@@ -30,6 +30,7 @@ public class RideFallback {
     static long WAIT_MS = 7000;            // how long the page gets to answer first
     static final long WAVE_MS = 25000;     // 3–4 km drivers get the ride 25 s after it was booked (as the page does)
     private static volatile String handledId = "";
+    private static final java.util.Set<String> INFLIGHT = new java.util.HashSet<>();
     private static Ringtone tone;
     private static Vibrator vib;
     private static final Handler main = new Handler(Looper.getMainLooper());
@@ -43,6 +44,7 @@ public class RideFallback {
         final String id = d.get("bookingId");
         if (id == null || id.isEmpty()) return;
         final Context a = c.getApplicationContext();
+        synchronized (INFLIGHT) { if (!INFLIGHT.add(id)) return; }   // a push and the phone's own lookup for the same ride: one check, one ring
         new Thread(() -> {
             PowerManager.WakeLock wl = null;
             try { wl = ((PowerManager) a.getSystemService(Context.POWER_SERVICE)).newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "vct:ride"); wl.acquire(45000); } catch (Exception e) { wl = null; }
@@ -64,7 +66,7 @@ public class RideFallback {
                 Log.i(TAG, "fallback ring " + id);
                 RideOverlayPlugin.nativeRing(a, bundle(d), say(d, true), say(d, false));
             } catch (Exception e) { Log.w(TAG, "fallback", e); }
-            finally { try { if (wl != null && wl.isHeld()) wl.release(); } catch (Exception e) { /* released */ } }
+            finally { synchronized (INFLIGHT) { INFLIGHT.remove(id); } try { if (wl != null && wl.isHeld()) wl.release(); } catch (Exception e) { /* released */ } }
         }, "vct-ride").start();
     }
 

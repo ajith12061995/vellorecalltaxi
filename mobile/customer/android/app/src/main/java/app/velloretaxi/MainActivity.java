@@ -8,5 +8,9 @@ public class MainActivity extends BridgeActivity {
     public void onCreate(Bundle savedInstanceState) {
         registerPlugin(SmsOtpPlugin.class);   // OTP from the SMS after the person taps Allow (see SmsOtpPlugin)
         super.onCreate(savedInstanceState);
+        InAppUpdate.check(this, true);   // a newer version on Google Play → its Update screen at once (like Rapido / Ola)
     }
+
+    @Override
+    public void onResume() { super.onResume(); InAppUpdate.check(this, false); }
 }

@@ -227,8 +227,23 @@ public class RideOverlayPlugin extends Plugin {
             if (!tb.isEmpty()) NativeLive.tokenBase = tb; if (!fb.isEmpty()) NativeLive.fsBase = fb;
         }
         NativeLive.setCreds(getContext(), key, proj, phone, rt);
+        NativeLive.setVeh(getContext(), call.getString("veh", ""));   // 1.0.22: the phone looks for waiting rides of this vehicle type itself
         if (DutyService.isOn(getContext())) DutyService.setOn(getContext(), true);   // the service starts NativeLive
+        NativeLive.get(getContext()).saveToken(null);   // 1.0.22: this phone's push address goes on the driver record (native, not via the page)
         call.resolve();
+    }
+
+    /** CI emulator only: save a given push token through the same native path (the test app has no Firebase project) */
+    @PluginMethod
+    public void testToken(PluginCall call) {
+        if (!debug()) { call.reject("debug only"); return; }
+        NativeLive.get(getContext()).saveToken(call.getString("token", "tok-test")); call.resolve();
+    }
+
+    /** 1.0.22: how the phone's own push + ride lookup are doing (for the page's report to the office) */
+    @PluginMethod
+    public void pushStatus(PluginCall call) {
+        JSObject r = new JSObject(); r.put("token", NativeLive.tokenState); r.put("polls", NativeLive.polls); r.put("found", NativeLive.found); call.resolve(r);
     }
 
     @PluginMethod

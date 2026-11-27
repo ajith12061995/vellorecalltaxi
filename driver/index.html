@@ -1723,8 +1723,8 @@ function liveNative(){if(!OVL||!OVL17||!CL||!CL.user||!CL.fbcfg)return;
     if(!REQUNSUB)listenReq();pushLive(true);if(d&&d.bookingId)wakeRide(String(d.bookingId));
     setTimeout(()=>{if(document.getElementById('offs'))maybeShowReq()},600)})}
   if(!S.online){LIVEN='';return}
-  const c=CL.fbcfg(),rt=CL.user.refreshToken||'',k=CL.phone+'|'+rt.slice(-12);if(!rt||LIVEN===k)return;LIVEN=k;
-  try{OVL.liveStart({apiKey:c.apiKey,project:c.project,phone:CL.phone,refresh:rt}).catch(()=>{LIVEN=''})}catch(e){LIVEN=''}}
+  const c=CL.fbcfg(),rt=CL.user.refreshToken||'',k=CL.phone+'|'+rt.slice(-12)+'|'+me().veh;if(!rt||LIVEN===k)return;LIVEN=k;
+  try{OVL.liveStart({apiKey:c.apiKey,project:c.project,phone:CL.phone,refresh:rt,veh:me().veh}).catch(()=>{LIVEN=''})}catch(e){LIVEN=''}}
 /* a ride push after the phone slept a long time (Doze): the database connection may be waiting minutes to retry, so
    it is started afresh and the pushed ride is read straight from the server. The phone is told the page took care of it
    (rang, or this ride is not for this driver now); if the page cannot answer in time the phone rings by itself (1.0.20). */

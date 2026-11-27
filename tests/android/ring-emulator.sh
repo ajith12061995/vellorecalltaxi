@@ -166,6 +166,25 @@ adb logcat -d | grep -q "RideFallback: page handled push-r99" && ok "page awake 
 adb shell dumpsys deviceidle unforce >/dev/null 2>&1
 adb shell input keyevent KEYCODE_WAKEUP; adb shell wm dismiss-keyguard >/dev/null 2>&1; sleep 2
 
+# ---------- F) 1.0.22: the phone saves its own push address, and finds a waiting ride with no push at all ----------
+adb shell am start -n $PKG/.MainActivity >/dev/null; sleep 3
+cmd tok; waitlog '^tok=sent' 15 || bad "testToken not sent"
+for i in $(seq 1 15); do grep '^commit=' "$LOG" | grep -q 'documents/drivers/+919999900002' && break; sleep 1; done
+L2=$(grep '^commit=' "$LOG" | sed 's#\\/#/#g' | grep 'documents/drivers/+919999900002' | tail -1)
+echo "$L2" | grep -q '"fcm":{"stringValue":"tok-native-1"}' && echo "$L2" | grep -q '"fieldPaths":\["fcm"\]' && echo "$L2" | grep -q '"fieldPath":"fcmAt","setToServerValue":"REQUEST_TIME"' && echo "$L2" | grep -q '"currentDocument":{"exists":true}' \
+  && ok "phone saved its push address on the driver record itself (fcm only + server time, signed in)" || bad "push address not saved natively: ${L2:0:300}"
+adb shell input keyevent KEYCODE_HOME; sleep 2; adb logcat -c
+adb shell input keyevent KEYCODE_SLEEP; sleep 2
+touch tests/android/poll.flag
+for i in $(seq 1 45); do adb logcat -d | grep -q "RideFallback: fallback ring poll-1" && break; sleep 1; done
+adb logcat -d | grep -q "NativeLive: poll found poll-1" && ok "no push at all: the phone found the waiting ride itself" || { bad "phone lookup did not find the ride"; adb logcat -d | grep -E "NativeLive|RideFallback" | tail -8; }
+adb logcat -d | grep -q "RideFallback: fallback ring poll-1" && ok "...and rang it over the lock screen" || bad "found but not rung"
+sleep 2; t=$(topact); echo "$t" | grep -q RideRingActivity && ok "ride screen in front (no push)" || bad "ride screen not in front"
+adb exec-out screencap -p > "$OUT/ring-5-poll.png" 2>/dev/null
+sleep 20; n=$(adb logcat -d | grep -c "RideFallback: fallback ring poll-1"); [ "$n" -eq 1 ] && ok "the same waiting ride is rung once, not every lookup" || bad "rung $n times"
+rm -f tests/android/poll.flag
+tap_text "Later" >/dev/null; adb shell input keyevent KEYCODE_WAKEUP; adb shell wm dismiss-keyguard >/dev/null 2>&1; sleep 2
+
 # ---------- OFF stops the phone's own sending ----------
 adb shell am start -n $PKG/.MainActivity >/dev/null; sleep 4
 echo off > tests/android/cmd.txt; sleep 4; adb shell input keyevent KEYCODE_HOME

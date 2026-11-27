@@ -49,6 +49,7 @@ dependencies {
     implementation "androidx.core:core-splashscreen:$coreSplashScreenVersion"
     implementation project(':capacitor-android')
     implementation 'com.google.android.gms:play-services-auth-api-phone:18.1.0'   // SMS User Consent (OTP)
+    implementation 'com.google.android.play:app-update:2.1.0'   // in-app update screen when a newer version is on Google Play
     implementation 'com.google.android.gms:play-services-location:21.3.0'         // NativeLive: position while the app is not on screen
     implementation "com.google.firebase:firebase-messaging:${project.hasProperty('firebaseMessagingVersion') ? rootProject.ext.firebaseMessagingVersion : '25.0.1'}"   // VctMessagingService (same version as the push plugin)
     testImplementation "junit:junit:$junitVersion"

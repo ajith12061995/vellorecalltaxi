@@ -27,6 +27,14 @@ class H(http.server.SimpleHTTPRequestHandler):
         elif s.path.startswith('/fake/v1/projects/') and s.path.endswith('documents:runQuery'):
             open(LOG,'a').write('query='+body.replace('\n',' ')+'\n')
             out=b'[{"readTime":"2026-11-27T00:00:00Z"}]'
+            # 1.0.22: the phone's own lookup for waiting rides (status + veh): one ride while tests/android/poll.flag exists
+            if '"searching"' in body and os.path.exists(os.path.join(ROOT,'tests/android/poll.flag')):
+                import json,time
+                doc={'document':{'name':'projects/p/databases/(default)/documents/bookings/poll-1','fields':{'status':{'stringValue':'searching'},'veh':{'stringValue':'mini'},
+                  'fare':{'integerValue':'90'},'tip':{'integerValue':'0'},'when':{'integerValue':str(int(time.time()*1000))},
+                  'from':{'mapValue':{'fields':{'en':{'stringValue':'Katpadi Junction'},'lat':{'doubleValue':12.98},'lon':{'doubleValue':79.165}}}},
+                  'to':{'mapValue':{'fields':{'en':{'stringValue':'CMC Hospital'}}}}}}}
+                out=json.dumps([doc]).encode()
         else:
             s.send_response(404);s.end_headers();return
         s.send_response(200);s.send_header('Content-Type','application/json');s.send_header('Content-Length',str(len(out)));s.end_headers();s.wfile.write(out)

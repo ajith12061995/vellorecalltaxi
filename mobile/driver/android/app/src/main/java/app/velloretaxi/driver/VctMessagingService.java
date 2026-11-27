@@ -23,6 +23,13 @@ public class VctMessagingService extends MessagingService {
         super.onMessageReceived(m);
     }
 
+    /** 1.0.22: Google gave this phone a new push address: put it on the driver record at once (native REST, signed in as the driver) */
+    @Override
+    public void onNewToken(@NonNull String token) {
+        super.onNewToken(token);
+        try { NativeLive.get(this).saveToken(token); } catch (Exception e) { Log.w("VctPush", "new token", e); }
+    }
+
     static void handle(Context c, Map<String, String> d) {
         String type = d == null ? null : d.get("type");
         if (type == null || !(type.equals("ride") || type.equals("wake"))) return;
