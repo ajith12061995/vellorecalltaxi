@@ -25,12 +25,14 @@ let offDone=false,lastCmd='';setInterval(()=>{fetch('/tests/android/cmd.txt?'+Da
   if(c==='on'){offDone=false;call('online',{on:true}).then(()=>rep('on2','sent')).catch(e=>rep('on2','ERR '+e))}
   if(c==='live')call('liveStart',{apiKey:'key-test',project:'proj-test',phone:'+919999900002',refresh:'rt-test',tokenBase:'http://10.0.2.2:8080/fake',fsBase:'http://10.0.2.2:8080/fake'}).then(()=>rep('live','sent')).catch(e=>rep('live','ERR '+e));
   if(c==='livestatus')call('liveStatus').then(r=>rep('livestatus',JSON.stringify(r))).catch(e=>rep('livestatus','ERR '+e));
+  if(c==='voice')call('voice').then(r=>rep('voice',JSON.stringify(r))).catch(e=>rep('voice','ERR '+e));
   if(c==='fsi')call('fsi').then(r=>rep('fsi',JSON.stringify(r))).catch(e=>rep('fsi','ERR '+e));
   if(c.startsWith('push'))call('testPush',{data:{type:'ride',bookingId:c},delay:12000}).then(()=>rep('push','sent:'+c)).catch(e=>rep('push','ERR '+e));
 }).catch(()=>{})},1500);
 // 1.0.17: a server push wakes the page ("wake"); like the driver page, it then rings for that ride
 window.addEventListener('vctwake',e=>{let d={};try{d=JSON.parse(e.vct||'{}')}catch(x){};rep('wake',(d&&d.bookingId)||'?');call('ring',{id:(d&&d.bookingId)||'r',title:'New ride!',fare:'₹150',accept:'Accept',open:'Later',secs:40,
-  veh:'Mini',pay:'Cash',pkm:'1.1 km',pname:'Katpadi Junction',psub:'Katpadi',dkm:'5.0 km',dname:'CMC Hospital',dsub:'Vellore'}).then(()=>rep('ring2','sent:'+document.visibilityState)).catch(e=>rep('ring2','ERR '+e))});
+  veh:'Mini',pay:'Cash',pkm:'1.1 km',pname:'Katpadi Junction',psub:'Katpadi',dkm:'5.0 km',dname:'CMC Hospital',dsub:'Vellore',
+  say:'புது சவாரி. காட்பாடி ஜங்ஷன். 1.1 கிலோமீட்டர் தூரம். 150 ரூபாய்.',sayEn:'New ride. Katpadi Junction. 1.1 kilometres away. 150 rupees.'}).then(()=>rep('ring2','sent:'+document.visibilityState)).catch(e=>rep('ring2','ERR '+e))});
 document.addEventListener('visibilitychange',async()=>{rep('vis',document.visibilityState);
   if(document.visibilityState==='visible'){try{const t=await call('take');rep('take',JSON.stringify(t));st.textContent='TAKE:'+JSON.stringify(t);if(t&&t.action)await call('stop')}catch(e){rep('take','ERR '+e)}}});
 </script>

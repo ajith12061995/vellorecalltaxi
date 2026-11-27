@@ -1389,6 +1389,7 @@ function profileTab(){
     <div class="sec"><h3>${L('அமைப்புகள்','Settings')}</h3></div>
     <div class="recent"><button class="row" id="lg"><span class="ic">அ</span><div><b>${L('மொழி','Language')}</b><small>${S.lang==='ta'?'தமிழ்':'English'}</small></div></button>
       ${NATIVE()?`<div class="row" id="bgst"><span class="ic">${X('pin',20)}</span><div><b>${L('Background location','Background location')}</b><small>${bgText()}</small></div></div>`:''}
+      ${NATIVE()&&OVL17?`<button class="row" id="vc"><span class="ic">${X('bell',20)}</span><div><b>${L('Ride வந்தா குரல் அறிவிப்பு','Say the ride out loud')}</b><small>${voiceOn()?L('ON — இடமும் கட்டணமும் சொல்லும்','On — says the place and the fare'):'Off'}</small></div></button>`:''}
       <button class="row" id="th"><span class="ic">${X('moon',20)}</span><div><b>Dark mode</b><small>${document.documentElement.dataset.theme==='dark'?'On':'Off'}</small></div></button>
       ${CL?'':`<button class="row" id="sw"><span class="ic">${I.navHome}</span><div><b>${L('வேற வண்டி (demo)','Switch vehicle (demo)')}</b><small>${L('Owner assign பண்றது','Assigned by owner')}</small></div></button>`}
       <button class="row" id="lo"><span class="ic" style="color:var(--danger)">${X('power',20)}</span><div><b style="color:var(--danger)">Logout</b><small>+91 ${S.phone}</small></div></button>
@@ -1396,6 +1397,7 @@ function profileTab(){
     <p class="fine muted"><a href="../privacy/#drivers" target="_blank" rel="noopener" style="color:inherit">${L('தனியுரிமை & விதிமுறைகள்','Privacy & Terms')}</a> · Vellore Taxi Driver · v${window.VCT_V||''}</p></div>`),()=>{
     bindNav();
     document.getElementById('lg').onclick=()=>{S.lang=S.lang==='ta'?'en':'ta';save();profileTab()};
+    {const vb=document.getElementById('vc');if(vb)vb.onclick=()=>{try{localStorage.setItem('vct_voice',voiceOn()?'off':'on')}catch(e){}profileTab()}}
     document.getElementById('th').onclick=()=>{const r=document.documentElement;r.dataset.theme=r.dataset.theme==='dark'?'light':'dark';profileTab()};
     const sw=document.getElementById('sw');if(sw)sw.onclick=()=>{setOnline(false);pickProfile()};
     document.getElementById('lo').onclick=()=>{setOnline(false);if(OVL&&OVL17)try{OVL.liveStop({forget:true}).catch(()=>{})}catch(e){}LIVEN='';if(CL){stopAllD();DME=null;CL.logout()}S.logged=false;S.pid=null;save();login()};
@@ -1691,7 +1693,17 @@ function ovlRing(j){if(!OVL||!j||!j.id)return;try{const amt=Math.round((+j.fare|
     line2:L(`Pickup ${(+j.away||0).toFixed(1)} கி.மீ · பயணம் ${(+j.km||0).toFixed(1)} கி.மீ`,`Pickup ${(+j.away||0).toFixed(1)} km · trip ${(+j.km||0).toFixed(1)} km`),
     fare:amt>0?'₹'+amt:'',accept:L('ஏற்கிறேன்','Accept'),open:L('பார்க்க','View'),secs:20,
     veh:(v[S.lang]||v.en||L('புது Ride','New ride'))+kind,pay,pkm:km(j.away),pname:String(pf[S.lang]||''),psub:sub(pf),dkm:km(j.km),dname:String(pt[S.lang]||''),dsub:sub(pt),
-    extra:(+j.tip||0)>0?L(`Tip ₹${Math.round(+j.tip)} சேர்த்து`,`incl. ₹${Math.round(+j.tip)} tip`):''}).catch(()=>{})}catch(e){}}
+    extra:(+j.tip||0)>0?L(`Tip ₹${Math.round(+j.tip)} சேர்த்து`,`incl. ₹${Math.round(+j.tip)} tip`):'',
+    ...rideSay(j,amt,pf,b)}).catch(()=>{})}catch(e){}}
+/* 1.0.17: the phone says the ride out loud before the ringtone (Tamil; English if the phone has no Tamil voice) — the driver
+   hears where and how much without looking at the screen. Off in Me → Settings. No customer name or phone is said. */
+const voiceOn=()=>{try{return localStorage.getItem('vct_voice')!=='off'}catch(e){return true}};
+function rideSay(j,amt,pf,b){if(!voiceOn())return{say:'',sayEn:''};
+  const km=n=>{const v=Math.round((+n||0)*10)/10;return v<1?Math.round(v*1000)+'':String(v)},near=(+j.away||0)<1;
+  const k=b.kind==='outstation'?['வெளியூர் சவாரி','Outstation ride']:b.kind==='rental'?['வாடகை சவாரி','Rental ride']:['புது சவாரி','New ride'];
+  const pt=pf.ta||pf.en||'',pe=pf.en||pf.ta||'';
+  return{say:`${k[0]}. ${pt}. ${near?km(j.away)+' மீட்டர்':km(j.away)+' கிலோமீட்டர்'} தூரம். ${amt>0?amt+' ரூபாய்.':''}`.trim(),
+    sayEn:`${k[1]}. ${pe}. ${near?km(j.away)+' metres':km(j.away)+' kilometres'} away. ${amt>0?amt+' rupees.':''}`.trim()}}
 function ovlStop(){if(OVL)try{OVL.stop().catch(()=>{})}catch(e){}}
 function ovlTake(){if(!OVL)return;try{OVL.take().then(r=>{if(r&&r.action==='accept'&&J&&String(J.id||'')===String(r.id||'')){const a=document.getElementById('acc');if(a)a.click()}}).catch(()=>{})}catch(e){}}
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){ovlInit();ovlTake()}});

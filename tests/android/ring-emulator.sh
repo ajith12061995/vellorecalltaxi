@@ -37,6 +37,7 @@ adb shell appops set $PKG SYSTEM_ALERT_WINDOW allow
 adb shell locksettings set-disabled false >/dev/null 2>&1
 adb shell am start -n $PKG/.MainActivity >/dev/null; sleep 6
 cmd on; waitlog '^on2=sent' 20 && ok "driver ON again" || bad "ON not sent"
+cmd voice; waitlog '^voice=' 15 && ok "voice(): $(grep '^voice=' "$LOG" | tail -1) (empty = this emulator has no text-to-speech voice; the ringtone then starts at once)" || bad "voice() missing"
 cmd fsi; waitlog '^fsi=' 15 && ok "fsi(): $(grep '^fsi=' "$LOG" | tail -1)" || bad "fsi() missing (not a 1.0.17 build?)"
 
 # ---------- A) position from the phone itself ----------
@@ -121,7 +122,7 @@ c3=$(commits); sleep 40
 [ "$(commits)" -eq "$c3" ] && ok "OFF: the phone stops sending the position" || bad "position still sent after OFF ($c3 → $(commits))"
 rm -f tests/android/cmd.txt
 echo "--- report log (1.0.17 part):"; grep -vE "^(tick|commit)=" "$LOG" | tail -40
-echo "--- NativeLive / RideRing / VctPush log:"; adb logcat -d | grep -E "NativeLive|RideRing|VctPush|RideOverlay: (ring|wake)|Capacitor/Console" | tail -60
+echo "--- NativeLive / RideRing / VctPush / voice log:"; adb logcat -d | grep -E "NativeLive: (started|stopped|write|token)|RideRing|VctPush|RideOverlay: (ring|wake|tts)" | tail -60
 echo "--- crash buffer:"; adb logcat -d -b crash | tail -30
 echo "RESULT $pass passed, $fail failed"
 [ $fail -eq 0 ]

@@ -17,6 +17,9 @@ import android.os.Looper;
 import android.os.VibrationEffect;
 import android.os.Vibrator;
 import android.provider.Settings;
+import android.speech.tts.TextToSpeech;
+import android.speech.tts.UtteranceProgressListener;
+import java.util.Locale;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.MotionEvent;
@@ -59,6 +62,9 @@ public class RideOverlayPlugin extends Plugin {
     private static String action, actionId;
     private String ringId;
     private static RideOverlayPlugin inst;
+    /* 1.0.17 voice: Tamil if the phone has a Tamil voice, else Indian English, else none */
+    private TextToSpeech tts;
+    private volatile String ttsLang = "";
     private Runnable timeout;
 
     @Override
@@ -67,6 +73,16 @@ public class RideOverlayPlugin extends Plugin {
         vib = (Vibrator) getContext().getApplicationContext().getSystemService(Context.VIBRATOR_SERVICE);
         android.util.Log.i("RideOverlay", "load " + System.identityHashCode(this));
         inst = this;
+        try {
+            tts = new TextToSpeech(getContext().getApplicationContext(), st -> {
+                if (st != TextToSpeech.SUCCESS || tts == null) { android.util.Log.i("RideOverlay", "tts unavailable"); return; }
+                int r = tts.setLanguage(new Locale("ta", "IN"));
+                if (r >= TextToSpeech.LANG_AVAILABLE) ttsLang = "ta";
+                else { r = tts.setLanguage(new Locale("en", "IN")); ttsLang = r >= TextToSpeech.LANG_AVAILABLE ? "en" : ""; }
+                tts.setAudioAttributes(new AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_NOTIFICATION_RINGTONE).setContentType(AudioAttributes.CONTENT_TYPE_SPEECH).build());
+                android.util.Log.i("RideOverlay", "tts ready lang=" + ttsLang);
+            });
+        } catch (Exception e) { tts = null; }
     }
 
     /** a button on the lock-screen ride screen (RideRingActivity): remember it for take(), and go quiet */
@@ -123,13 +139,14 @@ public class RideOverlayPlugin extends Plugin {
         final String l1 = call.getString("line1", ""), l2 = call.getString("line2", ""), fare = call.getString("fare", "");
         final String acc = call.getString("accept", "Accept"), open = call.getString("open", "Open");
         final int secs = Math.max(5, Math.min(60, call.getInt("secs", 20)));
+        final String say = call.getString("say", ""), sayEn = call.getString("sayEn", "");
         // 1.0.16 card (Rapido-like); older pages send only title / line1 / line2 / fare
         final String[] r = { call.getString("veh", ""), call.getString("pay", ""), call.getString("pkm", ""), call.getString("pname", ""), call.getString("psub", ""),
                 call.getString("dkm", ""), call.getString("dname", ""), call.getString("dsub", ""), call.getString("extra", "") };
         main.post(() -> {
             endRing();
             ringId = id;
-            startSound();
+            announce(id, say, sayEn);
             android.util.Log.i("RideOverlay", "ring visible=" + visible + " can=" + can());
             if (RideRingActivity.locked(getContext())) {
                 // phone locked / screen off: like an incoming call, the ride comes over the lock screen
@@ -270,8 +287,36 @@ public class RideOverlayPlugin extends Plugin {
         } catch (Exception e) { /* no vibrator / not allowed */ }
     }
 
+    /** say the ride first (a few seconds), then the ringtone; without a voice (or nothing to say) the ringtone starts at once */
+    private void announce(final String id, String say, String sayEn) {
+        String text = "ta".equals(ttsLang) && say.length() > 0 ? say : ("en".equals(ttsLang) || "ta".equals(ttsLang)) && sayEn.length() > 0 ? sayEn : "";
+        if (tts == null || text.isEmpty()) { startSound(); return; }
+        if ("ta".equals(ttsLang) && say.isEmpty()) { try { tts.setLanguage(new Locale("en", "IN")); } catch (Exception e) { /* keep */ } }
+        vibrateOnly();
+        final boolean[] started = { false };
+        final Runnable ring = () -> { if (started[0] || !id.equals(ringId)) return; started[0] = true; startSound(); };
+        try {
+            tts.setOnUtteranceProgressListener(new UtteranceProgressListener() {
+                @Override public void onStart(String u) { android.util.Log.i("RideOverlay", "tts speaking " + ttsLang); }
+                @Override public void onDone(String u) { main.post(ring); }
+                @Override public void onError(String u) { main.post(ring); }
+            });
+            int r = tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, "ride-" + id);
+            if (r != TextToSpeech.SUCCESS) { main.post(ring); return; }
+        } catch (Exception e) { main.post(ring); return; }
+        main.postDelayed(ring, 8000);   // never wait longer than this for the voice
+    }
+
+    private void vibrateOnly() {
+        try { long[] p = {0, 500, 300, 500, 900}; if (vib != null && vib.hasVibrator()) { if (Build.VERSION.SDK_INT >= 26) vib.vibrate(VibrationEffect.createWaveform(p, 0)); else vib.vibrate(p, 0); } } catch (Exception e) { /* none */ }
+    }
+
+    @PluginMethod
+    public void voice(PluginCall call) { JSObject r = new JSObject(); r.put("lang", ttsLang); call.resolve(r); }
+
     private void endRing() {
         if (timeout != null) { main.removeCallbacks(timeout); timeout = null; }
+        try { if (tts != null) tts.stop(); } catch (Exception e) { /* not speaking */ }
         try { if (tone != null) tone.stop(); } catch (Exception e) { /* already stopped */ }
         tone = null;
         try { if (vib != null) vib.cancel(); } catch (Exception e) { /* nothing to cancel */ }
@@ -373,6 +418,8 @@ public class RideOverlayPlugin extends Plugin {
 
     /** a button was pressed: stop the noise and the card now; the page ends the request itself once it has acted */
     private void silence() {
+        ringId = null;   // a voice still finishing must not start the ringtone
+        try { if (tts != null) tts.stop(); } catch (Exception e) { /* not speaking */ }
         try { if (tone != null) tone.stop(); } catch (Exception e) { /* already stopped */ }
         tone = null;
         try { if (vib != null) vib.cancel(); } catch (Exception e) { /* nothing */ }
