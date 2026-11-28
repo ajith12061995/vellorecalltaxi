@@ -207,8 +207,8 @@ test('purgeDriver: owner only; refused on a ride / with wallet money; backup cop
 test('station fixed fare: a matching app ride at the fixed price is left alone; below it is raised', async () => {
   const KAT = { lat: 12.9716, lon: 79.1376 }, CMC = { lat: 12.9246, lon: 79.1356 };
   await db.doc('config/app').set({ grow: { stf: [{ a: { k: 'katpadi', ...KAT }, b: { k: 'cmc', ...CMC }, veh: 'sedan', fare: 150, both: true }] } }, { merge: true });
-  await db.doc('bookings/st1').set(base({ status: 'searching', veh: 'sedan', fare: 150, km: 6.5, from: KAT, to: CMC, tariff: { t: 'local', fixed: true } }));
-  await db.doc('bookings/st2').set(base({ status: 'searching', veh: 'sedan', fare: 90, km: 6.5, from: CMC, to: KAT, tariff: { t: 'local', fixed: true } }));
+  await db.doc('bookings/st1').set(base({ customerUid: 'u-st1', status: 'searching', veh: 'sedan', fare: 150, km: 6.5, from: KAT, to: CMC, tariff: { t: 'local', fixed: true } }));
+  await db.doc('bookings/st2').set(base({ customerUid: 'u-st2', status: 'searching', veh: 'sedan', fare: 90, km: 6.5, from: CMC, to: KAT, tariff: { t: 'local', fixed: true } }));
   const b2 = await waitFor(async () => { const d = (await db.doc('bookings/st2').get()).data(); return d.fareFlag ? d : null; });
   assert.equal(b2.fare, 150); assert.equal(b2.fareFlag, 'corrected');
   await sleep(1500);
