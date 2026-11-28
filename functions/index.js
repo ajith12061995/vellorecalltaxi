@@ -382,19 +382,25 @@ exports.onBookingDisc = onDocumentUpdated('bookings/{id}', async ev => {
 });
 
 // ---- GPS meter check: when a city ride finishes, re-measure the route the driver's phone uploaded (same rules as the
-// phone, functions/lib/meter.js = core/meter.js) and flag a mismatch for the office. The last chunks may arrive a few
-// seconds after "done", so wait a little first.
+// phone, functions/lib/meter.js = core/meter.js) and flag a mismatch for the office. The last chunks can arrive a few
+// seconds after "done", so a chunk that arrives after "done" re-checks the ride (no waiting / sleeping here).
 const METER = require('./lib/meter');
-exports.onBookingMeter = onDocumentUpdated({ document: 'bookings/{id}', timeoutSeconds: 90 }, async ev => {
-  const before = ev.data.before.data() || {}, after = ev.data.after.data(), id = ev.params.id;
-  if (!after || after.status !== 'done' || before.status === 'done' || after.meterSrv) return;
-  if (after.kind && after.kind !== 'ride' && after.kind !== 'schedule') return;
-  await new Promise(r => setTimeout(r, 20000));
-  const q = await db.collection(`bookings/${id}/track`).get();
+async function verifyMeter(ref, b) {
+  if (!b || b.status !== 'done' || (b.kind && b.kind !== 'ride' && b.kind !== 'schedule')) return;
+  const q = await ref.collection('track').get();
   const ch = q.docs.map(d => d.data()), srv = ch.length ? METER.summary(METER.replay(ch)) : null;
-  const r = L.meterCheck(after, srv);
-  await ev.data.after.ref.update({ meterSrv: r.srv || { km: 0, pts: 0 }, ...(r.flag ? { meterFlag: r.flag } : {}) });
-  if (r.flag) logger.warn('meter flag', { id, flag: r.flag, billedKm: after.fx && after.fx.km, srvKm: r.srv && r.srv.km });
+  const r = L.meterCheck(b, srv);
+  await ref.update({ meterSrv: r.srv || { km: 0, pts: 0 }, meterFlag: r.flag || FV.delete() });
+  if (r.flag) logger.warn('meter flag', { id: ref.id, flag: r.flag, billedKm: b.fx && b.fx.km, srvKm: r.srv && r.srv.km });
+}
+exports.onBookingMeter = onDocumentUpdated('bookings/{id}', async ev => {
+  const before = ev.data.before.data() || {}, after = ev.data.after.data();
+  if (!after || after.status !== 'done' || before.status === 'done') return;
+  await verifyMeter(ev.data.after.ref, after);
+});
+exports.onTrackChunk = onDocumentCreated('bookings/{id}/track/{c}', async ev => {
+  const ref = db.doc(`bookings/${ev.params.id}`), s = await ref.get();
+  if (s.exists && s.data().status === 'done') await verifyMeter(ref, s.data());
 });
 
 exports.onRideTaken = onDocumentUpdated('bookings/{id}', async ev => {
