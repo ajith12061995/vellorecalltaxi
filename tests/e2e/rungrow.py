@@ -42,6 +42,10 @@ async def main():
         g=(await pg.evaluate("MOCK.store.get('config/app')")).get('grow') or {}
         st=(g.get('stf') or [{}])[0]
         check('saved: review link, 1 station fare, bonus 2 rides ₹50, referral ₹30',g.get('review','').startswith('https://g.page/') and len(g.get('stf',[]))==1 and st.get('veh')=='auto' and st.get('fare')==120 and st.get('both') is True and st['a']['k']=='katpadi' and abs(st['b']['lat']-CMC[0])<1e-6 and g.get('bonus')=={'on':True,'rides':2,'amt':50} and g.get('ref')=={'on':True,'amt':30},g)
+        # the office is opened again (another day / another computer): the saved Growth values come from Firebase
+        await of.evaluate("DB.cfg.grow=null");await pg.evaluate("MOCK.fs.updateDoc({path:'config/app'},{upi:''})");await pg.wait_for_timeout(800)
+        await of.evaluate("S.sec='dash';save();show()");await pg.wait_for_timeout(500);await of.evaluate("S.sec='set';save();show()");await pg.wait_for_timeout(1000)
+        check('the Growth values are read back from Firebase (office reopened)',(await O.locator('#g_rv').input_value()).startswith('https://g.page/') and await O.locator('#sttbl .strow').count()==1 and await O.locator('#g_bon').is_checked() and await O.locator('#g_ron').is_checked() and await O.locator('#g_ra').input_value()=='30')
         pub=await pg.evaluate("MOCK.store.get('public/prices')") or {}
         check('the station fare is copied to the public price list (guests see it too)',len(pub.get('stf') or [])==1 and 'grow' not in pub and 'comm' not in pub,list(pub.keys()))
         # ---- Driver signs in
