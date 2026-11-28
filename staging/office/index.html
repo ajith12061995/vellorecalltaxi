@@ -623,7 +623,7 @@ details.faq p{margin:0;padding:0 14px 14px;color:var(--muted);font-size:14px;lin
 .tid{font-weight:700;font-variant-numeric:tabular-nums}
 .acts2{display:flex;gap:10px;align-items:center;justify-content:flex-end}
 .tr.t4{grid-template-columns:1.2fr 1fr 1fr 1fr;min-width:560px}
-.tr.t2{grid-template-columns:1fr 2fr;align-items:center}.tr.t3p{grid-template-columns:1fr 1fr .6fr;align-items:center}.tr.t2 select.cell{width:100%}
+.tr.t2{grid-template-columns:1fr 2fr;align-items:center}.tr.t3p{grid-template-columns:1fr 1fr .6fr;align-items:center}.tr.t3p{min-width:0}.tr.t3p>span{min-width:0}.tr.t3p .cell{width:100%;min-width:0;box-sizing:border-box}.tr.t2 select.cell{width:100%}
 .tr.t6{grid-template-columns:1.4fr 1.4fr 1fr .7fr 1fr .7fr;min-width:640px;align-items:center}.tr.t6 select.cell{width:100%}.chk{display:inline-flex;align-items:center;gap:6px;font-size:13.5px;font-weight:600}
 .lastln.bad{background:#FFF4E0;border-radius:8px;padding:6px 8px}.lastln .why{font-size:12.5px;color:#7A4A00;margin-top:3px}.lastln .why a{font-weight:700}
 .devln{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;font-size:12.5px;margin:4px 0 2px;padding:6px 8px;border-radius:8px;background:var(--surface2,#F2F5F3)}
@@ -1716,7 +1716,7 @@ function couponHtml(){return `<section class="panel" id="cpnp" style="margin-top
 function couponBind(){const ld=document.getElementById('cp_ld');if(!ld)return;
   const load=()=>{const el=document.getElementById('cp_list');if(!CL){el.textContent=L('Firebase-க்கு அப்புறம்','After Firebase');return}el.textContent='…';
     F().getDocs(F().collection(CL.db,'coupons')).then(q=>{const rows=q.docs.map(d=>({id:d.id,...d.data()}));
-      el.innerHTML=rows.length?rows.map(c=>`<div class="lrow"><div><b>${esc(c.id)}</b> · ${c.type==='pct'?`${c.val}%${c.max?' ('+L('அதிகபட்சம்','max')+' ₹'+c.max+')':''}`:'₹'+c.val}${c.min?` · min ₹${c.min}`:''}${c.first?' · '+L('முதல் ride','first ride'):''}<small>${L('பயன்பாடு','Used')} ${c.used||0}${c.limit?'/'+c.limit:''}${c.until?' · '+L('வரை','until')+' '+new Date(c.until).toLocaleDateString('en-IN'):''}</small></div>
+      el.innerHTML=rows.length?rows.map(c=>`<div class="lrow"><div><b style="display:block">${esc(c.id)}</b>${c.type==='pct'?`${c.val}%${c.max?' ('+L('அதிகபட்சம்','max')+' ₹'+c.max+')':''}`:'₹'+c.val}${c.min?` · min ₹${c.min}`:''}${c.first?' · '+L('முதல் ride','first ride'):''}<small style="display:block">${L('பயன்பாடு','Used')} ${c.used||0}${c.limit?'/'+c.limit:''}${c.until?' · '+L('வரை','until')+' '+new Date(c.until).toLocaleDateString('en-IN'):''}</small></div>
         <button class="btn ghost sm" data-cpt="${esc(c.id)}" data-on="${c.on?1:0}">${c.on?L('OFF பண்ணு','Turn off'):L('ON பண்ணு','Turn on')}</button></div>`).join(''):`<p class="muted">${L('இன்னும் coupon இல்லை','No coupons yet')}</p>`;
       el.querySelectorAll('[data-cpt]').forEach(b=>b.onclick=()=>cw(F().updateDoc(F().doc(CL.db,'coupons',b.dataset.cpt),{on:b.dataset.on!=='1',updatedAt:ts()}).then(()=>{audit('coupon',b.dataset.cpt,b.dataset.on!=='1'?'on':'off');load()})))})
       .catch(e=>{el.textContent=CL.errText(e,S.lang==='ta')})};
