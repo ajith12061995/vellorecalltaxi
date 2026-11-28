@@ -1,6 +1,7 @@
 /* Vellore Taxi — Cloud Functions (needs the Firebase Blaze plan). Region: asia-south1 (Mumbai).
    Every function is safe to deploy while the apps keep working the old way:
    - onBookingDone   : writes one ledger entry per finished trip (no commission while the driver's subscription runs).
+   - walletOp        : callable, owner only; recharge approval (one UTR credited once), daily bonus, manual + / −, each with a ledger line.
    - buySub          : callable; a driver buys a day / week / month subscription from the wallet (prices: config/app.subs). Takes / corrects the commission from the
                        driver wallet ONLY when config/app.serverComm is true (switch it on after deploying).
    - housekeeping    : every 2 minutes — sends scheduled local rides to drivers 30 min before pickup,
@@ -83,6 +84,47 @@ exports.buySub = onCall({ enforceAppCheck: AC_ENFORCE }, async req => {
   });
   if (!r.ok) logger.info('buySub refused', { driver: me, plan, why: r.why });
   else logger.info('buySub', { driver: me, plan, price: r.price });
+  return r;
+});
+
+// Office (owner only) moves driver wallet money: approve a UPI recharge, pay the daily bonus, or a manual + / −.
+// One transaction each: the wallet changes only together with a ledger line, a recharge is credited once, and one
+// UTR can never be credited twice (utrs/{utr} lock). A repeated UTR rejects the request by itself.
+exports.walletOp = onCall({ enforceAppCheck: AC_ENFORCE }, async req => {
+  acLog('walletOp', req);
+  const me = req.auth && req.auth.token.phone_number;
+  if (!me) throw new HttpsError('unauthenticated', 'login first');
+  const st = (await db.doc(`staff/${me}`).get()).data();
+  if (!st || st.role !== 'owner') throw new HttpsError('permission-denied', 'owner only');
+  const op = req.data || {}, kind = String(op.kind || '');
+  const c = kind === 'bonus' ? await cfg() : {};
+  const r = await db.runTransaction(async tx => {
+    let rref = null, rch = null, phone = String(op.driverPhone || '');
+    if (kind === 'recharge') {
+      if (!/^[A-Za-z0-9_-]{1,60}$/.test(String(op.rechargeId || ''))) return { ok: false, why: 'no-recharge' };
+      rref = db.doc(`recharges/${op.rechargeId}`); const rs = await tx.get(rref);
+      rch = rs.exists ? rs.data() : null; phone = rch ? String(rch.driverPhone || '') : '';
+    }
+    if (!/^\+91[6-9]\d{9}$/.test(phone)) return { ok: false, why: kind === 'recharge' && !rch ? 'no-recharge' : 'no-driver' };
+    const dref = db.doc(`drivers/${phone}`), ds = await tx.get(dref);
+    const uref = rch && L.UTR_RE.test(String(rch.utr || '')) ? db.doc(`utrs/${rch.utr}`) : null;
+    const utrUsed = uref ? (await tx.get(uref)).exists : false;
+    const now = Date.now(), dec = L.walletOpDecide(op, { drv: ds.exists ? ds.data() : null, rch, utrUsed, cfg: c, now });
+    if (!dec.ok) {
+      if (dec.reject && rref) tx.update(rref, { status: 'rejected', why: dec.why, approvedAt: FV.serverTimestamp(), approvedBy: me });
+      return dec;
+    }
+    const lref = kind === 'recharge' ? db.doc(`ledger/rch_${op.rechargeId}`) : kind === 'bonus' ? db.doc(`ledger/bonus_${phone}_${dec.day}`) : db.collection('ledger').doc();
+    if ((await tx.get(lref)).exists) return { ok: false, why: 'done' };
+    tx.update(dref, { wallet: FV.increment(dec.delta), ...(kind === 'bonus' ? { bonusPaid: dec.day, bonusAt: FV.serverTimestamp() } : {}), updatedAt: FV.serverTimestamp() });
+    tx.set(lref, { type: dec.type, driverPhone: phone, amt: dec.delta, walletDelta: dec.delta, by: me,
+      ...(kind === 'recharge' ? { rechargeId: op.rechargeId, utr: dec.utr, method: 'upi' } : {}), ...(dec.day ? { day: dec.day } : {}),
+      ...(dec.reason ? { reason: dec.reason } : {}), at: FV.serverTimestamp() });
+    if (rref) { tx.update(rref, { status: 'approved', approvedAt: FV.serverTimestamp(), approvedBy: me, ledgerId: lref.id });
+      tx.set(uref, { rechargeId: op.rechargeId, driverPhone: phone, amt: dec.delta, at: FV.serverTimestamp() }); }
+    return { ok: true, kind, amt: dec.delta, driverPhone: phone, ledgerId: lref.id };
+  });
+  logger.info('walletOp', { by: me, kind, ok: r.ok, why: r.why || '', amt: r.amt || 0, driver: r.driverPhone || op.driverPhone || '' });
   return r;
 });
 
@@ -710,6 +752,7 @@ async function rzpCredit(orderId, paymentId, via, paise) {
     tx.set(db.doc(`recharges/rzp_${orderId}`), { driverPhone: d.driverPhone, driverName: d.driverName || '', amt: d.amt, utr: paymentId,
       method: 'razorpay', orderId, status: 'approved', approvedBy: 'razorpay', date: Date.now(), createdAt: FV.serverTimestamp(), approvedAt: FV.serverTimestamp() });
     tx.update(dref, { wallet: FV.increment(d.amt), updatedAt: FV.serverTimestamp() });
+    tx.set(db.doc(`ledger/rch_rzp_${orderId}`), { type: 'recharge', method: 'razorpay', driverPhone: d.driverPhone, amt: d.amt, walletDelta: d.amt, utr: paymentId, rechargeId: `rzp_${orderId}`, at: FV.serverTimestamp() });
     return 'credited';
   });
 }

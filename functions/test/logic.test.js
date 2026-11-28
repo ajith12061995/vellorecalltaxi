@@ -379,3 +379,27 @@ test('coupons: server decides — off, expired, used up, one per customer, first
   assert.equal(L.couponDecide(cp({ val: 900 }), x()).disc, 200, 'never more than the fare');
   assert.ok(L.COUPON_RE.test('VELLORE50') && !L.COUPON_RE.test('ab') && !L.COUPON_RE.test('x y'));
 });
+
+test('walletOpDecide: recharge once, one UTR once, bonus from settings once a day, + / − with a reason', () => {
+  const drv = { wallet: 100 }, now = Date.UTC(2026, 10, 28, 10), day = '2026-11-28';
+  const R = x => ({ status: 'pending', amt: 500, utr: '401234567890', ...x });
+  assert.deepEqual(L.walletOpDecide({ kind: 'recharge' }, { drv, rch: R(), now }), { ok: true, delta: 500, type: 'recharge', utr: '401234567890' });
+  assert.equal(L.walletOpDecide({ kind: 'recharge' }, { drv, rch: null }).why, 'no-recharge');
+  assert.equal(L.walletOpDecide({ kind: 'recharge' }, { drv, rch: R({ status: 'approved' }) }).why, 'done');
+  assert.equal(L.walletOpDecide({ kind: 'recharge' }, { drv: null, rch: R() }).why, 'no-driver');
+  assert.equal(L.walletOpDecide({ kind: 'recharge' }, { drv, rch: R({ amt: 0 }) }).why, 'bad-amount');
+  assert.equal(L.walletOpDecide({ kind: 'recharge' }, { drv, rch: R({ amt: 100001 }) }).why, 'bad-amount');
+  assert.equal(L.walletOpDecide({ kind: 'recharge' }, { drv, rch: R({ utr: '12345' }) }).why, 'bad-utr');
+  const dup = L.walletOpDecide({ kind: 'recharge' }, { drv, rch: R(), utrUsed: true }); assert.equal(dup.why, 'dup-utr'); assert.equal(dup.reject, true);
+  const cfg = { grow: { bonus: { on: true, amt: 40 } } };
+  assert.deepEqual(L.walletOpDecide({ kind: 'bonus', amt: 9999 }, { drv, cfg, now }), { ok: true, delta: 40, type: 'bonus', day });
+  assert.equal(L.walletOpDecide({ kind: 'bonus' }, { drv: { bonusPaid: day }, cfg, now }).why, 'paid-today');
+  assert.equal(L.walletOpDecide({ kind: 'bonus' }, { drv, cfg: { grow: { bonus: { on: false, amt: 40 } } }, now }).why, 'bonus-off');
+  assert.equal(L.walletOpDecide({ kind: 'bonus' }, { drv, cfg: {}, now }).why, 'bonus-off');
+  assert.deepEqual(L.walletOpDecide({ kind: 'adjust', amt: -50, reason: ' Toll ' }, { drv }), { ok: true, delta: -50, type: 'adjust', reason: 'Toll' });
+  assert.equal(L.walletOpDecide({ kind: 'adjust', amt: -50, reason: 'ab' }, { drv }).why, 'reason');
+  for (const amt of [0, 1.5, 20001, -20001, '50', null]) assert.equal(L.walletOpDecide({ kind: 'adjust', amt, reason: 'Toll' }, { drv }).why, 'bad-amount', String(amt));
+  assert.equal(L.walletOpDecide({ kind: 'adjust', amt: 5, reason: 'Toll' }, { drv: null }).why, 'no-driver');
+  assert.equal(L.walletOpDecide({ kind: 'x' }, { drv }).why, 'bad-kind');
+  assert.equal(L.istDate(Date.UTC(2026, 10, 28, 18, 31)), '2026-11-29', 'after 18:30 UTC it is the next IST day');
+});

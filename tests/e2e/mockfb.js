@@ -14,7 +14,8 @@
   const inColl=(path,coll)=>path.startsWith(coll+'/')&&path.split('/').length===coll.split('/').length+1;
   const runQuery=(q)=>{
     let rows=[...store.keys()].filter(p=>inColl(p,q.path)).map(p=>({p,d:store.get(p)}));
-    (q.cons||[]).forEach(c=>{if(c.w){const[f,op,v]=c.w;const g=r=>r.d[f];rows=rows.filter(r=>op==='=='?g(r)===v:op==='>='?g(r)!=null&&g(r)>=v:op==='<'?g(r)!=null&&g(r)<v:op==='<='?g(r)!=null&&g(r)<=v:op==='>'?g(r)!=null&&g(r)>v:op==='!='?g(r)!==v:op==='in'?v.includes(g(r)):true)}});
+    const tv=x=>x&&typeof x.toMillis==='function'?x.toMillis():x instanceof Date?x.getTime():x&&x.__ms!=null?x.__ms:x;
+    (q.cons||[]).forEach(c=>{if(c.w){let[f,op,v]=c.w;if(op!=='in')v=tv(v);const g=r=>op==='in'?r.d[f]:tv(r.d[f]);rows=rows.filter(r=>op==='=='?g(r)===v:op==='>='?g(r)!=null&&g(r)>=v:op==='<'?g(r)!=null&&g(r)<v:op==='<='?g(r)!=null&&g(r)<=v:op==='>'?g(r)!=null&&g(r)>v:op==='!='?g(r)!==v:op==='in'?v.includes(g(r)):true)}});
     const o=(q.cons||[]).find(c=>c.o);if(o){const[f,dir]=o.o;rows=rows.filter(r=>r.d[f]!=null).sort((a,b)=>{const av=a.d[f]&&a.d[f].toMillis?a.d[f].toMillis():a.d[f],bv=b.d[f]&&b.d[f].toMillis?b.d[f].toMillis():b.d[f];return dir==='desc'?bv-av:av-bv})}
     const l=(q.cons||[]).find(c=>c.l);if(l)rows=rows.slice(0,l.l);
     return{docs:rows.map(r=>({id:r.p.split('/').pop(),data:()=>clone(r.d)}))};
@@ -45,7 +46,9 @@
     },
     async runTransaction(db,fn){const q=[];const tx={get:async r=>snapDoc(r.path),update:(r,d)=>q.push(()=>{if(!store.has(r.path))throw{code:'not-found'};write(r.path,d,true)}),set:(r,d)=>q.push(()=>write(r.path,d,false))};
       const res=await fn(tx);q.forEach(f=>f());notify();return res},
-    writeBatch(){const q=[];return{update:(r,d)=>q.push(()=>write(r.path,d,true)),set:(r,d,o)=>q.push(()=>write(r.path,d,o&&o.merge)),delete:r=>q.push(()=>store.delete(r.path)),async commit(){q.forEach(f=>f());notify()}}},
+    writeBatch(){const q=[],creates=[];return{update:(r,d)=>q.push(()=>write(r.path,d,true)),set:(r,d,o)=>{if(!(o&&o.merge))creates.push(r.path);q.push(()=>write(r.path,d,o&&o.merge))},delete:r=>q.push(()=>store.delete(r.path)),
+      // rules stand-in: a recharge request id u_<UTR> can only be created, never written over (the same UTR twice is refused)
+      async commit(){if(creates.some(p=>/^recharges\/u_\d{12}$/.test(p)&&store.has(p)))throw{code:'permission-denied'};q.forEach(f=>f());notify()}}},
   };
   // network simulation for tests: MOCK.delay = ms added to every call; MOCK.down = true makes calls fail like no internet
   ['getDoc','getDocs','setDoc','updateDoc','addDoc','deleteDoc','runTransaction'].forEach(k=>{const f=fs[k];fs[k]=async(...a)=>{
@@ -91,6 +94,24 @@
           const lid='sub'+(++seq);write(dp,{wallet:w-price,sub:{plan,veh:d.veh,price,from:{__ms:now},until:{__ms:now+DUR[plan]},id:lid}},true);
           write('ledger/'+lid,{type:'sub',driverPhone:ph,plan,veh:d.veh,price,walletDelta:-price,from:{__ms:now},until:{__ms:now+DUR[plan]},at:{__ms:now}},false);notify();
           return{ok:true,plan,price,until:now+DUR[plan],id:lid}}
+        // same decisions as functions/lib/logic.js walletOpDecide + functions/index.js walletOp
+        if(name==='walletOp'){const me=user&&user.phoneNumber,st=store.get('staff/'+me);if(!me)throw{code:'functions/unauthenticated'};if(!st||st.role!=='owner')throw{code:'functions/permission-denied',message:'owner only'};
+          const op=data||{},kind=String(op.kind||''),now=Date.now(),day=new Date(now+19800000).toISOString().slice(0,10);let rp=null,r=null,ph=String(op.driverPhone||'');
+          if(kind==='recharge'){rp='recharges/'+op.rechargeId;r=store.get(rp);if(!r)return{ok:false,why:'no-recharge'};ph=String(r.driverPhone||'')}
+          const d=store.get('drivers/'+ph);let delta=0,lid='',extra={};
+          if(kind==='recharge'){if(r.status!=='pending')return{ok:false,why:'done'};if(!d)return{ok:false,why:'no-driver'};delta=Math.round(+r.amt||0);if(!(delta>=1&&delta<=100000))return{ok:false,why:'bad-amount'};
+            if(!/^\d{12}$/.test(String(r.utr||'')))return{ok:false,why:'bad-utr'};
+            if(store.has('utrs/'+r.utr)){write(rp,{status:'rejected',why:'dup-utr',approvedAt:{__ts:true},approvedBy:me},true);notify();return{ok:false,why:'dup-utr',reject:true}}
+            lid='rch_'+op.rechargeId;extra={rechargeId:op.rechargeId,utr:r.utr,method:'upi'}}
+          else if(!d)return{ok:false,why:'no-driver'};
+          else if(kind==='bonus'){const b=((store.get('config/app')||{}).grow||{}).bonus||{};delta=Math.round(+b.amt||0);if(b.on!==true||!(delta>0)||delta>5000)return{ok:false,why:'bonus-off'};if(d.bonusPaid===day)return{ok:false,why:'paid-today'};lid='bonus_'+ph+'_'+day;extra={day}}
+          else if(kind==='adjust'){delta=Number(op.amt);const why=String(op.reason||'').trim();if(typeof op.amt!=='number'||!Number.isInteger(delta)||delta===0||Math.abs(delta)>20000)return{ok:false,why:'bad-amount'};if(why.length<3||why.length>120)return{ok:false,why:'reason'};lid='adj'+(++seq);extra={reason:why}}
+          else return{ok:false,why:'bad-kind'};
+          if(store.has('ledger/'+lid))return{ok:false,why:'done'};
+          write('drivers/'+ph,{wallet:{__inc:delta},...(kind==='bonus'?{bonusPaid:day,bonusAt:{__ts:true}}:{}),updatedAt:{__ts:true}},true);
+          write('ledger/'+lid,{type:kind,driverPhone:ph,amt:delta,walletDelta:delta,by:me,...extra,at:{__ts:true}},false);
+          if(rp){write(rp,{status:'approved',approvedAt:{__ts:true},approvedBy:me,ledgerId:lid},true);write('utrs/'+r.utr,{rechargeId:op.rechargeId,driverPhone:ph,amt:delta,at:{__ts:true}},false)}
+          notify();(window.__wop=window.__wop||[]).push({kind,ph,delta});return{ok:true,kind,amt:delta,driverPhone:ph,ledgerId:lid}}
         if(name==='deleteMyAccount'){if(!user)throw{code:'functions/unauthenticated'};const ph=user.phoneNumber;
           if(ph&&store.get('drivers/'+ph)){store.set('deletionRequests/'+ph,{kind:'driver',phone:ph,uid:user.uid,status:'pending'});return{queued:true}}
           const mine=[...store.keys()].filter(k=>/^bookings\/[^/]+$/.test(k)&&store.get(k).customerUid===user.uid);

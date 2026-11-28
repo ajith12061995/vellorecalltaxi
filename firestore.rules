@@ -373,11 +373,33 @@ service cloud.firestore {
     }
 
     // Driver wallet recharge requests (UPI + UTR) — the owner approves each one once
+    // The request id is u_<UTR>: the same UTR cannot be sent twice (a second create is an update, which drivers may not do).
+    // Approval and the wallet credit happen only on the server (walletOp), with a ledger line and a once-ever UTR lock.
     match /recharges/{id} {
       allow read: if isStaff() || (signedIn() && resource.data.driverPhone == phone());
       allow create: if isDriver() && newData().driverPhone == phone()
-        && newData().status == 'pending' && num(newData().amt, 1, 100000);
-      allow update: if isOwner() && resource.data.status == 'pending' && newData().status in ['approved', 'rejected'];
+        && id.matches('u_[0-9]{12}') && newData().utr == id[2:]
+        && newData().keys().hasOnly(['driverPhone', 'driverName', 'amt', 'utr', 'status', 'date', 'createdAt', 'proof'])
+        && newData().status == 'pending' && newData().amt is int && num(newData().amt, 1, 100000)
+        && (!('proof' in newData()) || newData().proof is bool)
+        && (!('driverName' in newData()) || (newData().driverName is string && newData().driverName.size() <= 60));
+      allow update: if isOwner() && resource.data.status == 'pending' && newData().status == 'rejected'
+        && changes().hasOnly(['status', 'approvedAt', 'approvedBy', 'why']);
+      // the payment screenshot the driver attached (one small JPEG, sent with the request)
+      match /proof/{p} {
+        allow read: if isStaff() || (signedIn() && get(/databases/$(database)/documents/recharges/$(id)).data.driverPhone == phone());
+        allow create: if isDriver() && p == 'img'
+          && getAfter(/databases/$(database)/documents/recharges/$(id)).data.driverPhone == phone()
+          && getAfter(/databases/$(database)/documents/recharges/$(id)).data.status == 'pending'
+          && !exists(/databases/$(database)/documents/recharges/$(id))
+          && newData().keys().hasOnly(['img', 'at']) && newData().img is string
+          && newData().img.size() <= 450000 && newData().img[0:23] == 'data:image/jpeg;base64,';
+      }
+    }
+    // UTR locks: written only by the server when a recharge is credited
+    match /utrs/{u} {
+      allow read: if isStaff();
+      allow write: if false;
     }
 
     // Call me back, complaints, lost items, SOS

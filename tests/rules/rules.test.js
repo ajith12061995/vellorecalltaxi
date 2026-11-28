@@ -266,9 +266,39 @@ test('staff can assign and edit bookings but not change a wallet', async () => {
   await assertFails(updateDoc(doc(as.staff(), 'drivers', DRV), { wallet: 9999 }));
   await assertSucceeds(updateDoc(doc(as.staff(), 'drivers', DRV), { notes: ['ok'] }));
 });
-test('owner approves a recharge once; second approval refused', async () => {
-  await assertSucceeds(updateDoc(doc(as.owner(), 'recharges', 'r1'), { status: 'approved' }));
+test('recharge approval is server-only (walletOp); the owner may only reject a pending request, once', async () => {
   await assertFails(updateDoc(doc(as.owner(), 'recharges', 'r1'), { status: 'approved' }));
+  await assertFails(updateDoc(doc(as.owner(), 'recharges', 'r1'), { status: 'rejected', amt: 1 }), 'nothing else changes');
+  await assertSucceeds(updateDoc(doc(as.owner(), 'recharges', 'r1'), { status: 'rejected', approvedAt: serverTimestamp(), approvedBy: '+918220201462' }));
+  await assertFails(updateDoc(doc(as.owner(), 'recharges', 'r1'), { status: 'rejected' }), 'only a pending one');
+});
+test('recharge request: id u_<UTR>, the same UTR only once, screenshot with it; UTR locks server-only', async () => {
+  const R = (utr, x = {}) => ({ driverPhone: DRV, driverName: 'Test', amt: 500, utr, status: 'pending', date: 1, createdAt: serverTimestamp(), ...x });
+  await assertSucceeds(setDoc(doc(as.drv(), 'recharges', 'u_401234567890'), R('401234567890')));
+  await assertFails(setDoc(doc(as.drv(), 'recharges', 'u_401234567890'), R('401234567890')), 'the same UTR twice');
+  await assertFails(setDoc(doc(as.drv2(), 'recharges', 'u_401234567890'), { ...R('401234567890'), driverPhone: DRV2 }), 'another driver, same UTR');
+  await assertFails(setDoc(doc(as.drv(), 'recharges', 'u_401234567891'), R('401234567892')), 'id and UTR must match');
+  await assertFails(setDoc(doc(as.drv(), 'recharges', 'x401234567893'), R('401234567893')), 'id must be u_<UTR>');
+  await assertFails(addDoc(collection(as.drv(), 'recharges'), R('401234567894')), 'random ids are no longer allowed');
+  await assertFails(setDoc(doc(as.drv(), 'recharges', 'u_401234567895'), R('401234567895', { status: 'approved' })));
+  await assertFails(setDoc(doc(as.drv(), 'recharges', 'u_401234567896'), R('401234567896', { amt: 500.5 })), 'whole rupees');
+  await assertFails(setDoc(doc(as.drv(), 'recharges', 'u_401234567897'), R('401234567897', { wallet: 1 })), 'no extra fields');
+  await assertFails(setDoc(doc(as.drv(), 'recharges', 'u_401234567898'), { ...R('401234567898'), driverPhone: DRV2 }), 'not for another driver');
+  // screenshot: only in the same write as the request
+  const img = 'data:image/jpeg;base64,' + 'A'.repeat(1000);
+  const b = writeBatch(as.drv()); b.set(doc(as.drv(), 'recharges', 'u_501234567890'), R('501234567890', { proof: true })); b.set(doc(as.drv(), 'recharges', 'u_501234567890', 'proof', 'img'), { img, at: serverTimestamp() });
+  await assertSucceeds(b.commit());
+  await assertSucceeds(getDoc(doc(as.drv(), 'recharges', 'u_501234567890', 'proof', 'img')));
+  await assertSucceeds(getDoc(doc(as.owner(), 'recharges', 'u_501234567890', 'proof', 'img')));
+  await assertFails(getDoc(doc(as.drv2(), 'recharges', 'u_501234567890', 'proof', 'img')));
+  await assertFails(setDoc(doc(as.drv(), 'recharges', 'u_401234567890', 'proof', 'img'), { img, at: serverTimestamp() }), 'no screenshot added later');
+  const b2 = writeBatch(as.drv()); b2.set(doc(as.drv(), 'recharges', 'u_601234567890'), R('601234567890')); b2.set(doc(as.drv(), 'recharges', 'u_601234567890', 'proof', 'img'), { img: 'data:image/png;base64,AAAA', at: serverTimestamp() });
+  await assertFails(b2.commit(), 'JPEG only');
+  const b3 = writeBatch(as.drv()); b3.set(doc(as.drv(), 'recharges', 'u_701234567890'), R('701234567890')); b3.set(doc(as.drv(), 'recharges', 'u_701234567890', 'proof', 'img'), { img: 'data:image/jpeg;base64,' + 'A'.repeat(460000), at: serverTimestamp() });
+  await assertFails(b3.commit(), 'too big');
+  for (const who of ['owner', 'staff', 'drv']) await assertFails(setDoc(doc(as[who](), 'utrs', '401234567890'), { rechargeId: 'x' }), who + ' cannot write a UTR lock');
+  await assertSucceeds(getDoc(doc(as.owner(), 'utrs', '401234567890')));
+  await assertFails(getDoc(doc(as.drv(), 'utrs', '401234567890')));
 });
 test('staff cannot approve recharges or edit config', async () => {
   await assertFails(updateDoc(doc(as.staff(), 'recharges', 'r1'), { status: 'approved' }));

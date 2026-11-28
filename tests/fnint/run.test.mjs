@@ -311,3 +311,53 @@ test('coupons: valid code held once per customer, given back on cancel, paid to 
   assert.ok(await waitFor(async () => (await r4.get()).data().discPaid === true));
   assert.equal((await db.doc('ledger/disc_cp4').get()).data().kind, 'coupon-discount');
 });
+
+test('walletOp: owner only; a recharge credited once with a ledger line; one UTR never twice; bonus once a day; + / − needs a reason', async () => {
+  const OWN = '+919999900070', STF = '+919999900071', WD = '+919999900072', IST = new Date(Date.now() + 19800000).toISOString().slice(0, 10);
+  await db.doc(`staff/${OWN}`).set({ name: 'Owner', role: 'owner' });
+  await db.doc(`staff/${STF}`).set({ name: 'Staff', role: 'staff' });
+  await db.doc(`drivers/${WD}`).set({ name: 'Wally', veh: 'auto', wallet: 100 });
+  await db.doc('config/app').set({ grow: { bonus: { on: true, rides: 1, amt: 40 } } }, { merge: true });
+  await db.doc('recharges/u_901234567890').set({ driverPhone: WD, amt: 700, utr: '901234567890', status: 'pending', date: Date.now() });
+  await db.doc('recharges/oldW1').set({ driverPhone: WD, amt: 700, utr: '901234567890', status: 'pending', date: Date.now() });
+  const oTok = await phoneToken(OWN), sTok = await phoneToken(STF), dTok = await phoneToken(WD);
+  const w = async () => (await db.doc(`drivers/${WD}`).get()).data().wallet;
+  // not the owner → refused, nothing moves
+  for (const t of [sTok, dTok, null]) { const r = await call('walletOp', { kind: 'recharge', rechargeId: 'u_901234567890' }, t); assert.ok(r.error, 'refused without owner'); }
+  assert.equal(await w(), 100);
+  // owner approves: wallet + ledger + lock, once
+  const a1 = await call('walletOp', { kind: 'recharge', rechargeId: 'u_901234567890' }, oTok);
+  assert.equal(a1.result.ok, true); assert.equal(a1.result.amt, 700); assert.equal(await w(), 800);
+  const l1 = (await db.doc('ledger/rch_u_901234567890').get()).data();
+  assert.equal(l1.type, 'recharge'); assert.equal(l1.amt, 700); assert.equal(l1.walletDelta, 700); assert.equal(l1.utr, '901234567890'); assert.equal(l1.by, OWN);
+  assert.equal((await db.doc('recharges/u_901234567890').get()).data().status, 'approved');
+  assert.equal((await db.doc('utrs/901234567890').get()).data().rechargeId, 'u_901234567890');
+  const a2 = await call('walletOp', { kind: 'recharge', rechargeId: 'u_901234567890' }, oTok);
+  assert.equal(a2.result.ok, false); assert.equal(a2.result.why, 'done'); assert.equal(await w(), 800);
+  // the same UTR on another (older) request: not credited, rejected by itself
+  const a3 = await call('walletOp', { kind: 'recharge', rechargeId: 'oldW1' }, oTok);
+  assert.equal(a3.result.why, 'dup-utr'); assert.equal(await w(), 800);
+  const o1 = (await db.doc('recharges/oldW1').get()).data(); assert.equal(o1.status, 'rejected'); assert.equal(o1.why, 'dup-utr');
+  assert.equal((await db.doc('ledger/rch_oldW1').get()).exists, false);
+  // two approvals at the same moment: still one credit
+  await db.doc('recharges/u_911234567890').set({ driverPhone: WD, amt: 300, utr: '911234567890', status: 'pending', date: Date.now() });
+  const both = await Promise.all([1, 2].map(() => call('walletOp', { kind: 'recharge', rechargeId: 'u_911234567890' }, oTok)));
+  assert.equal(both.filter(x => x.result && x.result.ok).length, 1); assert.equal(await w(), 1100);
+  // unknown request / bad kind
+  assert.equal((await call('walletOp', { kind: 'recharge', rechargeId: 'nope' }, oTok)).result.why, 'no-recharge');
+  assert.equal((await call('walletOp', { kind: 'gift', driverPhone: WD }, oTok)).result.why, 'bad-kind');
+  // bonus: amount from the settings, once a day
+  const b1 = await call('walletOp', { kind: 'bonus', driverPhone: WD, amt: 9999 }, oTok);
+  assert.equal(b1.result.ok, true); assert.equal(b1.result.amt, 40); assert.equal(await w(), 1140);
+  assert.equal((await db.doc(`ledger/bonus_${WD}_${IST}`).get()).data().amt, 40);
+  assert.equal((await db.doc(`drivers/${WD}`).get()).data().bonusPaid, IST);
+  assert.equal((await call('walletOp', { kind: 'bonus', driverPhone: WD }, oTok)).result.why, 'paid-today'); assert.equal(await w(), 1140);
+  // + / −: needs a reason, whole rupees, at most 20,000
+  assert.equal((await call('walletOp', { kind: 'adjust', driverPhone: WD, amt: -50, reason: '' }, oTok)).result.why, 'reason');
+  assert.equal((await call('walletOp', { kind: 'adjust', driverPhone: WD, amt: 10.5, reason: 'toll' }, oTok)).result.why, 'bad-amount');
+  assert.equal((await call('walletOp', { kind: 'adjust', driverPhone: WD, amt: 25000, reason: 'toll' }, oTok)).result.why, 'bad-amount');
+  const j = await call('walletOp', { kind: 'adjust', driverPhone: WD, amt: -50, reason: 'Toll refund wrong' }, oTok);
+  assert.equal(j.result.ok, true); assert.equal(await w(), 1090);
+  const lj = (await db.doc(`ledger/${j.result.ledgerId}`).get()).data(); assert.equal(lj.type, 'adjust'); assert.equal(lj.amt, -50); assert.equal(lj.reason, 'Toll refund wrong');
+  assert.equal((await call('walletOp', { kind: 'adjust', driverPhone: '+919999999990', amt: 5, reason: 'x y z' }, oTok)).result.why, 'no-driver');
+});

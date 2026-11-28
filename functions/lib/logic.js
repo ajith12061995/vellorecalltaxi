@@ -465,4 +465,39 @@ function couponDecide(cp, o) {
   d = Math.max(0, Math.min(d, Math.floor(fare), REF_MAX));
   return d > 0 ? { disc: d, why: '' } : { disc: 0, why: 'zero' };
 }
-module.exports = { COUPON_RE, couponDecide, peakPct, meterCheck, REF_MAX, refAmt, referDecide, discTake, stFare, stFareOf, ST_R, takenNow, REPUSH, repushNow, REASSIGN, reassignCheck, SUBDUR, subActive, subPrice, buySubDecide, splitDriverTokens, ridePushData, placeName, BANDS, bandOf, demandMap, statDay, scoreSample, ownerAlerts, WATCH, istHour, driverWatch, watchMsg, inclKm, enquiryFlood, OUTCAT, outCat, catBata, AHRS, AXH, aHours, planHours, hrsTable, AUTO_GOVT, AREA, autoFare, outsideArea, rentCheck, outCheck, tariffs, rentPrice, istStamp, commissionFor, settle, housekeeping, fareLooksWrong, liveStale, custPush, fareCheck, bookingLimit, nightPct, withNight, crowKm, LIMIT_OPEN, LIMIT_HOUR };
+
+// Wallet money moved by the office (owner): every change goes through the server with a ledger line.
+//  recharge: approve a driver's UPI recharge request once; one UTR can be credited only once, ever
+//  bonus   : the daily bonus from Office → Settings → Growth, once per driver per day, amount from the settings
+//  adjust  : owner's manual + / − with a reason
+const UTR_RE = /^\d{12}$/;
+const istDate = ms => new Date(+ms + 19800000).toISOString().slice(0, 10);
+function walletOpDecide(op, x) {
+  const kind = String(op && op.kind || ''), drv = x && x.drv, now = +(x && x.now) || 0;
+  if (kind === 'recharge') {
+    const r = x.rch;
+    if (!r) return { ok: false, why: 'no-recharge' };
+    if (r.status !== 'pending') return { ok: false, why: 'done' };
+    if (!drv) return { ok: false, why: 'no-driver' };
+    const amt = Math.round(n(r.amt));
+    if (!(amt >= 1 && amt <= 100000)) return { ok: false, why: 'bad-amount' };
+    if (!UTR_RE.test(String(r.utr || ''))) return { ok: false, why: 'bad-utr' };
+    if (x.utrUsed) return { ok: false, why: 'dup-utr', reject: true };
+    return { ok: true, delta: amt, type: 'recharge', utr: String(r.utr) };
+  }
+  if (!drv) return { ok: false, why: 'no-driver' };
+  if (kind === 'bonus') {
+    const b = (x.cfg && x.cfg.grow && x.cfg.grow.bonus) || {}, amt = Math.round(n(b.amt)), day = istDate(now);
+    if (b.on !== true || !(amt > 0) || amt > 5000) return { ok: false, why: 'bonus-off' };
+    if (drv.bonusPaid === day) return { ok: false, why: 'paid-today' };
+    return { ok: true, delta: amt, type: 'bonus', day };
+  }
+  if (kind === 'adjust') {
+    const amt = Number(op.amt), why = String(op.reason || '').trim();
+    if (typeof op.amt !== 'number' || !Number.isInteger(amt) || amt === 0 || Math.abs(amt) > 20000) return { ok: false, why: 'bad-amount' };
+    if (why.length < 3 || why.length > 120) return { ok: false, why: 'reason' };
+    return { ok: true, delta: amt, type: 'adjust', reason: why };
+  }
+  return { ok: false, why: 'bad-kind' };
+}
+module.exports = { UTR_RE, istDate, walletOpDecide, COUPON_RE, couponDecide, peakPct, meterCheck, REF_MAX, refAmt, referDecide, discTake, stFare, stFareOf, ST_R, takenNow, REPUSH, repushNow, REASSIGN, reassignCheck, SUBDUR, subActive, subPrice, buySubDecide, splitDriverTokens, ridePushData, placeName, BANDS, bandOf, demandMap, statDay, scoreSample, ownerAlerts, WATCH, istHour, driverWatch, watchMsg, inclKm, enquiryFlood, OUTCAT, outCat, catBata, AHRS, AXH, aHours, planHours, hrsTable, AUTO_GOVT, AREA, autoFare, outsideArea, rentCheck, outCheck, tariffs, rentPrice, istStamp, commissionFor, settle, housekeeping, fareLooksWrong, liveStale, custPush, fareCheck, bookingLimit, nightPct, withNight, crowKm, LIMIT_OPEN, LIMIT_HOUR };
