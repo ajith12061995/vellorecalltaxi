@@ -1920,9 +1920,10 @@ async function acceptCloud(){
     if(!J||J.id!==id)return;watchJob(id);pushLive(true);toPickup();
   }catch(e){
     // before giving up, look again: if the ride is this driver's after all, carry on with it
-    let b=null;try{const s=await F().getDoc(F().doc(CL.db,'bookings',id));if(s.exists())b={id,...s.data()}}catch(e2){}
+    let b=null;try{const s=await F().getDoc(F().doc(CL.db,'bookings',id));if(s.exists())b={id,...s.data()}}catch(e2){if(e2&&e2.code==='permission-denied')b={id,status:'other'}} // not readable = another driver's now
     SHOWING=null;
     if(b&&b.driverPhone===CL.phone&&(b.status==='assigned'||b.status==='ontrip')){if(!J||J.id!==id){stopJob();J=null;adoptJob(b)}else{J.b=b;watchJob(id);pushLive(true);if(b.status==='ontrip')onTrip();else if(b.arrivedAt)atPickup();else toPickup()}return}
+    if(b&&b.status!=='searching'&&!(e&&e.message==='busy'))e=new Error('taken'); // lost a race (the database said "try again"): someone else has it
     if(J&&J.id===id){MISS.set(id,{n:99});J=null;home();toast(e&&e.message==='taken'?L('இந்த ride-ஐ வேற driver எடுத்துட்டாங்க','Another driver took this ride'):e&&e.message==='busy'?busyTxt():CL.errText(e,S.lang==='ta'))}
   }finally{if(ACCBUSY===id)ACCBUSY=null}
 }

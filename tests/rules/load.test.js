@@ -50,7 +50,8 @@ async function accept(d, id) {
     drive(d, id);                                   // the winner drives it: start after a bit, finish later
     return true;
   } catch (e) {
-    const m = String(e && e.message || e);
+    let m = String(e && e.message || e);
+    if (m !== 'taken' && m !== 'busy') { let s = null, denied = false; try { s = await getDoc(doc(db, 'bookings', id)); } catch (e2) { denied = e2 && e2.code === 'permission-denied'; } if (denied || (s && s.exists() && s.data().status !== 'searching')) m = 'taken'; }  // = driver app: "already taken"
     if (m === 'taken') stats.lost++; else if (m === 'busy') stats.busy++; else stats.aborted++;
     return false;
   }
@@ -134,7 +135,7 @@ test(`load: ${N_DRV} drivers, ${N_BK} bookings in ${SPAN_MS / 1000} s, racing ac
   const r = {
     'total bookings': all.length, 'booking tries (incl. double taps and retries)': stats.createTries, 'double taps': stats.dupTaps,
     assigned, 'no driver (still searching → NO_DRIVER)': noDriver, 'started': stats.started, 'finished': stats.finished,
-    'accept attempts lost ("already taken")': stats.lost, 'refused: driver already has a ride not started': stats.busy, 'transaction gave up (contention)': stats.aborted,
+    'accept attempts lost ("already taken")': stats.lost, 'refused: driver already has a ride not started': stats.busy, 'other errors': stats.aborted,
     'cheat attempts refused': stats.cheatTried - stats.cheatAllowed + '/' + stats.cheatTried,
     'BOOKINGS WITH 2 DRIVERS': two + mism, 'DRIVERS WITH 2 RIDES NOT STARTED (or 2 on trip)': drv2, 'DUPLICATE BOOKINGS': dup,
     'seconds': Math.round((Date.now() - t0) / 1000),
