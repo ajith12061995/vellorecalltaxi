@@ -52,7 +52,7 @@
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('../vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV=window.VCT_V='149',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV=window.VCT_V='150',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('../version.json',location.href)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -673,20 +673,20 @@ a.btn{text-decoration:none}
 <div class="app" id="app"><section class="screen" id="splash"><div class="roofsign"><b>TAXI</b><span>வேலூர் டாக்ஸி</span></div><span class="drvtag">DRIVER</span><div class="road"></div><div class="tag">Vellore Taxi · Driver</div></section></div>
 <div class="toast" id="toast"></div>
 
-<script src="../core/report.js?v=149"></script>
-<script src="../core/geo.js?v=149"></script>
-<script src="../core/fare.js?v=149"></script>
-<script src="../core/appget.js?v=149"></script>
-<script src="../core/pin.js?v=149"></script>
-<script src="../core/clock.js?v=149"></script>
-<script src="../core/map.js?v=149"></script>
-<script src="../core/chat.js?v=149"></script>
-<script src="../core/driverchecks.js?v=149"></script>
-<script src="../core/nav.js?v=149"></script>
-<script src="../core/otp.js?v=149"></script>
-<script src="../core/deskmode.js?v=149"></script>
-<script src="../core/refer.js?v=149"></script>
-<script src="../core/weather.js?v=149"></script>
+<script src="../core/report.js?v=150"></script>
+<script src="../core/geo.js?v=150"></script>
+<script src="../core/fare.js?v=150"></script>
+<script src="../core/appget.js?v=150"></script>
+<script src="../core/pin.js?v=150"></script>
+<script src="../core/clock.js?v=150"></script>
+<script src="../core/map.js?v=150"></script>
+<script src="../core/chat.js?v=150"></script>
+<script src="../core/driverchecks.js?v=150"></script>
+<script src="../core/nav.js?v=150"></script>
+<script src="../core/otp.js?v=150"></script>
+<script src="../core/deskmode.js?v=150"></script>
+<script src="../core/refer.js?v=150"></script>
+<script src="../core/weather.js?v=150"></script>
 <script>
 /* shared with the customer app: icons, places, fares, map engine */
 /* small line icons (one stroke style everywhere; no emoji in the interface) */
@@ -731,7 +731,7 @@ const P = {
   katpadi:{ta:'காட்பாடி ஜங்ஷன்',en:'Katpadi Junction',sub:'Railway station',lat:12.9716,lon:79.1376,ic:'train'},
   vit:{ta:'VIT பல்கலைக்கழகம்',en:'VIT University',sub:'Katpadi',lat:12.9692,lon:79.1559,ic:'pin'},
   cmc:{ta:'CMC மருத்துவமனை',en:'CMC Hospital',sub:'Ida Scudder Road',lat:12.9246,lon:79.1356,ic:'hosp'},
-  newbus:{ta:'புதிய பேருந்து நிலையம்',en:'New Bus Stand',sub:'Vellore',lat:12.9349,lon:79.1435,ic:'pin'},
+  newbus:{ta:'புதிய பேருந்து நிலையம்',en:'New Bus Stand',sub:'Vellore',lat:12.9346,lon:79.1366,ic:'pin'},
   oldbus:{ta:'பழைய பேருந்து நிலையம்',en:'Old Bus Stand',sub:'Vellore town',lat:12.9180,lon:79.1330,ic:'pin'},
   fort:{ta:'வேலூர் கோட்டை',en:'Vellore Fort',sub:'Jalakandeswarar Temple',lat:12.9206,lon:79.1295,ic:'pin'},
   golden:{ta:'ஸ்ரீபுரம் தங்கக் கோவில்',en:'Sripuram Golden Temple',sub:'Thirumalaikodi',lat:12.8710,lon:79.0880,ic:'pin'},

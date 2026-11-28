@@ -111,7 +111,7 @@
 
   /* ---------- booking box ---------- */
   const PTS = {
-    katpadi: { ta: 'காட்பாடி ஜங்ஷன்', en: 'Katpadi Junction', lat: 12.9716, lon: 79.1376 }, newbus: { ta: 'புதிய பேருந்து நிலையம்', en: 'New Bus Stand', lat: 12.9349, lon: 79.1435 },
+    katpadi: { ta: 'காட்பாடி ஜங்ஷன்', en: 'Katpadi Junction', lat: 12.9716, lon: 79.1376 }, newbus: { ta: 'புதிய பேருந்து நிலையம்', en: 'New Bus Stand', lat: 12.9346, lon: 79.1366 },
     cmc: { ta: 'CMC மருத்துவமனை', en: 'CMC Hospital', lat: 12.9246, lon: 79.1356 }, vit: { ta: 'VIT பல்கலைக்கழகம்', en: 'VIT University', lat: 12.9692, lon: 79.1559 },
     oldbus: { ta: 'பழைய பேருந்து நிலையம்', en: 'Old Bus Stand', lat: 12.9180, lon: 79.1330 }, fort: { ta: 'வேலூர் கோட்டை', en: 'Vellore Fort', lat: 12.9206, lon: 79.1295 },
     golden: { ta: 'ஸ்ரீபுரம் பொற்கோவில்', en: 'Sripuram Golden Temple', lat: 12.8710, lon: 79.0880 }, sathu: { ta: 'சத்துவாச்சாரி', en: 'Sathuvachari', lat: 12.9370, lon: 79.1640 },
