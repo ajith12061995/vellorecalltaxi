@@ -1,0 +1,381 @@
+rules_version = '2';
+
+// Vellore Taxi — Firestore security rules, v2 (3 Nov 2026)
+// The previous version is kept in firestore.rules.v1-backup. Tests: tests/rules/ (run with the Firestore emulator).
+// Who is who (decided by the phone number used to log in):
+//   staff/{+91XXXXXXXXXX}   role: "owner" or "staff"   → office panel
+//   drivers/{+91XXXXXXXXXX}                            → driver app
+//   everyone else who logs in                          → customer app
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() { return request.auth != null; }
+    function phone()    { return request.auth.token.get('phone_number', ''); }
+    // Office logins. The owner works any time. A staff member works only while active and inside their own duty
+    // hours (staff/{ph}.shift = {from, to} in minutes after midnight, India time; a shift may cross midnight).
+    function staffDoc() { return get(/databases/$(database)/documents/staff/$(phone())).data; }
+    function hasStaff() { return signedIn() && phone() != '' && exists(/databases/$(database)/documents/staff/$(phone())); }
+    function istMin()   { return (request.time.hours() * 60 + request.time.minutes() + 330) % 1440; }
+    function inShift(sh) { return sh.from <= sh.to ? (istMin() >= sh.from && istMin() < sh.to) : (istMin() >= sh.from || istMin() < sh.to); }
+    function onDuty(st) { return st.get('active', true) != false && (!('shift' in st) || inShift(st.shift)); }
+    function isOwner()  { return hasStaff() && staffDoc().get('role', 'staff') == 'owner'; }
+    function isStaff()  { return hasStaff() && (staffDoc().get('role', 'staff') == 'owner' || onDuty(staffDoc())); }
+    function isDriver() { return signedIn() && phone() != '' && exists(/databases/$(database)/documents/drivers/$(phone())); }
+    function changes()  { return request.resource.data.diff(resource.data).affectedKeys(); }
+    function newData()  { return request.resource.data; }
+    function num(v, lo, hi) { return v is number && v >= lo && v <= hi; }
+    // ---- one ride at a time (28 Nov load safety): a driver holds at most two open rides in drivers/{ph}.act / .nxt,
+    // and never two that have not started. A slot is free when it is empty or its booking is finished, cancelled,
+    // back to searching, someone else's, or a pre-booked ride more than 45 minutes away.
+    function bk(id)      { return /databases/$(database)/documents/bookings/$(id); }
+    function slotFree(id) { return id == '' || !exists(bk(id)) || get(bk(id)).data.get('driverPhone', '') != phone()
+                              || !(get(bk(id)).data.status in ['assigned', 'arrived', 'ontrip'])
+                              || futureRide(get(bk(id)).data); }
+    function futureRide(b) { return b.get('when', 0) is number && b.get('when', 0) > request.time.toMillis() + 2700000; }
+    function slotBusyOk(id) { return slotFree(id) || get(bk(id)).data.status == 'ontrip'; }   // the other slot: free, or the ride in progress
+    function slotTake(k, o) { return newData().get(k, '') is string && (newData().get(k, '') == '' || newData().get(k, '') == resource.data.get(k, '')
+                              || (slotFree(resource.data.get(k, '')) && slotBusyOk(resource.data.get(o, ''))
+                                  && getAfter(bk(newData().get(k, ''))).data.get('driverPhone', '') == phone()
+                                  && getAfter(bk(newData().get(k, ''))).data.status == 'assigned')); }
+    function isBlocked() { return phone() != '' && exists(/databases/$(database)/documents/blocked/$(phone())); }
+
+    // Fares, commission, UPI ID, office phone, dispatch timings — everyone logged in reads, only the owner edits
+    match /config/{doc} {
+      allow read: if signedIn();
+      allow write: if isOwner();
+    }
+
+    // Blocked customer numbers (private): the office sees all, a customer only their own entry
+    match /blocked/{ph} {
+      allow read: if isStaff() || (signedIn() && phone() == ph);
+      allow write: if isOwner();
+    }
+
+    // Driver scorecard samples (minutes ON / with signal / on a job, server OFF count) — written only by the server
+    match /stats/{day} {
+      allow read: if isStaff();
+      allow write: if false;
+    }
+
+    // Office logins (name, role, active, shift). Personal details and resume / ID proof: owner only.
+    match /staff/{ph} {
+      allow read: if isStaff() || (signedIn() && phone() == ph);
+      allow write: if isOwner() && (ph != phone() || newData().get('role', 'staff') == 'owner')   // the owner cannot demote themselves
+        && (!('shift' in newData()) || (num(newData().shift.from, 0, 1439) && num(newData().shift.to, 0, 1439) && newData().shift.from != newData().shift.to));
+      allow delete: if isOwner() && ph != phone();
+      match /private/{doc} {
+        allow read, write: if isOwner();
+      }
+    }
+
+    // A staff member asks the owner (fare / bill change, extra km, block, other); only the owner decides
+    match /staffReq/{id} {
+      allow read: if isStaff();
+      allow create: if isStaff() && newData().by == phone() && newData().status == 'pending'
+        && newData().kind in ['fare', 'bill', 'block', 'other']
+        && newData().keys().hasOnly(['kind', 'by', 'byName', 'bk', 'bkId', 'drv', 'cust', 'cur', 'want', 'why', 'status', 'createdAt'])
+        && newData().why is string && newData().why.size() > 0 && newData().why.size() <= 500
+        && (!('want' in newData()) || num(newData().want, 0, 200000))
+        && newData().createdAt == request.time;
+      allow update: if isOwner() && resource.data.status == 'pending' && newData().status in ['approved', 'rejected']
+        && changes().hasOnly(['status', 'decidedBy', 'decidedAt', 'note']) && newData().decidedBy == phone();
+    }
+
+    // What each office login did (who, what, when). Written by the office app, read by the owner, never edited.
+    match /audit/{id} {
+      allow read: if isOwner();
+      allow create: if isStaff() && newData().by == phone()
+        && newData().keys().hasOnly(['by', 'byName', 'act', 'ref', 'txt', 'at'])
+        && newData().act is string && newData().act.size() <= 40
+        && newData().txt is string && newData().txt.size() <= 300
+        && newData().at == request.time;
+    }
+
+    // Customer profile (name, emergency contacts, saved places)
+    // referral credit (₹ off a later ride): written by the server only
+    match /credits/{ph} {
+      allow read: if isStaff() || (signedIn() && phone() == ph);
+      allow write: if false;
+    }
+    match /referrals/{uid} {
+      allow read: if isStaff();
+      allow write: if false;
+    }
+    match /users/{uid} {
+      allow read, write: if signedIn() && request.auth.uid == uid;
+      allow read: if isStaff();
+    }
+
+    // Driver record (wallet, documents, vehicle). Only the owner adds drivers or changes a wallet.
+    match /drivers/{ph} {
+      allow read: if isStaff() || (signedIn() && phone() == ph);
+      allow create, delete: if isOwner();
+      allow update: if isOwner() || (isStaff() && !changes().hasAny(['wallet', 'blocked', 'sub']))   // sub = subscription plan: server (buySub) or owner only
+        || (signedIn() && phone() == ph
+            && changes().hasOnly(['online', 'lat', 'lon', 'updatedAt', 'wallet', 'fcm', 'fcmAt', 'consent', 'dev', 'act', 'nxt', 'actAt'])
+            && (!('act' in changes()) || slotTake('act', 'nxt')) && (!('nxt' in changes()) || slotTake('nxt', 'act'))
+            // the phone's own setup, shown to the office: app version, permissions — short values and server time only
+            && (!('dev' in changes()) || (newData().dev is map && newData().dev.keys().hasOnly(['app', 'ovl', 'pwr', 'loc', 'notif', 'os', 'mk', 'at'])
+                && newData().dev.at == request.time
+                && newData().dev.get('app', '') is string && newData().dev.get('app', '').size() <= 20
+                && newData().dev.get('loc', '') is string && newData().dev.get('loc', '').size() <= 20
+                && newData().dev.get('notif', '') is string && newData().dev.get('notif', '').size() <= 20
+                && newData().dev.get('os', '') is string && newData().dev.get('os', '').size() <= 20
+                && newData().dev.get('mk', '') is string && newData().dev.get('mk', '').size() <= 30
+                && newData().dev.get('ovl', false) is bool && newData().dev.get('pwr', false) is bool))
+            // the driver signs the agreement in the app: own name, server time, nothing else
+            && (!('consent' in changes()) || (newData().consent.keys().hasOnly(['v', 'name', 'lang', 'ua', 'at'])
+                && newData().consent.v is string && newData().consent.name is string && newData().consent.name.size() <= 80
+                && newData().consent.at == request.time))
+            // a driver can only lower their own wallet (commission), never raise it
+            // ... and only while the server is not taking commission itself (config/app.serverComm)
+            && (!('wallet' in changes()) || (newData().wallet is number && newData().wallet < resource.data.wallet
+                && get(/databases/$(database)/documents/config/app).data.get('serverComm', false) != true))
+            // a blocked driver cannot go online
+            && (!('online' in changes()) || newData().online == false || resource.data.get('blocked', false) != true));
+    }
+
+    // Exact driver position, keyed by phone number. Readable only by the office, the driver,
+    // and the customer of the ride the driver is on (bk = that booking id, written by the driver's app).
+    function riderOf(ph) {
+      return signedIn() && resource.data.get('bk', '') is string && resource.data.get('bk', '') != ''
+        && get(/databases/$(database)/documents/bookings/$(resource.data.bk)).data.customerUid == request.auth.uid
+        && get(/databases/$(database)/documents/bookings/$(resource.data.bk)).data.driverPhone == ph;
+    }
+    match /live/{ph} {
+      allow read: if isStaff() || (signedIn() && phone() == ph) || riderOf(ph);
+      allow write: if isDriver() && phone() == ph
+        && newData().keys().hasOnly(['lat', 'lon', 'gh', 'online', 'busy', 'bk', 'veh', 'updatedAt', 'clock', 'name', 'plate', 'hd', 'sp', 'acc', 'bat', 'chg', 'pwr', 'pk', 'pkAt'])
+        // app 1.0.21: the last ride push this phone received (ride id) and when (server time)
+        && (!('pk' in newData()) || (newData().pk is string && newData().pk.size() <= 40))
+        && (!('pkAt' in newData()) || newData().pkAt is timestamp)
+        // app 1.0.19: battery %, charging, and "off" sent by the phone as it is being switched off
+        && (!('bat' in newData()) || (newData().bat is int && newData().bat >= 0 && newData().bat <= 100))
+        && newData().get('chg', false) is bool
+        && newData().get('pwr', 'on') in ['on', 'off']
+        && (!('bk' in newData()) || (newData().bk is string && newData().bk.size() <= 40))
+        // heading (-1 = not known), speed km/h, GPS accuracy m: shown on the office map and the rider's map
+        && num(newData().get('hd', 0), -1, 360) && num(newData().get('sp', 0), 0, 300) && num(newData().get('acc', 0), 0, 100000)
+        && (!('lat' in newData()) || num(newData().lat, -90, 90))
+        && (!('lon' in newData()) || num(newData().lon, -180, 180));
+    }
+
+    // Nearby cars for the customer map: keyed by the driver's login id (not the phone number), no name/plate
+    match /cars/{uid} {
+      allow read: if true; // no phone number or name here, position rounded to ~110 m: visitors see the vehicles around before signing in
+      allow create, update: if isDriver() && request.auth.uid == uid
+        && newData().keys().hasOnly(['lat', 'lon', 'gh', 'online', 'on', 'busy', 'veh', 'updatedAt', 'fAt', 'flat', 'flon', 'fgh'])
+        && newData().get('on', false) is bool
+        // "free soon" (only while a local trip is running): estimated time the vehicle becomes free + the drop AREA rounded to ~1 km
+        && newData().get('fAt', 0) is number
+        && num(newData().get('flat', 0), -90, 90) && num(newData().get('flon', 0), -180, 180)
+        && newData().get('fgh', '') is string && newData().get('fgh', '').size() <= 12
+        && num(newData().lat, -90, 90) && num(newData().lon, -180, 180)
+        && newData().gh is string && newData().gh.size() <= 12
+        && newData().online is bool && newData().busy is bool
+        && newData().veh is string && newData().veh.size() <= 12;
+      allow delete: if isDriver() && request.auth.uid == uid;
+    }
+
+    // Rides
+    match /bookings/{id} {
+      allow read: if isStaff()
+        || (signedIn() && resource.data.customerUid == request.auth.uid)
+        || (isDriver() && resource.data.driverPhone == phone())
+        || (isDriver() && resource.data.status == 'searching');
+
+      allow create: if isOwner()
+        // phone bookings by staff: no bill / commission / payment fields
+        || (isStaff() && newData().get('status', '') in ['searching', 'scheduled', 'assigned']
+            && !newData().keys().hasAny(['fareFinal', 'fx', 'comm', 'commLocal', 'billEdit', 'billOk', 'ledgerAt', 'doneAt', 'paidAt']))
+        || (signedIn() && newData().customerUid == request.auth.uid
+            && newData().get('src', '') == 'app'                 // so the server fare check and booking limits always apply
+            && newData().status in ['searching', 'scheduled']
+            && !isBlocked()
+            && num(newData().fare, 1, 200000)
+            && (!('tip' in newData()) || num(newData().tip, 0, 300))
+            && (!('disc' in newData()) || num(newData().disc, 0, 500))   // referral discount asked for; the server holds or drops it
+            && !newData().keys().hasAny(['driverPhone', 'driverName', 'assignedAt', 'startedAt', 'doneAt', 'fareFinal', 'fx', 'comm', 'commLocal', 'pinOk', 'ledgerAt',
+                                             'fareFlag', 'fareWas', 'kmWas', 'limitWhy', 'cancelledBy', 'dispatchedBy', 'tariffFixed', 'discHeld', 'discPaid', 'discBack']));
+
+      allow update: if isOwner()
+        // staff: dispatch work only (assign, re-open, start, cancel). Fare, bill, commission and payment: owner only.
+        || (isStaff() && changes().hasOnly(['status', 'cancelReason', 'cancelledBy', 'driverPhone', 'driverName', 'plate', 'vehModel', 'assignedAt', 'arrivedAt',
+                                            'startedAt', 'startedBy', 'pinTry', 'exclude', 'reopenedAt', 'dispatch', 'dispatchedAt', 'dispatchedBy', 'updatedAt'])
+            && newData().get('status', '') in ['searching', 'scheduled', 'assigned', 'arrived', 'ontrip', 'cancelled'])
+        // customer: cancel (before the trip starts), rate, tip, switch payment, confirm the PIN the driver typed
+        || (signedIn() && resource.data.customerUid == request.auth.uid
+            && changes().hasOnly(['status', 'cancelReason', 'pay', 'rating', 'tip', 'startedAt', 'updatedAt'])
+            && (!('tip' in changes()) || num(newData().tip, 0, 300))
+            && (!('rating' in changes()) || num(newData().rating, 0, 5))
+            && (newData().status == resource.data.status
+                || (newData().status == 'cancelled' && resource.data.status in ['searching', 'scheduled', 'assigned'])
+                || (resource.data.status == 'assigned' && newData().status == 'ontrip')))
+        // driver: accept a waiting ride (not if blocked, not one they already cancelled)
+        || (isDriver() && resource.data.status == 'searching'
+            && newData().status == 'assigned' && newData().driverPhone == phone()
+            && get(/databases/$(database)/documents/drivers/$(phone())).data.get('blocked', false) != true
+            && !(phone() in resource.data.get('exclude', []))
+            // the same write must put this ride in one of the driver's two slots (rules above), unless it is a pre-booking
+            // (phase 1 of 2: the slot is written by the new apps; it becomes required once every phone has the new page)
+            && changes().hasOnly(['status', 'driverPhone', 'driverName', 'plate', 'vehModel', 'assignedAt', 'updatedAt']))
+        // driver: progress their own ride, one step at a time
+        || (isDriver() && resource.data.driverPhone == phone()
+            && changes().hasOnly(['status', 'pay', 'pinTry', 'arrivedAt', 'startedAt', 'pinOk', 'doneAt', 'paidAt', 'custRating', 'cancelReason',
+                                  'fareFinal', 'fx', 'comm', 'commLocal', 'updatedAt'])
+            && ((resource.data.status in ['assigned', 'arrived'] && newData().status in ['assigned', 'arrived', 'ontrip', 'cancelled'])
+                || (resource.data.status == 'ontrip' && newData().status in ['ontrip', 'done'])
+                || (resource.data.status == 'done' && newData().status == 'done' && changes().hasOnly(['custRating', 'updatedAt'])))
+            // with the server PIN check on, only the server (verifyPin), the customer or the office starts an app ride
+            && (newData().status != 'ontrip' || resource.data.status == 'ontrip' || resource.data.get('customerUid', null) == null
+                || get(/databases/$(database)/documents/config/app).data.get('serverPin', false) != true)
+            && (!('fareFinal' in changes()) || num(newData().fareFinal, 0, resource.data.fare * 4 + 10000))
+            && (!('comm' in changes()) || (newData().comm is number && newData().comm >= 0 && newData().comm <= newData().get('fareFinal', resource.data.fare)))
+            && (!('custRating' in changes()) || num(newData().custRating, 0, 5)));
+
+      allow delete: if isOwner();
+
+      // Live chat between the customer and the driver of this ride (office can read)
+      match /chat/{msg} {
+        function bk() { return get(/databases/$(database)/documents/bookings/$(id)).data; }
+        allow read: if isStaff()
+          || (signedIn() && bk().customerUid == request.auth.uid)
+          || (isDriver() && bk().driverPhone == phone());
+        allow create: if bk().status in ['assigned', 'arrived', 'ontrip']
+          && newData().text is string
+          && newData().text.size() > 0 && newData().text.size() <= 300
+          && ((newData().from == 'c' && signedIn() && bk().customerUid == request.auth.uid)
+              || (newData().from == 'd' && isDriver() && bk().driverPhone == phone())
+              || (newData().from == 'o' && isStaff()));
+        allow delete: if isOwner();
+      }
+
+      // private/pin: only the customer and the office. private/contact (phone numbers): also the driver who
+      // accepted the ride, and only while it is running — drivers looking at a waiting ride never see the number
+      match /private/{doc} {
+        allow read, write: if isStaff()
+          || (signedIn() && get(/databases/$(database)/documents/bookings/$(id)).data.customerUid == request.auth.uid);
+        allow read: if doc == 'contact' && isDriver()
+          && get(/databases/$(database)/documents/bookings/$(id)).data.driverPhone == phone()
+          && get(/databases/$(database)/documents/bookings/$(id)).data.status in ['assigned', 'arrived', 'ontrip', 'done'];
+      }
+    }
+
+    // Commission ledger: one entry per finished trip, written only by the server (Cloud Functions)
+    match /ledger/{id} {
+      allow read: if isStaff() || (isDriver() && resource.data.driverPhone == phone());
+      allow write: if false;
+    }
+
+    // WhatsApp (Meta Cloud API): settings — owner only (test numbers and the phone id are not for every app user)
+    match /waConfig/{doc} {
+      allow read: if isStaff();
+      allow write: if isOwner() && doc == 'main'
+        && newData().keys().hasOnly(['on', 'phoneId', 'testTo', 'kinds', 'ver', 'updatedAt'])
+        && newData().on is bool
+        && (!('phoneId' in newData()) || (newData().phoneId is string && newData().phoneId.matches('^[0-9]{0,25}$')))
+        && (!('testTo' in newData()) || (newData().testTo is list && newData().testTo.size() <= 5))
+        && (!('kinds' in newData()) || (newData().kinds is list && newData().kinds.size() <= 5));
+    }
+    // message log and customer replies: written only by the server; the office reads them and marks replies seen
+    match /waLog/{id} {
+      allow read: if isStaff();
+    }
+    match /waInbox/{id} {
+      allow read: if isStaff();
+      allow update: if isStaff() && newData().diff(resource.data).affectedKeys().hasOnly(['seen']) && newData().seen is bool;
+    }
+
+    // Public website (velloretaxi.app/vellore/): anyone can read; only the owner changes it from Office → Settings.
+    //   public/site   = contact numbers, address, places (text); siteImg/{id} = one place photo (compressed JPEG, < 900 KB)
+    //   public/prices = a copy of the price fields of config/app (config/app itself also holds private data)
+    match /public/{doc} {
+      allow read: if true;
+      allow write: if isOwner() && (
+        (doc == 'site' && newData().keys().hasOnly(['phone', 'driverPhone', 'whatsapp', 'email', 'address', 'places', 'updatedAt'])
+          && (!('places' in newData()) || (newData().places is list && newData().places.size() <= 24)))
+        || (doc == 'prices' && newData().keys().hasOnly(['fares', 'out', 'rent', 'night', 'area', 'stf', 'updatedAt'])
+            && (!('stf' in newData()) || (newData().stf is list && newData().stf.size() <= 40))));
+    }
+    match /siteImg/{id} {
+      allow read: if true;
+      allow create, update: if isOwner() && newData().keys().hasOnly(['data', 'at'])
+        && newData().data is string && newData().data.size() < 900000 && newData().data.matches('^data:image/(jpeg|webp);base64,[A-Za-z0-9+/=]+$');
+      allow delete: if isOwner();
+    }
+    // Website contact form: anyone may send one enquiry (checked fields only); the office reads and handles them
+    match /enquiries/{id} {
+      allow create: if newData().keys().hasOnly(['name', 'phone', 'kind', 'msg', 'status', 'src', 'createdAt'])
+        && newData().name is string && newData().name.size() >= 2 && newData().name.size() <= 60
+        && newData().phone is string && newData().phone.matches('^[6-9][0-9]{9}$')
+        && newData().kind in ['ride', 'outstation', 'rental', 'event', 'corporate', 'driver', 'other']
+        && newData().msg is string && newData().msg.size() <= 500
+        && newData().status == 'open' && newData().src == 'web' && newData().createdAt == request.time;
+      allow read: if isStaff();
+      allow update: if isStaff() && newData().diff(resource.data).affectedKeys().hasOnly(['status', 'note', 'handledBy', 'updatedAt'])
+        && newData().status in ['open', 'progress', 'closed'];
+      allow delete: if isOwner();
+    }
+
+    // Driver applications from the "join" page — the applicant fills it, the owner approves
+    match /driverApps/{ph} {
+      allow read: if isStaff() || (signedIn() && phone() == ph);
+      allow create: if (signedIn() && phone() == ph && newData().status == 'pending')
+        // the owner files the documents for a driver who cannot use the join form (photos sent on WhatsApp)
+        || (isOwner() && newData().status == 'approved' && newData().src == 'office');
+      allow update: if isStaff()
+        || (signedIn() && phone() == ph && resource.data.status in ['pending', 'rejected']
+            && newData().status == 'pending');
+      allow delete: if isOwner();
+      match /files/{kind} {
+        allow read: if isStaff() || (signedIn() && phone() == ph);
+        // only the document slots of the join form (stops anyone filling the database with unlimited photos)
+        allow create, update: if ((signedIn() && phone() == ph) || isOwner())
+          && kind in ['photo', 'aadhaarF', 'aadhaarB', 'panF', 'dlF', 'dlB', 'rcF', 'rcB', 'ins', 'permit', 'permitB', 'fc', 'vehF', 'vehIn', 'pcc', 'agreeDoc', 'dl', 'rc']
+          && newData().data is string && newData().data.size() < 1000000;
+        allow delete: if isOwner();
+      }
+    }
+
+    // Driver wallet recharge requests (UPI + UTR) — the owner approves each one once
+    match /recharges/{id} {
+      allow read: if isStaff() || (signedIn() && resource.data.driverPhone == phone());
+      allow create: if isDriver() && newData().driverPhone == phone()
+        && newData().status == 'pending' && num(newData().amt, 1, 100000);
+      allow update: if isOwner() && resource.data.status == 'pending' && newData().status in ['approved', 'rejected'];
+    }
+
+    // Call me back, complaints, lost items, SOS
+    match /tickets/{id} {
+      allow read: if isStaff() || (signedIn() && resource.data.uid == request.auth.uid);
+      allow create: if signedIn() && newData().uid == request.auth.uid
+        && (!('note' in newData()) || (newData().note is string && newData().note.size() <= 1000));
+      allow update: if isStaff();
+    }
+
+    // App error reports (monitoring): anyone can send a small report, only the office reads them
+    // account deletion requests (written only by the deleteMyAccount function); the office reads and closes them
+    match /deletionRequests/{ph} {
+      allow read, update: if isStaff();
+    }
+    // Booking funnel (customer app): one small anonymous row per step of a visit — no name, phone or uid
+    match /events/{id} {
+      allow create: if newData().keys().hasOnly(['app', 'v', 'step', 'sid', 'src', 'at'])
+        && newData().app == 'customer'
+        && newData().step in ['open', 'home', 'fare', 'login', 'book', 'booked', 'driver', 'done', 'nodriver']
+        && newData().sid is string && newData().sid.size() >= 6 && newData().sid.size() <= 24
+        && newData().src is string && newData().src.size() <= 20
+        && newData().v is string && newData().v.size() <= 8
+        && newData().at is number;
+      allow read: if isStaff();
+      allow delete: if isOwner();
+    }
+
+    match /errors/{id} {
+      allow create: if newData().keys().hasOnly(['app', 'v', 'msg', 'src', 'line', 'ua', 'at', 'who'])
+        && newData().msg is string && newData().msg.size() <= 1000;
+      allow read: if isStaff();
+      allow delete: if isOwner();
+    }
+  }
+}
