@@ -145,6 +145,7 @@ public class RideOverlayPlugin extends Plugin {
         final String[] r = { call.getString("veh", ""), call.getString("pay", ""), call.getString("pkm", ""), call.getString("pname", ""), call.getString("psub", ""),
                 call.getString("dkm", ""), call.getString("dname", ""), call.getString("dsub", ""), call.getString("extra", "") };
         RideFallback.handled(id);   // the page rang it: the phone does not ring it a second time
+        if (id.length() > 0 && id.equals(ringId) && timeout != null) { call.resolve(); return; }   // 1.0.23: already ringing (the phone rang it first): no restart
         Bundle bd = new Bundle();
         bd.putString("id", id); bd.putString("title", title); bd.putString("line1", l1); bd.putString("line2", l2); bd.putString("fare", fare);
         bd.putString("accept", acc); bd.putString("open", open); bd.putInt("secs", secs);
@@ -173,6 +174,13 @@ public class RideOverlayPlugin extends Plugin {
         }
         timeout = this::endRing;
         main.postDelayed(timeout, secs * 1000L);
+    }
+
+    /** 1.0.23: the server says this ride is not for this driver after all (taken, cancelled, busy): stop ringing it */
+    static void cancelRing(String id) {
+        RideOverlayPlugin p = inst;
+        if (p != null) p.main.post(() -> { if (id != null && id.equals(p.ringId)) p.endRing(); });
+        else { RideFallback.stopTone(); }
     }
 
     /** 1.0.20: the phone rings a ride by itself (RideFallback) — the page did not answer the push in time */

@@ -135,8 +135,12 @@ adb shell dumpsys deviceidle force-idle 2>/dev/null | head -1
 adb shell dumpsys deviceidle tempwhitelist -d 60000 $PKG >/dev/null 2>&1   # what a high-priority push grants the app
 cmd push-deaf1; waitlog '^push=sent:push-deaf1' 20 || bad "deaf push not queued"
 adb shell input keyevent KEYCODE_SLEEP; sleep 3
-for i in $(seq 1 40); do adb logcat -d | grep -q "RideFallback: fallback ring push-deaf1" && break; sleep 1; done
-adb logcat -d | grep -q "RideFallback: fallback ring push-deaf1" && ok "page silent (asleep): the phone read the ride and rang by itself" || { bad "no fallback ring"; adb logcat -d | grep -E "RideFallback|NativeLive|VctPush" | tail -15; }
+for i in $(seq 1 40); do adb logcat -d | grep -q "RideFallback: fast ring push-deaf1" && break; sleep 1; done
+adb logcat -d | grep -q "RideFallback: fast ring push-deaf1" && ok "phone locked: the phone rang the pushed ride by itself at once" || { bad "no fast ring"; adb logcat -d | grep -E "RideFallback|NativeLive|VctPush" | tail -15; }
+# 1.0.23: how long from the push reaching the phone to the ring (owner saw 7–9 s with 1.0.22)
+T0=$(adb logcat -d -v epoch | grep -m1 "VctPush: ride push-deaf1" | awk '{print $1}'); T1=$(adb logcat -d -v epoch | grep -m1 "RideFallback: fast ring push-deaf1" | awk '{print $1}')
+MS=$(python3 -c "print(int((float('${T1:-0}')-float('${T0:-0}'))*1000))" 2>/dev/null); echo "push→ring ${MS} ms (T0=$T0 T1=$T1)"
+[ -n "$T0" ] && [ -n "$T1" ] && [ "${MS:-99999}" -lt 1500 ] && ok "push to ring in ${MS} ms (under 1.5 s)" || bad "push to ring too slow or not measured: ${MS} ms"
 grep '^commit=' "$LOG" | grep -q '"pk":{"stringValue":"push-deaf1"}' && grep '^commit=' "$LOG" | grep 'push-deaf1' | grep -q '"fieldPath":"pkAt","setToServerValue":"REQUEST_TIME"' && ok "the phone told the server it got the push (pk + server time)" || bad "no push receipt: $(grep '^commit=' "$LOG" | grep -o '"pk"[^}]*}' | tail -1)"
 grep -q '^read=Bearer idt-test push-deaf1' "$LOG" && ok "it read the ride from the server, signed in as the driver (rules apply)" || bad "ride not read: $(grep '^read=' "$LOG" | tail -1)"
 grep '^query=' "$LOG" | tail -1 | grep -q '"driverPhone"' && ok "it checked the driver is not already on a ride" || bad "no busy check"
@@ -151,9 +155,9 @@ adb shell input keyevent KEYCODE_HOME; sleep 2; adb logcat -c
 adb shell dumpsys deviceidle tempwhitelist -d 60000 $PKG >/dev/null 2>&1
 cmd push-gone2; waitlog '^push=sent:push-gone2' 20 || bad "gone push not queued"
 adb shell input keyevent KEYCODE_SLEEP; sleep 3
-for i in $(seq 1 30); do adb logcat -d | grep -q "RideFallback: no ring push-gone2" && break; sleep 1; done
-adb logcat -d | grep -q "RideFallback: no ring push-gone2: status:assigned" && ok "ride already taken by someone else: the phone does not ring" || { bad "taken ride: wrong decision"; adb logcat -d | grep RideFallback | tail -5; }
-awake && bad "screen turned on for a taken ride" || ok "screen stays off for it"
+for i in $(seq 1 30); do adb logcat -d | grep -q "RideFallback: fast ring cancelled push-gone2" && break; sleep 1; done
+adb logcat -d | grep -q "RideFallback: fast ring cancelled push-gone2: status:assigned" && ok "ride already taken: the server check stops the ring at once" || { bad "taken ride: ring not stopped"; adb logcat -d | grep RideFallback | tail -5; }
+sleep 2; t=$(topact); echo "$t" | grep -q RideRingActivity && bad "ride screen still up for a taken ride" || ok "ride screen gone for the taken ride"
 adb shell input keyevent KEYCODE_WAKEUP; adb shell wm dismiss-keyguard >/dev/null 2>&1; sleep 1; adb shell input keyevent KEYCODE_HOME; sleep 2; adb logcat -c
 adb shell dumpsys deviceidle tempwhitelist -d 60000 $PKG >/dev/null 2>&1
 cmd push-far3; waitlog '^push=sent:push-far3' 20 || bad "far push not queued"
@@ -176,12 +180,12 @@ echo "$L2" | grep -q '"fcm":{"stringValue":"tok-native-1"}' && echo "$L2" | grep
 adb shell input keyevent KEYCODE_HOME; sleep 2; adb logcat -c
 adb shell input keyevent KEYCODE_SLEEP; sleep 2
 touch tests/android/poll.flag
-for i in $(seq 1 45); do adb logcat -d | grep -q "RideFallback: fallback ring poll-1" && break; sleep 1; done
+for i in $(seq 1 45); do adb logcat -d | grep -q "RideFallback: fast ring poll-1" && break; sleep 1; done
 adb logcat -d | grep -q "NativeLive: poll found poll-1" && ok "no push at all: the phone found the waiting ride itself" || { bad "phone lookup did not find the ride"; adb logcat -d | grep -E "NativeLive|RideFallback" | tail -8; }
-adb logcat -d | grep -q "RideFallback: fallback ring poll-1" && ok "...and rang it over the lock screen" || bad "found but not rung"
+adb logcat -d | grep -q "RideFallback: fast ring poll-1" && ok "...and rang it over the lock screen" || bad "found but not rung"
 sleep 2; t=$(topact); echo "$t" | grep -q RideRingActivity && ok "ride screen in front (no push)" || bad "ride screen not in front"
 adb exec-out screencap -p > "$OUT/ring-5-poll.png" 2>/dev/null
-sleep 20; n=$(adb logcat -d | grep -c "RideFallback: fallback ring poll-1"); [ "$n" -eq 1 ] && ok "the same waiting ride is rung once, not every lookup" || bad "rung $n times"
+sleep 20; n=$(adb logcat -d | grep -c "RideFallback: fast ring poll-1"); [ "$n" -eq 1 ] && ok "the same waiting ride is rung once, not every lookup" || bad "rung $n times"
 rm -f tests/android/poll.flag
 tap_text "Later" >/dev/null; adb shell input keyevent KEYCODE_WAKEUP; adb shell wm dismiss-keyguard >/dev/null 2>&1; sleep 2
 

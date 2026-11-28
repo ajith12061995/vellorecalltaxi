@@ -34,7 +34,7 @@ public class VctMessagingService extends MessagingService {
         String type = d == null ? null : d.get("type");
         if (type == null || !(type.equals("ride") || type.equals("wake"))) return;
         boolean on = DutyService.isOn(c);
-        Log.i("VctPush", type + " on=" + on + " visible=" + DutyService.appVisible);
+        Log.i("VctPush", type + " " + d.get("bookingId") + " on=" + on + " visible=" + DutyService.appVisible);
         if (!on) return;
         if ("ride".equals(type)) NativeLive.get(c).pushSeen(d.get("bookingId"));   // 1.0.21: tell the server this phone got it
         JSObject o = new JSObject(); for (Map.Entry<String, String> e : d.entrySet()) o.put(e.getKey(), e.getValue());

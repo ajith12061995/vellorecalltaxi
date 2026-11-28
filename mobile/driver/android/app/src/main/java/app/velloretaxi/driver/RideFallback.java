@@ -27,7 +27,7 @@ import java.util.Map;
  */
 public class RideFallback {
     static final String TAG = "RideFallback";
-    static long WAIT_MS = 7000;            // how long the page gets to answer first
+    static long WAIT_MS = 3000;            // phone in use (unlocked): how long the page gets to answer first (1.0.23: was 7 s)
     static final long WAVE_MS = 25000;     // 3–4 km drivers get the ride 25 s after it was booked (as the page does)
     private static volatile String handledId = "";
     private static final java.util.Set<String> INFLIGHT = new java.util.HashSet<>();
@@ -49,6 +49,27 @@ public class RideFallback {
             PowerManager.WakeLock wl = null;
             try { wl = ((PowerManager) a.getSystemService(Context.POWER_SERVICE)).newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "vct:ride"); wl.acquire(45000); } catch (Exception e) { wl = null; }
             try {
+                // 1.0.23: phone locked / screen off — like an incoming call, ring at once (the page cannot show it anyway).
+                // Only what the phone knows by itself is checked first (the vehicle's distance, ride kind); the server
+                // check runs right after, and the ring stops if the ride is not for this driver after all.
+                if (RideRingActivity.locked(a) && !id.equals(handledId) && DutyService.isOn(a)) {
+                    String local = localCheck(d);
+                    if (local == null) {
+                        Log.i(TAG, "fast ring " + id);
+                        RideOverlayPlugin.nativeRing(a, bundle(d), say(d, true), say(d, false));
+                        String why = NativeLive.get(a).checkRide(id);
+                        // a network or sign-in problem keeps it ringing (better than a missed ride); 403 = no longer open to this driver (taken)
+                        boolean unsure = why == null || why.startsWith("wait:") || why.startsWith("error:") || why.equals("token") || why.equals("no sign-in")
+                                || (why.startsWith("read:") && !why.equals("read:403")) || why.startsWith("busy?:");
+                        if (!unsure) {
+                            Log.i(TAG, "fast ring cancelled " + id + ": " + why);
+                            RideOverlayPlugin.cancelRing(id);
+                        }
+                        return;
+                    }
+                    Log.i(TAG, "no fast ring " + id + ": " + local);
+                    if (!local.startsWith("wait")) return;
+                }
                 if (waitPage(id, WAIT_MS)) { Log.i(TAG, "page handled " + id); return; }
                 for (int round = 0; round < 2; round++) {
                     if (!DutyService.isOn(a)) { Log.i(TAG, "off " + id); return; }
@@ -68,6 +89,18 @@ public class RideFallback {
             } catch (Exception e) { Log.w(TAG, "fallback", e); }
             finally { synchronized (INFLIGHT) { INFLIGHT.remove(id); } try { if (wl != null && wl.isHeld()) wl.release(); } catch (Exception e) { /* released */ } }
         }, "vct-ride").start();
+    }
+
+    /** what the phone can check without the network: null = ring now; "wait" = 3–4 km (its turn comes later); else why not */
+    static String localCheck(Map<String, String> d) {
+        String kind = g(d, "kind");
+        if ("outstation".equals(kind) || "rental".equals(kind)) return "kind:" + kind;
+        double km = NativeLive.lastKm(g(d, "flat"), g(d, "flon"));
+        if (km < 0) return null;                       // position or pickup unknown: ring (better than a missed ride)
+        if (km > NativeLive.R2) return "far:" + Math.round(km * 10) / 10.0;
+        double tip = 0; try { tip = Double.parseDouble(g(d, "tip")); } catch (Exception e) { /* none */ }
+        if (km > NativeLive.R1 && tip <= 0) return "wait";
+        return null;
     }
 
     private static boolean waitPage(String id, long ms) throws InterruptedException {
