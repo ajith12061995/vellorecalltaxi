@@ -361,3 +361,26 @@ test('walletOp: owner only; a recharge credited once with a ledger line; one UTR
   const lj = (await db.doc(`ledger/${j.result.ledgerId}`).get()).data(); assert.equal(lj.type, 'adjust'); assert.equal(lj.amt, -50); assert.equal(lj.reason, 'Toll refund wrong');
   assert.equal((await call('walletOp', { kind: 'adjust', driverPhone: '+919999999990', amt: 5, reason: 'x y z' }, oTok)).result.why, 'no-driver');
 });
+
+test('loginCheck: driver app refuses unknown / blocked numbers before any SMS; 5 an hour per number and per device; nativeLogin swaps a phone token', async () => {
+  const LD = '+919999900080', LB = '+919999900081', LA = '+919999900082';
+  await db.doc(`drivers/${LD}`).set({ name: 'Login', veh: 'auto', wallet: 0 });
+  await db.doc(`drivers/${LB}`).set({ name: 'Blocked', veh: 'auto', wallet: 0, blocked: true, blockWhy: 'Insurance expired' });
+  await db.doc(`driverApps/${LA}`).set({ status: 'pending' });
+  const c = async d => (await call('loginCheck', d)).result;
+  assert.deepEqual(await c({ phone: '12345', app: 'driver' }), { ok: false, why: 'invalid-phone' });
+  const u = await c({ phone: '9999900083', app: 'driver', dev: 'devA' }); assert.equal(u.why, 'unregistered'); assert.match(u.office, /^\d{10}$/);
+  const bl = await c({ phone: '9999900081', app: 'driver', dev: 'devA' }); assert.equal(bl.why, 'blocked'); assert.equal(bl.reason, 'Insurance expired');
+  assert.equal((await c({ phone: '9999900082', app: 'driver', dev: 'devB' })).ok, true, 'an applicant may log in');
+  for (let i = 0; i < 5; i++) assert.equal((await c({ phone: '9999900080', app: 'driver', dev: 'devC' + i })).ok, true);
+  const r6 = await c({ phone: '9999900080', app: 'driver', dev: 'devZ' }); assert.equal(r6.why, 'rate'); assert.ok(r6.wait > 3000);
+  for (let i = 0; i < 5; i++) assert.equal((await c({ phone: '98765000' + (10 + i), app: 'customer', dev: 'devSame' })).ok, true);
+  assert.equal((await c({ phone: '9876500020', app: 'customer', dev: 'devSame' })).why, 'rate', 'same device, 6th number');
+  assert.equal((await c({ phone: '9876500020', app: 'customer', dev: 'devOther' })).ok, true);
+  const rate = (await db.doc('otpRate/+919999900080').get()).data(); assert.equal(rate.t.length, 5);
+  // instant verification: a phone ID token → a custom token for the same user
+  const tok = await phoneToken('+919999900084'), uid = JSON.parse(Buffer.from(tok.split('.')[1], 'base64url').toString()).user_id;
+  const nl = await call('nativeLogin', { idToken: tok }); assert.ok(nl.result && nl.result.token, JSON.stringify(nl));
+  assert.equal(JSON.parse(Buffer.from(nl.result.token.split('.')[1], 'base64url').toString()).uid, uid);
+  assert.ok((await call('nativeLogin', { idToken: 'junk' })).error, 'a bad token is refused');
+});

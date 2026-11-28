@@ -654,3 +654,17 @@ test('coupons: only the owner makes codes (valid values only); customers read on
   await assertSucceeds(addDoc(collection(as.cust(), 'bookings'), booking({ tariff: { t: 'local' }, coupon: 'VELLORE50', disc: 50 })));
   await assertFails(addDoc(collection(as.cust(), 'bookings'), booking({ tariff: { t: 'local' }, coupon: 'VELLORE50', discSrc: 'coupon' })), 'cannot mark the coupon as accepted');
 });
+
+test('2-tap login: a driver writes only a sane session id; staff cannot block or write the reason; OTP counters are server-only', async () => {
+  await assertSucceeds(updateDoc(doc(as.drv(), 'drivers', DRV), { sess: 'abcdefgh12345678' }));
+  await assertFails(updateDoc(doc(as.drv(), 'drivers', DRV), { sess: 'x' }), 'too short');
+  await assertFails(updateDoc(doc(as.drv(), 'drivers', DRV), { sess: 'abc def ghi jkl' }), 'odd characters');
+  await assertFails(updateDoc(doc(as.drv2(), 'drivers', DRV), { sess: 'abcdefgh12345678' }), 'not another driver');
+  await assertFails(updateDoc(doc(as.drv(), 'drivers', DRV), { blockWhy: '' }));
+  await assertFails(updateDoc(doc(as.staff(), 'drivers', DRV), { blockWhy: 'x' }));
+  await assertSucceeds(updateDoc(doc(as.owner(), 'drivers', DRV), { blocked: true, blockWhy: 'Insurance expired' }));
+  for (const who of ['owner', 'staff', 'drv', 'cust']) {
+    await assertFails(getDoc(doc(as[who](), 'otpRate', '+919999900002')), who);
+    await assertFails(setDoc(doc(as[who](), 'otpRate', '+919999900002'), { t: [] }), who);
+  }
+});

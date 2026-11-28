@@ -403,3 +403,19 @@ test('walletOpDecide: recharge once, one UTR once, bonus from settings once a da
   assert.equal(L.walletOpDecide({ kind: 'x' }, { drv }).why, 'bad-kind');
   assert.equal(L.istDate(Date.UTC(2026, 10, 28, 18, 31)), '2026-11-29', 'after 18:30 UTC it is the next IST day');
 });
+
+test('loginDecide: 5 OTPs per number and device per hour; driver app only office-added or applicants, never blocked', () => {
+  const now = 1e10, H = 3600e3;
+  assert.deepEqual(L.loginDecide({ app: 'customer', now, hits: [], devHits: [] }), { ok: true, hits: [now], devHits: [now] });
+  const four = [now - 1, now - 2, now - 3, now - 4];
+  assert.equal(L.loginDecide({ app: 'customer', now, hits: four, devHits: [] }).ok, true);
+  const five = [now - 10e3, now - 20e3, now - 30e3, now - 40e3, now - 50e3];
+  const r = L.loginDecide({ app: 'customer', now, hits: five, devHits: [] }); assert.equal(r.why, 'rate'); assert.equal(r.wait, 3550);
+  assert.equal(L.loginDecide({ app: 'customer', now, hits: [], devHits: five }).why, 'rate', 'per device too');
+  assert.equal(L.loginDecide({ app: 'customer', now, hits: five.map(t => t - H), devHits: [] }).ok, true, 'older than an hour do not count');
+  assert.equal(L.loginDecide({ app: 'driver', now, drv: null, hits: [] }).why, 'unregistered');
+  assert.equal(L.loginDecide({ app: 'driver', now, drv: null, appl: true, hits: [] }).ok, true);
+  assert.deepEqual(L.loginDecide({ app: 'driver', now, drv: { blocked: true, blockWhy: 'Docs' }, hits: [] }), { ok: false, why: 'blocked', reason: 'Docs' });
+  assert.equal(L.loginDecide({ app: 'driver', now, drv: { blocked: true }, hits: five }).why, 'blocked', 'the reason before the rate');
+  assert.equal(L.loginDecide({ app: 'driver', now, drv: { name: 'x' }, hits: five }).why, 'rate');
+});

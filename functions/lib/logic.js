@@ -500,4 +500,19 @@ function walletOpDecide(op, x) {
   }
   return { ok: false, why: 'bad-kind' };
 }
-module.exports = { UTR_RE, istDate, walletOpDecide, COUPON_RE, couponDecide, peakPct, meterCheck, REF_MAX, refAmt, referDecide, discTake, stFare, stFareOf, ST_R, takenNow, REPUSH, repushNow, REASSIGN, reassignCheck, SUBDUR, subActive, subPrice, buySubDecide, splitDriverTokens, ridePushData, placeName, BANDS, bandOf, demandMap, statDay, scoreSample, ownerAlerts, WATCH, istHour, driverWatch, watchMsg, inclKm, enquiryFlood, OUTCAT, outCat, catBata, AHRS, AXH, aHours, planHours, hrsTable, AUTO_GOVT, AREA, autoFare, outsideArea, rentCheck, outCheck, tariffs, rentPrice, istStamp, commissionFor, settle, housekeeping, fareLooksWrong, liveStale, custPush, fareCheck, bookingLimit, nightPct, withNight, crowKm, LIMIT_OPEN, LIMIT_HOUR };
+
+// 2-tap login: may this phone get an OTP now? (callable loginCheck, before any SMS is sent)
+//  - at most 5 OTPs per number and 5 per device in any hour (SMS cost, abuse)
+//  - driver app: only numbers in drivers/ (added by the office) or with an application; blocked → the reason, no OTP
+const OTP_MAX = 5, OTP_WIN = 3600e3;
+function loginDecide(x) {
+  const now = +x.now || 0, win = a => (a || []).map(Number).filter(t => now - t < OTP_WIN).sort((a, b) => a - b);
+  const h = win(x.hits), d = win(x.devHits);
+  if (x.app === 'driver') {
+    if (!x.drv && !x.appl) return { ok: false, why: 'unregistered' };   // an applicant may log in to see the application
+    if (x.drv && x.drv.blocked) return { ok: false, why: 'blocked', reason: String(x.drv.blockWhy || '').slice(0, 200) };
+  }
+  for (const a of [h, d]) if (a.length >= OTP_MAX) return { ok: false, why: 'rate', wait: Math.ceil((a[a.length - OTP_MAX] + OTP_WIN - now) / 1000) };
+  return { ok: true, hits: h.concat(now), devHits: d.concat(now) };
+}
+module.exports = { OTP_MAX, loginDecide, UTR_RE, istDate, walletOpDecide, COUPON_RE, couponDecide, peakPct, meterCheck, REF_MAX, refAmt, referDecide, discTake, stFare, stFareOf, ST_R, takenNow, REPUSH, repushNow, REASSIGN, reassignCheck, SUBDUR, subActive, subPrice, buySubDecide, splitDriverTokens, ridePushData, placeName, BANDS, bandOf, demandMap, statDay, scoreSample, ownerAlerts, WATCH, istHour, driverWatch, watchMsg, inclKm, enquiryFlood, OUTCAT, outCat, catBata, AHRS, AXH, aHours, planHours, hrsTable, AUTO_GOVT, AREA, autoFare, outsideArea, rentCheck, outCheck, tariffs, rentPrice, istStamp, commissionFor, settle, housekeeping, fareLooksWrong, liveStale, custPush, fareCheck, bookingLimit, nightPct, withNight, crowKm, LIMIT_OPEN, LIMIT_HOUR };

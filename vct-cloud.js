@@ -2,7 +2,7 @@
 // Loaded as a module; resolves window.__cloud(api). If anything fails the apps fall back to demo mode.
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
 import {
-  getAuth, RecaptchaVerifier, signInWithPhoneNumber, onAuthStateChanged, signOut,
+  getAuth, RecaptchaVerifier, signInWithPhoneNumber, onAuthStateChanged, signOut, PhoneAuthProvider, signInWithCredential, signInWithCustomToken,
   GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult,
 } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
 import {
@@ -24,10 +24,15 @@ if (VCT_ENV === 'staging' && typeof document !== 'undefined') {
 // App Check first, so every database / function call carries the proof that it comes from our site.
 // Loaded only when a site key is set; a failure here never stops the app (the server decides what to enforce).
 let appCheckOn = false;
-if (APPCHECK_SITE_KEY) {
+// Inside the Play Store app (2-tap login build) the proof comes from Google Play Integrity through the VctAuth plugin.
+const natAuth = (() => { try { const C = window.Capacitor; return C && C.isNativePlatform && C.isNativePlatform() && C.isPluginAvailable && C.isPluginAvailable('VctAuth') ? C.Plugins.VctAuth : null; } catch (e) { return null; } })();
+if (APPCHECK_SITE_KEY || natAuth) {
   try {
     const ac = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-app-check.js');
-    ac.initializeAppCheck(app, { provider: new ac.ReCaptchaEnterpriseProvider(APPCHECK_SITE_KEY), isTokenAutoRefreshEnabled: true });
+    const provider = natAuth
+      ? new ac.CustomProvider({ getToken: async () => { const t = await natAuth.appCheck(); return { token: t.token, expireTimeMillis: t.exp }; } })
+      : new ac.ReCaptchaEnterpriseProvider(APPCHECK_SITE_KEY);
+    ac.initializeAppCheck(app, { provider, isTokenAutoRefreshEnabled: true });
     appCheckOn = true;
   } catch (e) { console.warn('app check', e); }
 }
@@ -39,7 +44,7 @@ let db;
 try { db = initializeFirestore(app, { localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }) }); }
 catch (e) { console.warn('offline cache off', e); db = getFirestore(app); }
 
-let verifier = null, confirmation = null, verifierUsed = false, verifierReady = null;
+let natVid = null, verifier = null, confirmation = null, verifierUsed = false, verifierReady = null;
 function recaptchaBox() {
   let el = document.getElementById('vct-recaptcha');
   if (!el) { el = document.createElement('div'); el.id = 'vct-recaptcha'; el.style.cssText = 'position:fixed;left:0;bottom:0;z-index:99'; document.body.appendChild(el); }
@@ -117,10 +122,15 @@ const api = {
       verifier = new RecaptchaVerifier(auth, 'vct-recaptcha-inner', { size: 'invisible' });
     }
     verifierUsed = true;   // a check is used once; the next send makes a new one
+    natVid = null;
     confirmation = await signInWithPhoneNumber(auth, '+91' + phone10, verifier);
     return true;
   },
+  // 2-tap login in the Play Store app: the native SDK sent the OTP (no reCAPTCHA); its verification id signs in here
+  nativeVid(vid) { natVid = vid || null; confirmation = null; },
+  async customLogin(token) { return (await signInWithCustomToken(auth, token)).user; },
   async verifyOtp(code) {
+    if (natVid) return (await signInWithCredential(auth, PhoneAuthProvider.credential(natVid, String(code)))).user;
     if (!confirmation) throw new Error('no-otp');
     const cred = await confirmation.confirm(code);
     return cred.user;

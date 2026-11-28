@@ -52,7 +52,7 @@
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('../vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV=window.VCT_V='153',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV=window.VCT_V='154',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('../version.json',location.href)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -674,21 +674,22 @@ a.btn{text-decoration:none}
 <div class="app" id="app"><section class="screen" id="splash"><div class="roofsign"><b>TAXI</b><span>வேலூர் டாக்ஸி</span></div><span class="drvtag">DRIVER</span><div class="road"></div><div class="tag">Vellore Taxi · Driver</div></section></div>
 <div class="toast" id="toast"></div>
 
-<script src="../core/report.js?v=153"></script>
-<script src="../core/geo.js?v=153"></script>
-<script src="../core/fare.js?v=153"></script>
-<script src="../core/meter.js?v=153"></script>
-<script src="../core/appget.js?v=153"></script>
-<script src="../core/pin.js?v=153"></script>
-<script src="../core/clock.js?v=153"></script>
-<script src="../core/map.js?v=153"></script>
-<script src="../core/chat.js?v=153"></script>
-<script src="../core/driverchecks.js?v=153"></script>
-<script src="../core/nav.js?v=153"></script>
-<script src="../core/otp.js?v=153"></script>
-<script src="../core/deskmode.js?v=153"></script>
-<script src="../core/refer.js?v=153"></script>
-<script src="../core/weather.js?v=153"></script>
+<script src="../core/report.js?v=154"></script>
+<script src="../core/geo.js?v=154"></script>
+<script src="../core/fare.js?v=154"></script>
+<script src="../core/meter.js?v=154"></script>
+<script src="../core/appget.js?v=154"></script>
+<script src="../core/pin.js?v=154"></script>
+<script src="../core/clock.js?v=154"></script>
+<script src="../core/map.js?v=154"></script>
+<script src="../core/chat.js?v=154"></script>
+<script src="../core/driverchecks.js?v=154"></script>
+<script src="../core/nav.js?v=154"></script>
+<script src="../core/otp.js?v=154"></script>
+<script src="../core/login2.js?v=154"></script>
+<script src="../core/deskmode.js?v=154"></script>
+<script src="../core/refer.js?v=154"></script>
+<script src="../core/weather.js?v=154"></script>
 <script>
 /* shared with the customer app: icons, places, fares, map engine */
 /* small line icons (one stroke style everywhere; no emoji in the interface) */
@@ -998,33 +999,25 @@ function splash(){
 const mapsWait=(ms=1500)=>Promise.race([window.MAPS_READY||Promise.resolve(false),new Promise(r=>setTimeout(()=>r(false),Math.max(0,ms-performance.now())))]);
 // Google's map arrived after home was drawn with the built-in map: redraw home once (only when nothing else is open)
 (window.MAPS_READY||Promise.resolve(false)).then(ok=>{if(!ok)return;setTimeout(()=>{try{if(S.tab==='home'&&!J&&!SHOWING&&!document.querySelector('.modal')&&(document.getElementById('ons')||document.getElementById('offs'))&&!document.querySelector('.gmap'))home()}catch(e){}},50)});
+const OFFICE_PH='9344039933';
 function login(){
-  go(`<section class="screen"><div class="hero pad"><img src="./icon-192.png" alt="" style="width:84px;height:84px;border-radius:20px;display:block;margin-bottom:12px;box-shadow:0 4px 14px rgba(0,0,0,.15)" onerror="this.remove()"><span class="mini">VCT DRIVER</span><h1>${L('வணக்கம் Driver!','Welcome, driver!')}</h1>
-    <p>${L('உங்க நம்பர்ல login பண்ணுங்க. புது driver-னா சேர்வதற்கான form வரும்','Log in with your number. New drivers will see the sign-up form')}</p>
-    <div class="lang2"><button data-l="ta" class="${S.lang==='ta'?'on':''}">தமிழ்</button><button data-l="en" class="${S.lang==='en'?'on':''}">English</button></div></div>
-   <div class="body pad"><label class="muted" for="ph" style="font-weight:600">${L('மொபைல் நம்பர்','Mobile number')}</label>
-    <div class="field"><span class="cc">+91</span><input id="ph" inputmode="numeric" maxlength="10" value="${S.phone}" placeholder="98765 43210"></div>
-    <div class="err" id="e"></div><div class="otpwrap" id="ow" hidden><label class="muted" style="font-weight:600">OTP</label>
-    <div class="otp">${[...Array(CL?6:4).keys()].map(i=>`<input id="o${i}" inputmode="numeric" maxlength="1" autocomplete="one-time-code" aria-label="OTP ${i+1}">`).join('')}</div>
-    <div class="note">${CL?L('SMS-ல வந்த 6 இலக்க OTP-ஐ போடுங்க','Enter the 6-digit OTP from the SMS'):'Demo OTP: 1234'}</div></div><div style="flex:1"></div>
-    <button class="btn" id="go" disabled>${L('OTP அனுப்பு','Send OTP')}</button></div></section>`,()=>{
-    app.querySelectorAll('[data-l]').forEach(b=>b.onclick=()=>{S.lang=b.dataset.l;save();login()});
-    const ph=document.getElementById('ph'),b=document.getElementById('go'),e=document.getElementById('e'),ow=document.getElementById('ow');let stage=0;
-    ph.oninput=()=>{ph.value=ph.value.replace(/\D/g,'').slice(0,10);if(!stage)b.disabled=ph.value.length!==10;e.textContent=''};b.disabled=ph.value.length!==10;
-    const ins=[...app.querySelectorAll('.otp input')];let nat=null;
-    const box=VCTOTP.bind(ins,CL?6:4,()=>{if(stage&&!b.disabled)b.click()},v=>{if(stage){b.disabled=v.length!==(CL?6:4);e.textContent=''}});
-    if(CL&&CL.prepOtp)CL.prepOtp();
-    b.onclick=()=>{
-      if(!stage){if(!/^[6-9]\d{9}$/.test(ph.value)){e.textContent=L('10 இலக்க நம்பர் கொடுங்க','Enter a 10-digit number');return}
-        S.phone=ph.value;save();
-        if(CL){b.disabled=true;b.textContent=L('OTP அனுப்புது…','Sending OTP…');nat=VCTOTP.native();if(nat)nat.then(c=>{if(c&&stage&&document.body.contains(ins[0])&&!box.val())VCTOTP.fill(ins,c)});CL.sendOtp(ph.value).then(()=>{stage=1;ow.hidden=false;ph.disabled=true;b.textContent=L('சரிபார்','Verify');b.disabled=true;ins[0].focus()}).catch(er=>{VCTOTP.stop();b.disabled=false;b.textContent=L('OTP அனுப்பு','Send OTP');e.textContent=CL.errText(er,S.lang==='ta')});return}
-        stage=1;ow.hidden=false;ph.disabled=true;b.textContent=L('சரிபார்','Verify');b.disabled=true;ins[0].focus();return}
-      if(CL){b.disabled=true;CL.verifyOtp(box.val()).then(async()=>{if(await loadMe()){resumeOnline();home();if(WELC)welcomeDriver()}}).catch(er=>{b.disabled=false;e.textContent=CL.errText(er,S.lang==='ta');box.reset();b.disabled=true});return}
-      if(box.val()!=='1234'){e.textContent=L('OTP தவறு','Wrong OTP');box.reset();b.disabled=true;return}
-      S.logged=true;save();pickProfile();
-    };
-  });
+  VCTLOGIN.start({app:'driver',cl:()=>CL,go,toast,lang:()=>S.lang,setLang:l=>{S.lang=l;save()},phone:S.phone,setPhone:p=>{S.phone=p;save()},
+    title:['ஓட்ட உங்க மொபைல் நம்பர் போடுங்க','Enter your Phone Number to Drive'],sub:['Office-ல பதிவு செய்த நம்பர்','The number registered with the office'],
+    header:`<img src="./icon-192.png" alt="" style="width:72px;height:72px;border-radius:18px;display:block;margin-bottom:10px;box-shadow:0 4px 14px rgba(0,0,0,.15)" onerror="this.remove()"><span class="mini">VCT DRIVER</span>`,
+    below:L=>`<p class="muted" style="margin:6px 0 0;font-size:14px">${L('நம்பர் மாறிடுச்சா?','Number changed?')} <a class="linkbtn" id="chreg" href="https://wa.me/91${(CFGD.driverHelp||OFFICE_PH).replace(/\D/g,'').slice(-10)}?text=${encodeURIComponent('Vellore Call Taxi: பதிவு செய்த நம்பரை மாத்தணும் / Change my registered number')}" target="_blank" rel="noopener">${L('பதிவு நம்பரை மாத்து','Change registered number')}</a> · <a class="linkbtn" href="tel:+91${(CFGD.driverHelp||OFFICE_PH).replace(/\D/g,'').slice(-10)}">${L('Office-ஐ அழை','Call office')}</a></p>`,
+    office:CFGD.driverHelp||OFFICE_PH,joinUrl:'./join/',
+    done:async()=>{if(!CL){S.logged=true;save();return pickProfile()}
+      MYSESS='';FRESHLOGIN=true;   // a fresh login: whatever another phone wrote before is replaced by this one
+      const ok=await loadMe();FRESHLOGIN=false;if(ok){claimSession();resumeOnline();home();if(WELC)welcomeDriver()}}});
 }
+/* one phone per driver: this login writes a new session id; an older phone sees a different one and logs out */
+const SESSK='vct-sess';let MYSESS='',FRESHLOGIN=false;try{MYSESS=localStorage.getItem(SESSK)||''}catch(e){}
+function claimSession(){MYSESS=Array.from(crypto.getRandomValues(new Uint8Array(12)),b=>'abcdefghijkmnpqrstuvwxyz23456789'[b%32]).join('');try{localStorage.setItem(SESSK,MYSESS)}catch(e){}
+  F().updateDoc(F().doc(CL.db,'drivers',CL.phone),{sess:MYSESS}).catch(e=>console.warn('session',e))}
+function sessionTaken(d){if(!d||!d.sess||!MYSESS||d.sess===MYSESS||!S.logged)return false;
+  setOnline(false);if(OVL&&OVL17)try{OVL.liveStop({forget:true}).catch(()=>{})}catch(e){}LIVEN='';stopAllD();DME=null;CL.logout();S.logged=false;S.pid=null;save();MYSESS='';try{localStorage.removeItem(SESSK)}catch(e){}
+  login();setTimeout(()=>toast(L('வேற phone-ல login ஆச்சு. இந்த phone-ல logout ஆயிடுச்சு.','You logged in on another phone, so this one was logged out.')),400);return true}
+const greet=()=>{const h=new Date().getHours(),n=(me()&&me()[S.lang]||'').split(' ')[0];return (h<12?L('காலை வணக்கம்','Good Morning'):h<17?L('மதிய வணக்கம்','Good Afternoon'):L('மாலை வணக்கம்','Good Evening'))+(n?L(`, ${n}`,`, ${n}`):'')};
 function pickProfile(){
   go(`<section class="screen"><div class="head pad"><h2>${L('உங்க வண்டி','Your vehicle')}</h2></div>
    <div class="body pad" style="padding-top:0"><div class="note">${L('Demo: உண்மையான app-ல Owner உங்க நம்பருக்கு வண்டியை assign பண்ணுவாங்க. இங்கே ஒண்ணை தேர்வு பண்ணுங்க.','Demo: in the real app your owner assigns your vehicle. Pick one here.')}</div>
@@ -1050,7 +1043,7 @@ function home(){setTimeout(demandHint,60);setTimeout(mineCheck,1500);
      <div class="topbar"><button class="chipbtn menub" id="menu" aria-label="Menu">${X('menu',20)}${unread()?'<i class="mdot"></i>':''}</button><button class="tpill" id="tpill"><span class="stdot ${S.online?'on':''}"></span><b>${today.length} ${L('trips','trips')}</b><span>${inr(net)}</span><i>›</i></button><div style="flex:1"></div>
        <button class="chipbtn ${low?'lowbal':''}" id="wb">${I.navWallet.replace('<svg ','<svg width="18" height="18" ')} ${inr(DS.wallet)}</button></div>
      <div class="zoomctl" style="bottom:34px"><button class="chipbtn" id="loc" aria-label="My location">${I.gps}</button></div></div>
-   <div class="sheet pad"><div class="grab"></div>
+   <div class="sheet pad"><div class="grab"></div><p class="greet" style="margin:0 0 6px;font-weight:700">${esc(L("Hi! ","Hi! ")+greet())}</p>
      ${(()=>{const ds=docState();return ds.expired.length?`<div class="warn">${X('block')} ${L('காலாவதி ஆன document: ','Expired: ')}${ds.expired.join(', ')}. ${L('புதுப்பிக்கும் வரை Online போக முடியாது. புது copy-ஐ office-க்கு அனுப்புங்க.','You can’t go online until it is renewed. Send the new copy to the office.')}</div>`:ds.soon.length?`<div class="warn">${X('warn')} ${L('சீக்கிரம் காலாவதி: ','Expiring soon: ')}${ds.soon.join(', ')}</div>`:''})()}
      ${low?`<div class="warn">${L(`Wallet-ல ${inr(DS.wallet)} தான் இருக்கு. Online போக குறைந்தது ${inr(MINBAL)} வேணும்.`,`Only ${inr(DS.wallet)} in wallet. You need at least ${inr(MINBAL)} to go online.`)} <button class="linkbtn" id="rc">${L('Recharge பண்ணு','Recharge')}</button></div>`:''}
      ${S.online?`${CL&&!GOTFIX&&gpsSeeking()?`<div class="liveCard" id="gpsw"><span class="pulse"></span><div><b>${L('Online-ல இருக்கீங்க','You are online')}</b><small>${L('உங்க location தேடுது…','Finding your location…')}</small></div></div>`:CL&&!GOTFIX?`<div class="warn gpsw" id="gpsw"><b>${X('pin')} ${L('உங்க location இன்னும் கிடைக்கல','Your location is not available yet')}</b><br>${GPSERR===1?L('Location அனுமதி மறுக்கப்பட்டிருக்கு. Browser settings → Site settings → Location → Allow கொடுங்க.','Location permission is blocked. Allow it in browser site settings.'):L('Phone-ல Location / GPS on பண்ணுங்க. கிடைக்கும் வரை customer-க்கு உங்க வண்டி தெரியாது, request-உம் வராது.','Turn on Location/GPS. Until then customers cannot see you and no requests will come.')} <button class="linkbtn" id="gpsr">${L('மறுபடி முயற்சி','Retry')}</button></div>`:`<div class="liveCard"><span class="pulse"></span><div><b>${L('Online-ல இருக்கீங்க','You are online')}</b><small>${L('புது ride request-க்கு காத்திருக்கு…','Waiting for ride requests…')}</small></div></div>`}
@@ -1587,7 +1580,8 @@ function ensurePush(){if(!CL||!CL.phone||!DME||!S.logged||document.getElementByI
 setInterval(()=>{try{ensurePush()}catch(e){}},30e3);
 let PUSHNOTED='';
 function pushNote(){if(PUSHWHY===PUSHNOTED)return;PUSHNOTED=PUSHWHY;try{localStorage.removeItem('vct_dev')}catch(e){}setTimeout(()=>{if(OVL)ovlPower();else devReport(NATIVE()?'app':'web')},500)}
-function applyMe(d){const pv=DME&&DME.veh;if(REQUNSUB&&pv&&d.veh&&pv!==d.veh){REQUNSUB();REQUNSUB=null;setTimeout(()=>{if(S.online)listenReq()},0)}DME={id:CL.phone,ta:d.name||'Driver',en:d.name||'Driver',plate:d.plate||'',model:d.model||'',veh:d.veh||'auto',rating:RATE||d.rating||5,docs:d.docs||null,blocked:!!d.blocked,upi:d.upi||'',svc:d.svc||null,prio:d.prio||'auto',year:+d.year||+((String(d.model||'').match(/\b(19|20)\d\d\b/)||[''])[0])||0,consent:d.consent||null,onl:!!d.online,fcm:String(d.fcm||''),bonusPaid:String(d.bonusPaid||''),sub:d.sub&&d.sub.until?{plan:String(d.sub.plan||''),price:+d.sub.price||0,from:CL.toMs(d.sub.from)||0,until:CL.toMs(d.sub.until)||0}:null};DS.wallet=+d.wallet||0}
+function applyMe(d){if(sessionTaken(d))return;if(CL&&S.logged&&!MYSESS&&!d.sess&&!FRESHLOGIN)setTimeout(()=>{if(!MYSESS)claimSession()},0);   // first run of this version: claim the phone
+const pv=DME&&DME.veh;if(REQUNSUB&&pv&&d.veh&&pv!==d.veh){REQUNSUB();REQUNSUB=null;setTimeout(()=>{if(S.online)listenReq()},0)}DME={id:CL.phone,ta:d.name||'Driver',en:d.name||'Driver',plate:d.plate||'',model:d.model||'',veh:d.veh||'auto',rating:RATE||d.rating||5,docs:d.docs||null,blocked:!!d.blocked,upi:d.upi||'',svc:d.svc||null,prio:d.prio||'auto',year:+d.year||+((String(d.model||'').match(/\b(19|20)\d\d\b/)||[''])[0])||0,consent:d.consent||null,onl:!!d.online,fcm:String(d.fcm||''),bonusPaid:String(d.bonusPaid||''),sub:d.sub&&d.sub.until?{plan:String(d.sub.plan||''),price:+d.sub.price||0,from:CL.toMs(d.sub.from)||0,until:CL.toMs(d.sub.until)||0}:null};DS.wallet=+d.wallet||0}
 function watchMe(){UNS.push(F().onSnapshot(F().doc(CL.db,'drivers',CL.phone),s=>{const live=!(s.metadata&&s.metadata.fromCache);
   if(!s.exists()){if(live&&ME_CACHED){ME_CACHED=false;if(S.online)setOnline(false);stopAllD();DME=null;notDriver()}return}
   const before=DS.wallet;applyMe(s.data());setTimeout(ensurePush,3000);

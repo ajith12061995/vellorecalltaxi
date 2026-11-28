@@ -51,7 +51,7 @@
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('./vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV=window.VCT_V='153',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV=window.VCT_V='154',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('./version.json',location.href)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -572,20 +572,21 @@ details.faq p{margin:0;padding:0 14px 14px;color:var(--muted);font-size:14px;lin
 <div class="app" id="app"></div>
 <div class="toast" id="toast"></div>
 
-<script src="./core/report.js?v=153"></script>
-<script src="./core/funnel.js?v=153"></script>
-<script src="./core/geo.js?v=153"></script>
-<script src="./core/fare.js?v=153"></script>
-<script src="./core/refer.js?v=153"></script>
-<script src="./core/meter.js?v=153"></script>
-<script src="./core/appget.js?v=153"></script>
-<script src="./core/pin.js?v=153"></script>
-<script src="./core/clock.js?v=153"></script>
-<script src="./core/map.js?v=153"></script>
-<script src="./core/chat.js?v=153"></script>
-<script src="./core/otp.js?v=153"></script>
-<script src="./core/deskmode.js?v=153"></script>
-<script src="./core/weather.js?v=153"></script>
+<script src="./core/report.js?v=154"></script>
+<script src="./core/funnel.js?v=154"></script>
+<script src="./core/geo.js?v=154"></script>
+<script src="./core/fare.js?v=154"></script>
+<script src="./core/refer.js?v=154"></script>
+<script src="./core/meter.js?v=154"></script>
+<script src="./core/appget.js?v=154"></script>
+<script src="./core/pin.js?v=154"></script>
+<script src="./core/clock.js?v=154"></script>
+<script src="./core/map.js?v=154"></script>
+<script src="./core/chat.js?v=154"></script>
+<script src="./core/otp.js?v=154"></script>
+<script src="./core/login2.js?v=154"></script>
+<script src="./core/deskmode.js?v=154"></script>
+<script src="./core/weather.js?v=154"></script>
 <script>
 /* ---------- icons ---------- */
 /* small line icons (one stroke style everywhere; no emoji in the interface) */
@@ -788,7 +789,7 @@ function useBookLink(){
    What they chose is kept here (also in sessionStorage, so it survives a reload) and the same fare screen comes back after sign-in. */
 let PENDING=null;
 try{const x=JSON.parse(sessionStorage.getItem('vct-pending')||'null');if(x&&Date.now()-x.at<30*60e3)PENDING=x}catch(e){}
-function needLogin(){if(S.logged)return false;
+function needLogin(){if(S.logged){if(CL&&!S.name){nameAsk();return true}return false}
   const pt=k=>P[k]&&P[k].lat!=null?{ta:P[k].ta,en:P[k].en,sub:P[k].sub||'',lat:P[k].lat,lon:P[k].lon,ic:P[k].ic||'pin'}:null;
   PENDING={at:Date.now(),mode:S.mode||'',from:S.from,dest:S.dest,veh:S.veh,when:S.when,tip0:S.tip0||0,pay:S.pay,autoFor:S.autoFor||'',
     pick:pt('pick'),drop:pt('drop'),home:pt('home'),RS:{...RS},OS:{...OS}};
@@ -808,7 +809,7 @@ function splash(){
   go(`<section class="screen" id="splash"><div class="roofsign"><b>TAXI</b><span>வேலூர் டாக்ஸி</span></div>
     <div class="road"></div><div class="tag">Vellore Taxi</div></section>`);
   SPLASH_MIN=new Promise(r=>setTimeout(r,450)); // just long enough to see the logo; no fixed 1.7 s wait any more
-  (async()=>{if(await cloudBoot())return;await SPLASH_MIN;await mapsWait();S.logged?home():langScreen()})();
+  (async()=>{if(await cloudBoot())return;await SPLASH_MIN;try{VCTLOGIN.mark('splash-done')}catch(e){}if(!S.logged&&CL&&inApp()&&VCTLOGIN.native()){LANGSET=true;save();return login()}await mapsWait();S.logged?home():langScreen()})();
 }
 let SPLASH_MIN=Promise.resolve();
 // the home map needs Google Maps: wait for it (it loads together with the sign-in check), at most ms; then the free map is used
@@ -825,22 +826,25 @@ function langScreen(){
 }
 function login(){
   try{window.VCTF&&VCTF('login')}catch(e){}
-  go(`<section class="screen"><div class="hero pad"><span class="tmwrap"><img src="./brand/logo-main.png?v=9" alt="Vellore Taxi" style="height:150px;display:block" onerror="this.parentNode.remove()"><span class="tm" aria-label="Trademark">™</span></span><span class="mini">${t('tagline')}</span><h1>${t('loginH')}</h1><p>${t('loginP')}</p>
-    <div style="display:flex;gap:12px;margin-top:8px;flex-wrap:wrap">${I.bike}${I.auto}${I.mini}${I.car}${I.suv}</div></div>
-  <div class="body pad"><label class="muted" for="ph" style="font-weight:600">${t('phone')}</label>
-   <div class="field"><span class="cc">+91</span><input id="ph" inputmode="numeric" maxlength="10" autocomplete="tel" value="${S.phone}" placeholder="98765 43210"></div>
-   <div class="err" id="e"></div><div style="flex:1"></div>
-   <button class="btn" id="go" ${S.phone.length===10?'':'disabled'}>${t('getOtp')}</button>${!S.logged?`<button class="btn ghost" id="gback" style="margin-top:8px">${PENDING?L('← விலைக்கு திரும்பு','← Back to the fare'):L('← முதல் பக்கம்','← Back')}</button>`:''}${CL&&!inApp()?`<div class="ordiv"><span>${L('அல்லது','or')}</span></div><button class="btn gbtn" id="gg"><svg width="20" height="20" viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34.1 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34.1 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>${L('Google மூலம் login (OTP தேவையில்லை)','Continue with Google (no OTP)')}</button>`:''}<p class="fine muted"><a href="./privacy/" target="_blank" rel="noopener" style="color:inherit">${t('terms')}</a></p></div></section>`,()=>{
-    const ph=document.getElementById('ph'),b=document.getElementById('go');
-    ph.oninput=()=>{ph.value=ph.value.replace(/\D/g,'').slice(0,10);b.disabled=ph.value.length!==10;document.getElementById('e').textContent=''};
-    b.onclick=()=>{if(!/^[6-9]\d{9}$/.test(ph.value)){document.getElementById('e').textContent=t('phoneErr');return}S.phone=ph.value;save();
-      if(CL){b.disabled=true;b.textContent=L('OTP அனுப்புது…','Sending OTP…');const nat=VCTOTP.native();CL.sendOtp(ph.value).then(()=>otp(nat)).catch(e=>{VCTOTP.stop();b.disabled=false;b.textContent=t('getOtp');document.getElementById('e').textContent=CL.errText(e,S.lang==='ta')});return}otp()};
-    if(IAB){const g=document.getElementById('gg');if(g){g.remove();const o=app.querySelector('.ordiv');if(o)o.remove()}}
-    const gg=document.getElementById('gg');if(gg)gg.onclick=googleIn;
-    const gb=document.getElementById('gback');if(gb)gb.onclick=()=>{VCTOTP.stop();PENDING?resumePending():home()};
-    if(CL&&CL.prepOtp)CL.prepOtp();
-    setTimeout(()=>ph.focus(),300);
-  });
+  const gsvg=`<svg width="20" height="20" viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-7.9l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>`;
+  VCTLOGIN.start({app:'customer',cl:()=>CL,go,toast,lang:()=>S.lang,setLang:l=>{S.lang=l;LANGSET=true;save()},phone:S.phone,setPhone:p=>{S.phone=p;save()},
+    title:['உங்க மொபைல் நம்பர் என்ன?',"What's your number?"],sub:['OTP மட்டும் போதும். Password இல்லை.','Just an OTP. No password.'],
+    header:`<span class="tmwrap"><img src="./brand/logo-main.png?v=9" alt="Vellore Taxi" style="height:120px;display:block" onerror="this.parentNode.remove()"><span class="tm" aria-label="Trademark">™</span></span>`,
+    extra:L=>`${!S.logged?`<button class="btn ghost" id="gback" style="margin-top:8px">${PENDING?L('← விலைக்கு திரும்பு','← Back to the fare'):L('← முதல் பக்கம்','← Back')}</button>`:''}${CL&&!inApp()&&!IAB?`<div class="ordiv"><span>${L('அல்லது','or')}</span></div><button class="btn gbtn" id="gg">${gsvg} ${L('Google-ல தொடரு','Continue with Google')}</button>`:''}`,
+    bind:()=>{const gb=document.getElementById('gback');if(gb)gb.onclick=()=>{VCTOTP.stop();VCTLOGIN.stop();PENDING?resumePending():home()};const gg=document.getElementById('gg');if(gg)gg.onclick=googleIn;if(CL&&CL.prepOtp&&!VCTLOGIN.native())CL.prepOtp()},
+    done:async u=>{if(!CL){S.logged=true;save();return home()}
+      CUID=u.uid;S.uid=u.uid;await loadProfile();watchConfig();
+      S.logged=true;save();saveProfile({lastLogin:F().serverTimestamp()});   // a new customer: users/{uid} made silently; the name is asked at the first booking
+      if(PENDING&&resumeActive()){PENDING=null;try{sessionStorage.removeItem('vct-pending')}catch(e){}}else home()}});
+}
+// first booking without a name: ask once (the driver needs to know whom to pick up)
+function nameAsk(){
+  modal(`<h3>${L('உங்க பெயர்?','Your name?')}</h3><p class="muted" style="margin:0">${L('Driver உங்களை அடையாளம் காண. ஒரு தடவை மட்டும் கேட்போம்.','So the driver knows whom to pick up. Asked only once.')}</p>
+    <div class="field"><input id="nm" autocomplete="name" maxlength="30" placeholder="${S.lang==='ta'?'எ.கா. அஜித்':'e.g. Ajith'}"></div><div class="err" id="nme"></div>
+    <button class="btn yellow" id="nmok">${L('சேமி, Book பண்ணு','Save and book')}</button>`,(m,close)=>{
+    const nm=m.querySelector('#nm');setTimeout(()=>nm.focus(),200);
+    m.querySelector('#nmok').onclick=()=>{const v=nm.value.trim();if(v.length<2){m.querySelector('#nme').textContent=L('பெயர் போடுங்க','Enter your name');return}
+      S.name=v;save();saveProfile({});close();const b=document.getElementById('bookb');if(b)b.click()}});
 }
 // inside the Play Store app (Capacitor WebView) Google does not allow its sign-in page, so only phone OTP is shown there
 function inApp(){try{return !!(window.Capacitor&&window.Capacitor.isNativePlatform&&window.Capacitor.isNativePlatform())}catch(e){return false}}

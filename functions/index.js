@@ -1,6 +1,8 @@
 /* Vellore Taxi — Cloud Functions (needs the Firebase Blaze plan). Region: asia-south1 (Mumbai).
    Every function is safe to deploy while the apps keep working the old way:
    - onBookingDone   : writes one ledger entry per finished trip (no commission while the driver's subscription runs).
+   - loginCheck      : callable, before the OTP: 5 OTPs / number / device / hour; driver app only for office-added, not blocked numbers.
+   - nativeLogin     : callable; Android instant phone verification → custom token for the page's session.
    - walletOp        : callable, owner only; recharge approval (one UTR credited once), daily bonus, manual + / −, each with a ledger line.
    - buySub          : callable; a driver buys a day / week / month subscription from the wallet (prices: config/app.subs). Takes / corrects the commission from the
                        driver wallet ONLY when config/app.serverComm is true (switch it on after deploying).
@@ -126,6 +128,40 @@ exports.walletOp = onCall({ enforceAppCheck: AC_ENFORCE }, async req => {
   });
   logger.info('walletOp', { by: me, kind, ok: r.ok, why: r.why || '', amt: r.amt || 0, driver: r.driverPhone || op.driverPhone || '' });
   return r;
+});
+
+// 2-tap login, step 1 (both apps, before the OTP is sent; no sign-in needed): rate limit per number and per device,
+// and for the driver app only numbers the office added, never a blocked one. Answers why not, so the app can say it.
+exports.loginCheck = onCall({ enforceAppCheck: AC_ENFORCE }, async req => {
+  acLog('loginCheck', req);
+  const d = req.data || {}, p10 = String(d.phone || '').replace(/^\+?91/, ''), app = d.app === 'driver' ? 'driver' : 'customer';
+  const dev = String(d.dev || '').replace(/[^A-Za-z0-9_-]/g, '').slice(0, 40);
+  if (!/^[6-9]\d{9}$/.test(p10)) return { ok: false, why: 'invalid-phone' };
+  const phone = '+91' + p10, now = Date.now();
+  const pref = db.doc(`otpRate/${phone}`), dref = dev ? db.doc(`otpRate/dev_${dev}`) : null;
+  const r = await db.runTransaction(async tx => {
+    const [ps, ds, drv, apl] = await Promise.all([tx.get(pref), dref ? tx.get(dref) : null, app === 'driver' ? tx.get(db.doc(`drivers/${phone}`)) : null,
+      app === 'driver' ? tx.get(db.doc(`driverApps/${phone}`)) : null]);
+    const dec = L.loginDecide({ app, now, drv: drv && drv.exists ? drv.data() : null, appl: !!(apl && apl.exists), hits: ps.exists ? ps.data().t : [], devHits: ds && ds.exists ? ds.data().t : [] });
+    if (dec.ok) { tx.set(pref, { t: dec.hits, at: FV.serverTimestamp() }); if (dref) tx.set(dref, { t: dec.devHits, at: FV.serverTimestamp() }); }
+    return dec;
+  });
+  const out = { ok: r.ok, ...(r.why ? { why: r.why } : {}), ...(r.wait ? { wait: r.wait } : {}), ...(r.reason ? { reason: r.reason } : {}) };
+  if (!r.ok && app === 'driver') { const c = await cfg(); out.office = String(c.driverHelp || c.office || '9344039933').replace(/\D/g, '').slice(-10); }
+  logger.info('loginCheck', { app, phone: phone.slice(0, 5) + '…' + phone.slice(-2), ok: r.ok, why: r.why || '' });
+  return out;
+});
+
+// 2-tap login, instant verification: Google verified the SIM without an SMS, so the app's native Firebase signed in.
+// The page has its own Firebase session: swap the native ID token for a custom token of the same user.
+exports.nativeLogin = onCall({ enforceAppCheck: AC_ENFORCE }, async req => {
+  acLog('nativeLogin', req);
+  const t = String((req.data && req.data.idToken) || '');
+  if (!t || t.length > 4000) throw new HttpsError('invalid-argument', 'token');
+  let dec; try { dec = await admin.auth().verifyIdToken(t, true); } catch (e) { throw new HttpsError('unauthenticated', 'bad token'); }
+  if (!dec.phone_number || (dec.firebase && dec.firebase.sign_in_provider !== 'phone')) throw new HttpsError('permission-denied', 'phone sign-in only');
+  if (Date.now() / 1000 - (dec.auth_time || 0) > 600) throw new HttpsError('permission-denied', 'old sign-in');
+  return { token: await admin.auth().createCustomToken(dec.uid) };
 });
 
 exports.housekeeping = onSchedule({ schedule: 'every 2 minutes', timeZone: 'Asia/Kolkata' }, async () => {

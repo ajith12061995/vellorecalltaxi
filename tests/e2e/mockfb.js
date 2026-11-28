@@ -61,6 +61,9 @@
       fbcfg(){return {apiKey:'key-mock',project:'proj-mock'}},
       prepOtp(){window.PREP=(window.PREP||0)+1;return Promise.resolve()},
       async sendOtp(p){pending=p;window.SENT=(window.SENT||[]).concat([p]);return true},
+      // 2-tap login (native app): the native SDK sent the OTP for this number; its verification id signs in here
+      nativeVid(vid){if(vid&&/^vid-\d{10}$/.test(vid))pending=vid.slice(4);window.NATVID=vid},
+      async customLogin(token){const ph=String(token).replace(/^ct-/,'');user={uid:'u'+ph,phoneNumber:'+91'+ph,refreshToken:'rt-mock-'+ph};cbs.forEach(c=>c(user));return user},
       async verifyOtp(code){if(code!=='123456')throw{code:'auth/invalid-verification-code'};user={uid:'u'+pending,phoneNumber:'+91'+pending,refreshToken:'rt-mock-'+pending};cbs.forEach(c=>c(user));return user},
       waitUser(){return Promise.resolve(user)},onUser(cb){cbs.push(cb);return()=>{}},
       async googleLogin(){user={uid:'g123',phoneNumber:null,email:'priya@gmail.com',displayName:'Priya G'};cbs.forEach(c=>c(user));return user},
@@ -112,6 +115,14 @@
           write('ledger/'+lid,{type:kind,driverPhone:ph,amt:delta,walletDelta:delta,by:me,...extra,at:{__ts:true}},false);
           if(rp){write(rp,{status:'approved',approvedAt:{__ts:true},approvedBy:me,ledgerId:lid},true);write('utrs/'+r.utr,{rechargeId:op.rechargeId,driverPhone:ph,amt:delta,at:{__ts:true}},false)}
           notify();(window.__wop=window.__wop||[]).push({kind,ph,delta});return{ok:true,kind,amt:delta,driverPhone:ph,ledgerId:lid}}
+        // same decisions as functions/lib/logic.js loginDecide + functions/index.js loginCheck / nativeLogin
+        if(name==='loginCheck'){const p10=String((data||{}).phone||'').replace(/^\+?91/,''),app=(data||{}).app==='driver'?'driver':'customer',dv=String((data||{}).dev||'');(window.LCHK=window.LCHK||[]).push({p10,app,dev:dv});
+          if(!/^[6-9]\d{9}$/.test(p10))return{ok:false,why:'invalid-phone'};const ph='+91'+p10,now=Date.now(),R=window.OTPRATE=window.OTPRATE||{};
+          const win=a=>(a||[]).filter(t=>now-t<3600e3);const h=win(R[ph]),d=win(R['dev_'+dv]);
+          if(app==='driver'){const drv=store.get('drivers/'+ph);if(!drv&&!store.get('driverApps/'+ph))return{ok:false,why:'unregistered',office:'9344039933'};if(drv&&drv.blocked)return{ok:false,why:'blocked',reason:String(drv.blockWhy||''),office:'9344039933'}}
+          for(const a of [h,d])if(a.length>=5)return{ok:false,why:'rate',wait:Math.ceil((a[a.length-5]+3600e3-now)/1000)};
+          R[ph]=h.concat(now);if(dv)R['dev_'+dv]=d.concat(now);return{ok:true}}
+        if(name==='nativeLogin'){const t=String((data||{}).idToken||'');if(!/^idt-\d{10}$/.test(t))throw{code:'functions/unauthenticated'};return{token:'ct-'+t.slice(4)}}
         if(name==='deleteMyAccount'){if(!user)throw{code:'functions/unauthenticated'};const ph=user.phoneNumber;
           if(ph&&store.get('drivers/'+ph)){store.set('deletionRequests/'+ph,{kind:'driver',phone:ph,uid:user.uid,status:'pending'});return{queued:true}}
           const mine=[...store.keys()].filter(k=>/^bookings\/[^/]+$/.test(k)&&store.get(k).customerUid===user.uid);
