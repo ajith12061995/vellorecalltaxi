@@ -29,6 +29,7 @@ public class MainActivity extends BridgeActivity {
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
+        registerPlugin(app.velloretaxi.auth.VctAuthPlugin.class);   // 2-tap login (mobile/shared/vctauth)
         registerPlugin(SmsOtpPlugin.class);   // OTP from the SMS after the person taps Allow (see SmsOtpPlugin)
         registerPlugin(RideOverlayPlugin.class); // ride card + ringtone over other apps while online (see RideOverlayPlugin)
         super.onCreate(savedInstanceState);

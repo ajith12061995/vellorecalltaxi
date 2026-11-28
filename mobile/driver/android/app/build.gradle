@@ -1,6 +1,8 @@
 apply plugin: 'com.android.application'
 
 android {
+    // shared 2-tap login plugin (mobile/shared/vctauth), the same source in the customer and the driver app
+    sourceSets { main.java.srcDirs += ['../../../shared/vctauth/java'] }
     namespace = "app.velloretaxi.driver"
     compileSdk = rootProject.ext.compileSdkVersion
     defaultConfig {
@@ -48,6 +50,11 @@ dependencies {
     implementation "androidx.coordinatorlayout:coordinatorlayout:$androidxCoordinatorLayoutVersion"
     implementation "androidx.core:core-splashscreen:$coreSplashScreenVersion"
     implementation project(':capacitor-android')
+    // 2-tap login (shared VctAuth plugin): phone number popup, native Firebase OTP + SMS auto-read, Play Integrity App Check
+    implementation platform('com.google.firebase:firebase-bom:34.0.0')
+    implementation 'com.google.firebase:firebase-auth'
+    implementation 'com.google.firebase:firebase-appcheck-playintegrity'
+    implementation 'com.google.android.gms:play-services-auth:21.3.0'
     implementation 'com.google.android.gms:play-services-auth-api-phone:18.1.0'   // SMS User Consent (OTP)
     implementation 'com.google.android.play:app-update:2.1.0'   // in-app update screen when a newer version is on Google Play
     implementation 'com.google.android.gms:play-services-location:21.3.0'         // NativeLive: position while the app is not on screen
