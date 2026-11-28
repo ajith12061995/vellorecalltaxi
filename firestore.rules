@@ -178,6 +178,18 @@ service cloud.firestore {
     }
 
     // Rides
+    // GPS route of a ride, in chunks of 60 points, written by the ride's driver phone (native meter or the page);
+    // the server re-measures the km from it, the office and the rider can see it. Never changed afterwards.
+    match /bookings/{id}/track/{c} {
+      allow read: if isStaff()
+        || (signedIn() && get(bk(id)).data.get('customerUid', '') == request.auth.uid)
+        || (isDriver() && get(bk(id)).data.get('driverPhone', '') == phone());
+      allow create: if isDriver() && get(bk(id)).data.get('driverPhone', '') == phone()
+        && get(bk(id)).data.status in ['ontrip', 'done']
+        && newData().keys().hasOnly(['n', 't0', 'p', 'src', 'at'])
+        && c.matches('c[0-9]{3}') && newData().n is int && newData().n >= 0 && newData().n < 1000
+        && newData().p is string && newData().p.size() <= 4000 && newData().t0 is int && newData().get('src', '') in ['app', 'web'];
+    }
     match /bookings/{id} {
       allow read: if isStaff()
         || (signedIn() && resource.data.customerUid == request.auth.uid)
@@ -224,7 +236,10 @@ service cloud.firestore {
         // driver: progress their own ride, one step at a time
         || (isDriver() && resource.data.driverPhone == phone()
             && changes().hasOnly(['status', 'pay', 'pinTry', 'arrivedAt', 'startedAt', 'pinOk', 'doneAt', 'paidAt', 'custRating', 'cancelReason',
-                                  'fareFinal', 'fx', 'comm', 'commLocal', 'updatedAt'])
+                                  'fareFinal', 'fx', 'comm', 'commLocal', 'updatedAt', 'meter'])
+            // the GPS meter's running km / slow minutes, shown to the rider (28 Nov)
+            && (!('meter' in changes()) || (newData().meter is map && newData().meter.keys().hasOnly(['km', 'w', 'src', 'at'])
+                && num(newData().meter.get('km', 0), 0, 3000) && num(newData().meter.get('w', 0), 0, 1440)))
             && ((resource.data.status in ['assigned', 'arrived'] && newData().status in ['assigned', 'arrived', 'ontrip', 'cancelled'])
                 || (resource.data.status == 'ontrip' && newData().status in ['ontrip', 'done'])
                 || (resource.data.status == 'done' && newData().status == 'done' && changes().hasOnly(['custRating', 'updatedAt'])))

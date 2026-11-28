@@ -277,6 +277,7 @@ canvas.map:active{cursor:grabbing}
 .pin.lift{transform:translate(-50%,calc(-97% - 16px))}
 .pinshadow{position:absolute;left:50%;top:50%;width:18px;height:7px;border-radius:50%;background:rgba(19,40,79,.4);transform:translate(-50%,-50%);z-index:2;pointer-events:none;transition:.2s}
 .pin.lift + .pinshadow{width:10px;opacity:.45}
+.rcptacts{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}.rcptacts .linkbtn{display:inline-flex;align-items:center;gap:5px}
 .credline{display:flex;align-items:center;gap:6px;margin:4px 0;padding:8px 12px;border-radius:12px;background:#E7F6EE;color:#14583A;font-size:13px;font-weight:700}#refcard .btn.sm{width:auto;height:40px;padding:0 14px;flex:none}
 .hpinlbl{position:absolute;left:50%;top:50%;transform:translate(-50%,calc(-100% - 58px));z-index:3;pointer-events:none;background:#0B4A36;color:#fff;font-size:12.5px;font-weight:700;padding:5px 11px;border-radius:999px;white-space:nowrap;max-width:78%;overflow:hidden;text-overflow:ellipsis;box-shadow:0 3px 10px rgba(0,0,0,.2)}
 .favrow{padding:0;gap:0}.favrow .favgo{flex:1;display:flex;align-items:center;gap:12px;padding:12px 0;text-align:left;min-width:0;background:none;border:0;color:inherit}.favrow .favgo small{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -576,6 +577,7 @@ details.faq p{margin:0;padding:0 14px 14px;color:var(--muted);font-size:14px;lin
 <script src="./core/geo.js?v=150"></script>
 <script src="./core/fare.js?v=150"></script>
 <script src="./core/refer.js?v=150"></script>
+<script src="./core/meter.js?v=150"></script>
 <script src="./core/appget.js?v=150"></script>
 <script src="./core/pin.js?v=150"></script>
 <script src="./core/clock.js?v=150"></script>
@@ -1097,7 +1099,7 @@ function fareScreen(){
      <div class="whenrow"><button class="chip ${S.when?'sel':''}" id="whenb">${I.clock} ${S.when?fmtWhen(S.when):L('இப்போ','Now')}</button>${S.when?`<button class="linkbtn" id="whenx">${L('இப்போவே போகணும்','Ride now instead')}</button>`:`<span class="muted" style="font-size:12.5px">${L('பின்னாடி போகணுமா? நேரம் தேர்வு பண்ணுங்க','Later? Pick a time')}</span>`}</div>
      ${nightNow()&&stFare(VEH.find(v=>v.id===S.veh))==null?`<div class="nightnote" id="nightnote">${X('moon',14)} ${L(`இரவு கட்டணம் +${nightNow()}% சேர்ந்திருக்கு (${CFG.night.from}–${CFG.night.to})`,`Night charge +${nightNow()}% included (${CFG.night.from}–${CFG.night.to})`)}</div>`:''}
      <div style="display:flex;flex-direction:column;gap:10px" id="vs">${vehRows(r,mins)}</div>
-     ${autoNote()}${credLine()}
+     ${autoNote()}${credLine()}${meterNote()}
      ${CL&&!S.when?`<div class="tippre"><div><b>${X('bulb')} ${L('Tip சேர்க்கவா? (விருப்பம்)','Add a tip? (optional)')}</b><small>${L('Tip சேர்த்தா driver சீக்கிரம் கிடைப்பார். முழுசா driver-க்கே.','Tips help you get a driver faster. All of it goes to the driver.')}</small></div>
        <div class="tiprow">${[0,10,20,30,40,50,60,70,80,90].map(x=>`<button class="chip ${(S.tip0||0)===x?'sel':''}" data-tip0="${x}">${x?'+₹'+x:L('இல்லை','None')}</button>`).join('')}</div></div>`:''}
      ${riderRow()}
@@ -1108,7 +1110,7 @@ function fareScreen(){
     const m=makeMap(document.getElementById('map'),{path:r.path,line:r.pts?()=>r.pts:undefined,near:CL?()=>NEAR:undefined});
     m.fit(r.pts||r.path.map(k=>P[k]),46,64);
     const upd=()=>{const v=VEH.find(x=>x.id===S.veh),a=vAvail(v),bb=document.getElementById('bookb');if(!bb)return;
-      const an=document.getElementById('autonote'),nn=document.getElementById('nightnote');if(an)an.style.display=v.id==='auto'?'':'none';if(nn)nn.style.display=v.id==='auto'||stFare(v)!=null?'none':'';{const cl=document.getElementById('credline');if(cl)cl.outerHTML=credLine()}
+      const an=document.getElementById('autonote'),nn=document.getElementById('nightnote');if(an)an.style.display=v.id==='auto'?'':'none';if(nn)nn.style.display=v.id==='auto'||stFare(v)!=null?'none':'';{const cl=document.getElementById('credline');if(cl)cl.outerHTML=credLine();const mn=document.getElementById('mnote');if(mn)mn.outerHTML=meterNote()}
       bb.disabled=!a.ok;bb.textContent=a.ok?`${S.when||ADV.includes(v.id)?L('Schedule பண்ணு','Schedule'):t('book')} ${v[S.lang]} · ₹${fare(v,r.km)}${CL&&!S.when&&S.tip0?' + ₹'+S.tip0+' tip':''}`:L(`இப்போ ${v.ta} இல்லை · வேற வண்டி தேர்வு பண்ணுங்க`,`No ${v.en} right now · pick another`)};upd();
     const bindV=()=>app.querySelectorAll('.veh').forEach(b=>b.onclick=()=>{S.veh=b.dataset.v;app.querySelectorAll('.veh').forEach(x=>x.classList.toggle('sel',x===b));upd()});bindV();
     if(CL)rideTimer=setInterval(()=>{const vs=document.getElementById('vs');if(!vs||document.querySelector('.modal'))return;const h=vehRows(r,mins);if(vs.dataset.h!==h){vs.innerHTML=h;vs.dataset.h=h;bindV();upd()}},4000);
@@ -1411,6 +1413,7 @@ function doneScreen(){
        ${R.boost?`<div><span>${L('நீங்க சேர்த்த Tip','Tip you added')}</span><span>₹${R.boost}</span></div>`:''}
        ${R.disc?`<div id="discln"><span>${L('நண்பர் referral தள்ளுபடி','Friend referral discount')}</span><span>−₹${R.disc}</span></div>`:''}
        <div class="tot"><span>${L('மொத்தம்','Total')}</span><span>₹${PAY}</span></div></div>
+     ${CL&&R.id?`<div class="rcptacts"><button class="linkbtn" id="rtmap">${X('pin',14)} ${L('போன வழியை பார்','See the route')}</button><button class="linkbtn" id="fareq">${X('info',14)} ${L('கட்டணத்தில் பிரச்சனை?','Problem with the fare?')}</button></div>`:''}
      <div id="paybox" style="display:flex;flex-direction:column;gap:12px">
        <span class="kind">${L('எப்படி பணம் கொடுக்கப் போறீங்க?','How will you pay?')}</span>
        <div class="payrow"><button class="pay" data-pm="upi">${I.upi}${t('payUpi')}</button><button class="pay" data-pm="cash">${I.cash}${t('payCash')}</button>${CL?'':`<button class="pay" data-pm="wallet">${I.navWallet.replace('<svg ','<svg width="18" height="18" ')}Wallet</button>`}</div>
@@ -1428,6 +1431,7 @@ function doneScreen(){
        <button class="btn yellow" id="sub" disabled>${L('Submit பண்ணு','Submit')}</button>
        <button class="linkbtn" id="skip">${L('இப்போ வேண்டாம்','Skip for now')}</button></div>
    </div></section>`,()=>{
+    {const rb=document.getElementById('rtmap');if(rb)rb.onclick=()=>routeSheet(R.id,R.destName[S.lang]);const fq=document.getElementById('fareq');if(fq)fq.onclick=()=>fareProblem(R.id,PAY)}
     let stars=0,tip=0;const rate=document.getElementById('rate');rate.hidden=true;
     const setPm=pm=>{R.pay=pm;app.querySelectorAll('[data-pm]').forEach(x=>x.classList.toggle('sel',x.dataset.pm===pm));
       document.getElementById('pmUpi').hidden=pm!=='upi';document.getElementById('pmCash').hidden=pm!=='cash';document.getElementById('pmWal').hidden=pm!=='wallet';
@@ -2171,7 +2175,7 @@ function watchConfig(){
   if(CFGUNSUB)return;
   CFGUNSUB=F().onSnapshot(F().doc(CL.db,'config','app'),s=>{if(!s.exists())return;const d=s.data();
     if(d.fares)VEH.forEach(v=>{const f=d.fares[v.id];if(f&&v.id!=='auto'){if(f.base!=null)v.base=+f.base;if(f.per!=null)v.per=+f.per;v.incl=+f.incl>0?+f.incl:undefined}});
-    if(window.APPGET)APPGET.setPlay(d.play);CFG.area=d.area||null;CFG.grow=d.grow||null;CFG.upi=d.upi||'';CFG.office=d.office||'';CFG.push=d.push||null;CFG.night=d.night||null;CFG.privPhone=!!d.privPhone;CFG.serverPin=!!d.serverPin;CFG.comm=d.comm!=null?+d.comm:10;CFG.wait=d.wait||null;CFG.blocked=Array.isArray(d.blocked)?d.blocked:[];{const had=VEH.includes(BIKE);setBike(!!d.showBike);if(had!==VEH.includes(BIKE)&&S.tab==='home'&&document.querySelector('.vrow')&&!document.querySelector('.modal'))home(S.mode||undefined)}if(d.dispatch)Object.assign(DISPC,d.dispatch);applyTariff(d);
+    if(window.APPGET)APPGET.setPlay(d.play);CFG.area=d.area||null;CFG.grow=d.grow||null;CFG.meter=d.meter||null;CFG.upi=d.upi||'';CFG.office=d.office||'';CFG.push=d.push||null;CFG.night=d.night||null;CFG.privPhone=!!d.privPhone;CFG.serverPin=!!d.serverPin;CFG.comm=d.comm!=null?+d.comm:10;CFG.wait=d.wait||null;CFG.blocked=Array.isArray(d.blocked)?d.blocked:[];{const had=VEH.includes(BIKE);setBike(!!d.showBike);if(had!==VEH.includes(BIKE)&&S.tab==='home'&&document.querySelector('.vrow')&&!document.querySelector('.modal'))home(S.mode||undefined)}if(d.dispatch)Object.assign(DISPC,d.dispatch);applyTariff(d);
     // refresh the browser push token last: Android WebView has no window.Notification (the app uses native push),
     // and reading it there used to throw before the outstation prices and settings above were applied
     try{if(CUID&&!NATIVEC()&&pushReadyC()&&typeof Notification!=='undefined'&&Notification.permission==='granted')enablePushC(false)}catch(e){}},()=>{});
@@ -2237,7 +2241,12 @@ function takeContact(d){const c={custPhone:d.custPhone||null,riderPhone:d.rider&
   if(!CFG.privPhone)return c; // switched on by the owner after the new security rules are published (office → Settings)
   delete d.custPhone;if(d.rider)d.rider={name:String(d.rider.name||'')};return c}
 const saveContact=(id,c)=>F().setDoc(F().doc(CL.db,'bookings',id,'private','contact'),c);
-function localTar(v,km){const w=CFG.wait||{},fx=stFare(v)!=null,np=fx?0:nightV(v),o={t:'local',wait:v&&v.id==='auto'?FARE.AUTO_GOVT.wait:+w.rate||0,free:w.free!=null?+w.free:3};if(v&&v.id==='auto')o.govt='TN-GO366-2026';if(fx)o.fixed=true;if(np&&v){o.night=np;o.nightAmt=fare(v,km)-fare0(v,km)}return o} // prices saved in the booking for the final bill
+/* GPS fare mode for this vehicle (Office → Settings → GPS fare): 'quote' (default) / 'upfront' (Uber) / 'meter' (Red Taxi) */
+const meterMode=v=>{try{const m=CFG.meter&&CFG.meter.mode&&CFG.meter.mode[v&&v.id];return S.mode||!v||stFare(v)!=null||!(m==='upfront'||m==='meter')?'quote':m}catch(e){return 'quote'}};
+function meterNote(){const v=VEH.find(x=>x.id===S.veh),m=meterMode(v),xp=+(CFG.meter&&CFG.meter.xp)||0;
+  return m==='meter'?`<div class="credline mnote" id="mnote">${X('pin',14)} ${L('இறுதி கட்டணம் GPS கி.மீ படி. மேலே உள்ளது மதிப்பீடு.','The final fare is by GPS km. The price above is an estimate.')}</div>`
+    :m==='upfront'?`<div class="credline mnote" id="mnote">${X('check',14)} ${L(`இந்த கட்டணம் தான். போற வழி ${xp}%-க்கு மேல நீளமானா மட்டும் GPS கி.மீ படி மாறும்.`,`This is your fare. It changes only if the trip is over ${xp}% longer (GPS km).`)}</div>`:'<i id="mnote" hidden></i>'}
+function localTar(v,km){const w=CFG.wait||{},fx=stFare(v)!=null,np=fx?0:nightV(v),o={t:'local',wait:v&&v.id==='auto'?FARE.AUTO_GOVT.wait:+w.rate||0,free:w.free!=null?+w.free:3};if(v&&v.id==='auto')o.govt='TN-GO366-2026';if(fx)o.fixed=true;{const mm=meterMode(v);if(mm!=='quote')Object.assign(o,{mode:mm,v:v.id,km:Math.round(km*10)/10,xp:Math.max(0,Math.min(100,+(CFG.meter&&CFG.meter.xp)||0))},v.id==='auto'?{}:{base:+v.base,per:+v.per,incl:+v.incl>0?+v.incl:1.5})}if(np&&v){o.night=np;o.nightAmt=fare(v,km)-fare0(v,km)}return o} // prices saved in the booking for the final bill
 /* booking id made on this phone (UUID, never a counter): a double tap or a retry after a lost answer writes the same
    document again — it can never become a second booking (28 Nov load safety) */
 const newBkId=()=>{try{if(crypto.randomUUID)return crypto.randomUUID()}catch(e){}const a=new Uint8Array(16);crypto.getRandomValues(a);a[6]=a[6]&15|64;a[8]=a[8]&63|128;
@@ -2424,7 +2433,7 @@ function rideCloudUpdate(refit){
   else if(mode==='here'){const s=Math.max(0,Math.round((Date.now()-CL.toMs(b.arrivedAt))/1000)),free=Math.max(0,180-s);
     stB.textContent=L('Driver வந்துட்டாரு!','Your driver has arrived');stS.textContent=free?L(`இலவச காத்திருப்பு ${Math.floor(free/60)}:${String(free%60).padStart(2,'0')}`,`Free waiting ${Math.floor(free/60)}:${String(free%60).padStart(2,'0')}`):((wr=>wr>0?L(`காத்திருப்பு கட்டணம் ₹${wr}/நிமி`,`Waiting charge ₹${wr}/min`):0)(R.v&&R.v.id==='auto'?FARE.AUTO_GOVT.wait:CFG.wait&&+CFG.wait.rate)||L('Driver காத்திருக்கிறார்','Your driver is waiting'));
     if(!R.hereToast){R.hereToast=1;toast(L('Driver வந்துட்டாரு! PIN-ஐ சொல்லுங்க','Your driver is here. Share your PIN'))}}
-  else{stS.textContent=L('பயணத்தில்','On trip');
+  else{stS.textContent=L('பயணத்தில்','On trip')+(b.meter&&+b.meter.km>0?` · GPS ${(+b.meter.km).toFixed(1)} ${L('கி.மீ','km')}`:'');
     if(R.dpos){const mn=etaMin(R.dpos,dp);stB.textContent=L(`${mn} நிமி-ல சேருவீங்க`,`${mn} min to drop`)}else stB.textContent=R.destName[S.lang]}
 }
 async function cloudCancel(reason){
@@ -2445,6 +2454,17 @@ function reviewAsk(){try{const u=CFG.grow&&CFG.grow.review;if(!REVURL(u)||docume
     <button class="btn ghost" id="rvno">${L('இப்போ வேண்டாம்','Not now')}</button>`,(m,close)=>{
     m.querySelector('#rvgo').onclick=()=>{try{localStorage.setItem('vct-rv',JSON.stringify({at:Date.now(),done:1}))}catch(e){}setTimeout(close,300)};
     m.querySelector('#rvno').onclick=close})}catch(e){}}
+/* the GPS route of a finished ride (bookings/{id}/track, written by the driver's phone) on a map */
+async function routeSheet(id,dest){let pts=[];
+  try{const q=await F().getDocs(F().collection(CL.db,'bookings',id,'track'));const ch=q.docs.map(d=>d.data());const s=METER.replay(ch);pts=ch.sort((a,b)=>a.n-b.n).flatMap(c=>METER.unpack(c.p,c.t0));
+    modal(`<h3>${L('போன வழி','Your route')}</h3>${pts.length>1?`<div style="position:relative;height:300px;border-radius:14px;overflow:hidden"><canvas class="map" id="rtm"></canvas></div><p class="muted" style="margin:0">GPS ${METER.km(s).toFixed(1)} ${L('கி.மீ','km')} · ${esc(dest||'')}</p>`:`<p class="muted">${L('இந்த ride-க்கு GPS வழி பதிவாகலை.','No GPS route was recorded for this ride.')}</p>`}<button class="btn" id="rtok">${L('சரி','OK')}</button>`,(m,close)=>{
+      m.querySelector('#rtok').onclick=close;if(pts.length>1){const mp=makeMap(m.querySelector('#rtm'),{line:()=>pts,pins:[{...pts[0],col:'#1E8A5A'},{...pts[pts.length-1],col:'#121212'}],hide:CUSTOM});mp.fit(pts,30,30)}})}
+  catch(e){toast(CL.errText(e,S.lang==='ta'))}}
+function fareProblem(id,amt){modal(`<h3>${L('கட்டணத்தில் என்ன பிரச்சனை?','What is wrong with the fare?')}</h3>
+    <div class="field" style="height:auto"><textarea id="fpn" rows="3" maxlength="300" placeholder="${L('உதா: driver அதிகமா கேட்டார், வழி சுத்தி போனார்','e.g. the driver asked for more, took a longer route')}" style="width:100%;border:0;background:none;font:inherit;padding:10px 0;color:var(--fg)"></textarea></div>
+    <button class="btn yellow" id="fps">${L('Office-க்கு அனுப்பு','Send to the office')}</button><button class="btn ghost" id="fpc">${L('வேண்டாம்','Cancel')}</button>`,(m,close)=>{
+    m.querySelector('#fpc').onclick=close;
+    m.querySelector('#fps').onclick=()=>{cloudTicket({type:'fare',title:L(`கட்டண புகார் · ₹${amt}`,`Fare complaint · ₹${amt}`),trip:id,note:m.querySelector('#fpn').value.trim().slice(0,300)});close();toast(L('Office-க்கு அனுப்பியாச்சு. அவங்க பார்த்து உங்களை அழைப்பாங்க','Sent to the office. They will check and call you'))}})}
 function cloudRate(stars,tip){if(CL&&R&&R.id&&(stars||tip))F().updateDoc(F().doc(CL.db,'bookings',R.id),{rating:stars||0,tip:(tip||0)+(R.boost||0),updatedAt:F().serverTimestamp()}).catch(()=>{})}
 function cloudTicket(x){
   if(!CL||!CUID)return;

@@ -356,3 +356,14 @@ test('referral discount: no more than asked, the credit, the fare or ₹500', ()
   assert.equal(L.discTake(30, 60, 120), 30); assert.equal(L.discTake(30, 10, 120), 10); assert.equal(L.discTake(300, 900, 120), 120);
   assert.equal(L.discTake(900, 900, 2000), 500); assert.equal(L.discTake(30, 0, 120), 0); assert.equal(L.discTake('x', 60, 120), 0); assert.equal(L.discTake(-5, 60, 120), 0);
 });
+test('GPS meter check: flags only real problems', () => {
+  const srv = { km: 6.0, gapKm: 0, waitMin: 2, gaps: 0, jumps: 0, pts: 120 };
+  const b = o => ({ km: 6, tariff: { t: 'local', mode: 'meter' }, fx: { km: 6.1, gps: { km: 6.1, mock: 0, src: 'app' } }, ...o });
+  assert.equal(L.meterCheck(b(), srv).flag, '');
+  assert.equal(L.meterCheck(b({ fx: { km: 7.5, gps: { km: 7.5 } } }), srv).flag, 'high', 'billed 7.5 km, route 6.0');
+  assert.equal(L.meterCheck(b({ fx: { km: 6.2, gps: { km: 6.2, mock: 3 } } }), srv).flag, 'mock');
+  assert.equal(L.meterCheck(b(), null).flag, 'notrack', 'billed by GPS with no route uploaded');
+  assert.equal(L.meterCheck(b({ tariff: { t: 'local' } }), null).flag, '', 'booked-fare ride without a route: nothing to check');
+  assert.equal(L.meterCheck(b({ tariff: { t: 'local' }, km: 3 }), srv).flag, 'long', 'ran 6 km for a 3 km booking');
+  assert.equal(L.meterCheck(b(), srv).srv.km, 6.0);
+});

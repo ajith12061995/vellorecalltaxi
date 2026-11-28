@@ -96,4 +96,22 @@ ok('km in base: office incl (0.5–10), else 1.5; same as server',()=>{
  ok('server: below the fixed fare is raised to it',()=>{const r=SL.fareCheck({...bk,fare:60},c,Date.UTC(2026,10,20,6,0));assert.equal(r.fare,120);assert.equal(r.night,0)});
  ok('server: outstation / rental never use station fares',()=>{assert.equal(SL.stFareOf({...bk,tariff:{t:'out'}},c),null);assert.equal(SL.stFareOf({...bk,kind:'rental'},c),null)});
 }
+// GPS fare modes (owner 28 Nov): quote (default) / upfront (Uber) / meter (Red Taxi, auto)
+{const T=(mode,o)=>({t:'local',mode,v:'mini',base:110,per:20,incl:1.5,km:6,xp:15,wait:0,...(o||{})});
+ const q=F.cityFare({id:'mini',base:110,per:20,incl:1.5},6);
+ ok('quote mode (default): GPS km never changes the bill',()=>{assert.equal(F.final({fare:q,tariff:T('quote')},{km:12,gps:true}).trip,q);assert.equal(F.final({fare:q,tariff:{t:'local'}},{km:12,gps:true}).trip,q)});
+ ok('upfront: within 15 % over the booked km → booked fare; more → km fare',()=>{
+   assert.equal(F.final({fare:q,tariff:T('upfront')},{km:6.8,gps:true}).trip,q);
+   assert.equal(F.final({fare:q,tariff:T('upfront')},{km:5,gps:true}).trip,q,'shorter trip: still the booked fare');
+   const r=F.final({fare:q,tariff:T('upfront')},{km:8,gps:true});assert.equal(r.trip,F.cityFare({id:'mini',base:110,per:20,incl:1.5},8));assert.ok(r.lines[0].en.includes('8 km (GPS)'))});
+ ok('meter: always the GPS km fare, shorter or longer',()=>{
+   assert.equal(F.final({fare:q,tariff:T('meter')},{km:5,gps:true}).trip,F.cityFare({id:'mini',base:110,per:20,incl:1.5},5));
+   assert.equal(F.final({fare:q,tariff:T('meter')},{km:9,gps:true}).trip,F.cityFare({id:'mini',base:110,per:20,incl:1.5},9))});
+ ok('no real GPS reading, or under half the booked km → the booked fare (never a broken meter)',()=>{
+   assert.equal(F.final({fare:q,tariff:T('meter')},{km:9}).trip,q);assert.equal(F.final({fare:q,tariff:T('meter')},{km:2.5,gps:true}).trip,q)});
+ ok('auto meter uses the Government fare and night 1.5×',()=>{
+   const t={t:'local',mode:'meter',v:'auto',km:4,night:50,govt:'x'};
+   assert.equal(F.final({fare:100,tariff:t},{km:4,gps:true}).trip,Math.round(F.cityFare({id:'auto'},4)*1.5))});
+ ok('meter: waiting, toll still added',()=>{const r=F.final({fare:q,tariff:T('meter',{wait:2,free:3})},{km:6,gps:true,waitMin:8,toll:40});assert.equal(r.trip,F.cityFare({id:'mini',base:110,per:20,incl:1.5},6)+10);assert.equal(r.pass,40)});
+}
 console.log(n,'fare tests passed');

@@ -523,6 +523,7 @@ details.faq p{margin:0;padding:0 14px 14px;color:var(--muted);font-size:14px;lin
 .chipbtn.lowbal{background:#C23B3B;color:#fff}
 .wxline{display:flex;align-items:center;gap:8px;margin:8px 0 4px;padding:8px 12px;border-radius:12px;background:#EEF4FF;color:#1F3A5F;font-size:13px;font-weight:600;line-height:1.35}.wxline span{flex:1}.wxline small{flex:none;font-weight:400;font-size:9.5px;opacity:.6}.wxline.wx-hot{background:#FFF1DC;color:#6B3D00}
 .bonuscard{margin:8px 0;padding:10px 12px;border-radius:14px;background:#FFF4CC;color:#3D2E00}.bonuscard b{display:block;font-size:13.5px;line-height:1.35}.bonuscard .bbar{display:block;height:6px;border-radius:4px;background:rgba(0,0,0,.1);margin-top:7px;overflow:hidden}.bonuscard .bbar i{display:block;height:100%;background:#1E8A5A;border-radius:4px}
+.mtr{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;padding:9px 12px;border-radius:14px;background:#EEF6F1;color:#14583A;font-size:13.5px;font-weight:600}.mtr b{font-size:16px}.mtr small{flex-basis:100%;color:var(--muted);font-weight:500;font-size:12px}
 .warn{background:rgba(194,59,59,.10);color:var(--danger);border-radius:14px;padding:10px 14px;font-size:13.5px;font-weight:600}
 .liveCard{display:flex;align-items:center;gap:14px;padding:14px;border-radius:18px;background:rgba(30,138,90,.10)}
 .liveCard b{font-family:var(--display);font-size:18px;display:block;color:var(--ok)}
@@ -676,6 +677,7 @@ a.btn{text-decoration:none}
 <script src="../core/report.js?v=150"></script>
 <script src="../core/geo.js?v=150"></script>
 <script src="../core/fare.js?v=150"></script>
+<script src="../core/meter.js?v=150"></script>
 <script src="../core/appget.js?v=150"></script>
 <script src="../core/pin.js?v=150"></script>
 <script src="../core/clock.js?v=150"></script>
@@ -1229,20 +1231,50 @@ function onTrip(){
   const dp=P[J.to],mins=Math.round(J.km/22*60)+3;
   go(jobShell([L('பயணத்தில்','On trip'),pn(J.to)],`${custCard()}
      <div class="addr"><span class="ic" style="background:rgba(194,59,59,.12);color:var(--danger)">${I.pin}</span><div><small class="kind">Drop</small><b>${pn(J.to)}</b>${padr(J.to)}</div><span class="pill">${J.km.toFixed(1)} ${L('கி.மீ','km')}</span></div>
+     ${J.id?'<div class="mtr" id="mtr"></div>':''}
      ${navLink(dp,L('Drop-க்கு Navigate','Navigate to drop'))}
      ${slider('end',L('Trip முடிக்க இழுங்க','Slide to end trip'),'red')}`,{ff:!J.id}),()=>{
+    if(J.id)meterStart();
     const o={driver:()=>POS,line:()=>{if(J&&J.id)return[POS,dp];const p=along(J.trip,J.f);return[p,...J.trip.slice(p.idx+1)]},pins:[{...dp,col:'#121212'}],hide:CUSTOM};
     makeMap(document.getElementById('map'),o).fit(J.id?[POS,dp]:J.trip,60,70);
     const stS=document.getElementById('stS');
-    if(J.id){const up=()=>{const km=hav(POS,dp)*1.3;stS.textContent=km<0.2?L('Drop வந்தாச்சு','At drop'):L(`Drop-க்கு ${km.toFixed(1)} கி.மீ`,`${km.toFixed(1)} km to drop`)};up();TK=setInterval(up,2000);bindCust()}else{
+    if(J.id){let tk=0;const up=()=>{const km=hav(POS,dp)*1.3;stS.textContent=km<0.2?L('Drop வந்தாச்சு','At drop'):L(`Drop-க்கு ${km.toFixed(1)} கி.மீ`,`${km.toFixed(1)} km to drop`);
+        if(++tk%3===0)meterPoll();const el=document.getElementById('mtr'),mt=meterNow();
+        if(el&&mt){const k=J.b&&J.b.kind,f=k==='rental'||k==='outstation'?null:FARE.final(J.b,tripActual());
+          el.innerHTML=`<span>${X('pin',14)} GPS <b>${mt.km.toFixed(1)}</b> ${L('கி.மீ','km')}</span>${mt.waitMin?`<span>${X('clock',14)} ${mt.waitMin} ${L('நிமி மெதுவா','min slow')}</span>`:''}${f?`<span>${L('இப்போ','Now')} <b>${inr(f.total)}</b></span>`:''}${NATMT?'':`<small>${L('Phone lock பண்ணாதீங்க — app update பண்ணா lock-லயும் கணக்கு ஓடும்','Keep this screen on — update the app to count while locked')}</small>`}`}};
+      up();TK=setInterval(up,2000);bindCust()}else{
     const skip=runAlong(o,J.trip,16000,()=>{stS.textContent=L('Drop வந்தாச்சு','At drop')},()=>{if(J.f<1)stS.textContent=L(`Drop-க்கு ${Math.max(1,Math.ceil((1-J.f)*mins))} நிமி`,`${Math.max(1,Math.ceil((1-J.f)*mins))} min to drop`)});
     document.getElementById('ff').onclick=skip;bindCust();}
-    bindSlide('end',()=>{if(!J.id){POS={lat:dp.lat,lon:dp.lon};collect();return}const k=J.b&&J.b.kind;if(k==='rental'||k==='outstation')tripEndSheet(collect);else collect()});
+    bindSlide('end',async()=>{if(!J.id){POS={lat:dp.lat,lon:dp.lon};collect();return}await meterEnd();const k=J.b&&J.b.kind;if(k==='rental'||k==='outstation')tripEndSheet(collect);else collect()});
   });
 }
+/* ---- GPS trip meter (owner 28 Nov): core/meter.js rules. App 1.0.27+ counts natively (also while the phone is locked)
+   and sends the running km to the booking and the route to bookings/{id}/track; older apps count here while the page
+   is on screen and send the route from here. NATMT: null = not known yet, true = the phone's meter answers. ---- */
+let NATMT=null,MTN=null,MTT=0;
+function meterStart(){if(!J||!J.id||!CL)return;
+  if(!J.mt){try{const x=JSON.parse(localStorage.getItem('vct_mt_'+J.id)||'null');J.mt=x&&Array.isArray(x.pts)&&x.last!==undefined?x:METER.fresh()}catch(e){J.mt=METER.fresh()}}
+  if(OVL&&NATMT!==false)try{OVL.tripStart({id:J.id}).then(r=>{if(r&&r.id===J.id){NATMT=true;MTN=r}}).catch(()=>{NATMT=false})}catch(e){NATMT=false}}
+function meterPoll(){if(!J||!J.id||!NATMT||!OVL)return;try{OVL.tripState().then(r=>{if(r&&r.id===J.id)MTN=r}).catch(()=>{})}catch(e){}}
+function meterFix(lat,lon,acc){if(!J||!J.id||!J.b||J.b.status!=='ontrip'||!J.mt)return;
+  METER.add(J.mt,{lat,lon,t:Date.now(),acc});const now=Date.now();
+  if(now-(J.mtSave||0)>15000){J.mtSave=now;try{localStorage.setItem('vct_mt_'+J.id,JSON.stringify(J.mt))}catch(e){}}
+  if(NATMT!==true&&now-MTT>30000){MTT=now;const s=METER.summary(J.mt);cUpd({meter:{km:s.km,w:s.waitMin,src:'web',at:F().serverTimestamp()}});meterUpload(false)}}
+/* the route in chunks of 60 points → bookings/{id}/track/cNNN (only when this page is the meter) */
+async function meterUpload(all){const j=J;if(!CL||!j||!j.id||!j.mt||NATMT===true||j.mtUp)return;j.mtUp=true;
+  try{let sent=j.mt.sent||0;while(j.mt.pts.length-sent>=60||(all&&j.mt.pts.length>sent)){const n=Math.floor(sent/60),p=j.mt.pts.slice(n*60,n*60+60).join(';');
+      await F().setDoc(F().doc(CL.db,'bookings',j.id,'track','c'+String(n).padStart(3,'0')),{n,t0:j.mt.t0,p,src:'web',at:F().serverTimestamp()}).catch(e=>{if(!(e&&/exist|permission/.test(String(e.code||e.message))))throw e});
+      sent=n*60+Math.min(60,j.mt.pts.length-n*60);j.mt.sent=sent;if(sent%60)break}}catch(e){}finally{j.mtUp=false}}
+/* what the meter says now: the phone's (1.0.27+) or this page's */
+function meterNow(){if(NATMT&&MTN&&J&&MTN.id===J.id)return{km:+MTN.km||0,waitMin:+MTN.waitMin||0,gapKm:+MTN.gapKm||0,gaps:+MTN.gaps||0,jumps:+MTN.jumps||0,mock:+MTN.mock||0,pts:+MTN.pts||0,src:'app'};
+  return J&&J.mt?{...METER.summary(J.mt),src:'web'}:null}
+async function meterEnd(){if(!J||!J.id)return;
+  if(NATMT&&OVL)try{const r=await Promise.race([OVL.tripStop({id:J.id}),new Promise(x=>setTimeout(()=>x(null),3000))]);if(r&&r.id===J.id)MTN=r}catch(e){}
+  if(NATMT!==true)await Promise.race([meterUpload(true),new Promise(x=>setTimeout(x,4000))])}
 /* ---- final bill (core/fare.js): km from GPS (or the driver's odometer), time, toll, parking ---- */
 function tripActual(o){const b=J.b||{},now=Date.now(),st=CL&&CL.toMs(b.startedAt)||J.startAt||now,ar=CL&&CL.toMs(b.arrivedAt)||0;
-  return Object.assign({km:J.gpsKm>0.5?+J.gpsKm.toFixed(1):+(J.km||0).toFixed(1),mins:Math.max(0,Math.round((now-st)/6e4)),waitMin:ar&&st>ar?Math.round((st-ar)/6e4):0},J.adj||{},o||{})}
+  const mt=meterNow(),mk=mt&&mt.km>=0.3?Math.round(mt.km*10)/10:0;
+  return Object.assign({km:mk?mk:J.gpsKm>0.5?+J.gpsKm.toFixed(1):+(J.km||0).toFixed(1),gps:!!mk,mins:Math.max(0,Math.round((now-st)/6e4)),waitMin:ar&&st>ar?Math.round((st-ar)/6e4):0},J.adj||{},o||{})}
 // bill more than 1.5 × the booked fare and at least ₹50 above it (same rule as the office alert)
 function billBig(){const f=J.fin||finNow(),q=+(J.b&&J.b.fare)||0;return q>0&&f.total>q*1.5&&f.total-q>=50}
 function finNow(){J.fin=FARE.final(J.b,tripActual());J.comm=FARE.comm(J.fin.trip,commPct());return J.fin}
@@ -1667,7 +1699,7 @@ function geoFix(lat,lon,acc,hd,spd,ts){
   if(hd!=null&&isFinite(hd)&&hd>=0&&(spd==null||spd>.8))POSHD=Math.round(hd)%360;
   else if(prev&&km>.012)POSHD=Math.round(bearing(prev,{lat,lon}));
   POSSP=spd!=null&&isFinite(spd)&&spd>=0?spd:(prev?Math.min(45,km*1000/dt):0);
-  POS={lat,lon};LASTFIX=now;POSACC=acc;if(acc<=80)LASTGOOD=now;trackKm();const first=!GOTFIX;GOTFIX=true;GPSERR=0;
+  POS={lat,lon};LASTFIX=now;POSACC=acc;if(acc<=80)LASTGOOD=now;trackKm();meterFix(lat,lon,acc);const first=!GOTFIX;GOTFIX=true;GPSERR=0;
   const gap=now-LASTLIVE;
   if(first)pushLive(true);else if(S.online&&((J&&gap>=4000)||(POSSP>1.5&&gap>=8000)))pushLive(true);
   if(first&&S.tab==='home'&&!J&&document.getElementById('gpsw'))home()}
@@ -1979,7 +2011,7 @@ function cloudDone(pm){
   const f=J.fin||finNow(),a=tripActual(),srv=!!CFGD.serverComm;
   const ref=F().doc(CL.db,'bookings',J.id),basic={status:'done',pay:pm,doneAt:ts(),paidAt:ts(),updatedAt:ts()};
   F().updateDoc(ref,{...basic,fareFinal:f.total,comm:J.comm,commLocal:!srv,
-    fx:{trip:f.trip,pass:f.pass,lines:f.lines,km:a.km,mins:a.mins,toll:a.toll||0,parking:a.parking||0,permit:a.permit||0,gpsKm:+(J.gpsKm||0).toFixed(1)}})
+    fx:{trip:f.trip,pass:f.pass,lines:f.lines,km:a.km,mins:a.mins,toll:a.toll||0,parking:a.parking||0,permit:a.permit||0,gpsKm:+(J.gpsKm||0).toFixed(1),gps:meterNow()}})
     // older security rules (before rules v2 is published) only accept the basic fields: still close the trip
     .catch(e=>{if(e&&e.code==='permission-denied')return F().updateDoc(ref,basic);throw e}).catch(e=>toast(CL.errText(e,S.lang==='ta')));
   try{localStorage.removeItem('vct_km_'+J.id);localStorage.removeItem('vct_adj_'+J.id)}catch(e){}

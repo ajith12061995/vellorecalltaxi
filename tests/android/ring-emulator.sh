@@ -203,6 +203,34 @@ for i in $(seq 1 10); do t=$(topact); echo "$t" | grep -q RideRingActivity || br
 adb logcat -d | grep -qE "VctPush ?: taken poll-1" && ! (topact | grep -q RideRingActivity) && ok "ride taken by another driver: the ringing screen closed at once" || bad "ride screen stayed after 'taken'"
 tap_text "Later" >/dev/null; adb shell input keyevent KEYCODE_WAKEUP; adb shell wm dismiss-keyguard >/dev/null 2>&1; sleep 2
 
+# ---------- G) 1.0.27: GPS trip meter counts on the phone while it is locked, sends the running km and the route ----------
+adb shell am start -n $PKG/.MainActivity >/dev/null; sleep 3
+adb emu geo fix 79.13760 12.97160 >/dev/null; sleep 3
+cmd tripstart-gpstrip1; waitlog '^tripstart=' 15 || bad "tripStart not answered"
+grep '^tripstart=' "$LOG" | tail -1 | grep -q '"id":"gpstrip1"' && ok "trip meter started on the phone" || bad "trip meter did not start: $(grep '^tripstart=' "$LOG" | tail -1)"
+adb shell input keyevent KEYCODE_HOME; sleep 1; adb shell input keyevent KEYCODE_SLEEP; sleep 2
+# drive ~1.67 km south with the phone locked: one fix every 2 s, 33 m apart (~60 km/h), with one 3 km jump in the middle
+for i in $(seq 1 50); do
+  lat=$(python3 -c "print('%.5f'%(12.97160-$i*0.0003))")
+  adb emu geo fix 79.13760 $lat >/dev/null; sleep 2
+  [ $i -eq 25 ] && { adb emu geo fix 79.13760 13.00160 >/dev/null; sleep 1; }
+done
+sleep 32   # the 30 s running-km write
+grep '^commit=' "$LOG" | sed 's#\\/#/#g' | grep 'documents/bookings/gpstrip1' | grep -q '"meter.km"' && ok "locked phone sent the running km to the booking" || bad "no running km write: $(grep -c '^commit=' "$LOG") commits"
+adb shell input keyevent KEYCODE_WAKEUP; adb shell wm dismiss-keyguard >/dev/null 2>&1; sleep 2
+adb shell am start -n $PKG/.MainActivity >/dev/null; sleep 3
+cmd tripstate; waitlog '^tripstate=' 15
+ST=$(grep '^tripstate=' "$LOG" | tail -1); echo "  $ST"
+KM=$(echo "$ST" | python3 -c "import sys,json;print(json.loads(sys.stdin.read().split('=',1)[1]).get('km',0))" 2>/dev/null || echo 0)
+python3 -c "import sys;k=float('$KM');sys.exit(0 if 1.5<=k<=1.85 else 1)" && ok "meter counted ${KM} km for a 1.67 km drive while locked (jump ignored)" || bad "meter km wrong: $KM"
+echo "$ST" | grep -q '"jumps":[1-9]' && ok "the GPS jump was counted and not added" || bad "jump not detected: $ST"
+cmd tripstop-gpstrip1; waitlog '^tripstop=' 15
+for i in $(seq 1 20); do grep '^commit=' "$LOG" | sed 's#\\/#/#g' | grep -q 'documents/bookings/gpstrip1/track/c000' && break; sleep 1; done
+TR=$(grep '^commit=' "$LOG" | sed 's#\\/#/#g' | grep 'documents/bookings/gpstrip1/track/c000' | tail -1)
+echo "$TR" | grep -q '"p":{"stringValue":"12.9' && echo "$TR" | grep -q '"exists":false' && echo "$TR" | grep -q '"src":{"stringValue":"app"}' \
+  && ok "route uploaded to bookings/{id}/track/c000 (create-only, points, from the app)" || bad "route not uploaded: ${TR:0:300}"
+cmd tripstate; sleep 3; grep '^tripstate=' "$LOG" | tail -1 | grep -q '"id":""' && ok "after stop the meter is cleared" || bad "meter still running after stop"
+
 # ---------- OFF stops the phone's own sending ----------
 adb shell am start -n $PKG/.MainActivity >/dev/null; sleep 4
 echo off > tests/android/cmd.txt; sleep 4; adb shell input keyevent KEYCODE_HOME

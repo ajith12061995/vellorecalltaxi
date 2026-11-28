@@ -29,6 +29,9 @@ let offDone=false,lastCmd='';setInterval(()=>{fetch('/tests/android/cmd.txt?'+Da
   if(c==='livestatus')call('liveStatus').then(r=>rep('livestatus',JSON.stringify(r))).catch(e=>rep('livestatus','ERR '+e));
   if(c==='shutdown')call('testShutdown').then(()=>rep('shutdown','sent')).catch(e=>rep('shutdown','ERR '+e));
   if(c==='voice')call('voice').then(r=>rep('voice',JSON.stringify(r))).catch(e=>rep('voice','ERR '+e));
+  if(c.startsWith('tripstart-'))call('tripStart',{id:c.slice(10)}).then(r=>rep('tripstart',JSON.stringify(r))).catch(e=>rep('tripstart','ERR '+e));
+  if(c.startsWith('tripstate'))call('tripState').then(r=>rep('tripstate',JSON.stringify(r))).catch(e=>rep('tripstate','ERR '+e));
+  if(c.startsWith('tripstop-'))call('tripStop',{id:c.slice(9)}).then(r=>rep('tripstop',JSON.stringify(r))).catch(e=>rep('tripstop','ERR '+e));
   if(c==='fsi')call('fsi').then(r=>rep('fsi',JSON.stringify(r))).catch(e=>rep('fsi','ERR '+e));
   if(c.startsWith('push'))call('testPush',{data:{type:'ride',bookingId:c,veh:'mini',kind:'ride',fare:'150',tip:'0',from:'Katpadi Junction',to:'CMC Hospital',flat:'12.98',flon:'79.165',when:String(Date.now())},delay:12000}).then(()=>rep('push','sent:'+c)).catch(e=>rep('push','ERR '+e));
 }).catch(()=>{})},1500);

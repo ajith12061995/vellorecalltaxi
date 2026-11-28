@@ -115,9 +115,110 @@ final class NativeLive {
         if (l.hasAccuracy() && l.getAccuracy() > 80 && last != null && last.hasAccuracy() && last.getAccuracy() <= 80
                 && l.getTime() - last.getTime() < 30000) return;   // a poor reading right after a good one
         last = l;
+        meterFix(l);
         long now = System.currentTimeMillis();
         boolean moved = sent == null || sent.distanceTo(l) >= 20;
         if ((moved && now - sentAt >= 10000) || now - sentAt >= 30000) send(l);
+    }
+
+    /* ---------- GPS trip meter (1.0.27, owner 28 Nov "GPS fare like Uber / Red Taxi") ----------
+     * Runs here, in the duty service, so it keeps counting while the phone is locked or another app is open.
+     * TripMeter = the same rules as core/meter.js. Every 30 s: the running km / waiting go to bookings/{id}.meter (the
+     * customer sees them) and each full chunk of 60 used points goes to bookings/{id}/track/cNNN (the server checks the
+     * km from them and the office can replay the route). tripStop() sends the rest. The page reads tripState(). */
+    private static final int CHUNK = 60;
+    private TripMeter meter; private String tripId = ""; private int sentPts = 0; private long meterSavedAt = 0, meterPushAt = 0;
+    synchronized void tripStart(String id) {
+        if (id == null || id.isEmpty() || id.length() > 60) return;
+        loadTrip();
+        if (!id.equals(tripId)) { tripId = id; meter = new TripMeter(); sentPts = 0; if (last != null && System.currentTimeMillis() - last.getTime() < 20000) meterAdd(last); saveTrip(); }
+        if (h == null) { th.start(); h = new Handler(th.getLooper()); }
+    }
+    synchronized JSONObject tripState() {
+        loadTrip();
+        JSONObject r = new JSONObject();
+        try {
+            r.put("id", tripId);
+            if (meter != null) { r.put("km", meter.km()); r.put("waitMin", meter.waitMin()); r.put("gapKm", meter.gapKm()); r.put("gaps", meter.gaps); r.put("jumps", meter.jumps); r.put("mock", meter.mock); r.put("pts", meter.pointCount()); r.put("sent", sentPts); }
+            r.put("running", running);
+        } catch (Exception e) { /* never */ }
+        return r;
+    }
+    synchronized JSONObject tripStop(String id) {
+        loadTrip();
+        JSONObject r = tripState();
+        if (id != null && id.equals(tripId) && meter != null) {
+            final String tid = tripId; final TripMeter m = meter; final int from = sentPts;
+            new Thread(() -> { for (int i = 0; i < 3; i++) { if (uploadRest(tid, m, from) && pushMeter(tid, m)) break; try { Thread.sleep(4000); } catch (InterruptedException e) { return; } } }).start();
+            tripId = ""; meter = null; sentPts = 0; saveTrip();
+        }
+        return r;
+    }
+    private void meterFix(Location l) {
+        TripMeter m; String id;
+        synchronized (this) { if (tripId.isEmpty()) loadTrip(); m = meter; id = tripId; }
+        if (m == null || id.isEmpty()) return;
+        meterAdd(l);
+        long now = System.currentTimeMillis();
+        if (now - meterSavedAt > 30000) { saveTrip(); meterSavedAt = now; }
+        if (now - meterPushAt > 30000) { meterPushAt = now; pushMeter(id, m); uploadFull(id, m); }
+    }
+    private void meterAdd(Location l) {
+        boolean mock = false;
+        try { mock = android.os.Build.VERSION.SDK_INT >= 31 ? l.isMock() : l.isFromMockProvider(); } catch (Exception e) { /* old phones */ }
+        if (meter != null) meter.add(l.getLatitude(), l.getLongitude(), l.getTime(), l.hasAccuracy() ? l.getAccuracy() : 0, mock);
+    }
+    private void saveTrip() {
+        ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putString("tripId", tripId).putInt("tripSent", sentPts)
+                .putString("trip", meter == null ? "" : meter.save()).apply();
+    }
+    private void loadTrip() {
+        if (meter != null || !tripId.isEmpty()) return;
+        SharedPreferences p = ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
+        String id = p.getString("tripId", "");
+        if (!id.isEmpty()) { tripId = id; sentPts = p.getInt("tripSent", 0); meter = TripMeter.load(p.getString("trip", "")); }
+    }
+    private String bkDoc(String id) { return "projects/" + pref("proj") + "/databases/(default)/documents/bookings/" + id; }
+    /** running km / waiting on the booking (the rider's screen) */
+    private boolean pushMeter(String id, TripMeter m) {
+        try {
+            String tok = token(); if (tok == null) return false;
+            JSONObject mv = new JSONObject().put("fields", new JSONObject()
+                    .put("km", dbl(m.km())).put("w", dbl(m.waitMin())).put("src", new JSONObject().put("stringValue", "app")));
+            JSONObject w = new JSONObject()
+                    .put("update", new JSONObject().put("name", bkDoc(id)).put("fields", new JSONObject().put("meter", new JSONObject().put("mapValue", mv))))
+                    .put("updateMask", new JSONObject().put("fieldPaths", new JSONArray().put("meter.km").put("meter.w").put("meter.src")))
+                    .put("updateTransforms", new JSONArray().put(new JSONObject().put("fieldPath", "meter.at").put("setToServerValue", "REQUEST_TIME")))
+                    .put("currentDocument", new JSONObject().put("exists", true));
+            int code = http(fsBase + "/v1/projects/" + pref("proj") + "/databases/(default)/documents:commit", "application/json", new JSONObject().put("writes", new JSONArray().put(w)).toString(), tok, null);
+            if (code != 200) { lastErr = "meter:" + code; Log.w(TAG, "meter " + code); }
+            return code == 200;
+        } catch (Exception e) { lastErr = "meter:" + e.getClass().getSimpleName(); return false; }
+    }
+    /** one chunk → bookings/{id}/track/cNNN (create only; an existing chunk = already sent → fine) */
+    private boolean putChunk(String id, TripMeter m, int from, int to) throws Exception {
+        String tok = token(); if (tok == null) return false;
+        int n = from / CHUNK;
+        JSONObject f = new JSONObject().put("n", new JSONObject().put("integerValue", String.valueOf(n)))
+                .put("t0", new JSONObject().put("integerValue", String.valueOf(m.t0)))
+                .put("p", new JSONObject().put("stringValue", m.points(from, to)))
+                .put("src", new JSONObject().put("stringValue", "app"));
+        JSONObject w = new JSONObject()
+                .put("update", new JSONObject().put("name", bkDoc(id) + "/track/c" + String.format(java.util.Locale.US, "%03d", n)).put("fields", f))
+                .put("currentDocument", new JSONObject().put("exists", false))
+                .put("updateTransforms", new JSONArray().put(new JSONObject().put("fieldPath", "at").put("setToServerValue", "REQUEST_TIME")));
+        int code = http(fsBase + "/v1/projects/" + pref("proj") + "/databases/(default)/documents:commit", "application/json", new JSONObject().put("writes", new JSONArray().put(w)).toString(), tok, null);
+        if (code != 200 && code != 400 && code != 409) { lastErr = "track:" + code; Log.w(TAG, "track " + code); return false; }
+        return true;   // 400/409 FAILED_PRECONDITION = the chunk is there already
+    }
+    private void uploadFull(String id, TripMeter m) {   // vct-live thread only
+        try { while (m.pointCount() - sentPts >= CHUNK && id.equals(tripId)) { if (!putChunk(id, m, sentPts, sentPts + CHUNK)) return; sentPts += CHUNK; saveTrip(); } }
+        catch (Exception e) { lastErr = "track:" + e.getClass().getSimpleName(); }
+    }
+    /** after the trip: every chunk from `from` on, the last one shorter (chunks already sent are skipped by the server) */
+    private boolean uploadRest(String id, TripMeter m, int from) {
+        try { for (int i = (from / CHUNK) * CHUNK; i < m.pointCount(); i += CHUNK) if (!putChunk(id, m, i, i + CHUNK)) return false; return true; }
+        catch (Exception e) { lastErr = "track:" + e.getClass().getSimpleName(); return false; }
     }
 
     /* ---------- network (on the vct-live thread) ---------- */

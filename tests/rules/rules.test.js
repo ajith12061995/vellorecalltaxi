@@ -592,3 +592,19 @@ test('referral: credits and referrals are server-only; a booking may ask for a d
   await assertFails(addDoc(collection(as.cust(), 'bookings'), booking({ tariff: { t: 'local' }, disc: 30, discHeld: true })), 'cannot mark the discount held');
   await assertFails(addDoc(collection(as.cust(), 'bookings'), booking({ tariff: { t: 'local' }, discPaid: true })));
 });
+
+test('GPS meter: the ride\'s driver uploads route chunks and the running km; nobody edits a chunk; others cannot write', async () => {
+  const chunk = { n: 0, t0: 1700000000000, p: '12.97,79.13,0,8;12.969,79.13,3,8', src: 'app' };
+  await assertSucceeds(setDoc(doc(as.drv(), 'bookings', 'b3', 'track', 'c000'), chunk));
+  await assertFails(setDoc(doc(as.drv(), 'bookings', 'b3', 'track', 'c000'), { ...chunk, p: 'x' }), 'no rewriting a chunk');
+  await assertFails(setDoc(doc(as.drv(), 'bookings', 'b1', 'track', 'c000'), chunk), 'not my ride (searching)');
+  await assertFails(setDoc(doc(as.drv(), 'bookings', 'b2', 'track', 'c000'), chunk), 'my ride but not started');
+  await assertFails(setDoc(doc(as.cust(), 'bookings', 'b3', 'track', 'c001'), { ...chunk, n: 1 }), 'customer cannot write');
+  await assertFails(setDoc(doc(as.drv(), 'bookings', 'b3', 'track', 'zz'), chunk), 'bad chunk name');
+  await assertFails(setDoc(doc(as.drv(), 'bookings', 'b3', 'track', 'c002'), { ...chunk, n: 2, p: 'x'.repeat(4100) }), 'too big');
+  await assertSucceeds(getDoc(doc(as.cust(), 'bookings', 'b3', 'track', 'c000')), 'the rider sees the route');
+  await assertFails(getDoc(doc(as.other(), 'bookings', 'b3', 'track', 'c000')));
+  await assertSucceeds(updateDoc(doc(as.drv(), 'bookings', 'b3'), { meter: { km: 2.4, w: 1, src: 'app', at: serverTimestamp() } }));
+  await assertFails(updateDoc(doc(as.drv(), 'bookings', 'b3'), { meter: { km: 99999 } }), 'absurd km');
+  await assertFails(updateDoc(doc(as.drv(), 'bookings', 'b3'), { meter: { km: 2, fare: 1 } }), 'no other keys');
+});

@@ -381,6 +381,22 @@ exports.onBookingDisc = onDocumentUpdated('bookings/{id}', async ev => {
   });
 });
 
+// ---- GPS meter check: when a city ride finishes, re-measure the route the driver's phone uploaded (same rules as the
+// phone, functions/lib/meter.js = core/meter.js) and flag a mismatch for the office. The last chunks may arrive a few
+// seconds after "done", so wait a little first.
+const METER = require('./lib/meter');
+exports.onBookingMeter = onDocumentUpdated({ document: 'bookings/{id}', timeoutSeconds: 90 }, async ev => {
+  const before = ev.data.before.data() || {}, after = ev.data.after.data(), id = ev.params.id;
+  if (!after || after.status !== 'done' || before.status === 'done' || after.meterSrv) return;
+  if (after.kind && after.kind !== 'ride' && after.kind !== 'schedule') return;
+  await new Promise(r => setTimeout(r, 20000));
+  const q = await db.collection(`bookings/${id}/track`).get();
+  const ch = q.docs.map(d => d.data()), srv = ch.length ? METER.summary(METER.replay(ch)) : null;
+  const r = L.meterCheck(after, srv);
+  await ev.data.after.ref.update({ meterSrv: r.srv || { km: 0, pts: 0 }, ...(r.flag ? { meterFlag: r.flag } : {}) });
+  if (r.flag) logger.warn('meter flag', { id, flag: r.flag, billedKm: after.fx && after.fx.km, srvKm: r.srv && r.srv.km });
+});
+
 exports.onRideTaken = onDocumentUpdated('bookings/{id}', async ev => {
   const t = L.takenNow(ev.data.before.data(), ev.data.after.data()); if (!t || !t.veh) return;
   const c = await cfg(); if (!c.push || !c.push.vapid || c.noTakenPush) return;

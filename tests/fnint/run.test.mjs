@@ -264,3 +264,20 @@ test('referral: first finished ride credits both; discount held at booking, back
   assert.equal(h3.disc, 0); assert.equal(h3.discHeld, false);
   await db.doc('config/app').set({ grow: { ref: { on: false, amt: 30 } } }, { merge: true });
 });
+
+test('GPS meter: the server re-measures the uploaded route and flags a driver who billed more km', async () => {
+  const M = require('../../core/meter.js');
+  const s = M.fresh(); let t = 1.7e12;
+  for (let i = 0; i <= 200; i++) { M.add(s, { lat: 12.9716 - i * 0.000225, lon: 79.1376, t, acc: 8 }); t += 3000; }   // ~5 km straight south
+  const km = M.km(s);
+  for (const [id, billed] of [['gm1', km], ['gm2', km + 2]]) {
+    const ref = db.doc(`bookings/${id}`);
+    await ref.set(base({ customerUid: 'u-' + id, status: 'ontrip', driverPhone: DRV, km: 5, tariff: { t: 'local', mode: 'meter' } }));
+    for (let i = 0; i < s.pts.length; i += 60) await db.doc(`bookings/${id}/track/c${String(i / 60).padStart(3, '0')}`).set({ n: i / 60, t0: s.t0, p: s.pts.slice(i, i + 60).join(';'), src: 'app' });
+    await ref.update({ status: 'done', fareFinal: 200, fx: { km: billed, gps: { km: billed, mock: 0, src: 'app' } } });
+  }
+  const g1 = await waitFor(async () => { const d = (await db.doc('bookings/gm1').get()).data(); return d.meterSrv ? d : null; }, 60000);
+  assert.ok(Math.abs(g1.meterSrv.km - km) < 0.05, JSON.stringify(g1.meterSrv)); assert.ok(!g1.meterFlag, 'honest bill: no flag');
+  const g2 = await waitFor(async () => { const d = (await db.doc('bookings/gm2').get()).data(); return d.meterSrv ? d : null; }, 60000);
+  assert.equal(g2.meterFlag, 'high');
+});

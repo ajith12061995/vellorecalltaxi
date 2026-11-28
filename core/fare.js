@@ -44,9 +44,15 @@ const FARE = (() => {
         if (blocks) trip += add('xhr', `கூடுதல் நேரம் ${hrsTxt(blocks / 2, 'ta')} × ₹${n(t.xh)}`, `Extra time ${hrsTxt(blocks / 2, 'en')} × ₹${n(t.xh)}`, blocks * n(t.xh) / 2);
       }
     } else {
+      const g = gpsFare(t, a, quoted);
+      if (g) {                                                   // GPS fare (Office → Settings → GPS fare): actual km by the meter
+        trip += add('fare', `GPS ${g.km} கி.மீ கட்டணம்`, `Fare for ${g.km} km (GPS)`, g.base);
+        if (g.night) trip += add('night', `இரவு கட்டணம் +${n(t.night)}%`, `Night charge +${n(t.night)}%`, g.night);
+      } else {
       const nt = n(t.nightAmt) < quoted ? n(t.nightAmt) : 0;   // night charge is inside the quoted fare; shown on its own line
       trip += add('fare', 'பயணக் கட்டணம்', 'Ride fare', quoted - nt);
       if (nt) trip += add('night', `இரவு கட்டணம் +${n(t.night)}%`, `Night charge +${n(t.night)}%`, nt);
+      }
       const wm = Math.max(0, Math.round(n(a.waitMin) - (t.free != null ? n(t.free) : 3)));
       if (wm && n(t.wait)) trip += add('wait', `காத்திருப்பு ${wm} நிமி`, `Waiting ${wm} min`, wm * n(t.wait));
     }
@@ -120,10 +126,25 @@ const FARE = (() => {
     }
     return null;
   }
+  // GPS fare for a city ride (owner 28 Nov). tariff.mode (saved at booking from Office → Settings → GPS fare):
+  //   'quote'   (default) the booked fare — nothing changes
+  //   'upfront' like Uber: the booked fare, unless the GPS km is more than xp % over the booked km → then the km fare
+  //   'meter'   like Red Taxi / the auto meter: always the km fare of the GPS km
+  // Only with a real GPS meter reading (actual.gps === true). A reading under half the booked km (meter broken /
+  // phone off) is not trusted: the booked fare stands. Returns null = use the booked fare.
+  function gpsFare(t, a, quoted) {
+    const mode = t && t.mode, akm = Math.round(n(a && a.km) * 10) / 10;
+    if (!(mode === 'upfront' || mode === 'meter') || !a || a.gps !== true || !(akm > 0)) return null;
+    const qkm = n(t.km); if (qkm && akm < qkm * 0.5) return null;
+    const v = { id: t.v, base: t.base, per: t.per, incl: t.incl }, base = cityFare(v, akm);
+    const fare = withNightV(t.v, base, n(t.night));
+    if (mode === 'upfront' && !(qkm && akm > qkm * (1 + n(t.xp) / 100) && fare > quoted)) return null;
+    return { km: akm, base, night: fare - base, fare };
+  }
   const comm = (trip, pct) => Math.round(n(trip) * n(pct) / 100);
   // the amount a finished booking really cost (old bookings have no fareFinal)
   const billOf = b => b && b.fareFinal != null ? +b.fareFinal : +(b && b.fare) || 0;
   const tripOf = b => b && b.fx && b.fx.trip != null ? +b.fx.trip : billOf(b);
-  return { final, stFare, ST_R, comm, billOf, tripOf, r10, nightPct, withNight, hm, AUTO_GOVT, AREA, crow, fromCentre, areaKm, cityFare, nightFor, withNightV, OUTCAT, outCat, catBata, INCL, inclKm, AHRS, AXH, AGRACE, aHours, planHours, hrsTable, hrsTxt };
+  return { final, gpsFare, stFare, ST_R, comm, billOf, tripOf, r10, nightPct, withNight, hm, AUTO_GOVT, AREA, crow, fromCentre, areaKm, cityFare, nightFor, withNightV, OUTCAT, outCat, catBata, INCL, inclKm, AHRS, AXH, AGRACE, aHours, planHours, hrsTable, hrsTxt };
 })();
 if (typeof module !== 'undefined') module.exports = FARE;

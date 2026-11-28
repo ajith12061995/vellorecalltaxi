@@ -426,4 +426,15 @@ function referDecide(o) {
 }
 // how much discount a booking may take: what it asked for, no more than the credit, the fare, or REF_MAX
 const discTake = (want, have, fare) => Math.max(0, Math.floor(Math.min(n(want), n(have), n(fare), REF_MAX)));
-module.exports = { REF_MAX, refAmt, referDecide, discTake, stFare, stFareOf, ST_R, takenNow, REPUSH, repushNow, REASSIGN, reassignCheck, SUBDUR, subActive, subPrice, buySubDecide, splitDriverTokens, ridePushData, placeName, BANDS, bandOf, demandMap, statDay, scoreSample, ownerAlerts, WATCH, istHour, driverWatch, watchMsg, inclKm, enquiryFlood, OUTCAT, outCat, catBata, AHRS, AXH, aHours, planHours, hrsTable, AUTO_GOVT, AREA, autoFare, outsideArea, rentCheck, outCheck, tariffs, rentPrice, istStamp, commissionFor, settle, housekeeping, fareLooksWrong, liveStale, custPush, fareCheck, bookingLimit, nightPct, withNight, crowKm, LIMIT_OPEN, LIMIT_HOUR };
+// ---- GPS meter check (28 Nov): the server's own km from bookings/{id}/track vs what the driver's phone billed
+// srv = METER.summary(replay) ; returns {flag, srv} — flag '' when fine. Only the office sees flags; money is not changed here.
+function meterCheck(b, srv) {
+  const t = (b && b.tariff) || {}, fx = (b && b.fx) || {}, g = fx.gps || null, billed = n(fx.km), paidByGps = t.mode === 'upfront' || t.mode === 'meter';
+  let flag = '';
+  if (g && n(g.mock) > 0) flag = 'mock';
+  else if (paidByGps && g && n(g.km) >= 0.3 && (!srv || srv.pts < 2)) flag = 'notrack';
+  else if (paidByGps && srv && srv.pts >= 2 && billed > srv.km * 1.05 + 0.3) flag = 'high';
+  else if (srv && srv.pts >= 2 && n(b.km) > 0 && srv.km > n(b.km) * 1.6 && srv.km - n(b.km) > 2) flag = 'long';
+  return { flag, srv: srv ? { km: srv.km, gapKm: srv.gapKm, waitMin: srv.waitMin, gaps: srv.gaps, jumps: srv.jumps, pts: srv.pts } : null };
+}
+module.exports = { meterCheck, REF_MAX, refAmt, referDecide, discTake, stFare, stFareOf, ST_R, takenNow, REPUSH, repushNow, REASSIGN, reassignCheck, SUBDUR, subActive, subPrice, buySubDecide, splitDriverTokens, ridePushData, placeName, BANDS, bandOf, demandMap, statDay, scoreSample, ownerAlerts, WATCH, istHour, driverWatch, watchMsg, inclKm, enquiryFlood, OUTCAT, outCat, catBata, AHRS, AXH, aHours, planHours, hrsTable, AUTO_GOVT, AREA, autoFare, outsideArea, rentCheck, outCheck, tariffs, rentPrice, istStamp, commissionFor, settle, housekeeping, fareLooksWrong, liveStale, custPush, fareCheck, bookingLimit, nightPct, withNight, crowKm, LIMIT_OPEN, LIMIT_HOUR };

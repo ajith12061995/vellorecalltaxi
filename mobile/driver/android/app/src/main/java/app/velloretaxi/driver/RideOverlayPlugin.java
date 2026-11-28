@@ -261,6 +261,15 @@ public class RideOverlayPlugin extends Plugin {
         call.resolve();
     }
 
+    private static JSObject jsOf(org.json.JSONObject o) { try { return new JSObject(o.toString()); } catch (Exception e) { return new JSObject(); } }
+    /* 1.0.27 GPS trip meter (NativeLive / TripMeter): start when the trip starts, read while it runs, stop at the drop */
+    @PluginMethod
+    public void tripStart(PluginCall call) { NativeLive.get(getContext()).tripStart(call.getString("id", "")); call.resolve(jsOf(NativeLive.get(getContext()).tripState())); }
+    @PluginMethod
+    public void tripState(PluginCall call) { call.resolve(jsOf(NativeLive.get(getContext()).tripState())); }
+    @PluginMethod
+    public void tripStop(PluginCall call) { call.resolve(jsOf(NativeLive.get(getContext()).tripStop(call.getString("id", "")))); }
+
     @PluginMethod
     public void liveStatus(PluginCall call) {
         JSObject r = new JSObject();
