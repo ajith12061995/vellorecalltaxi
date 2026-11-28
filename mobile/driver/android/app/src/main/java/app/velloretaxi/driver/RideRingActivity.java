@@ -102,6 +102,9 @@ public class RideRingActivity extends Activity {
         if (Build.VERSION.SDK_INT >= 27) { setShowWhenLocked(true); setTurnScreenOn(true); }
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON | WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED | WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON);
         cur = new WeakReference<>(this); showing = true;
+        // 1.0.23: the ride was stopped (taken by another driver) before this screen finished opening: close at once
+        String rid = getIntent() == null ? "" : getIntent().getStringExtra("id");
+        if (RideFallback.wasCancelled(rid)) { showing = false; finish(); return; }
         build(getIntent());
     }
 

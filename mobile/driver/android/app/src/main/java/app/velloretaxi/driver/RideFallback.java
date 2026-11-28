@@ -36,6 +36,10 @@ public class RideFallback {
     private static final Handler main = new Handler(Looper.getMainLooper());
     private static final Runnable toneEnd = RideFallback::stopTone;
 
+    private static final java.util.Set<String> CANCELLED = java.util.Collections.synchronizedSet(new java.util.HashSet<>());
+    static void cancelled(String id) { if (id != null && id.length() > 0) { CANCELLED.add(id); if (CANCELLED.size() > 50) CANCELLED.clear(); } }
+    static boolean wasCancelled(String id) { return id != null && id.length() > 0 && CANCELLED.contains(id); }
+
     /** the page rang this ride, or decided it is not for this driver now */
     static void handled(String id) { if (id != null && id.length() > 0) handledId = id; }
 
@@ -63,7 +67,9 @@ public class RideFallback {
                                 || (why.startsWith("read:") && !why.equals("read:403")) || why.startsWith("busy?:");
                         if (!unsure) {
                             Log.i(TAG, "fast ring cancelled " + id + ": " + why);
+                            cancelled(id);
                             RideOverlayPlugin.cancelRing(id);
+                            main.postDelayed(() -> RideRingActivity.closeAll(a), 800);   // a screen still opening when the check came back
                         }
                         return;
                     }

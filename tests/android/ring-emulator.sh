@@ -138,7 +138,8 @@ adb shell input keyevent KEYCODE_SLEEP; sleep 3
 for i in $(seq 1 40); do adb logcat -d | grep -q "RideFallback: fast ring push-deaf1" && break; sleep 1; done
 adb logcat -d | grep -q "RideFallback: fast ring push-deaf1" && ok "phone locked: the phone rang the pushed ride by itself at once" || { bad "no fast ring"; adb logcat -d | grep -E "RideFallback|NativeLive|VctPush" | tail -15; }
 # 1.0.23: how long from the push reaching the phone to the ring (owner saw 7–9 s with 1.0.22)
-T0=$(adb logcat -d -v epoch | grep -m1 "VctPush: ride push-deaf1" | awk '{print $1}'); T1=$(adb logcat -d -v epoch | grep -m1 "RideFallback: fast ring push-deaf1" | awk '{print $1}')
+adb logcat -d -v epoch | grep -E "VctPush|fast ring" | head -4
+T0=$(adb logcat -d -v epoch | grep VctPush | grep -m1 "push-deaf1" | awk '{print $1}'); T1=$(adb logcat -d -v epoch | grep -m1 "RideFallback: fast ring push-deaf1" | awk '{print $1}')
 MS=$(python3 -c "print(int((float('${T1:-0}')-float('${T0:-0}'))*1000))" 2>/dev/null); echo "push→ring ${MS} ms (T0=$T0 T1=$T1)"
 [ -n "$T0" ] && [ -n "$T1" ] && [ "${MS:-99999}" -lt 1500 ] && ok "push to ring in ${MS} ms (under 1.5 s)" || bad "push to ring too slow or not measured: ${MS} ms"
 grep '^commit=' "$LOG" | grep -q '"pk":{"stringValue":"push-deaf1"}' && grep '^commit=' "$LOG" | grep 'push-deaf1' | grep -q '"fieldPath":"pkAt","setToServerValue":"REQUEST_TIME"' && ok "the phone told the server it got the push (pk + server time)" || bad "no push receipt: $(grep '^commit=' "$LOG" | grep -o '"pk"[^}]*}' | tail -1)"
