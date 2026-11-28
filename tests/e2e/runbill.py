@@ -35,7 +35,7 @@ async def main():
         if not await C.locator('#ph').count() and await C.locator('.nav button[data-tab="me"]').count():await C.locator('.nav button[data-tab="me"]').click();await pg.wait_for_timeout(400)  # guest home → sign in
         await C.locator('#ph').fill('9999900001');await C.locator('#go').click();await pg.wait_for_timeout(500)
         for i,d in enumerate('123456'):await C.locator(f'#o{i}').fill(d)
-        await pg.wait_for_timeout(800);await C.locator('#nm').fill('Priya');await C.locator('#go').click();await pg.wait_for_timeout(2000)
+        await pg.wait_for_timeout(800);await C.locator('body').evaluate("()=>{S.name='Priya';save();saveProfile({})}");await pg.wait_for_timeout(2000)
         # 1) normal bill (small toll): no question, no alert
         bid1=await ride(pg,C,D,cf,df,20)
         check('normal bill: no double-check',not await df.evaluate("!!document.getElementById('bok')"))

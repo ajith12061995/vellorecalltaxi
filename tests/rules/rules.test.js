@@ -656,10 +656,15 @@ test('coupons: only the owner makes codes (valid values only); customers read on
 });
 
 test('2-tap login: a driver writes only a sane session id; staff cannot block or write the reason; OTP counters are server-only', async () => {
-  await assertSucceeds(updateDoc(doc(as.drv(), 'drivers', DRV), { sess: 'abcdefgh12345678' }));
-  await assertFails(updateDoc(doc(as.drv(), 'drivers', DRV), { sess: 'x' }), 'too short');
-  await assertFails(updateDoc(doc(as.drv(), 'drivers', DRV), { sess: 'abc def ghi jkl' }), 'odd characters');
-  await assertFails(updateDoc(doc(as.drv2(), 'drivers', DRV), { sess: 'abcdefgh12345678' }), 'not another driver');
+  await assertSucceeds(setDoc(doc(as.drv(), 'driverSess', DRV), { id: 'abcdefgh12345678', at: serverTimestamp() }));
+  await assertSucceeds(getDoc(doc(as.drv(), 'driverSess', DRV)));
+  await assertFails(setDoc(doc(as.drv(), 'driverSess', DRV), { id: 'x' }), 'too short');
+  await assertFails(setDoc(doc(as.drv(), 'driverSess', DRV), { id: 'abc def ghi jkl' }), 'odd characters');
+  await assertFails(setDoc(doc(as.drv(), 'driverSess', DRV), { id: 'abcdefgh12345678', online: true }), 'nothing else');
+  await assertFails(setDoc(doc(as.drv2(), 'driverSess', DRV), { id: 'abcdefgh12345678' }), 'not another driver');
+  await assertFails(getDoc(doc(as.drv2(), 'driverSess', DRV)));
+  await assertFails(setDoc(doc(as.cust(), 'driverSess', CPH), { id: 'abcdefgh12345678' }), 'only drivers');
+  await assertFails(updateDoc(doc(as.drv(), 'drivers', DRV), { sess: 'abcdefgh12345678' }), 'not on the driver record');
   await assertFails(updateDoc(doc(as.drv(), 'drivers', DRV), { blockWhy: '' }));
   await assertFails(updateDoc(doc(as.staff(), 'drivers', DRV), { blockWhy: 'x' }));
   await assertSucceeds(updateDoc(doc(as.owner(), 'drivers', DRV), { blocked: true, blockWhy: 'Insurance expired' }));

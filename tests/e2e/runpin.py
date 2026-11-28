@@ -14,7 +14,7 @@ async def login_c(C,pg):
     if not await C.locator('#ph').count() and await C.locator('.nav button[data-tab="me"]').count():await C.locator('.nav button[data-tab="me"]').click();await pg.wait_for_timeout(400)  # guest home → sign in
     await C.locator('#ph').fill('9999900001');await C.locator('#go').click();await pg.wait_for_timeout(500)
     for i,d in enumerate('123456'):await C.locator(f'#o{i}').fill(d)
-    await pg.wait_for_timeout(800);await C.locator('#nm').fill('Priya');await C.locator('#go').click();await pg.wait_for_timeout(2000)
+    await pg.wait_for_timeout(800);await C.locator('body').evaluate("()=>{S.name='Priya';save();saveProfile({})}");await pg.wait_for_timeout(2000)
 async def enter(df,pin):
     await df.evaluate(f"(()=>{{const ins=[...document.querySelectorAll('#pinb input')];'{pin}'.split('').forEach((d,i)=>ins[i].value=d);cloudStart(ins)}})()")
 async def run(old):

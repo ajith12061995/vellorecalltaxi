@@ -9,7 +9,7 @@ async def login_c(C,pg):
     if not await C.locator('#ph').count() and await C.locator('.nav button[data-tab="me"]').count():await C.locator('.nav button[data-tab="me"]').click();await pg.wait_for_timeout(400)  # guest home → sign in
     await C.locator('#ph').fill('9999900001');await C.locator('#go').click();await pg.wait_for_timeout(500)
     for i,d in enumerate('123456'):await C.locator(f'#o{i}').fill(d)
-    await pg.wait_for_timeout(800);await C.locator('#nm').fill('Priya');await C.locator('#go').click();await pg.wait_for_timeout(2000)
+    await pg.wait_for_timeout(800);await C.locator('body').evaluate("()=>{S.name='Priya';save();saveProfile({})}");await pg.wait_for_timeout(2000)
 ARANI="setCustom('drop',{lat:12.6693,lon:79.2856});P.drop.ta=P.drop.en='Arani';S.dest='drop';S.mode='out';OS.type='round';OS.veh='mini';OS.leave=null;OS.ret=null;outFare2();0"
 async def main():
     async with async_playwright() as p:

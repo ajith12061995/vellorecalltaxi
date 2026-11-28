@@ -44,7 +44,7 @@ async def main():
         await C.locator('#ph').fill('9999900001');await C.locator('#go').click();await pg.wait_for_timeout(500)
         for i,d in enumerate('123456'):await C.locator(f'#o{i}').fill(d)
         await pg.wait_for_timeout(800)
-        if await C.locator('#nm').count():await C.locator('#nm').fill('Priya');await C.locator('#go').click()
+        await C.locator('body').evaluate("()=>{S.name='Priya';save();saveProfile({})}")
         await pg.wait_for_timeout(2000);await cf.evaluate("S.lang='en';CFG.peak="+json.dumps(pk))
         await cf.evaluate("S.from='katpadi';S.dest='cmc';S.veh='mini';S.pay='cash';fareScreen()");await pg.wait_for_timeout(1000)
         nn=await C.locator('#nightnote').inner_text() if await C.locator('#nightnote').count() else ''

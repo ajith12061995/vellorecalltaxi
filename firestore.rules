@@ -129,9 +129,7 @@ service cloud.firestore {
       allow create, delete: if isOwner();
       allow update: if isOwner() || (isStaff() && !changes().hasAny(['wallet', 'blocked', 'blockWhy', 'sub']))   // sub = subscription plan: server (buySub) or owner only
         || (signedIn() && phone() == ph
-            && changes().hasOnly(['online', 'lat', 'lon', 'updatedAt', 'wallet', 'fcm', 'fcmAt', 'consent', 'dev', 'act', 'nxt', 'actAt', 'sess'])
-            // one phone per driver: the newest login writes its session id, an older phone sees it and logs out
-            && (!('sess' in changes()) || (newData().sess is string && newData().sess.matches('[A-Za-z0-9]{8,40}')))
+            && changes().hasOnly(['online', 'lat', 'lon', 'updatedAt', 'wallet', 'fcm', 'fcmAt', 'consent', 'dev', 'act', 'nxt', 'actAt'])
             && (!('act' in changes()) || slotTake('act', 'nxt')) && (!('nxt' in changes()) || slotTake('nxt', 'act'))
             // the phone's own setup, shown to the office: app version, permissions — short values and server time only
             && (!('dev' in changes()) || (newData().dev is map && newData().dev.keys().hasOnly(['app', 'ovl', 'pwr', 'loc', 'notif', 'os', 'mk', 'at'])
@@ -397,6 +395,13 @@ service cloud.firestore {
           && newData().keys().hasOnly(['img', 'at']) && newData().img is string
           && newData().img.size() <= 450000 && newData().img[0:23] == 'data:image/jpeg;base64,';
       }
+    }
+    // one phone per driver: the newest login writes its session id here; an older phone sees a different id and logs out
+    match /driverSess/{ph} {
+      allow read: if signedIn() && phone() == ph;
+      allow write: if signedIn() && phone() == ph && exists(/databases/$(database)/documents/drivers/$(ph))
+        && request.resource.data.keys().hasOnly(['id', 'at']) && request.resource.data.id is string
+        && request.resource.data.id.matches('[A-Za-z0-9]{8,40}');
     }
     // UTR locks: written only by the server when a recharge is credited
     match /utrs/{u} {

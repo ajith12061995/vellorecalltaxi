@@ -32,7 +32,7 @@ async def main():
         if not await C.locator('#ph').count() and await C.locator('.nav button[data-tab="me"]').count():await C.locator('.nav button[data-tab="me"]').click();await pg.wait_for_timeout(400)  # guest home → sign in
         await C.locator('#ph').fill('9999900001');await C.locator('#go').click();await pg.wait_for_timeout(500)
         for i,d in enumerate('123456'):await C.locator(f'#o{i}').fill(d)
-        await pg.wait_for_timeout(800);await C.locator('#nm').fill('Priya');await C.locator('#go').click();await pg.wait_for_timeout(2500)
+        await pg.wait_for_timeout(800);await C.locator('body').evaluate("()=>{S.name='Priya';save();saveProfile({})}");await pg.wait_for_timeout(2500)
         await cf.evaluate("CFG.area={lat:12.99,lon:80.17};P.maa={ta:'Chennai Airport',en:'Chennai Airport',sub:'Meenambakkam',lat:12.9900,lon:80.1693,km:0};P.tbm={ta:'Tambaram',en:'Tambaram',sub:'',lat:12.9249,lon:80.1000,km:0};S.from='maa';S.dest='tbm';S.veh='sedan';S.pay='cash';fareScreen()");await pg.wait_for_timeout(2500)
         near=await cf.evaluate("JSON.stringify(NEAR)")
         check('customer map shows the car from cars/ (login id, not phone)','u9999900002' in near and '+91' not in near,near)

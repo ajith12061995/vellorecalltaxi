@@ -1008,14 +1008,17 @@ function login(){
     office:CFGD.driverHelp||OFFICE_PH,joinUrl:'./join/',
     done:async()=>{if(!CL){S.logged=true;save();return pickProfile()}
       MYSESS='';FRESHLOGIN=true;   // a fresh login: whatever another phone wrote before is replaced by this one
-      const ok=await loadMe();FRESHLOGIN=false;if(ok){claimSession();resumeOnline();home();if(WELC)welcomeDriver()}}});
+      const ok=await loadMe();FRESHLOGIN=false;if(ok){resumeOnline();home();if(WELC)welcomeDriver();setTimeout(claimSession,0)}}});   // claimed after ON is restored
 }
 /* one phone per driver: this login writes a new session id; an older phone sees a different one and logs out */
-const SESSK='vct-sess';let MYSESS='',FRESHLOGIN=false;try{MYSESS=localStorage.getItem(SESSK)||''}catch(e){}
-function claimSession(){MYSESS=Array.from(crypto.getRandomValues(new Uint8Array(12)),b=>'abcdefghijkmnpqrstuvwxyz23456789'[b%32]).join('');try{localStorage.setItem(SESSK,MYSESS)}catch(e){}
-  F().updateDoc(F().doc(CL.db,'drivers',CL.phone),{sess:MYSESS}).catch(e=>console.warn('session',e))}
-function sessionTaken(d){if(!d||!d.sess||!MYSESS||d.sess===MYSESS||!S.logged)return false;
-  setOnline(false);if(OVL&&OVL17)try{OVL.liveStop({forget:true}).catch(()=>{})}catch(e){}LIVEN='';stopAllD();DME=null;CL.logout();S.logged=false;S.pid=null;save();MYSESS='';try{localStorage.removeItem(SESSK)}catch(e){}
+const SESSK='vct-sess';let MYSESS='',FRESHLOGIN=false,SEENSESS='';const OLDSESS=new Set();   // ids this phone replaced: a late snapshot with one of them is not another phonetry{MYSESS=localStorage.getItem(SESSK)||''}catch(e){}
+function claimSession(){if(SEENSESS)OLDSESS.add(SEENSESS);if(MYSESS)OLDSESS.add(MYSESS);MYSESS=Array.from(crypto.getRandomValues(new Uint8Array(12)),b=>'abcdefghijkmnpqrstuvwxyz23456789'[b%32]).join('');try{localStorage.setItem(SESSK,MYSESS)}catch(e){}
+  F().setDoc(F().doc(CL.db,'driverSess',CL.phone),{id:MYSESS,at:ts()}).catch(e=>console.warn('session',e))}
+// its own small record (not drivers/{phone}): the driver record's listeners are not disturbed
+function watchSess(){UNS.push(F().onSnapshot(F().doc(CL.db,'driverSess',CL.phone),s=>{const d=s.exists()?s.data():null;if(d&&d.id)sessionTaken({sess:d.id});else if(!MYSESS&&!FRESHLOGIN&&S.logged)claimSession()},()=>{}))}
+function sessionTaken(d){if(d&&d.sess&&d.sess!==MYSESS)SEENSESS=d.sess;if(!d||!d.sess||!MYSESS||d.sess===MYSESS||OLDSESS.has(d.sess)||!S.logged)return false;
+  // stop only THIS phone: the driver record and live position now belong to the new phone, so nothing is written here
+  S.online=false;save();try{awakeTick()}catch(e){}if(OVL&&OVL17)try{OVL.liveStop({forget:true}).catch(()=>{})}catch(e){}LIVEN='';stopAllD();DME=null;CL.logout();S.logged=false;S.pid=null;save();MYSESS='';try{localStorage.removeItem(SESSK)}catch(e){}
   login();setTimeout(()=>toast(L('வேற phone-ல login ஆச்சு. இந்த phone-ல logout ஆயிடுச்சு.','You logged in on another phone, so this one was logged out.')),400);return true}
 const greet=()=>{const h=new Date().getHours(),n=(me()&&me()[S.lang]||'').split(' ')[0];return (h<12?L('காலை வணக்கம்','Good Morning'):h<17?L('மதிய வணக்கம்','Good Afternoon'):L('மாலை வணக்கம்','Good Evening'))+(n?L(`, ${n}`,`, ${n}`):'')};
 function pickProfile(){
@@ -1558,7 +1561,7 @@ async function loadMe(){
   applyMe(s.data());S.phone=(CL.phone||'').replace('+91','');S.logged=true;S.pid='cloud';save();
   WELC=welcomeDue(s.data());
   DS={wallet:DS.wallet,tx:[],trips:[],pending:[],onMs:0,onDay:new Date().toDateString()};
-  watchMe();watchCfgD();watchWxD();watchMine();watchRch();watchSubs();
+  watchMe();watchCfgD();watchWxD();watchMine();watchRch();watchSubs();watchSess();
   VCTCLK.sync(F(),F().doc(CL.db,'live',CL.phone)); // learn the server time once
   return true;
 }
@@ -1580,8 +1583,7 @@ function ensurePush(){if(!CL||!CL.phone||!DME||!S.logged||document.getElementByI
 setInterval(()=>{try{ensurePush()}catch(e){}},30e3);
 let PUSHNOTED='';
 function pushNote(){if(PUSHWHY===PUSHNOTED)return;PUSHNOTED=PUSHWHY;try{localStorage.removeItem('vct_dev')}catch(e){}setTimeout(()=>{if(OVL)ovlPower();else devReport(NATIVE()?'app':'web')},500)}
-function applyMe(d){if(sessionTaken(d))return;if(CL&&S.logged&&!MYSESS&&!d.sess&&!FRESHLOGIN)setTimeout(()=>{if(!MYSESS)claimSession()},0);   // first run of this version: claim the phone
-const pv=DME&&DME.veh;if(REQUNSUB&&pv&&d.veh&&pv!==d.veh){REQUNSUB();REQUNSUB=null;setTimeout(()=>{if(S.online)listenReq()},0)}DME={id:CL.phone,ta:d.name||'Driver',en:d.name||'Driver',plate:d.plate||'',model:d.model||'',veh:d.veh||'auto',rating:RATE||d.rating||5,docs:d.docs||null,blocked:!!d.blocked,upi:d.upi||'',svc:d.svc||null,prio:d.prio||'auto',year:+d.year||+((String(d.model||'').match(/\b(19|20)\d\d\b/)||[''])[0])||0,consent:d.consent||null,onl:!!d.online,fcm:String(d.fcm||''),bonusPaid:String(d.bonusPaid||''),sub:d.sub&&d.sub.until?{plan:String(d.sub.plan||''),price:+d.sub.price||0,from:CL.toMs(d.sub.from)||0,until:CL.toMs(d.sub.until)||0}:null};DS.wallet=+d.wallet||0}
+function applyMe(d){const pv=DME&&DME.veh;if(REQUNSUB&&pv&&d.veh&&pv!==d.veh){REQUNSUB();REQUNSUB=null;setTimeout(()=>{if(S.online)listenReq()},0)}DME={id:CL.phone,ta:d.name||'Driver',en:d.name||'Driver',plate:d.plate||'',model:d.model||'',veh:d.veh||'auto',rating:RATE||d.rating||5,docs:d.docs||null,blocked:!!d.blocked,upi:d.upi||'',svc:d.svc||null,prio:d.prio||'auto',year:+d.year||+((String(d.model||'').match(/\b(19|20)\d\d\b/)||[''])[0])||0,consent:d.consent||null,onl:!!d.online,fcm:String(d.fcm||''),bonusPaid:String(d.bonusPaid||''),sub:d.sub&&d.sub.until?{plan:String(d.sub.plan||''),price:+d.sub.price||0,from:CL.toMs(d.sub.from)||0,until:CL.toMs(d.sub.until)||0}:null};DS.wallet=+d.wallet||0}
 function watchMe(){UNS.push(F().onSnapshot(F().doc(CL.db,'drivers',CL.phone),s=>{const live=!(s.metadata&&s.metadata.fromCache);
   if(!s.exists()){if(live&&ME_CACHED){ME_CACHED=false;if(S.online)setOnline(false);stopAllD();DME=null;notDriver()}return}
   const before=DS.wallet;applyMe(s.data());setTimeout(ensurePush,3000);

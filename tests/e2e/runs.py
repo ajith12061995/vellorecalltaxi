@@ -21,7 +21,7 @@ async def main():
         if not await C.locator('#ph').count() and await C.locator('.nav button[data-tab="me"]').count():await C.locator('.nav button[data-tab="me"]').click();await pg.wait_for_timeout(400)  # guest home → sign in
         await C.locator('#ph').fill('9999900001');await C.locator('#go').click();await pg.wait_for_timeout(500)
         for i,d in enumerate('123456'):await C.locator(f'#o{i}').fill(d)
-        await pg.wait_for_timeout(800);await C.locator('#nm').fill('Priya');await C.locator('#go').click();await pg.wait_for_timeout(1500)
+        await pg.wait_for_timeout(800);await C.locator('body').evaluate("()=>{S.name='Priya';save();saveProfile({})}");await pg.wait_for_timeout(1500)
         await cf.evaluate("home('out');setCustom('drop',{lat:19.076,lon:72.8777});P.drop.ta=P.drop.en='Mumbai';S.dest='drop';S.mode='out';OS.type='one';OS.veh='sedan';outFare2()");await pg.wait_for_timeout(800)
         print('Q',await cf.evaluate("JSON.stringify([oInfo().km,oQuote('sedan',oInfo().km),rentPrice('sedan',4)])"))
         await C.locator('#bookb').click();await pg.wait_for_timeout(600)

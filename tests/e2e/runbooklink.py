@@ -24,7 +24,7 @@ async def main():
         await C.locator('#bookb').click();await pg.wait_for_timeout(500)  # Book → sign in
         await C.locator('#ph').fill('9999900001');await C.locator('#go').click();await pg.wait_for_timeout(500)
         for i,d in enumerate('123456'):await C.locator(f'#o{i}').fill(d)
-        await pg.wait_for_timeout(800);await C.locator('#nm').fill('Priya');await C.locator('#go').click();await pg.wait_for_timeout(2500)
+        await pg.wait_for_timeout(800);await C.locator('body').evaluate("()=>{S.name='Priya';save();saveProfile({})}");await pg.wait_for_timeout(2500)
         st=await cf.evaluate("({from:S.from,dest:S.dest,veh:S.veh,mode:S.mode,pick:P.pick&&P.pick.ta,drop:P.drop&&P.drop.en,lat:P.pick&&P.pick.lat,left:BOOKLINK})")
         check('after sign-in: fare screen with the website places and Sedan',st['from']=='pick' and st['dest']=='drop' and st['veh']=='sedan' and st['pick']=='காட்பாடி ஜங்ஷன்' and st['drop']=='CMC Hospital' and abs(st['lat']-12.9716)<1e-6 and st['left'] is None,st)
         txt=await C.locator('body').inner_text()

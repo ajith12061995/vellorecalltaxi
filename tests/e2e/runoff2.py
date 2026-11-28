@@ -47,7 +47,7 @@ async def main():
         for i,d in enumerate('123456'):await C.locator(f'#o{i}').fill(d)
         await pg.wait_for_timeout(1500)
         if await cf.evaluate("!!document.getElementById('nm')"):
-            await C.locator('#nm').fill('X');await C.locator('#go').click();await pg.wait_for_timeout(1000)
+            await C.locator('body').evaluate("()=>{S.name='X';save();saveProfile({})}");await pg.wait_for_timeout(1000)
         await cf.evaluate("S.dest='cmc';S.veh='tr'+'av';S.when=Date.now()+5*36e5;fareScreen()");await pg.wait_for_timeout(800)
         await C.locator('#bookb').click();await pg.wait_for_timeout(800)
         print('blocked modal',await cf.evaluate("!!document.getElementById('bok')"))

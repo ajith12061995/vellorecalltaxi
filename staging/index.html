@@ -835,7 +835,7 @@ function login(){
     done:async u=>{if(!CL){S.logged=true;save();return home()}
       CUID=u.uid;S.uid=u.uid;await loadProfile();watchConfig();
       S.logged=true;save();saveProfile({lastLogin:F().serverTimestamp()});   // a new customer: users/{uid} made silently; the name is asked at the first booking
-      if(PENDING&&resumeActive()){PENDING=null;try{sessionStorage.removeItem('vct-pending')}catch(e){}}else home()}});
+      if(resumeActive()){PENDING=null;try{sessionStorage.removeItem('vct-pending')}catch(e){}}else home()}});
 }
 // first booking without a name: ask once (the driver needs to know whom to pick up)
 function nameAsk(){

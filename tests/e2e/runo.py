@@ -14,7 +14,7 @@ async def main():
         await C.locator('#ph').fill('9999900001');await C.locator('#go').click();await pg.wait_for_timeout(500)
         for i,d in enumerate('123456'):await C.locator(f'#o{i}').fill(d)
         await pg.wait_for_timeout(800)
-        await C.locator('#nm').fill('Priya');await C.locator('#go').click();await pg.wait_for_timeout(1500)
+        await C.locator('body').evaluate("()=>{S.name='Priya';save();saveProfile({})}");await pg.wait_for_timeout(1500)
         clip={'x':0,'y':0,'width':400,'height':860}
         await C.locator('[data-svc=out]').click();await pg.wait_for_timeout(1000)
         await pg.screenshot(path='shots/o1.png',clip=clip)

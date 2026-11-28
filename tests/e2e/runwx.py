@@ -17,7 +17,7 @@ async def main():
         await C.locator('#go').click();await pg.wait_for_timeout(300)
         if not await C.locator('#ph').count() and await C.locator('.nav button[data-tab="me"]').count():await C.locator('.nav button[data-tab="me"]').click();await pg.wait_for_timeout(400)  # guest home → sign in
         await C.locator('#ph').fill('9999900001');await C.locator('#go').click();await pg.wait_for_timeout(500)
-        await C.locator('#o0').fill('123456');await pg.wait_for_timeout(900);await C.locator('#nm').fill('Priya');await C.locator('#go').click();await pg.wait_for_timeout(2000)
+        await C.locator('#o0').fill('123456');await pg.wait_for_timeout(900);await C.locator('body').evaluate("()=>{S.name='Priya';save();saveProfile({})}");await pg.wait_for_timeout(2000)
         check('customer home, no weather data: no line (hidden placeholder)',await C.locator('#wx').count()==1 and not await C.locator('#wx').is_visible())
         await setwx({'t':28.6,'kind':'ok','heavy':False});await pg.wait_for_timeout(600)
         check('weather arrives: line appears by itself',await C.locator('#wx').is_visible() and '29°C' in await C.locator('#wx').inner_text(),await C.locator('#wx').inner_text())

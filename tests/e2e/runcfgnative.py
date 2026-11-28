@@ -28,7 +28,7 @@ async def main():
         if not await C.locator('#ph').count() and await C.locator('.nav button[data-tab="me"]').count():await C.locator('.nav button[data-tab="me"]').click();await pg.wait_for_timeout(400)  # guest home → sign in
         await C.locator('#ph').fill('9999900001');await C.locator('#go').click();await pg.wait_for_timeout(500)
         for i,d in enumerate('123456'):await C.locator(f'#o{i}').fill(d)
-        await pg.wait_for_timeout(800);await C.locator('#nm').fill('Priya');await C.locator('#go').click();await pg.wait_for_timeout(1500)
+        await pg.wait_for_timeout(800);await C.locator('body').evaluate("()=>{S.name='Priya';save();saveProfile({})}");await pg.wait_for_timeout(1500)
         await pg.evaluate("c=>MOCK.fs.setDoc({path:'config/app'},c)",CFG);await pg.wait_for_timeout(1500)
         st=await cf.evaluate("({r1:ORATE1.mini,min1:OMIN1,comm:CFG.comm,pin:CFG.serverPin,priv:CFG.privPhone,mini:VEH.find(v=>v.id==='mini').base})")
         check('city fare applied (Mini base 105)',st['mini']==105,st)

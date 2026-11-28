@@ -27,8 +27,8 @@ async def main():
         if not await C.locator('#ph').count() and await C.locator('.nav button[data-tab="me"]').count():await C.locator('.nav button[data-tab="me"]').click();await pg.wait_for_timeout(400)  # guest home → sign in
         await C.locator('#ph').fill('9999900011');await C.locator('#go').click();await pg.wait_for_timeout(500)
         await C.locator('#o0').fill('123456');await pg.wait_for_timeout(1200)
-        check('customer: whole code in one box → all six filled, signed in by itself (name screen)',await C.locator('#nm').count()==1,await C.locator('body').inner_text())
-        await C.locator('#nm').fill('Priya');await C.locator('#go').click();await pg.wait_for_timeout(1500)
+        check('customer: whole code in one box → all six filled, signed in by itself (no name asked now)',await cf.evaluate('S.logged===true'),'')
+        await C.locator('body').evaluate("()=>{S.name='Priya';save();saveProfile({})}");await pg.wait_for_timeout(1500)
         check('customer: home opens',await cf.evaluate("S.logged&&S.from==='home'"))
         # ---- customer: paste of the whole SMS into box 3
         await custLogin(pg,C,cf,'9999900011')
@@ -73,7 +73,7 @@ async def main():
         await df.evaluate("S.logged=false;save();login()");await pg.wait_for_timeout(400)
         await D.locator('#ph').fill('9999900002');await D.locator('#go').click();await pg.wait_for_timeout(500)
         await D.locator('#o0').fill('000000');await pg.wait_for_timeout(800)
-        check('driver: wrong code → cleared, message, Verify disabled',await df.evaluate("[...document.querySelectorAll('.otp input')].map(i=>i.value).join('')")=='' and await D.locator('#go').is_disabled() and len(await D.locator('#e').inner_text())>3)
+        check('driver: wrong code → cleared, message (no Verify button in the new login)',await df.evaluate("[...document.querySelectorAll('.otp input')].map(i=>i.value).join('')")=='' and await D.locator('#go').count()==0 and len(await D.locator('#e').inner_text())>3)
         # driver app reads the SMS
         await df.evaluate(FAKECAP,['123456',600,True])
         await D.locator('#o0').focus()

@@ -20,7 +20,9 @@
     const l=(q.cons||[]).find(c=>c.l);if(l)rows=rows.slice(0,l.l);
     return{docs:rows.map(r=>({id:r.p.split('/').pop(),data:()=>clone(r.d)}))};
   };
-  const notify=()=>setTimeout(()=>subs.slice().forEach(s=>{try{s.fire()}catch(e){console.error('listener',e)}}),0);
+  // real Firestore wakes only the listeners of what changed; the stand-in wakes all, except for the small
+  // driverSess/{phone} record (one-phone login), which wakes only its own listeners
+  const notify=(path)=>setTimeout(()=>subs.slice().forEach(s=>{if(path&&/^driverSess\//.test(path)&&s.path!==path)return;try{s.fire()}catch(e){console.error('listener',e)}}),0);
   const DOTTED=1;const undot=(d,prev)=>{const o={};for(const k in d){if(k.includes('.')){const[a,b]=k.split('.');o[a]={...((prev||{})[a]||{}),...(o[a]||{}),[b]:d[k]}}else o[k]=d[k]}return o};
   const write=(path,data,merge)=>{const prev=store.get(path);data=undot(data,prev);store.set(path,merge&&prev?{...prev,...resolve(data,prev)}:resolve(data,prev||{}));};
   const fs={
@@ -35,12 +37,12 @@
     async getDocFromServer(r){if(window.MOCK&&MOCK.down)throw{code:'unavailable',message:'offline'};return snapDoc(r.path)},
     async disableNetwork(){window.MOCK&&(MOCK.netOff=(MOCK.netOff||0)+1)},async enableNetwork(){window.MOCK&&(MOCK.netOn=(MOCK.netOn||0)+1)},
     async getDocs(q){return runQuery(q.type==='coll'?{path:q.path}:q)},
-    async setDoc(r,d,o){write(r.path,d,o&&o.merge);notify()},
+    async setDoc(r,d,o){write(r.path,d,o&&o.merge);notify(r.path)},
     async updateDoc(r,d){if(!store.has(r.path))throw{code:'not-found'};if(window.MOCK&&MOCK.denyUpdate&&MOCK.denyUpdate(r.path,d))throw{code:'permission-denied'};write(r.path,d,true);notify()},
     async addDoc(c,d){const id='d'+(++seq).toString(36)+Math.random().toString(36).slice(2,8);write(c.path+'/'+id,d,false);if(c.path!=='events')notify(); /* real Firestore wakes only listeners of the changed collection; nothing listens to the funnel rows */return docRef(c.path+'/'+id)},
     async deleteDoc(r){store.delete(r.path);notify()},
     onSnapshot(target,cb,err){
-      const s={fire:()=>cb(target.type==='doc'?snapDoc(target.path):runQuery(target.type==='coll'?{path:target.path}:target))};
+      const s={path:target.path,fire:()=>cb(target.type==='doc'?snapDoc(target.path):runQuery(target.type==='coll'?{path:target.path}:target))};
       subs.push(s);setTimeout(s.fire,0);
       return ()=>{const i=subs.indexOf(s);if(i>=0)subs.splice(i,1)};
     },
@@ -120,7 +122,7 @@
           if(!/^[6-9]\d{9}$/.test(p10))return{ok:false,why:'invalid-phone'};const ph='+91'+p10,now=Date.now(),R=window.OTPRATE=window.OTPRATE||{};
           const win=a=>(a||[]).filter(t=>now-t<3600e3);const h=win(R[ph]),d=win(R['dev_'+dv]);
           if(app==='driver'){const drv=store.get('drivers/'+ph);if(!drv&&!store.get('driverApps/'+ph))return{ok:false,why:'unregistered',office:'9344039933'};if(drv&&drv.blocked)return{ok:false,why:'blocked',reason:String(drv.blockWhy||''),office:'9344039933'}}
-          for(const a of [h,d])if(a.length>=5)return{ok:false,why:'rate',wait:Math.ceil((a[a.length-5]+3600e3-now)/1000)};
+          if(window.MOCK_RATE)for(const a of [h,d])if(a.length>=5)return{ok:false,why:'rate',wait:Math.ceil((a[a.length-5]+3600e3-now)/1000)};
           R[ph]=h.concat(now);if(dv)R['dev_'+dv]=d.concat(now);return{ok:true}}
         if(name==='nativeLogin'){const t=String((data||{}).idToken||'');if(!/^idt-\d{10}$/.test(t))throw{code:'functions/unauthenticated'};return{token:'ct-'+t.slice(4)}}
         if(name==='deleteMyAccount'){if(!user)throw{code:'functions/unauthenticated'};const ph=user.phoneNumber;
