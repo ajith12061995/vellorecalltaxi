@@ -213,7 +213,7 @@ adb shell input keyevent KEYCODE_HOME; sleep 1; adb shell input keyevent KEYCODE
 for i in $(seq 1 50); do
   lat=$(python3 -c "print('%.5f'%(12.97160-$i*0.0003))")
   adb emu geo fix 79.13760 $lat >/dev/null; sleep 2
-  [ $i -eq 25 ] && { adb emu geo fix 79.13760 13.00160 >/dev/null; sleep 1; }
+  [ $i -eq 25 ] && { adb emu geo fix 79.13760 13.00160 >/dev/null; sleep 6; }   # held long enough for the fused provider to deliver it
 done
 sleep 32   # the 30 s running-km write
 grep '^commit=' "$LOG" | sed 's#\\/#/#g' | grep 'documents/bookings/gpstrip1' | grep -q '"meter.km"' && ok "locked phone sent the running km to the booking" || bad "no running km write: $(grep -c '^commit=' "$LOG") commits"
