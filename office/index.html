@@ -1114,7 +1114,7 @@ function dash(){setTimeout(bindFleet,0);
    ${ownerPushHtml()}<div class="kpis" id="kpis">${kpisInner()}</div>${myReqHtml()}
    <section class="panel fleetp" id="fleet">${fleetHtml()}</section>
    <div class="dgrid">
-    <section class="panel mappanel"><div class="ph"><h3>${L('எல்லா வண்டியும்','Fleet map')}</h3><div class="legend">${['ready','pickup','trip','weak','poff'].map(k=>`<span><i style="background:${RST[k].c}"></i>${L(RST[k].ta,RST[k].en)}</span>`).join('')}</div></div>
+    <section class="panel mappanel"><div class="ph"><h3>${L('எல்லா வண்டியும்','Fleet map')}</h3><div class="legend">${['ready','pickup','trip','lost','poff'].map(k=>`<span><i style="background:${RST[k].c}"></i>${L(RST[k].ta,RST[k].en)}</span>`).join('')}</div></div>
       <div class="fbar" id="fbar"></div>
       <div class="omap"><canvas class="map" id="map"></canvas><div class="fcard" id="fcard" hidden></div><div class="zoomctl" style="bottom:12px"><button class="chipbtn" id="zi">+</button><button class="chipbtn" id="zo">−</button></div></div></section>
     <div class="dcol">
@@ -1240,7 +1240,7 @@ function fleetList(){return DB.drv.filter(d=>d.status!=='off'&&(!CL||d.hasPos)).
   if(FF.veh!=='all'&&fleetVehGroup(d.veh)!==FF.veh)return false;return true})}
 function fleetBar(){const el=document.getElementById('fbar');if(!el)return;const all=DB.drv.filter(d=>d.status!=='off'&&(!CL||d.hasPos));
   const R=d=>rstate(d),n={all:all.length,avail:all.filter(d=>R(d)==='ready').length,busy:all.filter(d=>R(d)==='pickup'||R(d)==='trip').length,weak:all.filter(d=>R(d)==='weak').length,old:all.filter(d=>R(d)==='lost').length};
-  const st=[['all',L('எல்லாம்','All')],['avail',L('ரெடி','Ready')],['busy',L('Ride-ல','On a ride')],['weak',L('Network இல்லை','No network')],['old',L('Phone off / நீண்ட நேரம்','Phone off / long')]];
+  const st=[['all',L('எல்லாம்','All')],['avail',L('ரெடி','Ready')],['busy',L('Ride-ல','On a ride')],['old',L('Phone off / நீண்ட நேரம்','Phone off / long')]];
   const vh=[['all',L('எல்லா வண்டி','All vehicles')],['car',L('கார்','Car')],['auto',L('ஆட்டோ','Auto')],['bike',L('பைக்','Bike')]];
   el.innerHTML=st.map(([k,t])=>`<button class="fchip${FF.st===k?' on':''}" data-fst="${k}">${t} <b>${n[k]}</b></button>`).join('')+'<span class="fsep"></span>'+
     vh.map(([k,t])=>`<button class="fchip${FF.veh===k?' on':''}" data-fvh="${k}">${t}</button>`).join('');
@@ -1478,7 +1478,8 @@ function rstate(d){if(d.status==='trip'||d.status==='pickup')return d.status;
 const rcount=()=>{const n={ready:0,pickup:0,trip:0,weak:0,lost:0,poff:0,paused:0,off:0};DB.drv.filter(d=>!d.blocked).forEach(d=>n[rstate(d)]++);return n};
 /* why a driver is not ready, in plain words, from the phone report (drivers.dev) and the signal */
 function rwhy(d){const st=rstate(d),o=[],v=devOf(d.id);
-  if(st==='ready'||st==='trip'||st==='pickup'||st==='off')return o;
+  // a ready driver whose phone has been quiet a few minutes still gets the hints (battery limit, old app, network)
+  if((st==='ready'&&!(d.sig>3*60e3))||st==='trip'||st==='pickup'||st==='off')return o;
   if(v&&v.app!=='1.0.16+')o.push({k:'app',ta:'பழைய app',en:'Old app'});
   if(v&&v.app==='1.0.16+'&&!v.ovl)o.push({k:'ovl',ta:'"மற்ற app மேல" அனுமதி இல்லை',en:'No "over other apps"'});
   if(v&&v.pwr===false)o.push({k:'pwr',ta:'Battery தடை',en:'Battery restricted'});
@@ -1504,7 +1505,7 @@ const rPill=d=>{const r=rstate(d);return `<em class="dst r-${r}" style="backgrou
 /* driver on a subscription plan (no commission until …) */
 const subPill=d=>d&&d.sub&&d.sub.until>Date.now()?` <em class="dst subp" title="${L('Commission இல்லை','No commission')}">Sub · ${new Date(d.sub.until).toLocaleString(S.lang==='ta'?'ta-IN':'en-IN',{day:'numeric',month:'short',hour:'numeric',minute:'2-digit'})} ${L('வரை','until')}</em>`:'';
 function lastOnLine(d){const r=rstate(d),why=rwhy(d);
-  if(r==='weak'||r==='lost'||r==='paused')return `<div class="lastln on bad"><i class="sdot" style="background:${RST[r].c}"></i> ${r==='paused'?L('Server இடைநிறுத்தியது','Paused by the server'):L('ON, ஆனா phone பதில் இல்ல','ON, but the phone is silent')} · ${L('கடைசி signal ','last signal ')}${d.sig==null?L('இல்ல','none'):sigTxt(d.sig)}
+  if(r==='weak'||r==='lost'||r==='paused'||(r==='ready'&&d.sig>3*60e3))return `<div class="lastln on ${r==='ready'?'':'bad'}"><i class="sdot" style="background:${RST[r].c}"></i> ${r==='paused'?L('Server இடைநிறுத்தியது','Paused by the server'):L('ON, ஆனா phone பதில் இல்ல','ON, but the phone is silent')} · ${L('கடைசி signal ','last signal ')}${d.sig==null?L('இல்ல','none'):sigTxt(d.sig)}
     <div class="why">${why.map(x=>esc(L(x.ta,x.en))).join(' · ')} · <a href="${waFix(d)}" target="_blank" rel="noopener">${L('சரி பண்ண WhatsApp','WhatsApp fix')}</a> · <a href="tel:+91${esc(d.phone)}">${L('அழை','Call')}</a></div></div>`;
   if(d.status!=='off')return `<div class="lastln on"><i class="sdot g"></i> ${r==='ready'?L('ரெடி · phone இப்போ signal அனுப்புது','Ready · the phone is reporting now'):L(RST[r].ta,RST[r].en)}</div>`;const t=lastOnMs(d.id);
   if(!t)return `<div class="lastln never">${L('App-ல இதுவரை online வரலை','Never been online in the app')}</div>`;
@@ -1523,7 +1524,7 @@ function drivers(){
   main().innerHTML=`${head('Drivers',L(`${DB.drv.length} drivers · ரெடி ${rdy} · Network இல்லை ${rn.weak+rn.lost} · Phone off ${rn.poff} · OFF ${rn.off+rn.paused}`,`${DB.drv.length} drivers · ready ${rdy} · no network ${rn.weak+rn.lost} · phone off ${rn.poff} · OFF ${rn.off+rn.paused}`),S.role==='owner'?`<button class="btn yellow hd" id="ad">+ ${L('Driver சேர்','Add driver')}</button>`:'')}
    <div class="srow"><input id="dq" class="sbox" placeholder="${L('பெயர், நம்பர், வண்டி எண் தேடு','Search name, number or plate')}" value="${esc(DQ)}"></div>
    ${DV||DF==='cant'||DF==='idle'?`<div class="fchip">${DV?vname(DV):''}${DF==='cant'?''+L('Online வர முடியாதவங்க','Can’t go online'):DF==='idle'?''+L('7 நாளா ஓட்டாதவங்க','Not driven in 7 days'):''} <button id="dvx">✕ ${L('எல்லா வண்டியும்','All vehicles')}</button></div>`:''}
-   <div class="tabs">${[['all',L('எல்லாம்','All'),DB.drv.length],['on','ON',DB.drv.filter(d=>d.status!=='off').length],['sig',L('ரெடி','Ready'),rdy],['weak',L('Network இல்லை','No network'),rn.weak],['lost',L('Phone off / நீண்ட நேரம்','Phone off / long'),rn.lost+rn.paused+rn.poff],['off','Offline',DB.drv.filter(d=>d.status==='off').length],['warn',''+L('கவனிக்க','Watch'),nWarn],['ph',L('Phone சரி பண்ணணும்','Phone to fix'),DB.drv.filter(DFF.ph).length],['nev',''+L('Online வராதவங்க','Never online'),DB.drv.filter(DFF.nev).length],['away',''+L('3 நாளா வரலை','Away 3+ days'),DB.drv.filter(DFF.away).length],['blk',''+L('தடை','Blocked'),DB.drv.filter(d=>d.blocked).length]].map(([id,l,n])=>`<button class="${DF===id?'on':''}" data-df="${id}">${l} <em>${n}</em></button>`).join('')}</div>
+   <div class="tabs">${[['all',L('எல்லாம்','All'),DB.drv.length],['on','ON',DB.drv.filter(d=>d.status!=='off').length],['sig',L('ரெடி','Ready'),rdy],['lost',L('Phone off / நீண்ட நேரம்','Phone off / long'),rn.lost+rn.paused+rn.poff],['off','Offline',DB.drv.filter(d=>d.status==='off').length],['warn',''+L('கவனிக்க','Watch'),nWarn],['ph',L('Phone சரி பண்ணணும்','Phone to fix'),DB.drv.filter(DFF.ph).length],['nev',''+L('Online வராதவங்க','Never online'),DB.drv.filter(DFF.nev).length],['away',''+L('3 நாளா வரலை','Away 3+ days'),DB.drv.filter(DFF.away).length],['blk',''+L('தடை','Blocked'),DB.drv.filter(d=>d.blocked).length]].map(([id,l,n])=>`<button class="${DF===id?'on':''}" data-df="${id}">${l} <em>${n}</em></button>`).join('')}</div>
    ${histOk?'':`<p class="muted" style="margin:0 0 10px;font-size:12.5px">${L('30 நாள் கணக்கு ஏற்றுது…','Loading 30-day stats…')}</p>`}
    <div class="cards">${dl.map(d=>{const st=SX[d.id];const tdy=DB.bk.filter(b=>b.driver===d.id&&b.status==='done'&&isToday(b.done||b.when));const exp=Object.entries(d.docs).filter(([k,v])=>v<30);
     return `<div class="dcard ${d.blocked?'blk':''}"><div class="dtop"><span class="vi">${I[d.veh]}</span><div><b>${d[S.lang]}</b><small>+91 ${d.phone}</small></div>${d.blocked?`<em class="dst off">${L('தடை','Blocked')}</em>`:rPill(d)}</div>

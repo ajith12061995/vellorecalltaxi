@@ -28,11 +28,11 @@ async def main():
         await O.locator('#ph').fill('8220201462');await O.locator('#lgn').click();await pg.wait_for_timeout(300)
         await O.locator('#otp').fill('123456');await pg.wait_for_timeout(2500)
         st=await of.evaluate("Object.fromEntries(DB.drv.filter(d=>d.id.startsWith('+9199999000')&&+d.id.slice(-2)>=21&&+d.id.slice(-2)<=26).map(d=>[d.en.split(' ')[0],rstate(d)]))")
-        check('states: ready / weak / lost / lost / paused / off',st=={'Ready':'ready','Weak':'weak','Lost':'lost','Silent':'lost','Paused':'paused','Off':'off'},st)
+        check('states (ON = ready): ready / ready (10 min quiet) / lost / lost / paused / off',st=={'Ready':'ready','Weak':'ready','Lost':'lost','Silent':'lost','Paused':'paused','Off':'off'},st)
         st2=await of.evaluate("Object.fromEntries(['27','28','29'].map(k=>{const d=DB.drv.find(x=>x.id==='+9199999000'+k);return [k,[rstate(d),rwhy(d)[0]&&rwhy(d)[0].k]]}))")
         check('phone said it was switched off → "Phone switched off"',st2['27']==['poff','poff'],st2['27'])
         check('battery 2 % and not charging at the last signal → phone off, "battery ran out"',st2['28']==['poff','bat'],st2['28'])
-        check('silent with 64 % battery → "No network, phone is on" (not "lost")',st2['29']==['weak','net'],st2['29'])
+        check('ON, quiet 7 min, 64 % battery → still ready, hint says network',st2['29']==['ready','net'],st2['29'])
         check('labels never say weak / lost',await of.evaluate("JSON.stringify(RST).includes('பலவீனம்')||JSON.stringify(RST).includes('தொலைஞ்சது')")==False)
         why=await of.evaluate("Object.fromEntries(['22','23','24','25'].map(k=>{const d=DB.drv.find(x=>x.id==='+9199999000'+k);return [k,rwhy(d).map(x=>x.k)]}))")
         check('reason: weak + battery restricted → "Battery"',why['22']==['pwr'],why['22'])
@@ -57,8 +57,8 @@ async def main():
         txt=' '.join((await O.locator('.cards').inner_text()).split())
         check('Long / phone-off tab: Lokesh (old app), Siva (no report), Prabhu (paused), Pandi (switched off)',all(x in txt for x in ['Lost Lokesh','Silent Siva','Paused Prabhu','Poweroff Pandi']) and 'Ready Ravi' not in txt and 'Weak Wasim' not in txt,txt[:200])
         check('Lost tab: reason and WhatsApp fix on the card',('Old app' in txt or 'பழைய app' in txt) and await O.locator('.cards a[href^="https://wa.me/919999900023"]').count()==1)
-        await O.locator('[data-df=weak]').click();await pg.wait_for_timeout(600)
-        ct=' '.join((await O.locator('.cards').inner_text()).split());check('No-network tab: Wasim and Naveen (both silent, phone on)',('Wasim' in ct) and ('Naveen' in ct) and await O.locator('.dcard').count()==2,ct[:200])
+        await O.locator('[data-df=sig]').click();await pg.wait_for_timeout(600)
+        ct=' '.join((await O.locator('.cards').inner_text()).split());check('Ready tab: Ravi, Wasim and Naveen (ON = ready); quiet ones show the last signal',all(x in ct for x in ['Ravi','Wasim','Naveen']) and await O.locator('[data-df=weak]').count()==0,ct[:200])
         # a city ride waiting 50 s with no driver → bar with the 3 nearest drivers, ready first
         await pg.evaluate("""MOCK.store.set('bookings/bkw1',{status:'searching',kind:'ride',veh:'mini',fare:120,km:3,custName:'Kala',from:{ta:'காட்பாடி',en:'Katpadi',lat:12.9700,lon:79.1400},to:{ta:'CMC',en:'CMC',lat:12.9250,lon:79.1350},createdAt:{__ms:Date.now()-50e3},when:Date.now()-50e3,src:'app'});
           MOCK.fs.setDoc({path:'bookings/bkw1'},MOCK.store.get('bookings/bkw1'))""")
@@ -68,7 +68,7 @@ async def main():
         check('waiting ride: nearest drivers to call, ready first',len(near)==3 and 'Ready Ravi' in near[0][0] and near[0][1]=='tel:+919999900021' and 'Weak Wasim' in near[1][0],near)
         check('waiting ride: a corner alert too',await O.locator('#ncards .ncard').count()>=1)
         # no driver ready → alert once
-        await pg.evaluate("(()=>{const l=MOCK.store.get('live/+919999900021');MOCK.fs.setDoc({path:'live/+919999900021'},{...l,updatedAt:{__ms:Date.now()-20*60e3}})})()")
+        await pg.evaluate("(()=>{const l=MOCK.store.get('live/+919999900021');MOCK.fs.setDoc({path:'live/+919999900021'},{...l,updatedAt:{__ms:Date.now()-40*60e3}})})()");await pg.evaluate("['22','29'].forEach(k=>{const l=MOCK.store.get('live/+9199999000'+k);MOCK.fs.setDoc({path:'live/+9199999000'+k},{...l,updatedAt:{__ms:Date.now()-40*60e3}})})")
         await pg.wait_for_timeout(1200)
         await of.evaluate("(()=>{R0AT=0;document.querySelectorAll('#ncards .ncard').forEach(c=>c.remove());const _h=Date.prototype.getHours;Date.prototype.getHours=function(){return 11};try{readyCheck()}finally{Date.prototype.getHours=_h}})()")
         t=' '.join((await O.locator('#ncards').inner_text()).split())
