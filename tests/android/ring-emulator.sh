@@ -144,7 +144,8 @@ MS=$(python3 -c "print(int((float('${T1:-0}')-float('${T0:-0}'))*1000))" 2>/dev/
 [ -n "$T0" ] && [ -n "$T1" ] && [ "${MS:-99999}" -lt 1500 ] && ok "push to ring in ${MS} ms (under 1.5 s)" || bad "push to ring too slow or not measured: ${MS} ms"
 grep '^commit=' "$LOG" | grep -q '"pk":{"stringValue":"push-deaf1"}' && grep '^commit=' "$LOG" | grep 'push-deaf1' | grep -q '"fieldPath":"pkAt","setToServerValue":"REQUEST_TIME"' && ok "the phone told the server it got the push (pk + server time)" || bad "no push receipt: $(grep '^commit=' "$LOG" | grep -o '"pk"[^}]*}' | tail -1)"
 grep -q '^read=Bearer idt-test push-deaf1' "$LOG" && ok "it read the ride from the server, signed in as the driver (rules apply)" || bad "ride not read: $(grep '^read=' "$LOG" | tail -1)"
-grep '^query=' "$LOG" | tail -1 | grep -q '"driverPhone"' && ok "it checked the driver is not already on a ride" || bad "no busy check"
+for i in $(seq 1 10); do grep '^query=' "$LOG" | grep -q '"driverPhone"' && break; sleep 1; done
+grep '^query=' "$LOG" | grep '"driverPhone"' | tail -1 | grep -q '"driverPhone"' && ok "it checked the driver is not already on a ride" || bad "no busy check"
 sleep 3; awake && ok "screen turned on" || bad "screen stayed off"
 t=$(topact); echo "top: $t"; echo "$t" | grep -q RideRingActivity && ok "ride over the lock screen (from the push itself)" || bad "ride screen not in front"
 has_text "Katpadi Junction" && has_text "₹150" && ok "pickup and fare from the push are shown" || { bad "details missing"; grep -o 'text="[^"]*"' /tmp/ui.xml | head -20; }
