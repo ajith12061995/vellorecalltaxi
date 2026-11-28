@@ -322,6 +322,42 @@ public class RideOverlayPlugin extends Plugin {
         call.resolve();
     }
 
+    /**
+     * 1.0.25: the phone maker's "auto launch / auto start" screen (Oppo, Realme, OnePlus, Vivo, Xiaomi, Huawei hide pushes
+     * from apps without it). No Android API says whether it is on, so the page asks the driver to confirm once.
+     * Falls back to this app's own settings page (Battery usage → Allow auto launch / background activity is there too).
+     */
+    @PluginMethod
+    public void autostart(PluginCall call) {
+        String[][] screens = {
+            {"com.coloros.safecenter", "com.coloros.safecenter.permission.startup.StartupAppListActivity"},
+            {"com.coloros.safecenter", "com.coloros.safecenter.startupapp.StartupAppListActivity"},
+            {"com.oplus.safecenter", "com.oplus.safecenter.permission.startup.StartupAppListActivity"},
+            {"com.oppo.safe", "com.oppo.safe.permission.startup.StartupAppListActivity"},
+            {"com.miui.securitycenter", "com.miui.permcenter.autostart.AutoStartManagementActivity"},
+            {"com.vivo.permissionmanager", "com.vivo.permissionmanager.activity.BgStartUpManagerActivity"},
+            {"com.iqoo.secure", "com.iqoo.secure.ui.phoneoptimize.AddWhiteListActivity"},
+            {"com.huawei.systemmanager", "com.huawei.systemmanager.startupmgr.ui.StartupNormalAppListActivity"},
+            {"com.letv.android.letvsafe", "com.letv.android.letvsafe.AutobootManageActivity"},
+        };
+        String opened = "";
+        for (String[] s : screens) {
+            try {
+                Intent i = new Intent().setComponent(new android.content.ComponentName(s[0], s[1])).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                if (getContext().getPackageManager().resolveActivity(i, 0) == null) continue;
+                getContext().startActivity(i); opened = s[0]; break;
+            } catch (Exception e) { /* not on this phone */ }
+        }
+        if (opened.isEmpty()) {
+            try {
+                Intent i = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:" + getContext().getPackageName())).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                getContext().startActivity(i); opened = "app";
+            } catch (Exception e) { /* none */ }
+        }
+        JSObject r = new JSObject(); r.put("opened", opened); r.put("maker", Build.MANUFACTURER == null ? "" : Build.MANUFACTURER.toLowerCase());
+        call.resolve(r);
+    }
+
     /* ---------- sound ---------- */
     private void startSound() {
         try {

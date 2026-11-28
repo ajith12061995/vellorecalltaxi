@@ -23,7 +23,7 @@ let offDone=false,lastCmd='';setInterval(()=>{fetch('/tests/android/cmd.txt?'+Da
   if(t==='off'&&!offDone){offDone=true;call('online',{on:false}).then(()=>rep('off','sent')).catch(e=>rep('off','ERR '+e));return}
   if(!t.includes(':')||t===lastCmd)return;lastCmd=t;const c=t.split(':')[1];
   if(c==='on'){offDone=false;call('online',{on:true}).then(()=>rep('on2','sent')).catch(e=>rep('on2','ERR '+e))}
-  if(c.startsWith('taken:'))call('testPush',{data:{type:'taken',bookingId:c.slice(6)},delay:0}).then(()=>rep('taken','sent'));
+  if(c.startsWith('taken-'))call('testPush',{data:{type:'taken',bookingId:c.slice(6)},delay:0}).then(()=>rep('taken','sent'));
   if(c==='tok')call('testToken',{token:'tok-native-1'}).then(()=>rep('tok','sent')).catch(e=>rep('tok','ERR '+e));
   if(c==='live')call('liveStart',{apiKey:'key-test',project:'proj-test',phone:'+919999900002',refresh:'rt-test',veh:'mini',tokenBase:'http://10.0.2.2:8080/fake',fsBase:'http://10.0.2.2:8080/fake'}).then(()=>rep('live','sent')).catch(e=>rep('live','ERR '+e));
   if(c==='livestatus')call('liveStatus').then(r=>rep('livestatus',JSON.stringify(r))).catch(e=>rep('livestatus','ERR '+e));

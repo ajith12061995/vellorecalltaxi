@@ -31,6 +31,7 @@ async def main():
         for i,d in enumerate('123456'):await D.locator(f'#o{i}').fill(d)
         await pg.wait_for_timeout(1200)
         await df.evaluate(BRIDGE%'true');await df.evaluate("window.__v17=true;ovlInit()");await pg.wait_for_timeout(800)
+        await df.evaluate("(()=>{window.setupGate=cb=>cb()})()")   # the one-time setup screen has its own test (runsetup)
         await D.locator('#ons').click();await pg.wait_for_timeout(1500)
         await df.evaluate("window.__cb&&__cb({latitude:12.9716,longitude:79.1590,accuracy:8,time:Date.now()})");await pg.wait_for_timeout(800)
         await df.evaluate("ovlPower()");await pg.wait_for_timeout(1200)

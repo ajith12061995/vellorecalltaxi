@@ -536,6 +536,15 @@ details.faq p{margin:0;padding:0 14px 14px;color:var(--muted);font-size:14px;lin
 .duty.tapped{transform:scale(.97)}.duty.tapped .sw::after{transform:translateX(28px);background:#1E8A5A}.duty.on.tapped .sw::after{transform:none;background:#C23B3B}
 :root[data-theme="dark"] .duty{background:#3A1E1E;color:#FFB4B4}:root[data-theme="dark"] .duty.on{background:#16352A;color:#9FE3BF}
 .tipadd{font-style:normal;color:#1E8A5A;font-size:.75em}
+.setuplist{display:grid;gap:8px;margin:12px 0}
+.setupitem{display:flex;align-items:center;gap:10px;padding:12px;border:1px solid var(--line);border-radius:12px;background:#fff}
+.setupitem.ok{background:#F1F8F4;border-color:#CFE7DA}.setupitem .tick{width:22px;height:22px;border-radius:50%;border:2px solid var(--line);display:grid;place-items:center;flex:none;color:#1E8A5A}
+.setupitem.ok .tick{border-color:#1E8A5A}.setupitem .st{flex:1}.setupitem small{display:block;color:var(--muted,#666);margin-top:2px}
+.setupgo,.setupdone{border:0;border-radius:10px;padding:9px 12px;font:inherit;font-weight:700;background:var(--yellow,#F5C518);color:#121212}.setupdone{background:#121212;color:#fff}
+.chipbtn.morereq{margin-left:auto;background:#121212;color:#fff;border:0}
+.morelist{display:grid;gap:8px;margin-top:10px}
+.moreitem{display:flex;justify-content:space-between;align-items:center;gap:10px;text-align:left;padding:12px;border:1px solid var(--line);border-radius:12px;background:#fff;font:inherit}
+.moreitem small{display:block;color:var(--muted,#666);margin-top:2px}.moreitem em{font-style:normal;font-weight:700;white-space:nowrap}
 a.btn{text-decoration:none}
 .menub{position:relative;font-size:20px;font-weight:800;width:46px}.mdot{position:absolute;top:8px;right:8px;width:10px;height:10px;border-radius:50%;background:#C23B3B;box-shadow:0 0 0 2px var(--surface)}
 .tpill{display:flex;align-items:center;gap:8px;height:46px;padding:0 14px;border-radius:999px;background:var(--surface);box-shadow:0 4px 14px rgba(0,0,0,.12);color:var(--fg);margin-left:8px}
@@ -1073,7 +1082,7 @@ function home(){setTimeout(demandHint,60);setTimeout(mineCheck,1500);
     if(S.online){bindTap('offs',()=>confirmOff(()=>{setOnline(false);home();toast(L('Offline ஆயிட்டீங்க','You are offline'))}));
       if(CL)maybeShowReq();else{document.getElementById('dreq').onclick=()=>incoming()}}
     {const sg=document.getElementById('sgn');if(sg)sg.onclick=()=>signAgreement()}
-    if(!S.online)bindTap('ons',()=>{if(CFGD.reqConsent&&needSign()){signAgreement(()=>home());return}if(DME&&DME.blocked){toast(L('உங்க account நிறுத்தி வைக்கப்பட்டிருக்கு. Owner-ஐ தொடர்பு கொள்ளுங்க','Your account is on hold. Contact the owner'));home();return}{const ds=docState();if(ds.expired.length){toast(L('காலாவதி ஆன document: ','Expired: ')+ds.expired.join(', ')+L('. புதுப்பிச்சு office-க்கு அனுப்புங்க','. Renew it and tell the office'));home();return}}if(lowWallet()){toast(L('Wallet recharge பண்ணிட்டு Online போங்க','Recharge your wallet to go online'));home();return}setOnline(true);home();toast(L('Online! Ride request வந்தா சத்தம் வரும்','You are online. Requests will ring'))});
+    if(!S.online)bindTap('ons',()=>{if(CFGD.reqConsent&&needSign()){signAgreement(()=>home());return}if(DME&&DME.blocked){toast(L('உங்க account நிறுத்தி வைக்கப்பட்டிருக்கு. Owner-ஐ தொடர்பு கொள்ளுங்க','Your account is on hold. Contact the owner'));home();return}{const ds=docState();if(ds.expired.length){toast(L('காலாவதி ஆன document: ','Expired: ')+ds.expired.join(', ')+L('. புதுப்பிச்சு office-க்கு அனுப்புங்க','. Renew it and tell the office'));home();return}}if(lowWallet()){toast(L('Wallet recharge பண்ணிட்டு Online போங்க','Recharge your wallet to go online'));home();return}setupGate(()=>{setOnline(true);home();toast(L('Online! Ride request வந்தா சத்தம் வரும்','You are online. Requests will ring'))})});
   });
 }
 
@@ -1094,7 +1103,7 @@ function renderReq(j){
   J=j;const from=J.from,to=J.to,pk=P[from],away=J.away;
   const SEC=20;
   go(`<section class="screen req"><div class="mapwrap"><canvas class="map" id="map"></canvas>
-     <div class="topbar"><span class="stpill on"><i></i>${L('புது Ride!','New ride!')}</span></div></div>
+     <div class="topbar"><span class="stpill on"><i></i>${L('புது Ride!','New ride!')}</span><button class="chipbtn morereq" id="moreq" hidden></button></div></div>
    <div class="sheet pad reqsheet"><div class="grab"></div>
      <div class="reqtop"><div class="ring"><svg viewBox="0 0 44 44" width="64" height="64"><circle cx="22" cy="22" r="19" fill="none" stroke="var(--line)" stroke-width="4"/><circle id="rg" cx="22" cy="22" r="19" fill="none" stroke="var(--yellow)" stroke-width="4" stroke-linecap="round" stroke-dasharray="119.4" transform="rotate(-90 22 22)"/></svg><b id="sec">${SEC}</b></div>
        <div class="reqfare" id="rqf">${reqFareHtml()}</div></div>
@@ -1113,11 +1122,20 @@ function renderReq(j){
     const t0=Date.now(),rg=document.getElementById('rg'),sc=document.getElementById('sec');
     TK=setInterval(()=>{const left=Math.max(0,SEC-(Date.now()-t0)/1000);sc.textContent=Math.ceil(left);rg.setAttribute('stroke-dashoffset',(119.4*(1-left/SEC)).toFixed(1));const r2=document.getElementById('rg2');if(r2)r2.setAttribute('stroke-dashoffset',(119.4*(1-left/SEC)).toFixed(1));
       if(left<=0){if(J&&J.id){missReq({...J.b,id:J.id});SHOWING=null}J=null;home();toast(L('Request நேரம் முடிஞ்சது','Request timed out'))}},200);
-    ringReq();
+    ringReq();moreReqChip();
     bindTap('acc',()=>{stopReq();J&&J.id?acceptCloud():toPickup()});
     document.getElementById('dec').onclick=()=>{stopReq();if(J&&J.id){missReq({...J.b,id:J.id});SHOWING=null}J=null;home();toast(L('Request-ஐ விட்டாச்சு','Request declined'))};
   });
 }
+/* 28 Nov (owner): several rides waiting at once → "See N more orders" on the request; pick any one of them */
+function otherReqs(){const now=VCTCLK.now();return (typeof REQS!=='undefined'?REQS:[]).filter(b=>J&&b.id!==J.id&&offerAt(b)<=now&&canOffer(b))}
+function moreReqChip(){const el=document.getElementById('moreq');if(!el)return;const n=otherReqs().length;el.hidden=!n;
+  el.textContent=L(`இன்னும் ${n} சவாரி`,`See ${n} more order${n>1?'s':''}`);el.onclick=moreReqList}
+function moreReqList(){const list=otherReqs();if(!list.length)return;
+  modal(`<div class="mhead"><b>${L('காத்திருக்கும் சவாரிகள்','Waiting orders')}</b></div><div class="morelist">${list.map(b=>{const d=hav(POS,b.from);return `<button class="moreitem" data-id="${esc(b.id)}"><span><b>${esc(b.from[S.lang]||b.from.en||'')}</b><small>${d.toFixed(1)} ${L('கி.மீ தூரம்','km away')} · ${esc((b.to&&(b.to[S.lang]||b.to.en))||'')}</small></span><em>${inr(+b.fare||0)}${+b.tip?` <i class="tipadd">+ ${inr(+b.tip)}</i>`:''}</em></button>`}).join('')}</div>`,
+    (box,close)=>{box.querySelectorAll('.moreitem').forEach(x=>x.onclick=()=>{const b=REQS.find(r=>r.id===x.dataset.id);close();if(!b||!J||J.id===b.id)return;
+      if(!(b.status==='searching'||!b.status)){toast(L('இந்த ride-ஐ வேற driver எடுத்துட்டாங்க','Another driver took this ride'));return}
+      stopReq();SHOWING=b.id;incoming(buildJ(b,b.id))})})}
 const t2=k=>({pickup:'Pickup'})[k];
 const payName=p=>p==='upi'?'UPI':p==='wallet'?'Wallet':'Cash';
 
@@ -1709,9 +1727,9 @@ function ovlInit(){if(!NATIVE())return;try{const p=capPlugin('RideOverlay');if(!
 function ovlOnline(){if(OVL)try{OVL.online({on:!!S.online}).catch(()=>{})}catch(e){}}
 /* the page is running (and, if ON, location has had time to start): an app the phone reopened after it was swiped away goes
    back behind the driver's other app (1.0.16+; older apps have no ready()) */
-let OVLREADY=false,OVLPWR=null;
+let OVLREADY=false,OVLPWR=null,OVLMK='';
 /* is the app free of the phone's battery limits? (1.0.16+; unknown on older apps → no tip) */
-function ovlPower(){if(!OVL)return;try{OVL.power().then(r=>{const f=!!(r&&r.free),ch=f!==OVLPWR;OVLPWR=f;const mk=r&&r.maker;
+function ovlPower(){if(!OVL)return;try{OVL.power().then(r=>{const f=!!(r&&r.free),ch=f!==OVLPWR;OVLPWR=f;const mk=r&&r.maker;OVLMK=String(mk||'');
   // 1.0.17+: rides over the lock screen + position from the phone itself (fsi() exists only there)
   OVL.fsi().then(x=>{const c=!!(x&&x.can),ch2=c!==OVLFSI;OVLFSI=c;OVL17=true;devReport('1.0.17+',mk);liveNative();if((ch||ch2)&&!J&&!document.querySelector('.modal')&&document.getElementById('offs'))home()})
     .catch(()=>{OVL17=false;devReport('1.0.16+',mk);if(ch&&!J&&!document.querySelector('.modal')&&document.getElementById('offs'))home()})}).catch(()=>devReport('1.0.15-'))}catch(e){devReport('1.0.15-')}}
@@ -1749,6 +1767,40 @@ async function takeNative(id){try{if(!CL)await cloudP;if(!CL||!S.online||J||docu
   if(b.status==='assigned'&&b.driverPhone===CL.phone){adoptJob(b);return}
   if(b.status!=='searching'||b.veh!==me().veh||!canOffer(b)||offerAt(b)===Infinity){toast(L('இந்த ride-ஐ வேற driver எடுத்துட்டாங்க, அல்லது ரத்து ஆயிடுச்சு','Another driver took this ride, or it was cancelled'));return}
   if(J)return;SHOWING=id;J=buildJ(b,id);acceptCloud()}catch(e){toast(CL?CL.errText(e,S.lang==='ta'):String(e))}}
+/* 28 Nov (owner): like Rapido — before the first ON, one setup screen asks for everything a ride needs to ring on any phone,
+   each with one button that opens the right settings page (Tamil + English). Checked again whenever the driver comes
+   back from settings. Auto launch cannot be read by any app, so the driver confirms it once (Oppo / Realme / Vivo / Xiaomi…). */
+const AUTOMK=/oppo|realme|oneplus|vivo|iqoo|xiaomi|redmi|poco|huawei|honor|letv/;
+async function setupNeeds(){const out=[];if(!OVL||!OVL17)return out;
+  let notif='granted';try{const p=capPlugin('PushNotifications');if(p){const r=await p.checkPermissions();notif=String(r&&r.receive||'')}}catch(e){}
+  let loc='granted';try{const bg=capPlugin('BackgroundGeolocation');if(bg&&bg.checkPermissions){const st=await bg.checkPermissions();loc=String(st&&st.location||'')}}catch(e){}
+  try{const r=await OVL.power();OVLPWR=!!(r&&r.free);OVLMK=String(r&&r.maker||OVLMK)}catch(e){}
+  try{const x=await OVL.fsi();OVLFSI=!!(x&&x.can)}catch(e){}
+  out.push({k:'notif',ok:notif==='granted',ta:'அறிவிப்புகள் (Notifications) – Allow',en:'Notifications – Allow',why:L('சவாரி வந்தா சத்தம் வர','So a ride can ring')});
+  out.push({k:'loc',ok:loc==='granted',ta:'இடம் – "எப்போதும் அனுமதி" (Allow all the time)',en:'Location – "Allow all the time"',why:L('Phone lock-ல இருந்தாலும் Office-க்கு உங்க இடம் தெரிய','So the office sees you even when the phone is locked')});
+  out.push({k:'fsi',ok:OVLFSI!==false,ta:'முழுத் திரை அறிவிப்பு (Full screen notifications)',en:'Full screen notifications – Allow',why:L('Lock screen-ல call மாதிரி சவாரி வர','So rides come over the lock screen like a call')});
+  out.push({k:'pwr',ok:OVLPWR!==false,ta:'பேட்டரி – கட்டுப்பாடு இல்லை (Unrestricted)',en:'Battery – Unrestricted / No restrictions',why:L('Phone செயலியை தூங்க வைக்காம இருக்க','So the phone does not put the app to sleep')});
+  if(AUTOMK.test(OVLMK))out.push({k:'auto',ok:lsGet('vct_auto')==='1',ta:'தானாக தொடங்க (Auto launch) – ON',en:'Auto launch / Auto start – ON',why:L('இது இல்லன்னா '+OVLMK+' phone சவாரி செய்தியை தடுக்கும்','Without it a '+OVLMK+' phone blocks ride messages'),confirm:true});
+  return out}
+let SETUPCB=null,SETUPVIS=false;
+async function setupGate(cb){const n=await setupNeeds();if(n.every(x=>x.ok)){cb();return}SETUPCB=cb;setupShow(n)}
+function setupShow(n){document.querySelectorAll('.modal.setupm').forEach(m=>m.remove());const done=n.filter(x=>x.ok).length;
+  const close=modal(`<div class="mhead"><b>${L('ஒரு தடவை மட்டும்: செயலி அமைப்பு','One-time setup')}</b><small>${L('Phone lock-ல இருந்தாலும் சவாரி வரணும்னா இவை எல்லாம் வேணும்','Needed so rides reach you even when the phone is locked')} · ${done}/${n.length}</small></div>
+    <div class="setuplist">${n.map(x=>`<div class="setupitem ${x.ok?'ok':''}"><span class="tick">${x.ok?X('check',16):''}</span><span class="st"><b>${S.lang==='ta'?x.ta:x.en}</b><small>${x.why}</small></span>${x.ok?'':`<button class="setupgo" data-k="${x.k}">${L('திற','Open')}</button>`}${x.confirm&&!x.ok?`<button class="setupdone" data-k="${x.k}">${L('செஞ்சுட்டேன்','Done')}</button>`:''}</div>`).join('')}</div>
+    <button class="btn" id="setupok" ${n.every(x=>x.ok)?'':'disabled'}>${L('தொடரு · Go online','Go online')}</button>`,
+  (box,cl)=>{box.classList.add('setupm');
+    box.querySelectorAll('.setupgo').forEach(b=>b.onclick=()=>setupOpen(b.dataset.k));
+    box.querySelectorAll('.setupdone').forEach(b=>b.onclick=()=>{try{localStorage.setItem('vct_auto','1')}catch(e){}setupRecheck()});
+    const ok=box.querySelector('#setupok');ok.onclick=()=>{if(ok.disabled)return;cl();const c=SETUPCB;SETUPCB=null;c&&c()}});
+  if(!SETUPVIS){SETUPVIS=true;document.addEventListener('visibilitychange',()=>{if(!document.hidden&&SETUPCB)setTimeout(setupRecheck,600)})}}
+async function setupRecheck(){if(!SETUPCB)return;const n=await setupNeeds();if(n.every(x=>x.ok)){document.querySelectorAll('.modal.setupm').forEach(m=>m.remove());const c=SETUPCB;SETUPCB=null;c&&c();return}setupShow(n)}
+function setupOpen(k){try{
+  if(k==='notif'){const p=capPlugin('PushNotifications');(p?p.requestPermissions():Promise.reject()).then(setupRecheck).catch(()=>OVL.askPower())}
+  else if(k==='loc'){const bg=capPlugin('BackgroundGeolocation');(bg&&bg.requestPermissions?bg.requestPermissions():Promise.reject()).then(r=>{if(!(r&&r.location==='granted'))OVL.askPower();setupRecheck()}).catch(()=>OVL.askPower())}
+  else if(k==='fsi')OVL.askFsi().catch(()=>{});
+  else if(k==='pwr')OVL.askPower().catch(()=>{});
+  else if(k==='auto')(OVL.autostart?OVL.autostart():Promise.reject()).catch(()=>OVL.askPower());
+}catch(e){}}
 /* tell the office how this phone is set up (app version, over-other-apps, battery, location, notifications), so the office
    can see which driver needs to update or allow something — written only when something changed, or twice a day */
 let DEVBUSY=false;
@@ -1799,7 +1851,7 @@ function beep(){try{const a=new (window.AudioContext||window.webkitAudioContext)
 function listenReq(){
   if(REQUNSUB)return;
   REQUNSUB=F().onSnapshot(F().query(F().collection(CL.db,'bookings'),F().where('status','==','searching'),F().where('veh','==',me().veh)),snap=>{
-    REQS=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(a.when||0)-(b.when||0));
+    REQS=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(a.when||0)-(b.when||0));try{moreReqChip()}catch(e){}
     {const cur=REQS.find(x=>x.id===SHOWING),rf=document.getElementById('rqf');if(cur&&J&&J.id===SHOWING&&rf&&(+cur.tip||0)!==(J.tip||0)){J.tip=+cur.tip||0;J.b=cur;rf.innerHTML=reqFareHtml();beep()}}
     if(SHOWING&&SHOWING!==ACCEPTING&&!REQS.some(b=>b.id===SHOWING)&&document.getElementById('acc')){
       const gone=()=>{SHOWING=null;J=null;home();toast(L('இந்த ride-ஐ வேற driver எடுத்துட்டாங்க, அல்லது ரத்து ஆயிடுச்சு','Another driver took this ride, or it was cancelled'))};
