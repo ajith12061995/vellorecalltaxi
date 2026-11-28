@@ -332,6 +332,18 @@ exports.onBookingCust = onDocumentUpdated('bookings/{id}', async ev => {
   }
 });
 
+// A waiting ride was taken (or cancelled): the ride screen ringing on the other drivers' phones closes at once.
+exports.onRideTaken = onDocumentUpdated('bookings/{id}', async ev => {
+  const t = L.takenNow(ev.data.before.data(), ev.data.after.data()); if (!t || !t.veh) return;
+  const c = await cfg(); if (!c.push || !c.push.vapid || c.noTakenPush) return;
+  const ds = (await db.collection('drivers').where('veh', '==', t.veh).where('online', '==', true).limit(500).get()).docs
+    .filter(d => d.id !== t.except).map(d => d.data());
+  const { data } = L.splitDriverTokens(ds); if (!data.length) return;
+  const r = await admin.messaging().sendEachForMulticast({ tokens: data, android: { priority: 'high', ttl: 60000 },
+    data: { type: 'taken', bookingId: ev.params.id, why: t.why } }).catch(e => { logger.warn('taken push', { err: String(e) }); return null; });
+  if (r) logger.info('taken push', { id: ev.params.id, sent: r.successCount, failed: r.failureCount });
+});
+
 // Account deletion (Play Store / App Store rule). Customers: deleted at once — profile, login, contact details
 // and chats go; trip and money records stay for accounts/tax but without the name or phone number.
 // Drivers: a request for the office (wallet money and documents need a person to settle first).

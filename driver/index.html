@@ -1720,6 +1720,8 @@ function ovlPower(){if(!OVL)return;try{OVL.power().then(r=>{const f=!!(r&&r.free
 let OVL17=false,OVLFSI=null,LIVEN='',WAKEL=false;
 function liveNative(){if(!OVL||!OVL17||!CL||!CL.user||!CL.fbcfg)return;
   if(!WAKEL){WAKEL=true;window.addEventListener('vctwake',e=>{if(!CL||!S.online)return;let d={};try{d=JSON.parse(e.vct||'{}')}catch(x){}
+    if(d&&d.type==='taken'){const id=String(d.bookingId||'');REQS=REQS.filter(x=>x.id!==id);
+      if(SHOWING===id&&SHOWING!==ACCEPTING&&document.getElementById('acc')){SHOWING=null;J=null;home();toast(L('இந்த ride-ஐ வேற driver எடுத்துட்டாங்க, அல்லது ரத்து ஆயிடுச்சு','Another driver took this ride, or it was cancelled'))}return}
     if(!REQUNSUB)listenReq();pushLive(true);if(d&&d.bookingId)wakeRide(String(d.bookingId));
     setTimeout(()=>{if(document.getElementById('offs'))maybeShowReq()},600)})}
   if(!S.online){LIVEN='';return}
@@ -1941,7 +1943,7 @@ function driverSos(){
 
 /* ---------- Service Manager · outstation priority · upcoming trips ---------- */
 const DISP={win:60,gap:60,fall:true};
-const LOCAL_R1=3,LOCAL_R2=4,LOCAL_WAVE=25; // local: 0–3 km first; 3–4 km after 25 s (at once if the customer added a tip)
+const LOCAL_R1=3,LOCAL_R2=6,LOCAL_WAVE=30; // local: 0–3 km first; 3–6 km after 30 s (at once if the customer added a tip) — owner's choice 28 Nov
 let UPC=[];const GONOW=new Set();
 const isFutB=b=>b&&b.when&&b.when>Date.now()+45*60e3;
 const whenTxt=ts=>{const d=new Date(ts),n=new Date(),tm=d.toLocaleTimeString(S.lang==='ta'?'ta-IN':'en-IN',{hour:'numeric',minute:'2-digit'});

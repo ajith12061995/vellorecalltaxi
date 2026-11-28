@@ -28,7 +28,7 @@ import java.util.Map;
 public class RideFallback {
     static final String TAG = "RideFallback";
     static long WAIT_MS = 3000;            // phone in use (unlocked): how long the page gets to answer first (1.0.23: was 7 s)
-    static final long WAVE_MS = 25000;     // 3–4 km drivers get the ride 25 s after it was booked (as the page does)
+    static final long WAVE_MS = 30000;     // 3–6 km drivers get the ride 30 s after it was booked (as the page does)
     private static volatile String handledId = "";
     private static final java.util.Set<String> INFLIGHT = new java.util.HashSet<>();
     private static Ringtone tone;
@@ -134,7 +134,8 @@ public class RideFallback {
         b.putString("pname", g(d, "from")); b.putString("psub", "");
         double km = NativeLive.lastKm(g(d, "flat"), g(d, "flon"));
         b.putString("pkm", km >= 0 ? String.format(java.util.Locale.US, "%.1f km", km) : "");
-        b.putString("dname", g(d, "to")); b.putString("dsub", ""); b.putString("dkm", "");
+        b.putString("dname", g(d, "to")); b.putString("dsub", "");
+        String tk = g(d, "km"); b.putString("dkm", tk.isEmpty() || "0".equals(tk) ? "" : tk + " km");   // trip distance (1.0.25)
         b.putString("line1", g(d, "from") + (g(d, "to").length() > 0 ? " → " + g(d, "to") : ""));
         b.putString("accept", "Accept"); b.putString("open", "Later");
         b.putInt("secs", 30);

@@ -71,3 +71,22 @@ test('outstation, cancelled, or switch noRepush: no repeat', async () => {
   setup(); store.set('config/app', { push: { vapid: 'v' }, noRepush: true }); b = ride(); store.set('bookings/r5', b); await run('r5', b);
   assert.equal(multi.filter(m => m.data && m.data.type === 'ride').length, 1); assert.equal(waits.length, 0);
 });
+
+test('a waiting ride is taken: the other drivers (1.0.17+) get a "taken" data message, not the one who took it', async () => {
+  setup();
+  store.set('drivers/+914', { veh: 'mini', online: true, fcm: 't4', dev: { app: '1.0.24+' } });
+  const before = ride(), after = { ...ride(), status: 'assigned', driverPhone: '+914' };
+  await F.onRideTaken({ data: { before: { data: () => before }, after: { data: () => after } }, params: { id: 'r9' } });
+  const m = multi.filter(x => x.data && x.data.type === 'taken');
+  assert.equal(m.length, 1); assert.deepEqual(m[0].tokens, ['t1']); assert.equal(m[0].data.bookingId, 'r9'); assert.equal(m[0].android.priority, 'high');
+});
+const L = require('../lib/logic');
+test('taken: nothing for a ride that was not waiting, or switched off', async () => {
+  setup();
+  await F.onRideTaken({ data: { before: { data: () => ride({ status: 'assigned' }) }, after: { data: () => ride({ status: 'ontrip' }) } }, params: { id: 'r10' } });
+  store.set('config/app', { push: { vapid: 'v' }, noTakenPush: true });
+  await F.onRideTaken({ data: { before: { data: () => ride() }, after: { data: () => ride({ status: 'cancelled' }) } }, params: { id: 'r11' } });
+  assert.equal(multi.length, 0);
+  assert.equal(L.takenNow(ride(), ride({ status: 'cancelled' })).why, 'cancelled');
+  assert.equal(L.takenNow(ride(), ride()), null);
+});

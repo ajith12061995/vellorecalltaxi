@@ -32,6 +32,13 @@ public class VctMessagingService extends MessagingService {
 
     static void handle(Context c, Map<String, String> d) {
         String type = d == null ? null : d.get("type");
+        if ("taken".equals(type)) {   // 1.0.25: another driver took it (or it was cancelled): stop ringing it here at once
+            String id = d.get("bookingId"); Log.i("VctPush", "taken " + id);
+            RideFallback.cancelled(id); RideOverlayPlugin.cancelRing(id); RideRingActivity.closeIf(c, id);
+            JSObject o = new JSObject(); for (Map.Entry<String, String> e : d.entrySet()) o.put(e.getKey(), e.getValue());
+            RideOverlayPlugin.wake(o);   // the page (if awake) takes the card away too
+            return;
+        }
         if (type == null || !(type.equals("ride") || type.equals("wake"))) return;
         boolean on = DutyService.isOn(c);
         Log.i("VctPush", type + " " + d.get("bookingId") + " on=" + on + " visible=" + DutyService.appVisible);

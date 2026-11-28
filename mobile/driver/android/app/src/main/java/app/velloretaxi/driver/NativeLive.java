@@ -35,7 +35,7 @@ import org.json.JSONObject;
  *   (the same token the page keeps on this phone). We swap it for a 1-hour ID token at securetoken.googleapis.com and
  *   write with it through the Firestore REST API, so the database rules apply exactly as for the page.
  * - We change only lat, lon, gh, hd, sp, acc, online and updatedAt (update mask): the page's busy / bk / veh stay.
- * - Sent when moved 20 m (at most every 8 s), and at least every 30 s while standing (the office sees "signal OK").
+ * - Sent when moved 20 m (at most every 10 s), and at least every 30 s while standing (the office sees "signal OK") — owner's choice 28 Nov.
  * - Nothing is sent while the app's screen is in front (the page sends then) or after OFF.
  */
 final class NativeLive {
@@ -117,7 +117,7 @@ final class NativeLive {
         last = l;
         long now = System.currentTimeMillis();
         boolean moved = sent == null || sent.distanceTo(l) >= 20;
-        if ((moved && now - sentAt >= 8000) || now - sentAt >= 30000) send(l);
+        if ((moved && now - sentAt >= 10000) || now - sentAt >= 30000) send(l);
     }
 
     /* ---------- network (on the vct-live thread) ---------- */
@@ -277,6 +277,7 @@ final class NativeLive {
             double fare = nv(f, "fare"), tip = nv(f, "tip"), w = nv(f, "when"), la = nv(from, "lat"), lo = nv(from, "lon");
             m.put("fare", Double.isNaN(fare) ? "" : String.valueOf(Math.round(fare))); m.put("tip", Double.isNaN(tip) ? "0" : String.valueOf(Math.round(tip)));
             m.put("from", sv(from, "ta").isEmpty() ? sv(from, "en") : sv(from, "ta")); m.put("to", sv(to, "ta").isEmpty() ? sv(to, "en") : sv(to, "ta"));
+            double km2 = nv(f, "km"); m.put("km", Double.isNaN(km2) ? "" : String.valueOf(Math.round(km2 * 10) / 10.0));
             m.put("flat", Double.isNaN(la) ? "" : String.valueOf(la)); m.put("flon", Double.isNaN(lo) ? "" : String.valueOf(lo)); m.put("when", Double.isNaN(w) ? "" : String.valueOf((long) w));
             found++;
             Log.i(TAG, "poll found " + id);
@@ -290,7 +291,7 @@ final class NativeLive {
     private static JSONObject dbl(double v) throws Exception { return new JSONObject().put("doubleValue", v); }
 
     /* ---------- 1.0.20: the checks before the phone rings a ride by itself (RideFallback) ---------- */
-    static final double R1 = 3, R2 = 4;   // km, the same as the page (LOCAL_R1 / LOCAL_R2)
+    static final double R1 = 3, R2 = 6;   // km, the same as the page (LOCAL_R1 / LOCAL_R2)
 
     /** km from this phone's last position to a pickup point, or -1 if either is unknown */
     static double lastKm(String lat, String lon) {

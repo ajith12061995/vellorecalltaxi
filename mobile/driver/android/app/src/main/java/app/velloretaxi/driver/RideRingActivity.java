@@ -89,6 +89,14 @@ public class RideRingActivity extends Activity {
         if (a != null && !a.isFinishing()) a.runOnUiThread(a::finish);
     }
 
+    /** 1.0.25: close the ride screen only if it is showing this ride */
+    static void closeIf(Context c, String id) {
+        RideRingActivity a = cur.get();
+        if (a == null || a.isFinishing() || id == null) return;
+        String shown = a.getIntent() == null ? null : a.getIntent().getStringExtra("id");
+        if (id.equals(shown)) closeAll(c);
+    }
+
     /** can Android show it over the lock screen without the "Display over other apps" route? (Android 14+ asks the driver) */
     static boolean fsiAllowed(Context c) {
         if (Build.VERSION.SDK_INT < 34) return true;

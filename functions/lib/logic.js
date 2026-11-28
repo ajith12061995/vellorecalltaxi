@@ -333,6 +333,12 @@ function splitDriverTokens(drivers) {
   }
   return { data: data.slice(0, 500), note: note.slice(0, 500) };
 }
+// A ride stops waiting (a driver took it, or it was cancelled): the other drivers' phones that are ringing it stop at once
+// (data message to 1.0.25+ phones; older ones stop when their ride list updates). null = nothing to send.
+function takenNow(before, after) {
+  if (!before || !after || before.status !== 'searching' || after.status === 'searching') return null;
+  return { type: 'taken', bookingId: '', veh: String(after.veh || ''), except: String(after.driverPhone || ''), why: after.status === 'cancelled' ? 'cancelled' : 'taken' };
+}
 // Ride pushed again while nobody has taken it (seconds after the first push; the customer's search is ~2–3 min).
 const REPUSH = [20, 20, 25, 35];
 const repushNow = b => !!b && b.status === 'searching' && !b.driverPhone && (b.kind || 'ride') !== 'outstation' && (b.kind || 'ride') !== 'rental';
@@ -341,7 +347,8 @@ function ridePushData(id, b) {
   return { type: 'ride', bookingId: s(id), veh: s(b.veh), kind: s(b.kind || 'ride'), fare: s(b.fare), tip: s(b.tip || 0),
     from: s(b.from && (b.from.ta || b.from.en)), to: s(b.to && (b.to.ta || b.to.en)),
     // 1.0.20: the phone rings by itself if the page sleeps too long — it needs the pickup point (distance) and the time
-    flat: s(b.from && b.from.lat), flon: s(b.from && b.from.lon), when: s(b.when || '') };
+    flat: s(b.from && b.from.lat), flon: s(b.from && b.from.lon), when: s(b.when || ''),
+    km: s(b.km ? Math.round(b.km * 10) / 10 : '') };   // trip distance for the card the phone shows by itself
 }
 
 // Driver subscription (27 Nov, owner's decision): instead of commission a driver may buy a day / week / month plan from
@@ -388,4 +395,4 @@ function reassignCheck(b, live, drv, now) {
   return null;
 }
 
-module.exports = { REPUSH, repushNow, REASSIGN, reassignCheck, SUBDUR, subActive, subPrice, buySubDecide, splitDriverTokens, ridePushData, placeName, BANDS, bandOf, demandMap, statDay, scoreSample, ownerAlerts, WATCH, istHour, driverWatch, watchMsg, inclKm, enquiryFlood, OUTCAT, outCat, catBata, AHRS, AXH, aHours, planHours, hrsTable, AUTO_GOVT, AREA, autoFare, outsideArea, rentCheck, outCheck, tariffs, rentPrice, istStamp, commissionFor, settle, housekeeping, fareLooksWrong, liveStale, custPush, fareCheck, bookingLimit, nightPct, withNight, crowKm, LIMIT_OPEN, LIMIT_HOUR };
+module.exports = { takenNow, REPUSH, repushNow, REASSIGN, reassignCheck, SUBDUR, subActive, subPrice, buySubDecide, splitDriverTokens, ridePushData, placeName, BANDS, bandOf, demandMap, statDay, scoreSample, ownerAlerts, WATCH, istHour, driverWatch, watchMsg, inclKm, enquiryFlood, OUTCAT, outCat, catBata, AHRS, AXH, aHours, planHours, hrsTable, AUTO_GOVT, AREA, autoFare, outsideArea, rentCheck, outCheck, tariffs, rentPrice, istStamp, commissionFor, settle, housekeeping, fareLooksWrong, liveStale, custPush, fareCheck, bookingLimit, nightPct, withNight, crowKm, LIMIT_OPEN, LIMIT_HOUR };

@@ -189,6 +189,10 @@ sleep 2; t=$(topact); echo "$t" | grep -q RideRingActivity && ok "ride screen in
 adb exec-out screencap -p > "$OUT/ring-5-poll.png" 2>/dev/null
 sleep 20; n=$(adb logcat -d | grep -c "RideFallback: fast ring poll-1"); [ "$n" -eq 1 ] && ok "the same waiting ride is rung once, not every lookup" || bad "rung $n times"
 rm -f tests/android/poll.flag
+# 1.0.25: another driver took it — the "taken" message closes the ride screen here at once
+cmd taken:poll-1; waitlog '^taken=sent' 15 || bad "taken push not queued"
+for i in $(seq 1 10); do t=$(topact); echo "$t" | grep -q RideRingActivity || break; sleep 1; done
+adb logcat -d | grep -q "VctPush: taken poll-1" && ! (topact | grep -q RideRingActivity) && ok "ride taken by another driver: the ringing screen closed at once" || bad "ride screen stayed after 'taken'"
 tap_text "Later" >/dev/null; adb shell input keyevent KEYCODE_WAKEUP; adb shell wm dismiss-keyguard >/dev/null 2>&1; sleep 2
 
 # ---------- OFF stops the phone's own sending ----------

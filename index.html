@@ -1020,7 +1020,7 @@ function picker(mode){
 }
 
 /* local: real availability from online drivers near the pickup */
-const NEARKM=4; // drivers within 4 km (first 3 km, then up to 4 km)
+const NEARKM=6; // drivers within 6 km (first 3 km, then up to 6 km after 30 s — owner 28 Nov)
 function vAvail(v){
   if(!CL||S.when||ADV.includes(v.id))return{ok:true,eta:v.eta,live:false};
   if(!S.logged)return{ok:true,eta:null,live:false};
@@ -2254,7 +2254,7 @@ async function enablePushC(ask){if(!pushReadyC()||!CUID)return false;
   if(ask)toast(L('சரி! Driver வந்ததும் phone-க்கு alert வரும்','Done! You will get an alert when the driver comes'));return true}
 const pushAskHtml=()=>pushReadyC()&&(CL.nativePush&&CL.nativePush()?!lsGet('vct_cfcm'):Notification.permission==='default')?`<div class="pushask" id="pushask"><span>${X('bell')} ${L('Driver கிடைச்சதும், வந்ததும் phone-க்கு alert வேணுமா?','Get an alert when the driver is found and arrives?')}</span><button class="chip" id="pushon">${L('ஆமா','Yes')}</button></div>`:'';
 function bindPushAsk(){const b=document.getElementById('pushon');if(b)b.onclick=async()=>{const ok=await enablePushC(true);const w=document.getElementById('pushask');if(w&&(ok||(CL.nativePush&&CL.nativePush())||Notification.permission!=='default'))w.remove()}}
-// drivers of this vehicle type that are switched ON within 4 km of the pickup (from the nearby-vehicles listener)
+// drivers of this vehicle type that are switched ON within 6 km of the pickup (from the nearby-vehicles listener)
 function nearOn(vid,pu){try{return NEAR.filter(n=>n.veh===vid&&hav(n,pu)<=NEARKM).length}catch(e){return 0}}
 function searchingCloud(){
   R.phase='search';const pu={lat:R.b.from.lat,lon:R.b.from.lon};
