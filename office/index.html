@@ -2171,7 +2171,7 @@ async function money(){
        ${row(L(`Coupon தள்ளுபடி (${T.couponN})`,`Coupon discounts (${T.couponN})`),-T.coupon)}${row(L(`Referral தள்ளுபடி (${T.referralN})`,`Referral discounts (${T.referralN})`),-T.referral)}
        ${row(L(`Bonus (${T.bonusN})`,`Bonuses (${T.bonusN})`),-T.bonus)}
        ${row(L('நிகர லாபம்','Net'),T.net,'tot')}
-       ${T.adjN?`${row(L(`Office + சேர்த்தது (${T.adjN} மொத்தம்)`,`Office added (${T.adjN} in all)`),T.adjIn)}${row(L('Office − கழிச்சது','Office deducted'),-T.adjOut)}`:''}
+       ${T.adjN?`${row(L('Office + சேர்த்தது','Office added'),T.adjIn)}${row(L('Office − கழிச்சது','Office deducted'),-T.adjOut)}`:''}
        <p class="muted" style="margin:0;font-size:12.5px">${L('Office + / − கணக்கு நிகர லாபத்துல சேர்க்கலை (திருத்தம் / திருப்பி கொடுத்தது). v153-க்கு முன்னாடி கொடுத்த bonus இதுல இல்லை.','Office + / − is not in Net (corrections / refunds). Bonuses paid before v153 are not listed.')}${R.full?' '+L('5000 வரிக்கு மேல — சின்ன காலம் தேர்ந்தெடுங்க.','Over 5000 lines — pick a shorter period.'):''}</p></section>
      ${days.length>1?`<section class="panel"><h3 style="margin:0">${L('நாள் வாரியா','By day')}</h3><div class="table"><div class="tr th t5m"><span>${L('நாள்','Day')}</span><span>${L('வந்தது','In')}</span><span>${L('வருமானம்','Earned')}</span><span>${L('செலவு','Paid out')}</span><span>Rides</span></div>
        ${days.map(d=>`<div class="tr t5m"><span>${d.day}</span><span>${inr(d.cashIn)}</span><span>${inr(d.earn)}</span><span>${inr(d.cost)}</span><span>${d.trips}</span></div>`).join('')}</div></section>`:''}

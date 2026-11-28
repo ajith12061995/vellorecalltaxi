@@ -1397,7 +1397,7 @@ function walletTab(){
     ${subCardHtml()}
     ${DS.pending.length?`<div class="sec"><h3>${L('Approval-க்கு காத்திருக்கு','Waiting for approval')}</h3></div><div class="recent">${DS.pending.map((p,i)=>`<div class="row"><span class="ic in">+</span><div><b>${inr(p.amt)} · UTR ${esc(p.utr)}</b><small>${p.proof?L('Screenshot சேர்த்தாச்சு · ','Screenshot attached · '):''}${L('Owner பார்த்து approve பண்ணுவாங்க','Your owner will verify and approve')}</small></div>${CL?'':`<button class="demo sm" data-ap="${i}">${L('Demo: approve','Demo: approve')}</button>`}</div>`).join('')}</div>`:''}
     <div class="sec"><h3>${L('பரிவர்த்தனைகள்','Transactions')}</h3></div>
-    <div class="recent">${DS.tx.slice(0,40).map(x=>`<div class="row"><span class="ic ${x.amt>0?'in':'out'}">${x.amt>0?'+':'−'}</span><div><b>${esc(x[S.lang])}</b><small>${new Date(x.date).toLocaleString(S.lang==='ta'?'ta-IN':'en-IN',{day:'numeric',month:'short',hour:'numeric',minute:'2-digit'})}</small></div><b class="${x.amt>0?'pos':''}" style="flex:none">${x.amt>0?'+':'−'}${inr(Math.abs(x.amt))}</b></div>`).join('')}</div>
+    <div class="recent">${DS.tx.slice(0,40).map(x=>`<div class="row"><span class="ic ${x.amt>0?'in':'out'}">${x.amt>0?'+':x.amt<0?'−':'·'}</span><div><b>${esc(x[S.lang])}</b><small>${new Date(x.date).toLocaleString(S.lang==='ta'?'ta-IN':'en-IN',{day:'numeric',month:'short',hour:'numeric',minute:'2-digit'})}</small></div><b class="${x.amt>0?'pos':''}" style="flex:none">${x.amt>0?'+':x.amt<0?'−':''}${x.amt?inr(Math.abs(x.amt)):''}</b></div>`).join('')}</div>
   </div>`),()=>{
     bindNav();document.getElementById('rc').onclick=recharge;
     app.querySelectorAll('[data-sub]').forEach(b=>b.onclick=()=>subBuy(b.dataset.sub));
@@ -1446,7 +1446,7 @@ function recharge(){
     upd();
     {let za=500;m.querySelectorAll('[data-za]').forEach(b=>b.onclick=()=>{za=+b.dataset.za;m.querySelectorAll('[data-za]').forEach(x=>x.classList.toggle('sel',x===b))});
      const zb=m.querySelector('#rzp');if(zb)zb.onclick=()=>rzpPay(za,zb,m.querySelector('#rze'),close)}
-    const u=m.querySelector('#utr'),er=m.querySelector('#re');u.oninput=()=>{u.value=u.value.replace(/\D/g,'').slice(0,12)};
+    const u=m.querySelector('#utr'),er=m.querySelector('#re');u.oninput=()=>{u.value=u.value.replace(/\D/g,'').slice(0,12);er.textContent=''};
     m.querySelector('#pf').onchange=e=>{const f=e.target.files&&e.target.files[0];if(!f)return;m.querySelector('#pft').textContent=L('படம் தயார் பண்ணுது…','Preparing the picture…');
       shrinkShot(f).then(d=>{img=d;const i=m.querySelector('#pfi');i.src=d;i.style.display='block';m.querySelector('#pft').textContent=L('Screenshot மாத்த','Change screenshot')})
         .catch(()=>{img='';m.querySelector('#pft').textContent=L('இந்த படம் சேர்க்க முடியலை. வேற screenshot போடுங்க.','Could not use this picture. Try another screenshot.')})};
