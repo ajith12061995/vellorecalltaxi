@@ -1460,7 +1460,7 @@ function agoTxt(ms){const m=Math.max(0,Math.round((Date.now()-ms)/60e3));if(m<2)
 function sigTxt(ms){const m=Math.round(ms/60000);return m<60?L(`${m} நிமி முன்`,`${m} min ago`):m<1440?L(`${Math.round(m/60)} மணி முன்`,`${Math.round(m/60)} h ago`):L(`${Math.round(m/1440)} நாள் முன்`,`${Math.round(m/1440)} d ago`)}
 /* "ON" = the driver's own switch (stays ON until the driver turns it off). "Signal now" = of those, the phones that are
    really reporting (in the last 3 minutes, or on a trip): only these can be shown a new booking right now. */
-const sigNow=d=>d.status!=='off'&&(!CL||d.status!=='avail'||(d.sig!=null&&d.sig<=3*60e3));
+const sigNow=d=>d.status!=='off'&&(!CL||d.status!=='avail'||(d.sig!=null&&d.sig<=30*60e3&&!phoneOff(d)));
 /* One clear state per driver (27 Nov): ready = ON and the phone reported in the last 3 min (rides surely reach it);
    weak = ON, silent 3–30 min; lost = ON, silent over 30 min; paused = the server switched it off after 3 h of silence
    (it comes back when the driver opens the app); off; pickup / trip = on a ride. */
@@ -1472,7 +1472,9 @@ const RST={ready:{c:'#1E8A5A',ta:'ரெடி',en:'Ready'},pickup:{c:'#F2A900',
 const phoneOff=d=>d.pwr==='off'||(d.bat>=0&&d.bat<=3&&!d.chg);
 function rstate(d){if(d.status==='trip'||d.status==='pickup')return d.status;
   if(d.status==='off')return d.autoOff&&Date.now()-d.autoOff<24*36e5?'paused':'off';
-  if(!CL)return 'ready';if(d.sig!=null&&d.sig<=3*60e3)return 'ready';if(phoneOff(d))return 'poff';if(d.sig!=null&&d.sig<=30*60e3)return 'weak';return 'lost'}
+  // 28 Nov (owner): a driver who is ON is ready — locked phone, other app, quiet network — unless the phone says it is
+  // switched off; only after 30 minutes with no signal at all is it shown as a long network gap
+  if(!CL)return 'ready';if(phoneOff(d))return 'poff';if(d.sig!=null&&d.sig<=30*60e3)return 'ready';return 'lost'}
 const rcount=()=>{const n={ready:0,pickup:0,trip:0,weak:0,lost:0,poff:0,paused:0,off:0};DB.drv.filter(d=>!d.blocked).forEach(d=>n[rstate(d)]++);return n};
 /* why a driver is not ready, in plain words, from the phone report (drivers.dev) and the signal */
 function rwhy(d){const st=rstate(d),o=[],v=devOf(d.id);

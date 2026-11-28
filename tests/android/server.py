@@ -20,7 +20,7 @@ class H(http.server.SimpleHTTPRequestHandler):
         n=int(s.headers.get('Content-Length') or 0);body=s.rfile.read(n).decode('utf-8','replace')
         if s.path.startswith('/fake/v1/token'):
             open(LOG,'a').write('token='+body.replace('\n',' ')+'\n')
-            out=b'{"id_token":"idt-test","expires_in":"3600","refresh_token":"rt-next"}'
+            out=b'{"id_token":"idt-test.eyJ1c2VyX2lkIjoidWlkLXRlc3QifQ.sig","expires_in":"3600","refresh_token":"rt-next"}'
         elif s.path.startswith('/fake/v1/projects/') and s.path.endswith('documents:commit'):
             open(LOG,'a').write('commit='+(s.headers.get('Authorization') or '')+' '+body.replace('\n',' ')+'\n')
             out=b'{"writeResults":[{}]}'

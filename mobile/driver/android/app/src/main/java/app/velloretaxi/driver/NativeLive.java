@@ -65,10 +65,10 @@ final class NativeLive {
     static void setCreds(Context c, String apiKey, String project, String phone, String refresh) {
         c.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
                 .putString("key", apiKey).putString("proj", project).putString("phone", phone).putString("rt", refresh).apply();
-        NativeLive n = get(c); n.idToken = null; n.tokenExp = 0;
+        NativeLive n = get(c); n.idToken = null; n.tokenExp = 0; n.uidCache = "";
     }
     static void setVeh(Context c, String veh) { if (veh != null && veh.length() > 0 && veh.length() <= 20) c.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putString("veh", veh).apply(); }
-    static void clearCreds(Context c) { c.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().clear().apply(); NativeLive n = get(c); n.idToken = null; n.tokenExp = 0; }
+    static void clearCreds(Context c) { c.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().clear().apply(); NativeLive n = get(c); n.idToken = null; n.tokenExp = 0; n.uidCache = ""; }
     private String pref(String k) { return ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(k, ""); }
     static boolean hasCreds(Context c) { SharedPreferences p = c.getSharedPreferences(PREFS, Context.MODE_PRIVATE); return p.getString("rt", "").length() > 0 && p.getString("phone", "").length() > 0; }
 
@@ -144,8 +144,27 @@ final class NativeLive {
                     .put("update", new JSONObject().put("name", doc).put("fields", f))
                     .put("updateMask", new JSONObject().put("fieldPaths", new JSONArray().put("lat").put("lon").put("gh").put("hd").put("sp").put("acc").put("online").put("bat").put("chg").put("pwr")))
                     .put("updateTransforms", new JSONArray().put(new JSONObject().put("fieldPath", "updatedAt").put("setToServerValue", "REQUEST_TIME")));
-            JSONObject body = new JSONObject().put("writes", new JSONArray().put(w));
+            JSONArray writes = new JSONArray().put(w);
+            // 1.0.26: the vehicle the customers see (cars/{uid}, position rounded to ~110 m) moves too while the phone is
+            // locked — before, only the page wrote it, so a locked driver's "x min away / Fastest" went stale (owner, 28 Nov)
+            String uid = uid(tok);
+            if (!uid.isEmpty()) {
+                JSONObject cf = new JSONObject();
+                cf.put("lat", dbl(Math.round(l.getLatitude() * 1e3) / 1e3)); cf.put("lon", dbl(Math.round(l.getLongitude() * 1e3) / 1e3));
+                cf.put("gh", new JSONObject().put("stringValue", geohash(l.getLatitude(), l.getLongitude(), 7)));
+                cf.put("on", new JSONObject().put("booleanValue", true)); cf.put("online", new JSONObject().put("booleanValue", true));
+                writes.put(new JSONObject()
+                        .put("update", new JSONObject().put("name", "projects/" + proj + "/databases/(default)/documents/cars/" + uid).put("fields", cf))
+                        .put("updateMask", new JSONObject().put("fieldPaths", new JSONArray().put("lat").put("lon").put("gh").put("on").put("online")))
+                        .put("currentDocument", new JSONObject().put("exists", true))
+                        .put("updateTransforms", new JSONArray().put(new JSONObject().put("fieldPath", "updatedAt").put("setToServerValue", "REQUEST_TIME"))));
+            }
+            JSONObject body = new JSONObject().put("writes", writes);
             int code = http(fsBase + "/v1/projects/" + proj + "/databases/(default)/documents:commit", "application/json", body.toString(), tok, null);
+            if (code != 200 && writes.length() > 1) {   // the vehicle record missing / refused: the position to the office still goes
+                code = http(fsBase + "/v1/projects/" + proj + "/databases/(default)/documents:commit", "application/json",
+                        new JSONObject().put("writes", new JSONArray().put(w)).toString(), tok, null);
+            }
             if (code == 200) { sent = l; sends++; }
             else { fails++; lastErr = "write:" + code; if (code == 401 || code == 403) { idToken = null; tokenExp = 0; } Log.w(TAG, "write " + code); }
         } catch (Exception e) { fails++; lastErr = "write:" + e.getClass().getSimpleName(); Log.w(TAG, "send failed", e); }
@@ -366,6 +385,18 @@ final class NativeLive {
     }
 
     /** a fresh ID token from the sign-in refresh token (valid 1 h; renewed 5 min before it ends) */
+    /** the Firebase user id inside the sign-in token (its "user_id" claim), cached */
+    private String uidCache = "";
+    private String uid(String tok) {
+        if (!uidCache.isEmpty()) return uidCache;
+        try {
+            String[] p = tok.split("\\.");
+            String js = new String(android.util.Base64.decode(p[1], android.util.Base64.URL_SAFE | android.util.Base64.NO_WRAP | android.util.Base64.NO_PADDING), "UTF-8");
+            JSONObject j = new JSONObject(js); uidCache = j.optString("user_id", j.optString("sub", ""));
+        } catch (Exception e) { uidCache = ""; }
+        return uidCache;
+    }
+
     private String token() throws Exception {
         if (idToken != null && System.currentTimeMillis() < tokenExp - 300000) return idToken;
         String key = pref("key"), rt = pref("rt");

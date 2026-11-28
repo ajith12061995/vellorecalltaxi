@@ -50,7 +50,7 @@ for i in $(seq 1 40); do [ "$(commits)" -gt "$c0" ] && break; sleep 1; done
 [ "$(commits)" -gt "$c0" ] && ok "app left (home screen): the phone sends the position itself" || { bad "no position sent from the phone after leaving the app"; cmd livestatus; sleep 3; grep '^livestatus=' "$LOG" | tail -1; adb logcat -d | grep -E "NativeLive|DutyService" | tail -15; }
 grep -q '^token=grant_type=refresh_token&refresh_token=rt-test' "$LOG" && ok "sign-in token swapped at the token endpoint (refresh token from the page)" || bad "no token swap seen"
 L1=$(grep '^commit=' "$LOG" | tail -1)
-echo "$L1" | grep -q '^commit=Bearer idt-test ' && ok "write is signed with the ID token (database rules apply)" || bad "write not signed: ${L1:0:80}"
+echo "$L1" | grep -q '^commit=Bearer idt-test[.]' && ok "write is signed with the ID token (database rules apply)" || bad "write not signed: ${L1:0:80}"
 echo "$L1" | sed 's#\\/#/#g' | grep -q 'documents/live/+919999900002"' && ok "writes this driver's live/{phone} record" || bad "wrong record: ${L1:0:200}"
 echo "$L1" | python3 -c "
 import sys,json;l=sys.stdin.read();j=json.loads(l[l.index('{'):]);w=j['writes'][0];f=w['update']['fields']
@@ -60,6 +60,14 @@ assert f['online']['booleanValue'] is True
 assert sorted(w['updateMask']['fieldPaths'])==sorted(['lat','lon','gh','hd','sp','acc','online','bat','chg','pwr']), w['updateMask']
 assert w['updateTransforms'][0]=={'fieldPath':'updatedAt','setToServerValue':'REQUEST_TIME'}
 print('gh',f['gh']['stringValue'])" && ok "position, geohash, online, server time; busy / bk / veh left to the page (update mask)" || bad "write body wrong"
+echo "$L1" | python3 -c "
+import sys,json;l=sys.stdin.read();j=json.loads(l[l.index('{'):]);assert len(j['writes'])==2, len(j['writes'])
+w=j['writes'][1];f=w['update']['fields']
+assert w['update']['name'].endswith('/documents/cars/uid-test'), w['update']['name']
+assert sorted(w['updateMask']['fieldPaths'])==sorted(['lat','lon','gh','on','online']), w['updateMask']
+assert abs(f['lat']['doubleValue']-12.972)<0.0006 and f['on']['booleanValue'] is True
+assert w['currentDocument']=={'exists':True} and w['updateTransforms'][0]['fieldPath']=='updatedAt'
+" && ok "the vehicle customers see (cars, ~110 m) moves too while the app is away (1.0.26)" || bad "cars write missing or wrong"
 GH=$(python3 -c "
 B='0123456789bcdefghjkmnpqrstuvwxyz'
 def gh(lat,lon,p=7):
@@ -143,7 +151,7 @@ T0=$(adb logcat -d -v epoch | grep VctPush | grep -m1 "push-deaf1" | awk '{print
 MS=$(python3 -c "print(int((float('${T1:-0}')-float('${T0:-0}'))*1000))" 2>/dev/null); echo "push→ring ${MS} ms (T0=$T0 T1=$T1)"
 [ -n "$T0" ] && [ -n "$T1" ] && [ "${MS:-99999}" -lt 1500 ] && ok "push to ring in ${MS} ms (under 1.5 s)" || bad "push to ring too slow or not measured: ${MS} ms"
 grep '^commit=' "$LOG" | grep -q '"pk":{"stringValue":"push-deaf1"}' && grep '^commit=' "$LOG" | grep 'push-deaf1' | grep -q '"fieldPath":"pkAt","setToServerValue":"REQUEST_TIME"' && ok "the phone told the server it got the push (pk + server time)" || bad "no push receipt: $(grep '^commit=' "$LOG" | grep -o '"pk"[^}]*}' | tail -1)"
-grep -q '^read=Bearer idt-test push-deaf1' "$LOG" && ok "it read the ride from the server, signed in as the driver (rules apply)" || bad "ride not read: $(grep '^read=' "$LOG" | tail -1)"
+grep -q '^read=Bearer idt-test[^ ]* push-deaf1' "$LOG" && ok "it read the ride from the server, signed in as the driver (rules apply)" || bad "ride not read: $(grep '^read=' "$LOG" | tail -1)"
 for i in $(seq 1 10); do grep '^query=' "$LOG" | grep -q '"driverPhone"' && break; sleep 1; done
 grep '^query=' "$LOG" | grep '"driverPhone"' | tail -1 | grep -q '"driverPhone"' && ok "it checked the driver is not already on a ride" || bad "no busy check"
 sleep 3; awake && ok "screen turned on" || bad "screen stayed off"
