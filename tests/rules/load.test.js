@@ -93,8 +93,10 @@ async function book(i) {
   await Promise.all(jobs);
   return id;
 }
+// read everything as the server would (withSecurityRulesDisabled does not pass the callback's value back)
+async function readAll() { let out = []; await env.withSecurityRulesDisabled(async c => { out = (await getDocs(collection(c.firestore(), 'bookings'))).docs.map(d => ({ id: d.id, ...d.data() })); }); return out; }
 async function snapshotCheck() {        // live check while the test runs: never 2 rides not started for one driver
-  const all = await env.withSecurityRulesDisabled(async c => (await getDocs(collection(c.firestore(), 'bookings'))).docs.map(d => d.data()));
+  const all = await readAll();
   const per = {};
   for (const b of all) if (b.driverPhone && b.status === 'assigned') per[b.driverPhone] = (per[b.driverPhone] || 0) + 1;
   stats.samples.push(Object.values(per).filter(n => n > 1).length);
@@ -120,7 +122,7 @@ test(`load: ${N_DRV} drivers, ${N_BK} bookings in ${SPAN_MS / 1000} s, racing ac
   await sleep(20000);                               // let the last rides start / finish
   await Promise.all([...chain.values()]);
   clearInterval(mon); await snapshotCheck();
-  const all = await env.withSecurityRulesDisabled(async c => (await getDocs(collection(c.firestore(), 'bookings'))).docs.map(d => ({ id: d.id, ...d.data() })));
+  const all = await readAll();
   const byId = new Set(all.map(b => b.id));
   const two = [...stats.wins.values()].filter(w => w.length > 1).length;
   const mism = all.filter(b => b.driverPhone && stats.wins.get(b.id) && stats.wins.get(b.id)[0] !== b.driverPhone).length;
