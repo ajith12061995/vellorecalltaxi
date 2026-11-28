@@ -271,7 +271,8 @@ exports.onBookingCreated = onDocumentCreated({ document: 'bookings/{id}', timeou
     logger.warn('fare corrected', { id, was: fx.was, now: fx.fare, km: fx.km, wasKm: fx.wasKm });
   } else if (L.stFareOf(b, c) == null && L.fareLooksWrong(b, c.fares)) await ref.update({ fareFlag: 'below-price-list' });
   // 2b) a referral discount asked for: hold it from the customer's credit (none → no discount)
-  if (b.disc != null) { await holdDisc(ref, b).catch(e => logger.error('disc hold', { id, e: String(e) })); }
+  if (b.coupon) { await holdCoupon(ref, b).catch(e => logger.error('coupon hold', { id, e: String(e) })); }
+  else if (b.disc != null) { await holdDisc(ref, b).catch(e => logger.error('disc hold', { id, e: String(e) })); }
   // 3) a city ride outside the local area (should have been outstation): flag it for the office, don't block
   if (L.outsideArea(b, c.area)) { await ref.update({ areaFlag: 'outside-local' }); logger.warn('outside local area', { id, veh: b.veh }); }
   if (b.status !== 'searching' || !c.push || !c.push.vapid) return;
@@ -348,6 +349,25 @@ async function holdDisc(ref, b) {
     tx.update(ref, { disc: take, discHeld: take > 0, updatedAt: FV.serverTimestamp() });
   });
 }
+// a coupon asked for: the server checks it (on, date, limit, one use per customer, first ride, minimum fare), takes
+// one use and holds the discount on the booking — or tells the customer why not (couponWhy)
+async function holdCoupon(ref, b) {
+  const code = String(b.coupon || '').toUpperCase();
+  if (!L.COUPON_RE.test(code)) { await ref.update({ disc: 0, discHeld: false, couponWhy: 'unknown' }); return; }
+  const prev = await db.collection('bookings').where('customerUid', '==', b.customerUid).where('status', '==', 'done').limit(1).get();
+  await db.runTransaction(async tx => {
+    const bs = await tx.get(ref); if (!bs.exists) return; const cur = bs.data(); if (cur.discHeld != null) return;
+    const cref = db.doc(`coupons/${code}`), uref = db.doc(`couponUses/${code}_${b.customerUid}`);
+    const cs = await tx.get(cref), us = await tx.get(uref);
+    const r = ['searching', 'scheduled'].includes(cur.status)
+      ? L.couponDecide(cs.exists ? cs.data() : null, { fare: cur.fare, now: Date.now(), usedByMe: us.exists, firstRide: prev.empty }) : { disc: 0, why: 'state' };
+    if (r.disc > 0) {
+      tx.set(uref, { code, uid: b.customerUid, bookingId: ref.id, disc: r.disc, at: FV.serverTimestamp() });
+      tx.update(cref, { used: FV.increment(1) });
+      tx.update(ref, { disc: r.disc, discHeld: true, discSrc: 'coupon', coupon: code, updatedAt: FV.serverTimestamp() });
+    } else tx.update(ref, { disc: 0, discHeld: false, couponWhy: r.why, updatedAt: FV.serverTimestamp() });
+  });
+}
 exports.onBookingDisc = onDocumentUpdated('bookings/{id}', async ev => {
   const before = ev.data.before.data() || {}, after = ev.data.after.data(), ref = ev.data.after.ref, id = ev.params.id;
   if (!after) return;
@@ -358,9 +378,12 @@ exports.onBookingDisc = onDocumentUpdated('bookings/{id}', async ev => {
     await db.runTransaction(async tx => {
       const bs = await tx.get(ref), cur = bs.data() || {}, amt = Math.round(+cur.disc || 0);
       if (!cur.discHeld || cur.discBack || cur.discPaid || !(amt > 0)) return;
-      if (cancelled) { if (!ph) return; tx.set(db.doc(`credits/${ph}`), { bal: FV.increment(amt), updatedAt: FV.serverTimestamp() }, { merge: true }); tx.update(ref, { discBack: true }); }
+      if (cancelled && cur.discSrc === 'coupon') {          // a cancelled ride gives the coupon use back
+        const code = String(cur.coupon || '');
+        tx.delete(db.doc(`couponUses/${code}_${cur.customerUid}`)); tx.update(db.doc(`coupons/${code}`), { used: FV.increment(-1) }); tx.update(ref, { discBack: true });
+      } else if (cancelled) { if (!ph) return; tx.set(db.doc(`credits/${ph}`), { bal: FV.increment(amt), updatedAt: FV.serverTimestamp() }, { merge: true }); tx.update(ref, { discBack: true }); }
       else { tx.update(db.doc(`drivers/${cur.driverPhone}`), { wallet: FV.increment(amt), updatedAt: FV.serverTimestamp() }); tx.update(ref, { discPaid: true });
-        tx.set(db.doc(`ledger/disc_${id}`), { bookingId: id, driverPhone: cur.driverPhone, disc: amt, kind: 'referral-discount', at: FV.serverTimestamp() }); }
+        tx.set(db.doc(`ledger/disc_${id}`), { bookingId: id, driverPhone: cur.driverPhone, disc: amt, kind: cur.discSrc === 'coupon' ? 'coupon-discount' : 'referral-discount', ...(cur.coupon ? { coupon: cur.coupon } : {}), at: FV.serverTimestamp() }); }
     });
   }
   // 2) the referred customer's first finished ride: both get the referral credit, once

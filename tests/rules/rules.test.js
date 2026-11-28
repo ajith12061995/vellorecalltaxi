@@ -608,3 +608,19 @@ test('GPS meter: the ride\'s driver uploads route chunks and the running km; nob
   await assertFails(updateDoc(doc(as.drv(), 'bookings', 'b3'), { meter: { km: 99999 } }), 'absurd km');
   await assertFails(updateDoc(doc(as.drv(), 'bookings', 'b3'), { meter: { km: 2, fare: 1 } }), 'no other keys');
 });
+
+test('coupons: only the owner makes codes (valid values only); customers read one code; uses are server-only', async () => {
+  const c = { on: true, type: 'amt', val: 50, max: 0, min: 0, limit: 100, used: 0, until: 0, first: false };
+  await assertSucceeds(setDoc(doc(as.owner(), 'coupons', 'VELLORE50'), c));
+  await assertFails(setDoc(doc(as.owner(), 'coupons', 'bad code'), c), 'code format');
+  await assertFails(setDoc(doc(as.owner(), 'coupons', 'BIG900'), { ...c, val: 900 }), 'over ₹500');
+  await assertFails(setDoc(doc(as.owner(), 'coupons', 'PCT150'), { ...c, type: 'pct', val: 150 }), 'over 100 %');
+  await assertFails(setDoc(doc(as.staff(), 'coupons', 'STAFF10'), c), 'staff cannot make coupons');
+  await assertFails(setDoc(doc(as.cust(), 'coupons', 'FREE100'), c), 'customer cannot make coupons');
+  await assertFails(deleteDoc(doc(as.owner(), 'coupons', 'VELLORE50')), 'switch off, never delete');
+  await assertSucceeds(getDoc(doc(as.cust(), 'coupons', 'VELLORE50')));
+  await assertFails(getDocs(collection(as.cust(), 'coupons')), 'customers cannot list all codes');
+  await assertFails(setDoc(doc(as.cust(), 'couponUses', 'VELLORE50_u-cust'), { code: 'VELLORE50' }));
+  await assertSucceeds(addDoc(collection(as.cust(), 'bookings'), booking({ tariff: { t: 'local' }, coupon: 'VELLORE50', disc: 50 })));
+  await assertFails(addDoc(collection(as.cust(), 'bookings'), booking({ tariff: { t: 'local' }, coupon: 'VELLORE50', discSrc: 'coupon' })), 'cannot mark the coupon as accepted');
+});

@@ -114,4 +114,23 @@ ok('km in base: office incl (0.5–10), else 1.5; same as server',()=>{
    assert.equal(F.final({fare:100,tariff:t},{km:4,gps:true}).trip,Math.round(F.cityFare({id:'auto'},4)*1.5))});
  ok('meter: waiting, toll still added',()=>{const r=F.final({fare:q,tariff:T('meter',{wait:2,free:3})},{km:6,gps:true,waitMin:8,toll:40});assert.equal(r.trip,F.cityFare({id:'mini',base:110,per:20,incl:1.5},6)+10);assert.equal(r.pass,40)});
 }
+// Peak hours (owner 28 Nov): office slots, cars only, never stacked with the night charge
+{const IST=(h,m)=>Date.UTC(2026,10,28,h,m)-19800000;
+ const pk={on:true,slots:[{from:'08:00',to:'10:00',pct:10},{from:'17:00',to:'20:00',pct:15}]},nt={on:true,from:'22:00',to:'05:00',pct:25};
+ ok('peak: inside a slot → its %, outside → 0, off → 0',()=>{assert.equal(F.peakPct(pk,IST(8,30)),10);assert.equal(F.peakPct(pk,IST(18,0)),15);assert.equal(F.peakPct(pk,IST(12,0)),0);assert.equal(F.peakPct({...pk,on:false},IST(8,30)),0);assert.equal(F.peakPct(null,IST(8,30)),0)});
+ ok('peak: capped at 50 %, bad slots ignored, a slot over midnight works',()=>{assert.equal(F.peakPct({on:true,slots:[{from:'08:00',to:'10:00',pct:90}]},IST(9,0)),50);assert.equal(F.peakPct({on:true,slots:[{from:'x',to:'10:00',pct:10}]},IST(9,0)),0);assert.equal(F.peakPct({on:true,slots:[{from:'23:00',to:'01:00',pct:20}]},IST(0,30)),20)});
+ ok('surcharge: the larger of night and peak, never both; auto = Government night only',()=>{
+   assert.deepStrictEqual(F.surFor('mini',nt,pk,IST(8,30)),{pct:10,kind:'peak'});
+   assert.deepStrictEqual(F.surFor('mini',nt,{on:true,slots:[{from:'21:00',to:'23:30',pct:40}]},IST(22,30)),{pct:40,kind:'peak'});
+   assert.deepStrictEqual(F.surFor('mini',nt,{on:true,slots:[{from:'21:00',to:'23:30',pct:10}]},IST(22,30)),{pct:25,kind:'night'});
+   assert.deepStrictEqual(F.surFor('auto',nt,pk,IST(8,30)),{pct:0,kind:''})});
+ ok('peak: client and server agree',()=>{for(const [h,m] of [[7,59],[8,0],[9,59],[10,0],[17,30],[23,0],[0,30]])assert.equal(F.peakPct(pk,IST(h,m)),SL.peakPct(pk,IST(h,m)))});
+ ok('server: a car booked in a peak slot without the peak % is corrected; the auto is never given peak',()=>{
+   const c={fares:{mini:{base:110,per:20}},peak:pk},b={src:'app',kind:'ride',veh:'mini',km:6,from:{lat:12.97,lon:79.13},to:{lat:12.93,lon:79.13},tariff:{t:'local'}};
+   const base=F.cityFare({id:'mini',base:110,per:20},6),want=F.withNight(base,10);
+   const r=SL.fareCheck({...b,fare:base},c,IST(9,0));assert.ok(r&&r.fare===want,JSON.stringify(r));
+   assert.equal(SL.fareCheck({...b,fare:want},c,IST(9,0)),null);
+   assert.equal(SL.fareCheck({...b,veh:'auto',fare:F.cityFare({id:'auto'},6)},c,IST(9,0)),null)});
+ ok('bill line says "Peak hours" for a peak surcharge',()=>{const r=F.final({fare:230,tariff:{t:'local',night:10,nightAmt:20,sur:'peak'}},{});assert.ok(r.lines.some(l=>l.en==='Peak hours +10%'))});
+}
 console.log(n,'fare tests passed');

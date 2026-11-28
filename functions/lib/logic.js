@@ -74,6 +74,16 @@ function nightPct(cfg, at) {
   const m = ((Math.floor((+at + 19800000) / 60000) % 1440) + 1440) % 1440;
   return (f < t ? m >= f && m < t : m >= f || m < t) ? pct : 0;
 }
+// Peak hours (owner, Office → Settings → Peak; config/app.peak = {on, slots:[{from:'08:00', to:'10:00', pct:10}, …]}):
+// city cars only (the auto fare is the Government's), not station fixed fares. When the night charge and a peak slot
+// overlap, only the larger of the two applies — never both. Up to 4 slots, 1–50 % each.
+function peakPct(cfg, at) {
+  if (!cfg || !cfg.on || !Array.isArray(cfg.slots)) return 0;
+  const m = ((Math.floor((+at + 19800000) / 60000) % 1440) + 1440) % 1440;
+  for (const s of cfg.slots.slice(0, 4)) { const f = hm(s && s.from), t = hm(s && s.to), p = Math.min(50, n(s && s.pct));
+    if (p && f != null && t != null && f !== t && (f < t ? m >= f && m < t : m >= f || m < t)) return p; }
+  return 0;
+}
 const r5 = x => Math.round(x / 5) * 5;
 const withNight = (f, pct) => pct ? r5(n(f) * (1 + pct / 100)) : n(f);
 const crowKm = (a, b) => { if (!a || !b || !isFinite(a.lat) || !isFinite(a.lon) || !isFinite(b.lat) || !isFinite(b.lon)) return 0;
@@ -124,7 +134,8 @@ function fareCheck(b, c, now) {
   const minKm = crowKm(b.from, b.to) * 1.2, km = Math.max(n(b.km), minKm);
   const base = isAuto ? autoFare(km) : r5(n(f.base) + n(f.per) * Math.max(0, km - inclKm(f)));
   const at = b.kind === 'schedule' && n(b.when) ? n(b.when) : now, nc = isAuto ? AUTO_GOVT.night : c && c.night;
-  const np = Math.min(nightPct(nc, at), nightPct(nc, at - 15 * MIN));
+  const sur = t => isAuto ? nightPct(nc, t) : Math.max(nightPct(nc, t), peakPct(c && c.peak, t));   // night or peak, the larger (= core/fare.js surFor)
+  const np = Math.min(sur(at), sur(at - 15 * MIN));
   const want = isAuto ? (np ? Math.round(base * (1 + np / 100)) : base) : withNight(base, np);
   if (n(b.fare) >= want - 5) return null;
   return { fare: want, km: Math.round(km * 10) / 10, was: n(b.fare), wasKm: n(b.km), night: np, nightAmt: want - base };
@@ -437,4 +448,21 @@ function meterCheck(b, srv) {
   else if (srv && srv.pts >= 2 && n(b.km) > 0 && srv.km > n(b.km) * 1.6 && srv.km - n(b.km) > 2) flag = 'long';
   return { flag, srv: srv ? { km: srv.km, gapKm: srv.gapKm, waitMin: srv.waitMin, gaps: srv.gaps, jumps: srv.jumps, pts: srv.pts } : null };
 }
-module.exports = { meterCheck, REF_MAX, refAmt, referDecide, discTake, stFare, stFareOf, ST_R, takenNow, REPUSH, repushNow, REASSIGN, reassignCheck, SUBDUR, subActive, subPrice, buySubDecide, splitDriverTokens, ridePushData, placeName, BANDS, bandOf, demandMap, statDay, scoreSample, ownerAlerts, WATCH, istHour, driverWatch, watchMsg, inclKm, enquiryFlood, OUTCAT, outCat, catBata, AHRS, AXH, aHours, planHours, hrsTable, AUTO_GOVT, AREA, autoFare, outsideArea, rentCheck, outCheck, tariffs, rentPrice, istStamp, commissionFor, settle, housekeeping, fareLooksWrong, liveStale, custPush, fareCheck, bookingLimit, nightPct, withNight, crowKm, LIMIT_OPEN, LIMIT_HOUR };
+// ---- coupons (owner 28 Nov; Office → Settings → Coupons). coupons/{CODE}: {on, type:'amt'|'pct', val, max, min, limit,
+// used, until (ms, 0 = none), first (first ride only)}. One use per customer. Returns {disc, why} — why = '' when fine.
+const COUPON_RE = /^[A-Z0-9]{4,16}$/;
+function couponDecide(cp, o) {
+  const fare = n(o && o.fare), now = +(o && o.now) || 0;
+  if (!cp) return { disc: 0, why: 'unknown' };
+  if (cp.on !== true) return { disc: 0, why: 'off' };
+  if (n(cp.until) && now > n(cp.until)) return { disc: 0, why: 'expired' };
+  if (n(cp.limit) && n(cp.used) >= n(cp.limit)) return { disc: 0, why: 'used-up' };
+  if (o.usedByMe) return { disc: 0, why: 'used' };
+  if (cp.first && !o.firstRide) return { disc: 0, why: 'first-only' };
+  if (n(cp.min) && fare < n(cp.min)) return { disc: 0, why: 'min' };
+  let d = cp.type === 'pct' ? Math.floor(fare * Math.min(100, n(cp.val)) / 100) : Math.floor(n(cp.val));
+  if (cp.type === 'pct' && n(cp.max)) d = Math.min(d, Math.floor(n(cp.max)));
+  d = Math.max(0, Math.min(d, Math.floor(fare), REF_MAX));
+  return d > 0 ? { disc: d, why: '' } : { disc: 0, why: 'zero' };
+}
+module.exports = { COUPON_RE, couponDecide, peakPct, meterCheck, REF_MAX, refAmt, referDecide, discTake, stFare, stFareOf, ST_R, takenNow, REPUSH, repushNow, REASSIGN, reassignCheck, SUBDUR, subActive, subPrice, buySubDecide, splitDriverTokens, ridePushData, placeName, BANDS, bandOf, demandMap, statDay, scoreSample, ownerAlerts, WATCH, istHour, driverWatch, watchMsg, inclKm, enquiryFlood, OUTCAT, outCat, catBata, AHRS, AXH, aHours, planHours, hrsTable, AUTO_GOVT, AREA, autoFare, outsideArea, rentCheck, outCheck, tariffs, rentPrice, istStamp, commissionFor, settle, housekeeping, fareLooksWrong, liveStale, custPush, fareCheck, bookingLimit, nightPct, withNight, crowKm, LIMIT_OPEN, LIMIT_HOUR };

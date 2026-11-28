@@ -20,7 +20,7 @@ async def main():
         await O.locator('[data-f="mini.base"]').fill('110');await O.locator('#sv').click();await pg.wait_for_timeout(1500)
         pr=await pg.evaluate("MOCK.store.get('public/prices')")
         check('Save copies prices to the website (Mini 110)',pr and pr['fares']['mini']['base']==110 and 'out' in pr,pr and pr.get('fares',{}).get('mini'))
-        check('nothing private in the website copy (no commission, blocked numbers, office settings; station fixed fares are public)',pr and set(pr.keys())<={'fares','out','rent','night','area','stf','updatedAt'},list(pr or {}))
+        check('nothing private in the website copy (no commission, blocked numbers, office settings; station fixed fares are public)',pr and set(pr.keys())<={'fares','out','rent','night','area','stf','peak','updatedAt'},list(pr or {}))
         # 2) Website editor
         await O.locator('#wsl').click();await pg.wait_for_timeout(1000)
         check('editor opens with the current numbers and 6 places',await O.locator('#ws_ph').input_value()=='9344640416' and await O.locator('#ws_wa').input_value()=='' and await O.locator('#wspl [data-pi]').count()==6)

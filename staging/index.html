@@ -51,7 +51,7 @@
 <script>window.CLOUD_READY=new Promise(function(r){window.__cloud=r;setTimeout(function(){r(null)},20000)});</script>
 <script type="module">import('./vct-cloud.js').catch(function(e){console.error(e);window.__cloud(null)});</script>
 <script>/* auto-update: reload when a newer version of the app is published */
-(function(){var APPV=window.VCT_V='151',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
+(function(){var APPV=window.VCT_V='152',BASE=(document.querySelector('link[rel=manifest]')||{}).href||location.href;
 function chk(){try{fetch(new URL('./version.json',location.href)+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){
  if(!j||!j.v||j.v===APPV)return;var k='vct_reload_'+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
  location.reload()}).catch(function(){})}catch(e){}}
@@ -572,20 +572,20 @@ details.faq p{margin:0;padding:0 14px 14px;color:var(--muted);font-size:14px;lin
 <div class="app" id="app"></div>
 <div class="toast" id="toast"></div>
 
-<script src="./core/report.js?v=151"></script>
-<script src="./core/funnel.js?v=151"></script>
-<script src="./core/geo.js?v=151"></script>
-<script src="./core/fare.js?v=151"></script>
-<script src="./core/refer.js?v=151"></script>
-<script src="./core/meter.js?v=151"></script>
-<script src="./core/appget.js?v=151"></script>
-<script src="./core/pin.js?v=151"></script>
-<script src="./core/clock.js?v=151"></script>
-<script src="./core/map.js?v=151"></script>
-<script src="./core/chat.js?v=151"></script>
-<script src="./core/otp.js?v=151"></script>
-<script src="./core/deskmode.js?v=151"></script>
-<script src="./core/weather.js?v=151"></script>
+<script src="./core/report.js?v=152"></script>
+<script src="./core/funnel.js?v=152"></script>
+<script src="./core/geo.js?v=152"></script>
+<script src="./core/fare.js?v=152"></script>
+<script src="./core/refer.js?v=152"></script>
+<script src="./core/meter.js?v=152"></script>
+<script src="./core/appget.js?v=152"></script>
+<script src="./core/pin.js?v=152"></script>
+<script src="./core/clock.js?v=152"></script>
+<script src="./core/map.js?v=152"></script>
+<script src="./core/chat.js?v=152"></script>
+<script src="./core/otp.js?v=152"></script>
+<script src="./core/deskmode.js?v=152"></script>
+<script src="./core/weather.js?v=152"></script>
 <script>
 /* ---------- icons ---------- */
 /* small line icons (one stroke style everywhere; no emoji in the interface) */
@@ -681,7 +681,9 @@ const VEH=[
 const fare0=(v,km)=>FARE.cityFare(v,km);
 // night charge (Office → Settings): on the pickup time — now, or the scheduled time
 const nightNow=()=>{try{return FARE.nightPct(CFG.night,S.when||(window.VCTCLK?VCTCLK.now():Date.now()))}catch(e){return 0}};
-const nightV=v=>{try{return FARE.nightFor(v&&v.id,CFG.night,S.when||(window.VCTCLK?VCTCLK.now():Date.now()))}catch(e){return 0}};
+// night or peak (Office → Settings → Peak), the larger of the two; the auto has only the Government night fare
+const surV=v=>{try{return FARE.surFor(v&&v.id,CFG.night,CFG.peak,S.when||(window.VCTCLK?VCTCLK.now():Date.now()))}catch(e){return{pct:0,kind:''}}};
+const nightV=v=>surV(v).pct;
 /* station fixed fare (Office → Settings → Growth), city rides only; a, b = place keys (default: this booking's) */
 const stFare=(v,a,b)=>{try{if(S.mode==='rent'||S.mode==='out'||!CFG.grow||!v)return null;const p=P[a||S.from],q=P[b||S.dest];return p&&q?FARE.stFare(CFG.grow.stf,v.id,p,q):null}catch(e){return null}};
 const fare=(v,km,a,b)=>{const st=stFare(v,a,b);return st!=null?st:FARE.withNightV(v.id,fare0(v,km),nightV(v))};
@@ -754,9 +756,26 @@ const refStored=()=>{try{const x=JSON.parse(localStorage.getItem('vct-ref')||'nu
 let CREDIT=0,CREDUNSUB=null;
 const refOn=()=>{const r=CFG.grow&&CFG.grow.ref;return r&&r.on&&+r.amt>0?Math.min(500,Math.round(+r.amt)):0};
 function watchCredit(){if(CREDUNSUB||!CL||!S.phone)return;CREDUNSUB=F().onSnapshot(F().doc(CL.db,'credits','+91'+S.phone),s=>{CREDIT=s.exists()?Math.max(0,Math.round(+s.data().bal||0)):0;const el=document.getElementById('credline');if(el)el.outerHTML=credLine()},()=>{})}
-const discFor=f=>CL&&!S.mode&&!S.when&&CREDIT>0?Math.min(CREDIT,Math.floor(f),500):0;
+/* coupon typed on the fare screen (Office → Settings → Coupons). The phone shows what it should give; the server decides
+   when the booking is made (one use per customer, first ride, minimum fare, limits) and says why if not (couponWhy). */
+let CPN=null; // {code, c: coupon doc}
+const cpnDisc=f=>{if(!CPN)return 0;const c=CPN.c||{};if(c.on!==true||(+c.until&&Date.now()>+c.until)||(+c.limit&&+c.used>=+c.limit)||(+c.min&&f<+c.min))return 0;
+  let d=c.type==='pct'?Math.floor(f*Math.min(100,+c.val||0)/100):Math.floor(+c.val||0);if(c.type==='pct'&&+c.max)d=Math.min(d,Math.floor(+c.max));return Math.max(0,Math.min(d,Math.floor(f),500))};
+const CPNWHY={unknown:['இந்த coupon இல்லை','This coupon does not exist'],off:['இந்த coupon இப்போ இல்லை','This coupon is off'],expired:['Coupon காலாவதி ஆயிடுச்சு','The coupon has expired'],
+  'used-up':['இந்த coupon எல்லாம் பயன்படுத்தியாச்சு','This coupon is used up'],used:['இந்த coupon-ஐ ஏற்கனவே பயன்படுத்திட்டீங்க','You have already used this coupon'],
+  'first-only':['முதல் ride-க்கு மட்டும் இந்த coupon','This coupon is for a first ride only'],min:['இந்த கட்டணத்துக்கு coupon வேலை செய்யாது (குறைந்தபட்ச கட்டணம்)','Below the minimum fare for this coupon'],zero:['இந்த ride-க்கு தள்ளுபடி இல்லை','No discount on this ride']};
+async function couponAsk(){modal(`<h3>${L('Coupon code','Coupon code')}</h3><div class="field"><input id="cpi" maxlength="16" autocapitalize="characters" placeholder="VELLORE50" value="${CPN?esc(CPN.code):''}" style="text-transform:uppercase"></div>
+    <p class="muted" id="cpm" style="margin:0;min-height:20px"></p><button class="btn yellow" id="cpok">${L('சேர்','Apply')}</button>${CPN?`<button class="btn ghost" id="cpx">${L('Coupon நீக்கு','Remove coupon')}</button>`:''}`,(m,close)=>{
+    const msg=t=>{m.querySelector('#cpm').textContent=t};
+    const x=m.querySelector('#cpx');if(x)x.onclick=()=>{CPN=null;close();fareScreen()};
+    m.querySelector('#cpok').onclick=async()=>{const code=m.querySelector('#cpi').value.trim().toUpperCase();if(!/^[A-Z0-9]{4,16}$/.test(code)){msg(L('Code சரியா இல்லை','That code is not right'));return}
+      try{const d=await F().getDoc(F().doc(CL.db,'coupons',code));if(!d.exists()){msg(L(...CPNWHY.unknown));return}const c=d.data();
+        const v=VEH.find(x=>x.id===S.veh),f=fare(v,route(S.from,S.dest).km);CPN={code,c};const dd=cpnDisc(f);
+        if(!dd){const why=c.on!==true?'off':(+c.until&&Date.now()>+c.until)?'expired':(+c.limit&&+c.used>=+c.limit)?'used-up':'min';CPN=null;msg(L(...CPNWHY[why]));return}
+        close();fareScreen();toast(L(`Coupon சேர்ந்தாச்சு: ₹${dd} தள்ளுபடி`,`Coupon applied: ₹${dd} off`))}catch(e){msg(CL.errText(e,S.lang==='ta'))}}})}
+const discFor=f=>CL&&!S.mode&&!S.when?(CPN?cpnDisc(f):CREDIT>0?Math.min(CREDIT,Math.floor(f),500):0):0;
 function credLine(){const v=VEH.find(x=>x.id===S.veh);let d=0;try{d=v?discFor(fare(v,route(S.from,S.dest).km)):0}catch(e){}
-  return d>0?`<div class="credline" id="credline">${X('check',14)} ${L(`நண்பர் referral: இந்த ride-ல ₹${d} கழியும்`,`Friend referral: ₹${d} off this ride`)}</div>`:'<i id="credline" hidden></i>'}
+  return d>0?`<div class="credline" id="credline">${X('check',14)} ${CPN?L(`Coupon ${esc(CPN.code)}: இந்த ride-ல ₹${d} கழியும்`,`Coupon ${esc(CPN.code)}: ₹${d} off this ride`):L(`நண்பர் referral: இந்த ride-ல ₹${d} கழியும்`,`Friend referral: ₹${d} off this ride`)}</div>`:'<i id="credline" hidden></i>'}
 function useBookLink(){
   const x=BOOKLINK;BOOKLINK=null;try{sessionStorage.removeItem('vct-booklink')}catch(e){}
   [['pick',x.f],['drop',x.t]].filter(([k,p])=>p).forEach(([k,p])=>{setCustom(k,{lat:p.lat,lon:p.lon});if(p.n){P[k].ta=P[k].en=p.n}});
@@ -1097,14 +1116,16 @@ function fareScreen(){
    <div class="sheet fare-sheet pad"><div class="grab"></div>
      <div class="sec"><h3>${t('chooseRide')}</h3><div class="trip"><span class="pill">${r.km.toFixed(1)} ${t('km')}</span><span class="pill">~${mins} ${t('min')}</span></div></div>
      <div class="whenrow"><button class="chip ${S.when?'sel':''}" id="whenb">${I.clock} ${S.when?fmtWhen(S.when):L('இப்போ','Now')}</button>${S.when?`<button class="linkbtn" id="whenx">${L('இப்போவே போகணும்','Ride now instead')}</button>`:`<span class="muted" style="font-size:12.5px">${L('பின்னாடி போகணுமா? நேரம் தேர்வு பண்ணுங்க','Later? Pick a time')}</span>`}</div>
-     ${nightNow()&&stFare(VEH.find(v=>v.id===S.veh))==null?`<div class="nightnote" id="nightnote">${X('moon',14)} ${L(`இரவு கட்டணம் +${nightNow()}% சேர்ந்திருக்கு (${CFG.night.from}–${CFG.night.to})`,`Night charge +${nightNow()}% included (${CFG.night.from}–${CFG.night.to})`)}</div>`:''}
+     ${(()=>{const sv=VEH.find(v=>v.id===S.veh),su=surV(sv&&sv.id==='auto'?{id:'mini'}:sv);if(!su.pct||stFare(sv)!=null)return '';
+       return su.kind==='peak'?`<div class="nightnote" id="nightnote">${X('bolt',14)} ${L(`Peak நேரம்: +${su.pct}% சேர்ந்திருக்கு (auto-க்கு இல்லை)`,`Peak hours: +${su.pct}% included (not on autos)`)}</div>`
+         :`<div class="nightnote" id="nightnote">${X('moon',14)} ${L(`இரவு கட்டணம் +${su.pct}% சேர்ந்திருக்கு (${CFG.night.from}–${CFG.night.to})`,`Night charge +${su.pct}% included (${CFG.night.from}–${CFG.night.to})`)}</div>`})()}
      <div style="display:flex;flex-direction:column;gap:10px" id="vs">${vehRows(r,mins)}</div>
      ${autoNote()}${credLine()}${meterNote()}
      ${CL&&!S.when?`<div class="tippre"><div><b>${X('bulb')} ${L('Tip சேர்க்கவா? (விருப்பம்)','Add a tip? (optional)')}</b><small>${L('Tip சேர்த்தா driver சீக்கிரம் கிடைப்பார். முழுசா driver-க்கே.','Tips help you get a driver faster. All of it goes to the driver.')}</small></div>
        <div class="tiprow">${[0,10,20,30,40,50,60,70,80,90].map(x=>`<button class="chip ${(S.tip0||0)===x?'sel':''}" data-tip0="${x}">${x?'+₹'+x:L('இல்லை','None')}</button>`).join('')}</div></div>`:''}
      ${riderRow()}
      <div class="payrow"><button class="pay ${S.pay==='cash'?'sel':''}" data-pay="cash">${I.cash}${t('payCash')}</button><button class="pay ${S.pay==='upi'?'sel':''}" data-pay="upi">${I.upi}${t('payUpi')}</button>${CL?'':`<button class="pay ${S.pay==='wallet'?'sel':''}" data-pay="wallet">${I.navWallet.replace('<svg ','<svg width="18" height="18" ')}${inr(WAL.bal)}</button>`}</div>
-     ${CL?`<p class="fine muted" style="margin:0">${L('கட்டணம் தூரத்தை வைத்து. Toll, parking தனி.','Fare is by distance. Tolls and parking are extra.')}</p>`:`<p class="fine muted" style="margin:0"><button class="linkbtn" id="cp">% ${t('coupon')}</button> · ${t('fareNote')}</p>`}
+     ${CL?`<p class="fine muted" style="margin:0">${S.mode||S.when?'':`<button class="linkbtn" id="cpn">${X('receipt',14)} ${CPN?L(`Coupon ${esc(CPN.code)} · மாத்து`,`Coupon ${esc(CPN.code)} · change`):L('Coupon இருக்கா?','Have a coupon?')}</button> · `}${L('கட்டணம் தூரத்தை வைத்து. Toll, parking தனி.','Fare is by distance. Tolls and parking are extra.')}</p>`:`<p class="fine muted" style="margin:0"><button class="linkbtn" id="cp">% ${t('coupon')}</button> · ${t('fareNote')}</p>`}
      <button class="btn yellow" id="bookb"></button></div></section>`,()=>{
     if(CL)watchNear();
     const m=makeMap(document.getElementById('map'),{path:r.path,line:r.pts?()=>r.pts:undefined,near:CL?()=>NEAR:undefined});
@@ -1118,6 +1139,7 @@ function fareScreen(){
     bindRider(fareScreen);
     app.querySelectorAll('[data-tip0]').forEach(b=>b.onclick=()=>{S.tip0=+b.dataset.tip0;app.querySelectorAll('[data-tip0]').forEach(x=>x.classList.toggle('sel',x===b));upd()});
     const cpb=document.getElementById('cp');if(cpb)cpb.onclick=()=>toast('FIRST20 · AUTO15 · REFER');
+    {const cq=document.getElementById('cpn');if(cq)cq.onclick=couponAsk}
     document.getElementById('edit').onclick=search;
     document.getElementById('bk').onclick=search;document.getElementById('bookb').onclick=()=>{if(needLogin())return;const v=VEH.find(x=>x.id===S.veh);
       if(ADV.includes(v.id)&&(!S.when||S.when<Date.now()+3*36e5)){pickWhen(180,ts=>{S.when=ts;fareScreen()},L('Tempo Traveller / Maxi Cab-க்கு குறைந்தது 3 மணி நேரம் முன்னாடி book பண்ணணும்','Tempo Travellers and maxi cabs need at least 3 hours\u2019 notice'));return}
@@ -2168,14 +2190,14 @@ let PUBUNSUB=null;
 function watchPublic(){if(PUBUNSUB||CFGUNSUB||!CL)return;
   PUBUNSUB=F().onSnapshot(F().doc(CL.db,'public','prices'),s=>{if(!s.exists()||CFGUNSUB)return;const d=s.data();
     if(d.fares)VEH.forEach(v=>{const f=d.fares[v.id];if(f&&v.id!=='auto'){if(f.base!=null)v.base=+f.base;if(f.per!=null)v.per=+f.per;v.incl=+f.incl>0?+f.incl:undefined}});
-    CFG.area=d.area||null;CFG.night=d.night||null;CFG.grow=Array.isArray(d.stf)?{stf:d.stf}:null;try{applyTariff(d)}catch(e){}
+    CFG.area=d.area||null;CFG.night=d.night||null;CFG.peak=d.peak||null;CFG.grow=Array.isArray(d.stf)?{stf:d.stf}:null;try{applyTariff(d)}catch(e){}
     if(S.tab==='home'&&!S.logged&&!document.querySelector('.modal')&&document.getElementById('vs'))fareScreen()},()=>{})}
 function watchConfig(){
   if(PUBUNSUB){try{PUBUNSUB()}catch(e){}PUBUNSUB=null}
   if(CFGUNSUB)return;
   CFGUNSUB=F().onSnapshot(F().doc(CL.db,'config','app'),s=>{if(!s.exists())return;const d=s.data();
     if(d.fares)VEH.forEach(v=>{const f=d.fares[v.id];if(f&&v.id!=='auto'){if(f.base!=null)v.base=+f.base;if(f.per!=null)v.per=+f.per;v.incl=+f.incl>0?+f.incl:undefined}});
-    if(window.APPGET)APPGET.setPlay(d.play);CFG.area=d.area||null;CFG.grow=d.grow||null;CFG.meter=d.meter||null;CFG.upi=d.upi||'';CFG.office=d.office||'';CFG.push=d.push||null;CFG.night=d.night||null;CFG.privPhone=!!d.privPhone;CFG.serverPin=!!d.serverPin;CFG.comm=d.comm!=null?+d.comm:10;CFG.wait=d.wait||null;CFG.blocked=Array.isArray(d.blocked)?d.blocked:[];{const had=VEH.includes(BIKE);setBike(!!d.showBike);if(had!==VEH.includes(BIKE)&&S.tab==='home'&&document.querySelector('.vrow')&&!document.querySelector('.modal'))home(S.mode||undefined)}if(d.dispatch)Object.assign(DISPC,d.dispatch);applyTariff(d);
+    if(window.APPGET)APPGET.setPlay(d.play);CFG.area=d.area||null;CFG.grow=d.grow||null;CFG.meter=d.meter||null;CFG.peak=d.peak||null;CFG.upi=d.upi||'';CFG.office=d.office||'';CFG.push=d.push||null;CFG.night=d.night||null;CFG.privPhone=!!d.privPhone;CFG.serverPin=!!d.serverPin;CFG.comm=d.comm!=null?+d.comm:10;CFG.wait=d.wait||null;CFG.blocked=Array.isArray(d.blocked)?d.blocked:[];{const had=VEH.includes(BIKE);setBike(!!d.showBike);if(had!==VEH.includes(BIKE)&&S.tab==='home'&&document.querySelector('.vrow')&&!document.querySelector('.modal'))home(S.mode||undefined)}if(d.dispatch)Object.assign(DISPC,d.dispatch);applyTariff(d);
     // refresh the browser push token last: Android WebView has no window.Notification (the app uses native push),
     // and reading it there used to throw before the outstation prices and settings above were applied
     try{if(CUID&&!NATIVEC()&&pushReadyC()&&typeof Notification!=='undefined'&&Notification.permission==='granted')enablePushC(false)}catch(e){}},()=>{});
@@ -2246,7 +2268,7 @@ const meterMode=v=>{try{const m=CFG.meter&&CFG.meter.mode&&CFG.meter.mode[v&&v.i
 function meterNote(){const v=VEH.find(x=>x.id===S.veh),m=meterMode(v),xp=+(CFG.meter&&CFG.meter.xp)||0;
   return m==='meter'?`<div class="credline mnote" id="mnote">${X('pin',14)} ${L('இறுதி கட்டணம் GPS கி.மீ படி. மேலே உள்ளது மதிப்பீடு.','The final fare is by GPS km. The price above is an estimate.')}</div>`
     :m==='upfront'?`<div class="credline mnote" id="mnote">${X('check',14)} ${L(`இந்த கட்டணம் தான். போற வழி ${xp}%-க்கு மேல நீளமானா மட்டும் GPS கி.மீ படி மாறும்.`,`This is your fare. It changes only if the trip is over ${xp}% longer (GPS km).`)}</div>`:'<i id="mnote" hidden></i>'}
-function localTar(v,km){const w=CFG.wait||{},fx=stFare(v)!=null,np=fx?0:nightV(v),o={t:'local',wait:v&&v.id==='auto'?FARE.AUTO_GOVT.wait:+w.rate||0,free:w.free!=null?+w.free:3};if(v&&v.id==='auto')o.govt='TN-GO366-2026';if(fx)o.fixed=true;{const mm=meterMode(v);if(mm!=='quote')Object.assign(o,{mode:mm,v:v.id,km:Math.round(km*10)/10,xp:Math.max(0,Math.min(100,+(CFG.meter&&CFG.meter.xp)||0))},v.id==='auto'?{}:{base:+v.base,per:+v.per,incl:+v.incl>0?+v.incl:1.5})}if(np&&v){o.night=np;o.nightAmt=fare(v,km)-fare0(v,km)}return o} // prices saved in the booking for the final bill
+function localTar(v,km){const w=CFG.wait||{},fx=stFare(v)!=null,su=fx?{pct:0,kind:''}:surV(v),np=su.pct,o={t:'local',wait:v&&v.id==='auto'?FARE.AUTO_GOVT.wait:+w.rate||0,free:w.free!=null?+w.free:3};if(v&&v.id==='auto')o.govt='TN-GO366-2026';if(fx)o.fixed=true;if(su.kind==='peak')o.sur='peak';{const mm=meterMode(v);if(mm!=='quote')Object.assign(o,{mode:mm,v:v.id,km:Math.round(km*10)/10,xp:Math.max(0,Math.min(100,+(CFG.meter&&CFG.meter.xp)||0))},v.id==='auto'?{}:{base:+v.base,per:+v.per,incl:+v.incl>0?+v.incl:1.5})}if(np&&v){o.night=np;o.nightAmt=fare(v,km)-fare0(v,km)}return o} // prices saved in the booking for the final bill
 /* booking id made on this phone (UUID, never a counter): a double tap or a retry after a lost answer writes the same
    document again — it can never become a second booking (28 Nov load safety) */
 const newBkId=()=>{try{if(crypto.randomUUID)return crypto.randomUUID()}catch(e){}const a=new Uint8Array(16);crypto.getRandomValues(a);a[6]=a[6]&15|64;a[8]=a[8]&63|128;
@@ -2266,7 +2288,7 @@ async function cloudBook(){try{window.VCTF&&VCTF('book')}catch(e){};if(needLogin
   const pin=String(1000+Math.floor(Math.random()*9000));
   const trip=(r.pts||r.path.map(k=>P[k])).map(p=>({lat:p.lat,lon:p.lon}));
   const data={customerUid:CUID,custName:S.name,custPhone:'+91'+S.phone,src:'app',kind:'ride',from:placeOf(S.from),to:placeOf(S.dest),path:trip,
-    veh:v.id,vehTa:v.ta,vehEn:v.en,km:+r.km.toFixed(1),base:v.base,fare:f,pay:S.pay,status:'searching',when:VCTCLK.now(),rider:S.rider||null,tip:S.tip0||0,tariff:localTar(v,r.km),...(discFor(f)>0?{disc:discFor(f)}:{}),
+    veh:v.id,vehTa:v.ta,vehEn:v.en,km:+r.km.toFixed(1),base:v.base,fare:f,pay:S.pay,status:'searching',when:VCTCLK.now(),rider:S.rider||null,tip:S.tip0||0,tariff:localTar(v,r.km),...(discFor(f)>0?{disc:discFor(f),...(CPN?{coupon:CPN.code}:{})}:{}),
     createdAt:F().serverTimestamp(),updatedAt:F().serverTimestamp()};
   try{
     if(!CFG.serverPin)try{Object.assign(data,await VCTPIN.fields(pin))}catch(e){} // lets the driver check the PIN even if this phone goes offline
@@ -2276,7 +2298,7 @@ async function cloudBook(){try{window.VCTF&&VCTF('book')}catch(e){};if(needLogin
     await saveContact(ref.id,ct);
     R={id:ref.id,v,km:r.km,path:r.path,fare:f,pay:S.pay,from:S.from,dest:S.dest,fromName:{ta:P[S.from].ta,en:P[S.from].en},destName:{ta:P[S.dest].ta,en:P[S.dest].en},
        pin,trackId:ref.id.slice(0,8),trip,phase:'search',chat:[],drv:null,dpos:null,b:data,riderPh:ct.riderPhone,t0:Date.now(),boost:S.tip0||0};S.tip0=0;HPICK=null;
-    rememberRide();watchBooking();
+    CPN=null;rememberRide();watchBooking();
   }catch(e){if(e&&e.code==='permission-denied'&&!MEBLK){F().getDoc(F().doc(CL.db,'blocked','+91'+S.phone)).then(x=>{if(x.exists()){MEBLK=true;blockedStop()}}).catch(()=>{})}
     toast(CL.errText(e,S.lang==='ta'));if(btn){btn.disabled=false;fareScreen()}}
 }
@@ -2297,7 +2319,7 @@ function watchDrv(ph){
     ()=>{LIVEUNSUB=null;setTimeout(()=>{if(!LIVEUNSUB&&R&&R.b&&R.b.driverPhone===ph&&['assigned','arrived','ontrip'].includes(R.b.status))watchDrv(ph)},8000)});
 }
 function onBooking(b){
-  R.b=b;if(b.status!=='done')R.boost=+b.tip||0;
+  R.b=b;if(b.couponWhy&&!R.cpnSaid){R.cpnSaid=1;toast(L('Coupon ஏற்கப்படலை: ','Coupon not applied: ')+L(...(CPNWHY[b.couponWhy]||CPNWHY.zero)))}if(b.status!=='done')R.boost=+b.tip||0;
   if(b.driverPhone&&!LIVEUNSUB){
     R.drv={ta:b.driverName||'Driver',en:b.driverName||'Driver',plate:b.plate||'',model:b.vehModel||'',rating:'',trips:0,phone:b.driverPhone};
     watchDrv(b.driverPhone);

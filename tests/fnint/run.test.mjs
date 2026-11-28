@@ -281,3 +281,33 @@ test('GPS meter: the server re-measures the uploaded route and flags a driver wh
   const g2 = await waitFor(async () => { const d = (await db.doc('bookings/gm2').get()).data(); return d.meterSrv ? d : null; }, 60000);
   assert.equal(g2.meterFlag, 'high');
 });
+
+test('coupons: valid code held once per customer, given back on cancel, paid to the driver when done; bad codes explained', async () => {
+  const U = 'u-cp1';
+  await db.doc('coupons/VELLORE50').set({ on: true, type: 'amt', val: 50, max: 0, min: 100, limit: 2, used: 0, until: 0, first: false });
+  const r1 = db.doc('bookings/cp1');
+  await r1.set(base({ customerUid: U, status: 'searching', fare: 150, coupon: 'VELLORE50', disc: 50, tariff: { t: 'local' } }));
+  const h = await waitFor(async () => { const d = (await r1.get()).data(); return d.discHeld != null ? d : null; });
+  assert.equal(h.disc, 50); assert.equal(h.discSrc, 'coupon'); assert.equal((await db.doc('coupons/VELLORE50').get()).data().used, 1);
+  // same customer again → refused (one use each)
+  const r2 = db.doc('bookings/cp2');
+  await r2.set(base({ customerUid: U, status: 'searching', fare: 150, coupon: 'VELLORE50', disc: 50, tariff: { t: 'local' } }));
+  const h2 = await waitFor(async () => { const d = (await r2.get()).data(); return d.discHeld != null ? d : null; });
+  assert.equal(h2.disc, 0); assert.equal(h2.couponWhy, 'used');
+  // cancel the first → the use comes back, then the same customer can use it again
+  await r1.update({ status: 'cancelled', cancelReason: 'customer' });
+  assert.equal(await waitFor(async () => { const u = (await db.doc('coupons/VELLORE50').get()).data().used; return u === 0 ? 'zero' : null; }), 'zero');
+  assert.ok(!(await db.doc(`couponUses/VELLORE50_${U}`).get()).exists);
+  // under the minimum fare → refused with the reason
+  const r3 = db.doc('bookings/cp3');
+  await r3.set(base({ customerUid: 'u-cp3', status: 'searching', fare: 80, coupon: 'VELLORE50', disc: 50, tariff: { t: 'local' } }));
+  const h3 = await waitFor(async () => { const d = (await r3.get()).data(); return d.discHeld != null ? d : null; });
+  assert.equal(h3.couponWhy, 'min');
+  // a valid ride done → the driver gets the ₹50
+  const r4 = db.doc('bookings/cp4');
+  await r4.set(base({ customerUid: 'u-cp4', status: 'searching', fare: 150, coupon: 'VELLORE50', disc: 50, tariff: { t: 'local' } }));
+  await waitFor(async () => (await r4.get()).data().discHeld === true);
+  await r4.update({ status: 'ontrip', driverPhone: DRV }); await r4.update({ status: 'done', fareFinal: 150 });
+  assert.ok(await waitFor(async () => (await r4.get()).data().discPaid === true));
+  assert.equal((await db.doc('ledger/disc_cp4').get()).data().kind, 'coupon-discount');
+});

@@ -47,11 +47,11 @@ const FARE = (() => {
       const g = gpsFare(t, a, quoted);
       if (g) {                                                   // GPS fare (Office → Settings → GPS fare): actual km by the meter
         trip += add('fare', `GPS ${g.km} கி.மீ கட்டணம்`, `Fare for ${g.km} km (GPS)`, g.base);
-        if (g.night) trip += add('night', `இரவு கட்டணம் +${n(t.night)}%`, `Night charge +${n(t.night)}%`, g.night);
+        if (g.night) trip += t.sur === 'peak' ? add('night', `Peak நேரம் +${n(t.night)}%`, `Peak hours +${n(t.night)}%`, g.night) : add('night', `இரவு கட்டணம் +${n(t.night)}%`, `Night charge +${n(t.night)}%`, g.night);
       } else {
       const nt = n(t.nightAmt) < quoted ? n(t.nightAmt) : 0;   // night charge is inside the quoted fare; shown on its own line
       trip += add('fare', 'பயணக் கட்டணம்', 'Ride fare', quoted - nt);
-      if (nt) trip += add('night', `இரவு கட்டணம் +${n(t.night)}%`, `Night charge +${n(t.night)}%`, nt);
+      if (nt) trip += t.sur === 'peak' ? add('night', `Peak நேரம் +${n(t.night)}%`, `Peak hours +${n(t.night)}%`, nt) : add('night', `இரவு கட்டணம் +${n(t.night)}%`, `Night charge +${n(t.night)}%`, nt);
       }
       const wm = Math.max(0, Math.round(n(a.waitMin) - (t.free != null ? n(t.free) : 3)));
       if (wm && n(t.wait)) trip += add('wait', `காத்திருப்பு ${wm} நிமி`, `Waiting ${wm} min`, wm * n(t.wait));
@@ -110,6 +110,19 @@ const FARE = (() => {
   // hours the customer booked (leave → return): the first 15 minutes over a half hour are free, then the next half hour counts
   const planHours = (leave, ret) => n(leave) && n(ret) > n(leave) ? Math.ceil(Math.max(0, n(ret) - n(leave) - AGRACE * 6e4) / 18e5) / 2 : 0;
   const hrsTxt = (h, lang) => { const w = Math.floor(h), half = h - w >= 0.5; return lang === 'ta' ? `${w ? w + ' மணி' : ''}${w && half ? ' ' : ''}${half ? '30 நிமி' : ''}` : `${w ? w + ' hr' + (w > 1 ? 's' : '') : ''}${w && half ? ' ' : ''}${half ? '30 min' : ''}`; };
+  // Peak hours (owner, Office → Settings → Peak; config/app.peak = {on, slots:[{from:'08:00', to:'10:00', pct:10}, …]}):
+  // city cars only (the auto fare is the Government's), not station fixed fares. When the night charge and a peak slot
+  // overlap, only the larger of the two applies — never both. Up to 4 slots, 1–50 % each.
+  function peakPct(cfg, at) {
+    if (!cfg || !cfg.on || !Array.isArray(cfg.slots)) return 0;
+    const m = ((Math.floor((+at + 19800000) / 60000) % 1440) + 1440) % 1440;
+    for (const s of cfg.slots.slice(0, 4)) { const f = hm(s && s.from), t = hm(s && s.to), p = Math.min(50, n(s && s.pct));
+      if (p && f != null && t != null && f !== t && (f < t ? m >= f && m < t : m >= f || m < t)) return p; }
+    return 0;
+  }
+  // the surcharge for this vehicle now: {pct, kind:'night'|'peak'|''}
+  const surFor = (vid, night, peak, at) => { if (vid === 'auto') { const p = nightPct(AUTO_GOVT.night, at); return { pct: p, kind: p ? 'night' : '' }; }
+    const a = nightPct(night, at), b = peakPct(peak, at); return b > a ? { pct: b, kind: 'peak' } : { pct: a, kind: a ? 'night' : '' }; };
   // night % for this vehicle (auto: Government night window, whatever the office night switch says)
   const nightFor = (vid, cfg, at) => nightPct(vid === 'auto' ? AUTO_GOVT.night : cfg, at);
   const withNightV = (vid, f, pct) => vid === 'auto' ? (pct ? Math.round(n(f) * (1 + pct / 100)) : n(f)) : withNight(f, pct);
@@ -145,6 +158,6 @@ const FARE = (() => {
   // the amount a finished booking really cost (old bookings have no fareFinal)
   const billOf = b => b && b.fareFinal != null ? +b.fareFinal : +(b && b.fare) || 0;
   const tripOf = b => b && b.fx && b.fx.trip != null ? +b.fx.trip : billOf(b);
-  return { final, gpsFare, stFare, ST_R, comm, billOf, tripOf, r10, nightPct, withNight, hm, AUTO_GOVT, AREA, crow, fromCentre, areaKm, cityFare, nightFor, withNightV, OUTCAT, outCat, catBata, INCL, inclKm, AHRS, AXH, AGRACE, aHours, planHours, hrsTable, hrsTxt };
+  return { final, peakPct, surFor, gpsFare, stFare, ST_R, comm, billOf, tripOf, r10, nightPct, withNight, hm, AUTO_GOVT, AREA, crow, fromCentre, areaKm, cityFare, nightFor, withNightV, OUTCAT, outCat, catBata, INCL, inclKm, AHRS, AXH, AGRACE, aHours, planHours, hrsTable, hrsTxt };
 })();
 if (typeof module !== 'undefined') module.exports = FARE;

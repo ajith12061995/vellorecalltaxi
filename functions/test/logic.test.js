@@ -367,3 +367,15 @@ test('GPS meter check: flags only real problems', () => {
   assert.equal(L.meterCheck(b({ tariff: { t: 'local' }, km: 3 }), srv).flag, 'long', 'ran 6 km for a 3 km booking');
   assert.equal(L.meterCheck(b(), srv).srv.km, 6.0);
 });
+test('coupons: server decides — off, expired, used up, one per customer, first ride only, minimum fare, % with a cap', () => {
+  const cp = o => ({ on: true, type: 'amt', val: 50, max: 0, min: 0, limit: 0, used: 0, until: 0, first: false, ...o }), x = o => ({ fare: 200, now: 1000, usedByMe: false, firstRide: true, ...o });
+  assert.deepEqual(L.couponDecide(cp(), x()), { disc: 50, why: '' });
+  assert.equal(L.couponDecide(null, x()).why, 'unknown'); assert.equal(L.couponDecide(cp({ on: false }), x()).why, 'off');
+  assert.equal(L.couponDecide(cp({ until: 999 }), x()).why, 'expired'); assert.equal(L.couponDecide(cp({ limit: 10, used: 10 }), x()).why, 'used-up');
+  assert.equal(L.couponDecide(cp(), x({ usedByMe: true })).why, 'used'); assert.equal(L.couponDecide(cp({ first: true }), x({ firstRide: false })).why, 'first-only');
+  assert.equal(L.couponDecide(cp({ min: 250 }), x()).why, 'min');
+  assert.equal(L.couponDecide(cp({ type: 'pct', val: 20, max: 30 }), x()).disc, 30, '20 % of 200 = 40, capped at 30');
+  assert.equal(L.couponDecide(cp({ type: 'pct', val: 10 }), x()).disc, 20);
+  assert.equal(L.couponDecide(cp({ val: 900 }), x()).disc, 200, 'never more than the fare');
+  assert.ok(L.COUPON_RE.test('VELLORE50') && !L.COUPON_RE.test('ab') && !L.COUPON_RE.test('x y'));
+});

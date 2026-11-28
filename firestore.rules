@@ -97,6 +97,23 @@ service cloud.firestore {
       allow read: if isStaff() || (signedIn() && phone() == ph);
       allow write: if false;
     }
+    // coupons (owner, Office → Settings → Coupons): a signed-in customer may read one code to see what it gives;
+    // the server checks and counts every use (couponUses). Codes are switched off, never deleted.
+    match /coupons/{code} {
+      allow get: if signedIn();
+      allow list: if isStaff();
+      allow create, update: if isOwner() && code.matches('[A-Z0-9]{4,16}')
+        && newData().keys().hasOnly(['on', 'type', 'val', 'max', 'min', 'limit', 'used', 'until', 'first', 'note', 'createdAt', 'updatedAt'])
+        && newData().on is bool && newData().type in ['amt', 'pct']
+        && (newData().type == 'amt' ? num(newData().val, 1, 500) : num(newData().val, 1, 100))
+        && num(newData().get('max', 0), 0, 500) && num(newData().get('min', 0), 0, 5000) && num(newData().get('limit', 0), 0, 100000)
+        && newData().get('first', false) is bool;
+      allow delete: if false;
+    }
+    match /couponUses/{id} {
+      allow read: if isStaff();
+      allow write: if false;
+    }
     match /referrals/{uid} {
       allow read: if isStaff();
       allow write: if false;
@@ -207,8 +224,9 @@ service cloud.firestore {
             && num(newData().fare, 1, 200000)
             && (!('tip' in newData()) || num(newData().tip, 0, 300))
             && (!('disc' in newData()) || num(newData().disc, 0, 500))   // referral discount asked for; the server holds or drops it
+            && (!('coupon' in newData()) || (newData().coupon is string && newData().coupon.size() <= 16))
             && !newData().keys().hasAny(['driverPhone', 'driverName', 'assignedAt', 'startedAt', 'doneAt', 'fareFinal', 'fx', 'comm', 'commLocal', 'pinOk', 'ledgerAt',
-                                             'fareFlag', 'fareWas', 'kmWas', 'limitWhy', 'cancelledBy', 'dispatchedBy', 'tariffFixed', 'discHeld', 'discPaid', 'discBack']));
+                                             'fareFlag', 'fareWas', 'kmWas', 'limitWhy', 'cancelledBy', 'dispatchedBy', 'tariffFixed', 'discHeld', 'discPaid', 'discBack', 'discSrc', 'couponWhy']));
 
       allow update: if isOwner()
         // staff: dispatch work only (assign, re-open, start, cancel). Fare, bill, commission and payment: owner only.
@@ -311,7 +329,7 @@ service cloud.firestore {
       allow write: if isOwner() && (
         (doc == 'site' && newData().keys().hasOnly(['phone', 'driverPhone', 'whatsapp', 'email', 'address', 'places', 'updatedAt'])
           && (!('places' in newData()) || (newData().places is list && newData().places.size() <= 24)))
-        || (doc == 'prices' && newData().keys().hasOnly(['fares', 'out', 'rent', 'night', 'area', 'stf', 'updatedAt'])
+        || (doc == 'prices' && newData().keys().hasOnly(['fares', 'out', 'rent', 'night', 'area', 'stf', 'peak', 'updatedAt'])
             && (!('stf' in newData()) || (newData().stf is list && newData().stf.size() <= 40))));
     }
     match /siteImg/{id} {
