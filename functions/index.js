@@ -269,7 +269,9 @@ exports.onBookingCreated = onDocumentCreated({ document: 'bookings/{id}', timeou
     else await ref.update({ tariff, tariffFixed: true, updatedAt: FV.serverTimestamp() });   // fare fine, extra-km/hour prices were too low
     b.fare = fx.fare;
     logger.warn('fare corrected', { id, was: fx.was, now: fx.fare, km: fx.km, wasKm: fx.wasKm });
-  } else if (L.fareLooksWrong(b, c.fares)) await ref.update({ fareFlag: 'below-price-list' });
+  } else if (L.stFareOf(b, c) == null && L.fareLooksWrong(b, c.fares)) await ref.update({ fareFlag: 'below-price-list' });
+  // 2b) a referral discount asked for: hold it from the customer's credit (none → no discount)
+  if (b.disc != null) { await holdDisc(ref, b).catch(e => logger.error('disc hold', { id, e: String(e) })); }
   // 3) a city ride outside the local area (should have been outstation): flag it for the office, don't block
   if (L.outsideArea(b, c.area)) { await ref.update({ areaFlag: 'outside-local' }); logger.warn('outside local area', { id, veh: b.veh }); }
   if (b.status !== 'searching' || !c.push || !c.push.vapid) return;
@@ -333,6 +335,52 @@ exports.onBookingCust = onDocumentUpdated('bookings/{id}', async ev => {
 });
 
 // A waiting ride was taken (or cancelled): the ride screen ringing on the other drivers' phones closes at once.
+// ---- referral discount (see lib/logic.js referDecide / discTake)
+const authPhone = async uid => { try { return uid ? (await admin.auth().getUser(uid)).phoneNumber || '' : ''; } catch (e) { return ''; } };
+async function holdDisc(ref, b) {
+  const ph = await authPhone(b.customerUid);
+  await db.runTransaction(async tx => {
+    const bs = await tx.get(ref); if (!bs.exists) return; const cur = bs.data();
+    if (cur.discHeld != null) return;                                    // already held (function retried)
+    const cref = ph ? db.doc(`credits/${ph}`) : null, cs = cref ? await tx.get(cref) : null;
+    const take = ['searching', 'scheduled'].includes(cur.status) ? L.discTake(cur.disc, cs && cs.exists ? cs.data().bal : 0, cur.fare) : 0;
+    if (take > 0) tx.set(cref, { bal: FV.increment(-take), updatedAt: FV.serverTimestamp() }, { merge: true });
+    tx.update(ref, { disc: take, discHeld: take > 0, updatedAt: FV.serverTimestamp() });
+  });
+}
+exports.onBookingDisc = onDocumentUpdated('bookings/{id}', async ev => {
+  const before = ev.data.before.data() || {}, after = ev.data.after.data(), ref = ev.data.after.ref, id = ev.params.id;
+  if (!after) return;
+  const done = after.status === 'done' && before.status !== 'done', cancelled = after.status === 'cancelled' && before.status !== 'cancelled';
+  // 1) a held discount: back to the customer's credit if cancelled; to the driver's wallet when done (the company pays it)
+  if (after.discHeld && (cancelled || (done && after.driverPhone))) {
+    const ph = cancelled ? await authPhone(after.customerUid) : '';
+    await db.runTransaction(async tx => {
+      const bs = await tx.get(ref), cur = bs.data() || {}, amt = Math.round(+cur.disc || 0);
+      if (!cur.discHeld || cur.discBack || cur.discPaid || !(amt > 0)) return;
+      if (cancelled) { if (!ph) return; tx.set(db.doc(`credits/${ph}`), { bal: FV.increment(amt), updatedAt: FV.serverTimestamp() }, { merge: true }); tx.update(ref, { discBack: true }); }
+      else { tx.update(db.doc(`drivers/${cur.driverPhone}`), { wallet: FV.increment(amt), updatedAt: FV.serverTimestamp() }); tx.update(ref, { discPaid: true });
+        tx.set(db.doc(`ledger/disc_${id}`), { bookingId: id, driverPhone: cur.driverPhone, disc: amt, kind: 'referral-discount', at: FV.serverTimestamp() }); }
+    });
+  }
+  // 2) the referred customer's first finished ride: both get the referral credit, once
+  if (!done || after.src !== 'app' || !after.customerUid) return;
+  const c = await cfg(); if (!L.refAmt(c)) return;
+  const us = await db.doc(`users/${after.customerUid}`).get(), refBy = us.exists ? String(us.data().refBy || '') : '';
+  if (!refBy) return;
+  const phone = await authPhone(after.customerUid);
+  let referrerExists = false; try { await admin.auth().getUserByPhoneNumber(refBy); referrerExists = true; } catch (e) { /* not a customer yet */ }
+  const dq = await db.collection('bookings').where('customerUid', '==', after.customerUid).where('status', '==', 'done').limit(2).get();
+  await db.runTransaction(async tx => {
+    const rref = db.doc(`referrals/${after.customerUid}`), rs = await tx.get(rref);
+    const amt = L.referDecide({ cfg: c, refBy, phone, already: rs.exists, referrerExists, doneCount: dq.size });
+    if (!amt) return;
+    tx.set(rref, { by: refBy, to: phone, amt, bookingId: id, at: FV.serverTimestamp() });
+    tx.set(db.doc(`credits/${phone}`), { bal: FV.increment(amt), updatedAt: FV.serverTimestamp() }, { merge: true });
+    tx.set(db.doc(`credits/${refBy}`), { bal: FV.increment(amt), updatedAt: FV.serverTimestamp() }, { merge: true });
+  });
+});
+
 exports.onRideTaken = onDocumentUpdated('bookings/{id}', async ev => {
   const t = L.takenNow(ev.data.before.data(), ev.data.after.data()); if (!t || !t.veh) return;
   const c = await cfg(); if (!c.push || !c.push.vapid || c.noTakenPush) return;

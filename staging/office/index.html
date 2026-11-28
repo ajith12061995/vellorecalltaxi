@@ -623,6 +623,7 @@ details.faq p{margin:0;padding:0 14px 14px;color:var(--muted);font-size:14px;lin
 .tid{font-weight:700;font-variant-numeric:tabular-nums}
 .acts2{display:flex;gap:10px;align-items:center;justify-content:flex-end}
 .tr.t4{grid-template-columns:1.2fr 1fr 1fr 1fr;min-width:560px}
+.tr.t6{grid-template-columns:1.4fr 1.4fr 1fr .7fr 1fr .7fr;min-width:640px;align-items:center}.tr.t6 select.cell{width:100%}.chk{display:inline-flex;align-items:center;gap:6px;font-size:13.5px;font-weight:600}
 .lastln.bad{background:#FFF4E0;border-radius:8px;padding:6px 8px}.lastln .why{font-size:12.5px;color:#7A4A00;margin-top:3px}.lastln .why a{font-weight:700}
 .devln{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;font-size:12.5px;margin:4px 0 2px;padding:6px 8px;border-radius:8px;background:var(--surface2,#F2F5F3)}
 .devln.no{background:#FFF4E0}.devln span{display:inline-flex;align-items:center;gap:3px}.devln small{flex-basis:100%;color:var(--muted)}
@@ -817,6 +818,73 @@ const VEH=[
 ];
 const fare=(v,km)=>FARE.cityFare(v,km);
 /* outstation + rental tariffs — same defaults as the customer app; owner edits them in Settings */
+/* Growth settings (owner 28 Nov): Google review link, station fixed fares, driver daily bonus. All off until the owner fills them in. */
+const STPL=[['katpadi','காட்பாடி ஜங்ஷன்','Katpadi Junction',12.9716,79.1376],['cmc','CMC மருத்துவமனை','CMC Hospital',12.9246,79.1356],['vit','VIT பல்கலைக்கழகம்','VIT University',12.9692,79.1559],
+  ['newbus','புதிய பேருந்து நிலையம்','New Bus Stand',12.9349,79.1435],['green','கிரீன் சர்க்கிள்','Green Circle',12.9320,79.1377],['oldbus','பழைய பேருந்து நிலையம்','Old Bus Stand',12.9180,79.1330],
+  ['fort','வேலூர் கோட்டை','Vellore Fort',12.9206,79.1295],['golden','ஸ்ரீபுரம் தங்கக் கோவில்','Sripuram Golden Temple',12.8710,79.0880],['sathu','சத்துவாச்சாரி','Sathuvachari',12.9370,79.1640],['bagayam','பாகாயம்','Bagayam',12.8890,79.1350]];
+const stPlace=k=>{const x=STPL.find(p=>p[0]===k);return x?{k:x[0],ta:x[1],en:x[2],lat:x[3],lon:x[4]}:null};
+const STV=['auto','mini','sedan','suv','psuv'];
+const REVOK=u=>/^https:\/\/([a-z0-9-]+\.)*(google\.com|google\.co\.in|g\.page|goo\.gl)\/\S{3,}$/i.test(String(u||''));
+const growOf=c=>{const g=(c&&c.grow)||{};return{review:g.review||'',stf:Array.isArray(g.stf)?g.stf:[],bonus:{on:!!(g.bonus&&g.bonus.on),rides:+(g.bonus&&g.bonus.rides)||0,amt:+(g.bonus&&g.bonus.amt)||0},ref:{on:!!(g.ref&&g.ref.on),amt:+(g.ref&&g.ref.amt)||0}}};
+const istDay=t=>new Date(t==null?Date.now():t).toLocaleDateString('en-CA',{timeZone:'Asia/Kolkata'});
+function stRow(e,i){const opt=(sel,list)=>list.map(([k,ta,en])=>`<option value="${k}" ${k===sel?'selected':''}>${L(ta,en)}</option>`).join('');
+  return `<div class="tr t6 strow" data-st="${i}"><span><select class="cell" data-sa>${opt(e&&e.a&&e.a.k,STPL)}</select></span><span><select class="cell" data-sb>${opt(e&&e.b&&e.b.k||'cmc',STPL)}</select></span>
+    <span><select class="cell" data-sv>${STV.map(id=>{const v=VEH.find(x=>x.id===id);return `<option value="${id}" ${e&&e.veh===id?'selected':''}>${v[S.lang]}</option>`}).join('')}</select></span>
+    <span><input class="cell" data-sf inputmode="numeric" maxlength="4" value="${e&&e.fare||''}" placeholder="₹"></span><span><label class="chk"><input type="checkbox" data-sboth ${!e||e.both?'checked':''}> ${L('இரு வழி','Both ways')}</label></span>
+    <span><button class="linkbtn" data-sx style="color:var(--danger)">${L('நீக்கு','Remove')}</button></span></div>`}
+function growHtml(c){const g=growOf(c),row=stRow;
+  return `<section class="panel" id="growp" style="margin-top:14px"><div class="ph"><h3>${X('bolt')} ${L('வளர்ச்சி','Growth')}</h3></div>
+   <h4 style="margin:4px 0 4px">${L('Google review link','Google review link')}</h4>
+   <p class="muted" style="margin:0 0 6px;font-size:12.5px">${L('Ride-க்கு 5★ கொடுத்த customer-கிட்ட மட்டும் "Google-ல review போடுங்க"ன்னு கேட்கும். காலியா விட்டா கேட்காது. Google Business verify ஆனதும் "Ask for reviews" link-ஐ இங்கே போடுங்க.','Customers who give a ride 5 stars are asked to review you on Google. Blank = never asked. Paste the "Ask for reviews" link once Google Business is verified.')}</p>
+   <div class="field"><input id="g_rv" value="${esc(g.review)}" placeholder="https://g.page/r/…/review" aria-label="Google review link"></div>
+   <h4 style="margin:14px 0 4px">${L('Station fixed கட்டணம்','Station fixed fares')}</h4>
+   <p class="muted" style="margin:0 0 6px;font-size:12.5px">${L('Pickup, drop இரண்டும் அந்த இடங்களுக்கு 600 m-க்குள் இருந்தா இந்த கட்டணம் மட்டும் (இரவு கட்டணம் சேராது; காத்திருப்பு, toll, parking தனி). வரி இல்லைன்னா எல்லாம் சாதாரண கி.மீ கட்டணம்.','If both pickup and drop are within 600 m of these places, this fare applies (no night charge on top; waiting, toll and parking extra). No rows = normal per-km fares.')}</p>
+   <div class="table" id="sttbl"><div class="tr th t6"><span>${L('எங்கிருந்து','From')}</span><span>${L('எங்கே','To')}</span><span>${L('வண்டி','Vehicle')}</span><span>₹</span><span></span><span></span></div>${g.stf.map(row).join('')}</div>
+   <button class="btn ghost sm" id="g_sadd" style="margin-top:8px;max-width:200px">+ ${L('வரி சேர்','Add a row')}</button>
+   <h4 style="margin:14px 0 4px">${L('Driver தினசரி bonus','Driver daily bonus')}</h4>
+   <p class="muted" style="margin:0 0 6px;font-size:12.5px">${L('ON பண்ணா driver app-ல "இன்னைக்கு 6/10 ride" தெரியும். Target அடிச்சவங்க Home-ல list-ஆ வருவாங்க; நீங்க "Pay" அழுத்தினா தான் wallet-ல பணம் போகும்.','When ON, drivers see "today 6/10 rides". Drivers who reach it are listed on Home; money goes to their wallet only when you tap Pay.')}</p>
+   <label class="chk"><input type="checkbox" id="g_bon" ${g.bonus.on?'checked':''}> ${L('Bonus ON','Bonus ON')}</label>
+   <div class="ogrid" style="margin-top:6px"><label class="lrow2"><span>${L('ஒரு நாள் ride','Rides in a day')}</span><span class="field sm"><input id="g_br" inputmode="numeric" maxlength="3" value="${g.bonus.rides||''}"></span></label>
+     <label class="lrow2"><span>${L('Bonus தொகை','Bonus amount')}</span><span class="field sm"><span class="cc">₹</span><input id="g_ba" inputmode="numeric" maxlength="4" value="${g.bonus.amt||''}"></span></label></div>
+   <h4 style="margin:14px 0 4px">${L('Customer referral','Customer referral')}</h4>
+   <p class="muted" style="margin:0 0 6px;font-size:12.5px">${L('ON பண்ணா customer app "நான்" பக்கத்துல WhatsApp invite link வரும். நண்பர் அந்த link-ல சேர்ந்து முதல் ride முடிச்சதும் ரெண்டு பேருக்கும் அடுத்த ride-ல இந்த தொகை தள்ளுபடி. தள்ளுபடி பணத்தை server driver wallet-ல போடும் (company செலவு).','When ON, the customer app shows a WhatsApp invite link under "Me". When the friend joins with it and finishes a first ride, both get this much off a later ride. The server puts the discount into the driver\'s wallet (company cost).')}</p>
+   <label class="chk"><input type="checkbox" id="g_ron" ${g.ref.on?'checked':''}> ${L('Referral ON','Referral ON')}</label>
+   <div class="ogrid" style="margin-top:6px"><label class="lrow2"><span>${L('தள்ளுபடி (ஒவ்வொருவருக்கும்)','Discount (each)')}</span><span class="field sm"><span class="cc">₹</span><input id="g_ra" inputmode="numeric" maxlength="3" value="${g.ref.amt||''}"></span></label></div>
+   <button class="btn" id="g_sv" style="max-width:260px;margin-top:12px">${L('Growth சேமி','Save growth settings')}</button></section>`}
+function growBind(c){const tb=document.getElementById('sttbl');if(!tb)return;
+  const bindRows=()=>tb.querySelectorAll('[data-sx]').forEach(b=>b.onclick=()=>{b.closest('.strow').remove()});bindRows();
+  document.getElementById('g_sadd').onclick=()=>{if(tb.querySelectorAll('.strow').length>=40){toast(L('அதிகபட்சம் 40 வரி','At most 40 rows'));return}
+    const tmp=document.createElement('div');tmp.innerHTML=stRow(null,tb.querySelectorAll('.strow').length);tb.appendChild(tmp.firstElementChild);bindRows()};
+  document.getElementById('g_sv').onclick=()=>{if(CL&&!CFGOK)return;
+    const rv=document.getElementById('g_rv').value.trim();if(rv&&!REVOK(rv)){toast(L('Google review link சரியா இல்லை (https://g.page/… அல்லது google.com/…)','The Google review link looks wrong (https://g.page/… or google.com/…)'));return}
+    const stf=[];for(const r of tb.querySelectorAll('.strow')){const a=stPlace(r.querySelector('[data-sa]').value),b=stPlace(r.querySelector('[data-sb]').value),veh=r.querySelector('[data-sv]').value,f=parseInt(r.querySelector('[data-sf]').value);
+      if(!a||!b||a.k===b.k){toast(L('ஒரே இடம் இரண்டு பக்கமும் இருக்கக்கூடாது','From and To must be different places'));return}
+      if(!(f>=20&&f<=5000)){toast(L('Fixed கட்டணம் ₹20 முதல் ₹5000 வரை','A fixed fare must be ₹20–₹5000'));return}
+      if(stf.some(x=>x.veh===veh&&((x.a.k===a.k&&x.b.k===b.k)||(x.both&&x.a.k===b.k&&x.b.k===a.k)))){toast(L('அதே இடம், அதே வண்டி ரெண்டு வரி இருக்கு','The same places and vehicle are listed twice'));return}
+      stf.push({a,b,veh,fare:f,both:r.querySelector('[data-sboth]').checked})}
+    const bon=document.getElementById('g_bon').checked,br=parseInt(document.getElementById('g_br').value)||0,ba=parseInt(document.getElementById('g_ba').value)||0;
+    if(bon&&!(br>=1&&br<=50)){toast(L('Bonus-க்கு ride எண்ணிக்கை 1 முதல் 50 வரை','Bonus rides must be 1–50'));return}
+    if(bon&&!(ba>=1&&ba<=2000)){toast(L('Bonus தொகை ₹1 முதல் ₹2000 வரை','Bonus amount must be ₹1–₹2000'));return}
+    const ron=document.getElementById('g_ron').checked,ra=parseInt(document.getElementById('g_ra').value)||0;
+    if(ron&&!(ra>=1&&ra<=500)){toast(L('Referral தள்ளுபடி ₹1 முதல் ₹500 வரை','Referral discount must be ₹1–₹500'));return}
+    const grow={...(c.grow||{}),review:rv,stf,bonus:{on:bon,rides:br,amt:ba},ref:{on:ron,amt:ra}};
+    if(CL){cw(F().setDoc(F().doc(CL.db,'config','app'),{grow,updatedAt:ts()},{merge:true}).then(()=>{c.grow=grow;audit('grow','',JSON.stringify({rv:!!rv,stf:stf.length,bonus:grow.bonus,ref:grow.ref}).slice(0,180));toast(L('சேமிச்சாச்சு','Saved'));return sitePrices(c)}));return}
+    c.grow=grow;saveDB();toast(L('சேமிச்சாச்சு','Saved'))}}
+/* Home: drivers who reached today's bonus target. The owner pays each one with a tap (once a day per driver). */
+function bonusHtml(){const g=growOf(DB.cfg);if(S.role!=='owner'||!g.bonus.on||!(g.bonus.rides>0)||!(g.bonus.amt>0))return '';
+  const day=istDay(),n={};DB.bk.forEach(b=>{if(b.status==='done'&&b.driver&&istDay(b.done||b.when)===day)n[b.driver]=(n[b.driver]||0)+1});
+  const hit=DB.drv.filter(d=>(n[d.id]||0)>=g.bonus.rides);if(!hit.length)return '';
+  return `<section class="panel" id="bonusp" style="margin-bottom:14px"><div class="ph"><h3>${X('bolt')} ${L(`இன்னைக்கு bonus (${g.bonus.rides} ride = ${inr(g.bonus.amt)})`,`Today's bonus (${g.bonus.rides} rides = ${inr(g.bonus.amt)})`)}</h3></div>
+   ${hit.map(d=>`<div class="lrow"><div><b>${esc(d[S.lang])}</b><small>${d.plate} · ${n[d.id]} ${L('ride','rides')}</small></div>${d.bonusPaid===day?`<span class="muted">${L('கொடுத்தாச்சு','Paid')}</span>`:`<button class="btn sm" data-bpay="${esc(d.id)}">${L(`${inr(g.bonus.amt)} Pay`,`Pay ${inr(g.bonus.amt)}`)}</button>`}</div>`).join('')}</section>`}
+function bonusBind(){const g=growOf(DB.cfg);app.querySelectorAll('[data-bpay]').forEach(b=>b.onclick=()=>{const d=drvById(b.dataset.bpay);if(!d)return;const day=istDay(),amt=g.bonus.amt;
+  modal(`<h3>${L(`${esc(d.ta)}-க்கு ${inr(amt)} bonus?`,`Pay ${esc(d.en)} a ${inr(amt)} bonus?`)}</h3><p class="muted" style="margin:0">${L('Driver wallet-ல சேரும். இன்னைக்கு ஒரு தடவை மட்டும்.','It goes into the driver\'s wallet. Once a day.')}</p>
+    <div class="two"><button class="btn" id="bpy">${L('Pay','Pay')}</button><button class="btn ghost" id="bpn">${L('வேண்டாம்','Cancel')}</button></div>`,(m,close)=>{m.querySelector('#bpn').onclick=close;
+    m.querySelector('#bpy').onclick=()=>{m.querySelector('#bpy').disabled=true;
+      if(!CL){if(d.bonusPaid===day)return close();d.wallet+=amt;d.bonusPaid=day;saveDB();close();dash();return}
+      const ref=F().doc(CL.db,'drivers',d.id);
+      cw(F().runTransaction(CL.db,async tx=>{const x=await tx.get(ref);if(!x.exists())throw new Error('no driver');if(x.data().bonusPaid===day)return false;
+        tx.update(ref,{wallet:F().increment(amt),bonusPaid:day,bonusAt:ts(),updatedAt:ts()});return true})
+        .then(ok=>{close();if(ok){audit('bonus',d.id,`${day} ${amt}`);toast(L(`${inr(amt)} ${d.ta} wallet-ல சேர்ந்தாச்சு`,`${inr(amt)} added to ${d.en}'s wallet`))}else toast(L('இன்னைக்கு ஏற்கனவே கொடுத்தாச்சு','Already paid today'))}))}})})}
 const OUTV=['mini','sedan','suv','psuv','trav'],RENTV=['auto','mini','sedan','suv','psuv','trav'],RHRS=[1,2,4,8,12];
 const OUTD={rate:{mini:11,sedan:12,suv:16,psuv:20,trav:22},bata:{mini:300,sedan:300,suv:350,psuv:400,trav:500},rate1:{mini:11,sedan:12,suv:16,psuv:20,trav:22},bata1:{mini:300,sedan:300,suv:350,psuv:400,trav:500},min1:80,mind:250,daykm:400,longKm:400,longPct:0,cat:{a:100,b:150},cb:{A:{},B:{},C:{}},xh:{...FARE.AXH},hrs:FARE.AHRS.map(([km,h])=>({km,h}))};
 const RENTD={price:{auto:[199,379,0,0,0],mini:[299,549,999,1799,2599],sedan:[349,649,1149,2099,2999],suv:[499,899,1599,2799,3999],psuv:[699,1199,2099,3599,4999],trav:[0,0,2499,3999,5499]},
@@ -1111,7 +1179,7 @@ function dash(){setTimeout(bindFleet,0);
     ...DB.drv.filter(d=>d.docs.ins<30).map(d=>({c:'amber',t:L(`${d.ta} (${d.plate}) insurance ${d.docs.ins} நாள்ல முடியும்`,`${d.plate} insurance expires in ${d.docs.ins} days`)})),
     ...DB.sup.filter(s=>s.type==='sos'&&s.status!=='closed').map(s=>({c:'red',t:'SOS: '+esc(s.cust)}))];
   main().innerHTML=`${head(L('இன்று','Today'),new Date().toLocaleDateString(S.lang==='ta'?'ta-IN':'en-IN',{weekday:'long',day:'numeric',month:'long'}),`<span class="livetag"><i></i>LIVE</span>`)}
-   ${ownerPushHtml()}<div class="kpis" id="kpis">${kpisInner()}</div>${myReqHtml()}
+   ${ownerPushHtml()}<div class="kpis" id="kpis">${kpisInner()}</div>${myReqHtml()}${bonusHtml()}
    <section class="panel fleetp" id="fleet">${fleetHtml()}</section>
    <div class="dgrid">
     <section class="panel mappanel"><div class="ph"><h3>${L('எல்லா வண்டியும்','Fleet map')}</h3><div class="legend">${['ready','pickup','trip','lost','poff'].map(k=>`<span><i style="background:${RST[k].c}"></i>${L(RST[k].ta,RST[k].en)}</span>`).join('')}</div></div>
@@ -1122,7 +1190,7 @@ function dash(){setTimeout(bindFleet,0);
       <section class="panel"><div class="ph"><h3>${L('Live bookings','Live bookings')}</h3><button class="linkbtn" data-go="book">${L('எல்லாம்','All')} →</button></div><div id="livelist"></div></section>
       <section class="panel actp"><div class="ph"><h3>${L('நடப்பவை','Activity')}</h3><span class="livetag"><i></i>LIVE</span></div><div id="actlist"></div></section>
     </div></div>`;
-  app.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>{S.sec=b.dataset.go;if(b.dataset.df)DF=b.dataset.df;save();show()});
+  app.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>{S.sec=b.dataset.go;if(b.dataset.df)DF=b.dataset.df;save();show()});bonusBind();
   /* Fleet map: a pin is the position the driver's phone last sent. Green = sent in the last 3 minutes (where the car is now).
      Grey = the phone has not sent since then (app closed by the phone, no network): last known place, with how long ago.
      A driver whose phone has never sent a position is not drawn (it used to be put at the office). */
@@ -2242,7 +2310,7 @@ async function waThread(from,nm){const who=waWho(from);
    (config/app is not public — it also holds commission, blocked numbers and other private settings) */
 function sitePrices(c){if(!CL)return Promise.resolve();
   const pick=o=>o==null?null:JSON.parse(JSON.stringify(o));
-  return F().setDoc(F().doc(CL.db,'public','prices'),{fares:pick(c.fares)||{},out:pick(c.out)||{},rent:pick(c.rent)||{},night:pick(c.night),area:pick(c.area),updatedAt:ts()})
+  return F().setDoc(F().doc(CL.db,'public','prices'),{fares:pick(c.fares)||{},out:pick(c.out)||{},rent:pick(c.rent)||{},night:pick(c.night),area:pick(c.area),stf:pick(c.grow&&c.grow.stf)||[],updatedAt:ts()})
     .catch(e=>{oerr(e);toast(L('Website-ல விலை மாறலை: ','Website prices not updated: ')+CL.errText(e,S.lang==='ta'))})}
 /* ---------- public website editor (owner): public/site + one photo per place in siteImg/{place id} ---------- */
 const SITE0={phone:'9344640416',driverPhone:'9344039933',whatsapp:'',email:'vellorecalltaxi.office@gmail.com',address:'Vellore, Tamil Nadu',
@@ -2405,6 +2473,7 @@ function settings(){
     <div class="ph" style="margin-top:14px"><h3>${X('chat')} WhatsApp</h3><button class="btn ghost sm" id="wal">${L('பார்','Load')}</button></div><div id="wab" style="font-size:13px"></div></section>`:''}
    ${S.role==='owner'&&CL?`<section class="panel" style="margin-top:14px"><div class="ph"><h3>${X('globe')} Website</h3><button class="btn ghost sm" id="wsl">${L('திற','Open')}</button></div>
     <p class="muted" style="margin:0;font-size:13px">velloretaxi.app/vellore/ — ${L('தொடர்பு எண்கள், முகவரி, இடங்கள், படங்கள். கட்டணம் மேலே உள்ள Settings-ல இருந்து தானா வரும்.','contact numbers, address, places and photos. Fares come from the settings above automatically.')}</p><div id="wsb"></div></section>`:''}
+   ${S.role==='owner'?growHtml(c):''}
    <section class="panel" style="margin-top:14px"><div class="ph"><h3>${X('horn')} ${L('Drivers-க்கு அறிவிப்பு','Notice to drivers')}</h3></div>
     <p class="muted" style="margin:0 0 8px;font-size:13px">${L('எல்லா drivers app-லயும் Menu → அறிவிப்புகள்-ல வரும், ஒலியோட. உதா: "இன்று மாலை Katpadi-ல booking அதிகம்", "நாளை office லீவு".','Shows in every driver app under Menu → Notifications, with a sound. e.g. "Busy at Katpadi this evening", "Office closed tomorrow".')}</p>
     <div class="field" style="height:50px"><input id="ant" maxlength="60" placeholder="${L('தலைப்பு','Title')}"></div>
@@ -2470,6 +2539,7 @@ function settings(){
       F().getDocs(F().query(F().collection(CL.db,'errors'),F().orderBy('at','desc'),F().limit(30))).then(q=>{const rows=q.docs.map(d=>d.data());
         el.innerHTML=rows.length?rows.map(x=>`<div style="padding:6px 0;border-bottom:1px solid var(--line)"><b>${esc(x.app)}</b> · ${esc(x.v||'')} · ${new Date(+x.at||0).toLocaleString('en-IN')} · ${esc(x.who||'')}<br><code>${esc(x.msg)}</code><br><small>${esc(x.src||'')}:${+x.line||0} · ${esc((x.ua||'').slice(0,80))}</small></div>`).join(''):L('பிழை எதுவும் இல்லை','No errors')})
       .catch(e=>{el.textContent=e&&e.code==='permission-denied'?L('Rules v2 publish ஆன பிறகு தான் தெரியும்','Visible after rules v2 is published'):CL.errText(e,S.lang==='ta')})}}
+  growBind(c);
   const saveAnn=arr=>{c.announce=arr;if(CL){cw(F().setDoc(F().doc(CL.db,'config','app'),{announce:arr,updatedAt:ts()},{merge:true}).then(()=>{toast(L('சேமிச்சாச்சு','Saved'));settings()}));return}saveDB();settings()};
   document.getElementById('ans').onclick=()=>{const t=document.getElementById('ant').value.trim(),m=document.getElementById('anm').value.trim();if(t.length<2){toast(L('தலைப்பு போடுங்க','Add a title'));return}
     saveAnn([{id:Date.now().toString(36),t:Date.now(),title:t,msg:m},...(c.announce||[])].slice(0,20))};
@@ -2567,7 +2637,7 @@ function remap(liveOnly){
     const days=k=>d.docs&&d.docs[k]?Math.round((d.docs[k]-now)/864e5):999;
     return{id:d._id,ta:d.name||d._id,en:d.name||d._id,phone:d._id.replace('+91',''),veh:d.veh||'auto',plate:d.plate||'',model:d.model||'',
       status:busy[d._id]==='ontrip'?'trip':busy[d._id]?'pickup':online?'avail':'off',lat:l.lat!=null?l.lat:P.home.lat,lon:l.lon!=null?l.lon:P.home.lon,
-      wallet:+d.wallet||0,rating:rsum[d._id]?+(rsum[d._id].s/rsum[d._id].n).toFixed(1):(d.rating||5),docs:{dl:days('dl'),rc:days('rc'),ins:days('ins'),permit:days('permit'),fc:days('fc')},blocked:!!d.blocked,
+      wallet:+d.wallet||0,bonusPaid:d.bonusPaid||'',rating:rsum[d._id]?+(rsum[d._id].s/rsum[d._id].n).toFixed(1):(d.rating||5),docs:{dl:days('dl'),rc:days('rc'),ins:days('ins'),permit:days('permit'),fc:days('fc')},blocked:!!d.blocked,
       svc:d.svc||null,prio:d.prio||'auto',year:vYear(d),wk:wk[d._id]||0,sig,hasPos:l.lat!=null&&l.lon!=null,
       hd:liveHd(d._id,l),sp:+l.sp||0,acc:+l.acc||0,bk:l.bk||'',pwr:l.pwr==='off'?'off':(l.pwr?'on':''),bat:typeof l.bat==='number'?l.bat:-1,chg:!!l.chg,autoOff:d.autoOff?CL.toMs(d.autoOff):0,sub:d.sub&&d.sub.until?{plan:String(d.sub.plan||''),until:CL.toMs(d.sub.until)||0}:null}});
   DB.rch=[...RAWR,...RAWRP.filter(x=>!RAWR.some(y=>y._id===x._id))].filter(r=>DB.drv.some(d=>d.id===r.driverPhone)).map(r=>({id:r._id,driver:r.driverPhone,amt:+r.amt||0,utr:r.utr||'',method:r.method||'',date:r.date||CL.toMs(r.createdAt),status:r.status||'pending'})).sort((a,b)=>b.date-a.date);

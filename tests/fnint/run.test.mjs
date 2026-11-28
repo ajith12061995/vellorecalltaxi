@@ -203,3 +203,64 @@ test('purgeDriver: owner only; refused on a ride / with wallet money; backup cop
   assert.equal(bk.size, r.total); assert.ok(bk.docs.some(d => d.data().path === `drivers/${PD}` && d.data().data.name === 'Subbu'), 'backup holds the driver');
   assert.equal((await call('purgeDriver', { phone: PD, confirm: PD.slice(-4) }, own)).result.why, 'none');
 });
+
+test('station fixed fare: a matching app ride at the fixed price is left alone; below it is raised', async () => {
+  const KAT = { lat: 12.9716, lon: 79.1376 }, CMC = { lat: 12.9246, lon: 79.1356 };
+  await db.doc('config/app').set({ grow: { stf: [{ a: { k: 'katpadi', ...KAT }, b: { k: 'cmc', ...CMC }, veh: 'sedan', fare: 150, both: true }] } }, { merge: true });
+  await db.doc('bookings/st1').set(base({ status: 'searching', veh: 'sedan', fare: 150, km: 6.5, from: KAT, to: CMC, tariff: { t: 'local', fixed: true } }));
+  await db.doc('bookings/st2').set(base({ status: 'searching', veh: 'sedan', fare: 90, km: 6.5, from: CMC, to: KAT, tariff: { t: 'local', fixed: true } }));
+  const b2 = await waitFor(async () => { const d = (await db.doc('bookings/st2').get()).data(); return d.fareFlag ? d : null; });
+  assert.equal(b2.fare, 150); assert.equal(b2.fareFlag, 'corrected');
+  await sleep(1500);
+  const b1 = (await db.doc('bookings/st1').get()).data();
+  assert.equal(b1.fare, 150); assert.ok(!b1.fareFlag, 'fixed fare not flagged as below the price list');
+  await db.doc('config/app').set({ grow: { stf: [] } }, { merge: true });
+});
+
+test('referral: first finished ride credits both; discount held at booking, back on cancel, paid to the driver when done', async () => {
+  const A = '+919888800001', B = '+919888800002';
+  for (const [uid, phoneNumber] of [['u-refA', A], ['u-refB', B]]) { try { await admin.auth().createUser({ uid, phoneNumber }); } catch (e) { /* exists */ } }
+  await db.doc('config/app').set({ grow: { ref: { on: true, amt: 30 } } }, { merge: true });
+  await db.doc('users/u-refB').set({ name: 'B', refBy: A });
+  // B's first ride done → both get ₹30
+  const r1 = db.doc('bookings/rf1');
+  await r1.set(base({ customerUid: 'u-refB', status: 'ontrip', driverPhone: DRV, fare: 150 }));
+  await r1.update({ status: 'done', fareFinal: 150 });
+  const ca = await waitFor(async () => (await db.doc(`credits/${A}`).get()).data());
+  assert.equal(ca && ca.bal, 30); assert.equal((await db.doc(`credits/${B}`).get()).data().bal, 30);
+  assert.ok((await db.doc('referrals/u-refB').get()).exists);
+  // a second ride never pays again
+  const r2 = db.doc('bookings/rf2');
+  await r2.set(base({ customerUid: 'u-refB', status: 'ontrip', driverPhone: DRV, fare: 150 }));
+  await r2.update({ status: 'done', fareFinal: 150 });
+  await sleep(2500);
+  assert.equal((await db.doc(`credits/${A}`).get()).data().bal, 30, 'paid once');
+  // B books with a ₹50 discount: only the ₹30 credit is held
+  const d1 = db.doc('bookings/rd1');
+  await d1.set(base({ customerUid: 'u-refB', status: 'searching', fare: 150, disc: 50, tariff: { t: 'local' } }));
+  const h = await waitFor(async () => { const d = (await d1.get()).data(); return d.discHeld != null ? d : null; });
+  assert.equal(h.disc, 30); assert.equal(h.discHeld, true); assert.equal((await db.doc(`credits/${B}`).get()).data().bal, 0);
+  // cancelled → credit back
+  await d1.update({ status: 'cancelled', cancelReason: 'customer' });
+  assert.equal(await waitFor(async () => { const x = (await db.doc(`credits/${B}`).get()).data().bal; return x === 30 ? x : 0; }), 30);
+  // book again, done → the driver gets the ₹30 in the wallet, once
+  const w0 = (await db.doc(`drivers/${DRV}`).get()).data().wallet;
+  const d2 = db.doc('bookings/rd2');
+  await d2.set(base({ customerUid: 'u-refB', status: 'searching', fare: 150, disc: 30, tariff: { t: 'local' } }));
+  await waitFor(async () => (await d2.get()).data().discHeld === true);
+  await d2.update({ status: 'ontrip', driverPhone: DRV });
+  await d2.update({ status: 'done', fareFinal: 150 });
+  const paid = await waitFor(async () => (await d2.get()).data().discPaid === true);
+  assert.ok(paid, 'driver paid the discount');
+  const lg = await waitFor(async () => (await db.doc('ledger/rd2').get()).data());   // the commission entry (server mode may take commission too)
+  await sleep(500);
+  const w1 = (await db.doc(`drivers/${DRV}`).get()).data().wallet;
+  assert.equal(Math.round(w1 - w0), 30 + (lg.walletDelta || 0), 'wallet: + the ₹30 discount, ± the normal commission entry');
+  assert.ok((await db.doc('ledger/disc_rd2').get()).exists);
+  // a booking with no credit gets no discount
+  const d3 = db.doc('bookings/rd3');
+  await d3.set(base({ customerUid: 'u-refB', status: 'searching', fare: 150, disc: 30, tariff: { t: 'local' } }));
+  const h3 = await waitFor(async () => { const d = (await d3.get()).data(); return d.discHeld != null ? d : null; });
+  assert.equal(h3.disc, 0); assert.equal(h3.discHeld, false);
+  await db.doc('config/app').set({ grow: { ref: { on: false, amt: 30 } } }, { merge: true });
+});

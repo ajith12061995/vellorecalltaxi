@@ -366,6 +366,11 @@ test('website data: everyone reads, only the owner writes known fields', async (
   await assertFails(setDoc(doc(as.cust(), 'public', 'site'), { phone: '9' }));
   await assertFails(setDoc(doc(as.owner(), 'public', 'site'), { phone: '1', blocked: ['9999900001'] }), 'unknown field');
   await assertFails(setDoc(doc(as.owner(), 'public', 'prices'), { fares: {}, comm: 10 }), 'commission is not public');
+  // station fixed fares are public (guests see the same price); at most 40 rows, a list only
+  await assertSucceeds(setDoc(doc(as.owner(), 'public', 'prices'), { fares: {}, stf: [{ veh: 'auto', fare: 120, both: true, a: { k: 'katpadi', lat: 12.97, lon: 79.13 }, b: { k: 'cmc', lat: 12.92, lon: 79.13 } }], updatedAt: serverTimestamp() }));
+  await assertFails(setDoc(doc(as.owner(), 'public', 'prices'), { fares: {}, stf: 'x' }), 'stf must be a list');
+  await assertFails(setDoc(doc(as.owner(), 'public', 'prices'), { fares: {}, stf: Array.from({ length: 41 }, () => ({ veh: 'auto', fare: 1 })) }), 'at most 40 station fares');
+  await assertFails(setDoc(doc(as.staff(), 'public', 'prices'), { fares: {}, stf: [] }), 'staff cannot change public prices');
   await assertFails(setDoc(doc(as.owner(), 'public', 'other'), { x: 1 }));
   await assertFails(setDoc(doc(as.owner(), 'public', 'site'), { places: Array.from({ length: 25 }, (_, i) => ({ id: 'p' + i })) }));
 });
@@ -542,4 +547,19 @@ test('live: the last ride push the phone received (1.0.21)', async () => {
   await assertFails(updateDoc(doc(as.drv(), 'live', DRV), { pk: 12 }));
   await assertFails(updateDoc(doc(as.drv(), 'live', DRV), { pkAt: 'now' }));
   await assertFails(updateDoc(doc(as.drv(), 'live', DRV2), { pk: 'bk1' }));
+});
+
+test('referral: credits and referrals are server-only; a booking may ask for a discount but never mark it held or paid', async () => {
+  await seed(async db => { await setDoc(doc(db, 'credits', CPH), { bal: 30 }); await setDoc(doc(db, 'credits', '+919888888888'), { bal: 30 }); await setDoc(doc(db, 'referrals', CUST), { by: '+919888888888', amt: 30 }); });
+  await assertSucceeds(getDoc(doc(as.cust(), 'credits', CPH)));
+  await assertFails(getDoc(doc(as.cust(), 'credits', '+919888888888')), 'another customer\'s credit');
+  await assertFails(setDoc(doc(as.cust(), 'credits', CPH), { bal: 1000 }), 'customer cannot give himself credit');
+  await assertFails(updateDoc(doc(as.owner(), 'credits', CPH), { bal: 1000 }), 'server only, even the owner');
+  await assertFails(getDoc(doc(as.cust(), 'referrals', CUST)));
+  await assertSucceeds(getDoc(doc(as.owner(), 'referrals', CUST)));
+  await assertSucceeds(getDoc(doc(as.staff(), 'credits', CPH)));
+  await assertSucceeds(addDoc(collection(as.cust(), 'bookings'), booking({ tariff: { t: 'local' }, disc: 30 })));
+  await assertFails(addDoc(collection(as.cust(), 'bookings'), booking({ tariff: { t: 'local' }, disc: 900 })), 'discount above ₹500');
+  await assertFails(addDoc(collection(as.cust(), 'bookings'), booking({ tariff: { t: 'local' }, disc: 30, discHeld: true })), 'cannot mark the discount held');
+  await assertFails(addDoc(collection(as.cust(), 'bookings'), booking({ tariff: { t: 'local' }, discPaid: true })));
 });

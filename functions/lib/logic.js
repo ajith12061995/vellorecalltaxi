@@ -97,12 +97,28 @@ function outsideArea(b, area) {
 //  - km can't be shorter than the straight line × 1.2 (the app's road km is always ≥ straight line × 1.25)
 //  - the night charge counts only when it applies now AND 15 minutes ago (a quote can be a few minutes old)
 //  - ₹5 is allowed for rounding; a fare at or above the price is never changed (never over-charges)
+// Station fixed fares: same rule as core/fare.js stFare (tests/unit/fare.test.js keeps them in step)
+const ST_R = 0.6;
+function stFare(list, veh, from, to) {
+  if (!Array.isArray(list) || !from || !to || ![from.lat, from.lon, to.lat, to.lon].every(x => x != null && x !== '' && isFinite(+x))) return null;
+  const near = (p, q) => !!q && isFinite(+q.lat) && isFinite(+q.lon) && crowKm({ lat: +p.lat, lon: +p.lon }, { lat: +q.lat, lon: +q.lon }) <= ST_R;
+  for (const e of list) {
+    if (!e || e.veh !== veh || !(n(e.fare) > 0)) continue;
+    if ((near(from, e.a) && near(to, e.b)) || (e.both && near(from, e.b) && near(to, e.a))) return Math.round(n(e.fare));
+  }
+  return null;
+}
+// the fixed station fare for this app city ride (null = none)
+const stFareOf = (b, c) => b && b.src === 'app' && (!b.kind || b.kind === 'ride' || b.kind === 'schedule') && !(b.tariff && b.tariff.t && b.tariff.t !== 'local')
+  ? stFare(c && c.grow && c.grow.stf, b.veh, b.from, b.to) : null;
 function fareCheck(b, c, now) {
   if (!b || b.src !== 'app') return null;
   if (b.kind === 'rental' || (b.tariff && b.tariff.t === 'rent')) return rentCheck(b, c);
   if (b.kind === 'outstation' || (b.tariff && b.tariff.t === 'out')) return outCheck(b, c);
   if (b.kind && b.kind !== 'ride' && b.kind !== 'schedule') return null;
   if (b.tariff && b.tariff.t && b.tariff.t !== 'local') return null;
+  const st = stFareOf(b, c);
+  if (st != null) return n(b.fare) >= st - 5 ? null : { fare: st, km: n(b.km), was: n(b.fare), wasKm: n(b.km), night: 0, nightAmt: 0 };
   const isAuto = b.veh === 'auto';
   const f = c && c.fares && c.fares[b.veh]; if (!isAuto && (!f || !(n(f.base) > 0))) return null;
   const minKm = crowKm(b.from, b.to) * 1.2, km = Math.max(n(b.km), minKm);
@@ -395,4 +411,19 @@ function reassignCheck(b, live, drv, now) {
   return null;
 }
 
-module.exports = { takenNow, REPUSH, repushNow, REASSIGN, reassignCheck, SUBDUR, subActive, subPrice, buySubDecide, splitDriverTokens, ridePushData, placeName, BANDS, bandOf, demandMap, statDay, scoreSample, ownerAlerts, WATCH, istHour, driverWatch, watchMsg, inclKm, enquiryFlood, OUTCAT, outCat, catBata, AHRS, AXH, aHours, planHours, hrsTable, AUTO_GOVT, AREA, autoFare, outsideArea, rentCheck, outCheck, tariffs, rentPrice, istStamp, commissionFor, settle, housekeeping, fareLooksWrong, liveStale, custPush, fareCheck, bookingLimit, nightPct, withNight, crowKm, LIMIT_OPEN, LIMIT_HOUR };
+// ---- referral (owner 28 Nov; Office → Settings → Growth, off until the owner turns it on)
+// A new customer who came from a friend's link: when their FIRST ride is done, both get `amt` off a later ride.
+// Credits live in credits/{phone} (server writes only). A booking asks for a discount; the server holds it from the
+// credit when the booking is made, gives it back if the ride is cancelled, and pays the driver the same amount when done.
+const REF_MAX = 500;
+const refAmt = c => { const r = c && c.grow && c.grow.ref; const a = Math.round(+(r && r.amt) || 0); return r && r.on && a > 0 ? Math.min(a, REF_MAX) : 0; };
+const isPh = p => /^\+91[6-9]\d{9}$/.test(String(p || ''));
+// should this finished ride pay a referral? (all facts checked by the server)
+function referDecide(o) {
+  const amt = refAmt(o.cfg);
+  if (!amt || !isPh(o.refBy) || !isPh(o.phone) || o.refBy === o.phone || o.already || !o.referrerExists || o.doneCount !== 1) return 0;
+  return amt;
+}
+// how much discount a booking may take: what it asked for, no more than the credit, the fare, or REF_MAX
+const discTake = (want, have, fare) => Math.max(0, Math.floor(Math.min(n(want), n(have), n(fare), REF_MAX)));
+module.exports = { REF_MAX, refAmt, referDecide, discTake, stFare, stFareOf, ST_R, takenNow, REPUSH, repushNow, REASSIGN, reassignCheck, SUBDUR, subActive, subPrice, buySubDecide, splitDriverTokens, ridePushData, placeName, BANDS, bandOf, demandMap, statDay, scoreSample, ownerAlerts, WATCH, istHour, driverWatch, watchMsg, inclKm, enquiryFlood, OUTCAT, outCat, catBata, AHRS, AXH, aHours, planHours, hrsTable, AUTO_GOVT, AREA, autoFare, outsideArea, rentCheck, outCheck, tariffs, rentPrice, istStamp, commissionFor, settle, housekeeping, fareLooksWrong, liveStale, custPush, fareCheck, bookingLimit, nightPct, withNight, crowKm, LIMIT_OPEN, LIMIT_HOUR };

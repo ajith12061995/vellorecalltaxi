@@ -338,3 +338,21 @@ test('ride pushed again only while nobody has taken it (local rides)', () => {
   assert.equal(L.repushNow({ status: 'searching', kind: 'rental' }), false);
   assert.equal(L.repushNow(null), false);
 });
+test('referral: off by default; amount only when ON and above 0, capped at ₹500', () => {
+  assert.equal(L.refAmt({}), 0); assert.equal(L.refAmt({ grow: { ref: { on: false, amt: 30 } } }), 0); assert.equal(L.refAmt({ grow: { ref: { on: true, amt: 0 } } }), 0);
+  assert.equal(L.refAmt({ grow: { ref: { on: true, amt: 30 } } }), 30); assert.equal(L.refAmt({ grow: { ref: { on: true, amt: 9000 } } }), 500);
+});
+test('referral: paid only on the first finished ride, to a real other customer, once', () => {
+  const ok = { cfg: { grow: { ref: { on: true, amt: 30 } } }, refBy: '+919888888888', phone: '+919999900001', already: false, referrerExists: true, doneCount: 1 };
+  assert.equal(L.referDecide(ok), 30);
+  assert.equal(L.referDecide({ ...ok, doneCount: 2 }), 0, 'not the first ride');
+  assert.equal(L.referDecide({ ...ok, already: true }), 0, 'paid already');
+  assert.equal(L.referDecide({ ...ok, refBy: ok.phone }), 0, 'own number');
+  assert.equal(L.referDecide({ ...ok, referrerExists: false }), 0, 'referrer never signed in');
+  assert.equal(L.referDecide({ ...ok, refBy: '12345' }), 0, 'bad number');
+  assert.equal(L.referDecide({ ...ok, cfg: {} }), 0, 'referral off');
+});
+test('referral discount: no more than asked, the credit, the fare or ₹500', () => {
+  assert.equal(L.discTake(30, 60, 120), 30); assert.equal(L.discTake(30, 10, 120), 10); assert.equal(L.discTake(300, 900, 120), 120);
+  assert.equal(L.discTake(900, 900, 2000), 500); assert.equal(L.discTake(30, 0, 120), 0); assert.equal(L.discTake('x', 60, 120), 0); assert.equal(L.discTake(-5, 60, 120), 0);
+});

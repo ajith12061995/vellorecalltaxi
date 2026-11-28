@@ -107,10 +107,23 @@ const FARE = (() => {
   // night % for this vehicle (auto: Government night window, whatever the office night switch says)
   const nightFor = (vid, cfg, at) => nightPct(vid === 'auto' ? AUTO_GOVT.night : cfg, at);
   const withNightV = (vid, f, pct) => vid === 'auto' ? (pct ? Math.round(n(f) * (1 + pct / 100)) : n(f)) : withNight(f, pct);
+  // Station fixed fares (owner sets them in Office → Settings → Growth: config/app.grow.stf). A city ride whose pickup is
+  // within 0.6 km of one place and drop within 0.6 km of the other gets that vehicle's fixed price; "both" = either way.
+  // The fixed price is the whole ride fare (no night charge on top); waiting, toll and parking are billed as usual.
+  const ST_R = 0.6;
+  function stFare(list, veh, from, to) {
+    if (!Array.isArray(list) || !from || !to || ![from.lat, from.lon, to.lat, to.lon].every(x => x != null && x !== '' && isFinite(+x))) return null;
+    const near = (p, q) => !!q && isFinite(+q.lat) && isFinite(+q.lon) && crow({ lat: +p.lat, lon: +p.lon }, { lat: +q.lat, lon: +q.lon }) <= ST_R;
+    for (const e of list) {
+      if (!e || e.veh !== veh || !(n(e.fare) > 0)) continue;
+      if ((near(from, e.a) && near(to, e.b)) || (e.both && near(from, e.b) && near(to, e.a))) return Math.round(n(e.fare));
+    }
+    return null;
+  }
   const comm = (trip, pct) => Math.round(n(trip) * n(pct) / 100);
   // the amount a finished booking really cost (old bookings have no fareFinal)
   const billOf = b => b && b.fareFinal != null ? +b.fareFinal : +(b && b.fare) || 0;
   const tripOf = b => b && b.fx && b.fx.trip != null ? +b.fx.trip : billOf(b);
-  return { final, comm, billOf, tripOf, r10, nightPct, withNight, hm, AUTO_GOVT, AREA, crow, fromCentre, areaKm, cityFare, nightFor, withNightV, OUTCAT, outCat, catBata, INCL, inclKm, AHRS, AXH, AGRACE, aHours, planHours, hrsTable, hrsTxt };
+  return { final, stFare, ST_R, comm, billOf, tripOf, r10, nightPct, withNight, hm, AUTO_GOVT, AREA, crow, fromCentre, areaKm, cityFare, nightFor, withNightV, OUTCAT, outCat, catBata, INCL, inclKm, AHRS, AXH, AGRACE, aHours, planHours, hrsTable, hrsTxt };
 })();
 if (typeof module !== 'undefined') module.exports = FARE;

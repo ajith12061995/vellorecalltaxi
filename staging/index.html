@@ -277,6 +277,13 @@ canvas.map:active{cursor:grabbing}
 .pin.lift{transform:translate(-50%,calc(-97% - 16px))}
 .pinshadow{position:absolute;left:50%;top:50%;width:18px;height:7px;border-radius:50%;background:rgba(19,40,79,.4);transform:translate(-50%,-50%);z-index:2;pointer-events:none;transition:.2s}
 .pin.lift + .pinshadow{width:10px;opacity:.45}
+.credline{display:flex;align-items:center;gap:6px;margin:4px 0;padding:8px 12px;border-radius:12px;background:#E7F6EE;color:#14583A;font-size:13px;font-weight:700}#refcard .btn.sm{width:auto;height:40px;padding:0 14px;flex:none}
+.hpinlbl{position:absolute;left:50%;top:50%;transform:translate(-50%,calc(-100% - 58px));z-index:3;pointer-events:none;background:#0B4A36;color:#fff;font-size:12.5px;font-weight:700;padding:5px 11px;border-radius:999px;white-space:nowrap;max-width:78%;overflow:hidden;text-overflow:ellipsis;box-shadow:0 3px 10px rgba(0,0,0,.2)}
+.favrow{padding:0;gap:0}.favrow .favgo{flex:1;display:flex;align-items:center;gap:12px;padding:12px 0;text-align:left;min-width:0;background:none;border:0;color:inherit}.favrow .favgo small{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.favrow .favedit{flex:none;width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;color:var(--muted);background:none;border:0}
+.alsotry{margin:10px 0 4px;padding:10px 12px;border-radius:16px;background:var(--surface-2);border:1px solid var(--line)}.alsotry>b{display:block;font-size:13.5px;margin-bottom:8px}
+.atrow{display:flex;flex-direction:column;gap:8px}.atb{display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:8px 10px;border-radius:14px;border:1.5px solid var(--line);background:var(--surface);color:var(--fg)}
+.atb .vi{width:46px;height:34px;border-radius:10px;background:var(--yellow-soft);display:flex;align-items:center;justify-content:center;flex:none}.atb .vi svg{max-width:42px;max-height:30px}.atb b{display:block;font-size:14px}.atb small{color:var(--muted);font-size:12.5px}
 .pickcard{display:flex;flex-direction:column;gap:12px;padding-top:16px;padding-bottom:max(16px,env(safe-area-inset-bottom,0px));border-top:1px solid var(--line);background:var(--surface);border-radius:24px 24px 0 0;margin-top:-20px;position:relative;z-index:4;box-shadow:0 -8px 24px rgba(19,40,79,.08)}
 .addr{display:flex;gap:12px;align-items:flex-start;min-height:52px}
 .addr .ic{width:44px;height:44px;border-radius:14px;background:var(--yellow-soft);color:var(--yellow-ink);display:flex;align-items:center;justify-content:center;flex:none}
@@ -568,6 +575,7 @@ details.faq p{margin:0;padding:0 14px 14px;color:var(--muted);font-size:14px;lin
 <script src="./core/funnel.js?v=149"></script>
 <script src="./core/geo.js?v=149"></script>
 <script src="./core/fare.js?v=149"></script>
+<script src="./core/refer.js?v=149"></script>
 <script src="./core/appget.js?v=149"></script>
 <script src="./core/pin.js?v=149"></script>
 <script src="./core/clock.js?v=149"></script>
@@ -579,7 +587,7 @@ details.faq p{margin:0;padding:0 14px 14px;color:var(--muted);font-size:14px;lin
 <script>
 /* ---------- icons ---------- */
 /* small line icons (one stroke style everywhere; no emoji in the interface) */
-const XP={moon:'<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>',sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',bolt:'<path d="M13 2 4 14h7l-1 8 9-12h-7z"/>',bulb:'<path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-4 10.5c.7.7 1 1.5 1 2.5h6c0-1 .3-1.8 1-2.5A6 6 0 0 0 12 3z"/>',power:'<path d="M12 3v9M6.3 6.3a8 8 0 1 0 11.4 0"/>',trash:'<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/>',camera:'<path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/>',cal:'<rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M8 3v4M16 3v4"/>',pin:'<path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/>',clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',receipt:'<path d="M6 3h12v18l-3-2-3 2-3-2-3 2zM9 8h6M9 12h6"/>',repeat:'<path d="M17 2l4 4-4 4M3 11V9a3 3 0 0 1 3-3h15M7 22l-4-4 4-4M21 13v2a3 3 0 0 1-3 3H3"/>',search:'<circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/>',chat:'<path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/>',user:'<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',block:'<circle cx="12" cy="12" r="9"/><path d="M5.6 5.6l12.8 12.8"/>',bell:'<path d="M6 16v-5a6 6 0 0 1 12 0v5l2 2H4zM10 21h4"/>',check:'<circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/>',office:'<path d="M4 21V5l8-2v18M12 9h8v12M2 21h20M8 8v.01M8 12v.01M8 16v.01M16 13v.01M16 17v.01"/>',phone:'<path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/>',info:'<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.01"/>'};
+const XP={moon:'<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>',sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',bolt:'<path d="M13 2 4 14h7l-1 8 9-12h-7z"/>',bulb:'<path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-4 10.5c.7.7 1 1.5 1 2.5h6c0-1 .3-1.8 1-2.5A6 6 0 0 0 12 3z"/>',power:'<path d="M12 3v9M6.3 6.3a8 8 0 1 0 11.4 0"/>',trash:'<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/>',camera:'<path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/>',cal:'<rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M8 3v4M16 3v4"/>',pin:'<path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/>',clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',receipt:'<path d="M6 3h12v18l-3-2-3 2-3-2-3 2zM9 8h6M9 12h6"/>',repeat:'<path d="M17 2l4 4-4 4M3 11V9a3 3 0 0 1 3-3h15M7 22l-4-4 4-4M21 13v2a3 3 0 0 1-3 3H3"/>',search:'<circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/>',chat:'<path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/>',user:'<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',block:'<circle cx="12" cy="12" r="9"/><path d="M5.6 5.6l12.8 12.8"/>',bell:'<path d="M6 16v-5a6 6 0 0 1 12 0v5l2 2H4zM10 21h4"/>',check:'<circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/>',office:'<path d="M4 21V5l8-2v18M12 9h8v12M2 21h20M8 8v.01M8 12v.01M8 16v.01M16 13v.01M16 17v.01"/>',phone:'<path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/>',info:'<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.01"/>',brief:'<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5h6v2M3 13h18"/>',edit:'<path d="M4 20h4L19 9l-4-4L4 16z"/>',heart:'<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/>'};
 const X=(n,z=16)=>`<svg class="xi" width="${z}" height="${z}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${XP[n]||''}</svg>`;
 const XB=n=>`<div class="xbig">${X(n,34)}</div>`;
 const I = {
@@ -650,14 +658,15 @@ const P = {
   vit:{ta:'VIT பல்கலைக்கழகம்',en:'VIT University',sub:'Katpadi',lat:12.9692,lon:79.1559,ic:'pin'},
   cmc:{ta:'CMC மருத்துவமனை',en:'CMC Hospital',sub:'Ida Scudder Road',lat:12.9246,lon:79.1356,ic:'hosp'},
   newbus:{ta:'புதிய பேருந்து நிலையம்',en:'New Bus Stand',sub:'Vellore',lat:12.9349,lon:79.1435,ic:'pin'},
+  green:{ta:'கிரீன் சர்க்கிள்',en:'Green Circle',sub:'NH 48, Vellore',lat:12.9320,lon:79.1377,ic:'pin'},
   oldbus:{ta:'பழைய பேருந்து நிலையம்',en:'Old Bus Stand',sub:'Vellore town',lat:12.9180,lon:79.1330,ic:'pin'},
   fort:{ta:'வேலூர் கோட்டை',en:'Vellore Fort',sub:'Jalakandeswarar Temple',lat:12.9206,lon:79.1295,ic:'pin'},
   golden:{ta:'ஸ்ரீபுரம் தங்கக் கோவில்',en:'Sripuram Golden Temple',sub:'Thirumalaikodi',lat:12.8710,lon:79.0880,ic:'pin'},
   sathu:{ta:'சத்துவாச்சாரி',en:'Sathuvachari',sub:'Vellore',lat:12.9370,lon:79.1640,ic:'pin'},
   bagayam:{ta:'பாகாயம்',en:'Bagayam',sub:'Vellore',lat:12.8890,lon:79.1350,ic:'pin'}
 };
-let ROADS=[['home','katpadi'],['home','vit'],['katpadi','vit'],['home','newbus'],['newbus','sathu'],['newbus','oldbus'],['oldbus','fort'],['fort','cmc'],['cmc','oldbus'],['oldbus','bagayam'],['bagayam','golden'],['newbus','cmc'],['vit','sathu']];
-I.sedan=I.car;
+let ROADS=[['home','katpadi'],['home','vit'],['katpadi','vit'],['home','newbus'],['newbus','sathu'],['newbus','oldbus'],['oldbus','fort'],['fort','cmc'],['cmc','oldbus'],['oldbus','bagayam'],['bagayam','golden'],['newbus','cmc'],['vit','sathu'],['newbus','green'],['green','home']];
+I.sedan=I.car;I.work=X('brief',20);
 const VEH=[
   {id:'bike',en:'Bike',ta:'பைக்',seats:1,base:25,per:7,eta:2},
   {id:'auto',en:'Auto',ta:'ஆட்டோ',seats:3,base:50,per:25,eta:3}, // Government fare (core/fare.js AUTO_GOVT), not editable
@@ -671,7 +680,9 @@ const fare0=(v,km)=>FARE.cityFare(v,km);
 // night charge (Office → Settings): on the pickup time — now, or the scheduled time
 const nightNow=()=>{try{return FARE.nightPct(CFG.night,S.when||(window.VCTCLK?VCTCLK.now():Date.now()))}catch(e){return 0}};
 const nightV=v=>{try{return FARE.nightFor(v&&v.id,CFG.night,S.when||(window.VCTCLK?VCTCLK.now():Date.now()))}catch(e){return 0}};
-const fare=(v,km)=>FARE.withNightV(v.id,fare0(v,km),nightV(v));
+/* station fixed fare (Office → Settings → Growth), city rides only; a, b = place keys (default: this booking's) */
+const stFare=(v,a,b)=>{try{if(S.mode==='rent'||S.mode==='out'||!CFG.grow||!v)return null;const p=P[a||S.from],q=P[b||S.dest];return p&&q?FARE.stFare(CFG.grow.stf,v.id,p,q):null}catch(e){return null}};
+const fare=(v,km,a,b)=>{const st=stFare(v,a,b);return st!=null?st:FARE.withNightV(v.id,fare0(v,km),nightV(v))};
 /* local (city) area: Vellore town centre + 18 km (autos up to 25 km). Further away is an outstation trip. */
 const areaSig=()=>{const a=P[S.from],b=P[S.dest];return a&&b?[a.lat,a.lon,b.lat,b.lon].map(x=>(+x).toFixed(4)).join(','):''};
 function localArea(){const a=P[S.from],b=P[S.dest];if(!a||!b)return{far:false,autoOk:true,km:0};
@@ -734,6 +745,16 @@ function readBookLink(){
   return{f:pt(x.f),t:rent?null:pt(x.t),v:/^(auto|mini|sedan|suv|psuv|trav)$/.test(x.v)?x.v:'',k:rent?'rent':x.k==='out'?'out':'local',o:x.o==='round'?'round':'one',w:when,h};
 }
 let BOOKLINK=readBookLink();
+/* referral (Office → Settings → Growth): a friend's link velloretaxi.app/?r=CODE is remembered on this phone and saved
+   on the new account; the server gives both of them the credit after this customer's first finished ride. */
+try{const p=window.VCTREF&&VCTREF.phone(new URLSearchParams(location.search).get('r'));if(p)localStorage.setItem('vct-ref',JSON.stringify({p,at:Date.now()}))}catch(e){}
+const refStored=()=>{try{const x=JSON.parse(localStorage.getItem('vct-ref')||'null');return x&&/^[6-9]\d{9}$/.test(x.p)&&Date.now()-x.at<30*864e5?x.p:''}catch(e){return ''}};
+let CREDIT=0,CREDUNSUB=null;
+const refOn=()=>{const r=CFG.grow&&CFG.grow.ref;return r&&r.on&&+r.amt>0?Math.min(500,Math.round(+r.amt)):0};
+function watchCredit(){if(CREDUNSUB||!CL||!S.phone)return;CREDUNSUB=F().onSnapshot(F().doc(CL.db,'credits','+91'+S.phone),s=>{CREDIT=s.exists()?Math.max(0,Math.round(+s.data().bal||0)):0;const el=document.getElementById('credline');if(el)el.outerHTML=credLine()},()=>{})}
+const discFor=f=>CL&&!S.mode&&!S.when&&CREDIT>0?Math.min(CREDIT,Math.floor(f),500):0;
+function credLine(){const v=VEH.find(x=>x.id===S.veh);let d=0;try{d=v?discFor(fare(v,route(S.from,S.dest).km)):0}catch(e){}
+  return d>0?`<div class="credline" id="credline">${X('check',14)} ${L(`நண்பர் referral: இந்த ride-ல ₹${d} கழியும்`,`Friend referral: ₹${d} off this ride`)}</div>`:'<i id="credline" hidden></i>'}
 function useBookLink(){
   const x=BOOKLINK;BOOKLINK=null;try{sessionStorage.removeItem('vct-booklink')}catch(e){}
   [['pick',x.f],['drop',x.t]].filter(([k,p])=>p).forEach(([k,p])=>{setCustom(k,{lat:p.lat,lon:p.lon});if(p.n){P[k].ta=P[k].en=p.n}});
@@ -752,7 +773,7 @@ function needLogin(){if(S.logged)return false;
     pick:pt('pick'),drop:pt('drop'),home:pt('home'),RS:{...RS},OS:{...OS}};
   try{sessionStorage.setItem('vct-pending',JSON.stringify(PENDING))}catch(e){}
   login();return true}
-function resumePending(){const x=PENDING;PENDING=null;try{sessionStorage.removeItem('vct-pending')}catch(e){}
+function resumePending(){favLoad();const x=PENDING;PENDING=null;try{sessionStorage.removeItem('vct-pending')}catch(e){}
   if(!x)return home();
   try{['pick','drop','home'].forEach(k=>{if(x[k])P[k]=Object.assign(P[k]||{},x[k])});
     if(!P[x.from]||!P[x.dest]&&!(x.mode==='rent'))return home(x.mode||undefined);
@@ -846,7 +867,20 @@ function shell(content){
 }
 function bindNav(){app.querySelectorAll('.nav button').forEach(b=>b.onclick=()=>{if(!S.logged&&b.dataset.tab!=='home'){PENDING=null;try{sessionStorage.removeItem('vct-pending')}catch(e){}login();return}S.tab=b.dataset.tab;({home,trips:tripsTab,wallet:walletTab,help:helpTab,me:profile})[S.tab]()})}
 
-const CUSTOM=['pick','drop'];
+const CUSTOM=['pick','drop','fhome','fwork'];
+/* Home / Work (owner 28 Nov): pinned once, kept on this phone, booked in one tap from "Where to?" */
+const FAVK={home:'fhome',work:'fwork'};let FAVOK=false;
+function favPut(k,c){const key=FAVK[k];setCustom(key,c);const q=P[key];
+  if(c.ta)q.ta=c.ta;if(c.en)q.en=c.en;if(c.sub!=null)q.sub=c.sub;q.addr=c.addr||'';q.ic=k==='home'?'home':'work';q.fav=k}
+function favLoad(){if(FAVOK)return;FAVOK=true;try{const f=JSON.parse(localStorage.getItem('vct-fav')||'{}');['home','work'].forEach(k=>{const c=f[k];if(c&&isFinite(c.lat)&&isFinite(c.lon))favPut(k,c)})}catch(e){}}
+function favSave(k){const q=P[FAVK[k]];if(!q)return;try{const f=JSON.parse(localStorage.getItem('vct-fav')||'{}');f[k]={lat:q.lat,lon:q.lon,ta:q.ta,en:q.en,sub:q.sub||'',addr:q.addr||''};localStorage.setItem('vct-fav',JSON.stringify(f))}catch(e){}}
+const favName=k=>k==='home'?L('வீடு','Home'):L('வேலை இடம்','Work');
+/* home map: the pickup is where the centre pin points (drag the map to change it); null = the phone's own location */
+let HPICK=null;
+function homePinEnd(c){const lbl=document.getElementById('hpinlbl');
+  if(hav(c,P.home)<.03){HPICK=null;S.from='home';if(lbl)lbl.textContent=L('Pickup · உங்க இடம்','Pickup · your location');return}
+  setCustom('pick',c);HPICK=c;S.from='pick';if(lbl)lbl.textContent=L('Pickup · ','Pickup · ')+pn('pick');
+  if(REALMAP)revGeo(c.lat,c.lon).then(g=>{if(g&&HPICK===c){c.g=g;geoName('pick',c);const l=document.getElementById('hpinlbl');if(l)l.textContent=L('Pickup · ','Pickup · ')+g[S.lang]}}).catch(()=>{})}
 const pinSvg=col=>`<svg width="46" height="60" viewBox="0 0 46 60" aria-hidden="true"><path d="M23 58C23 58 4 36 4 22a19 19 0 0138 0c0 14-19 36-19 36z" fill="${col}" stroke="#fff" stroke-width="3"/><circle cx="23" cy="22" r="8" fill="#FFC21A"/></svg>`;
 
 /* Pin text: nearest landmark + area (demo; Google Maps gives real street addresses later) */
@@ -925,13 +959,13 @@ function home(mode){
   if(PENDING&&S.logged&&!mode)return resumePending();
   if(BOOKLINK&&!mode){try{return useBookLink()}catch(e){BOOKLINK=null}}
   const RENTM=mode==='rent',OUTM=mode==='out';S.mode=RENTM?'rent':OUTM?'out':'';
-  S.tab='home';S.dest=null;if(!RENTM&&!OUTM)S.from='home';S.when=null;S.rider=null;
+  S.tab='home';S.dest=null;if(!RENTM&&!OUTM)S.from=HPICK&&P.pick?'pick':'home';const HP=!RENTM&&!OUTM&&REALMAP&&GOTPOS;S.when=null;S.rider=null;
   const h=new Date().getHours();const g=h<12?t('morning'):h<17?t('afternoon'):t('evening');
   const recents=[['cmc','Auto',' ₹110','2 நாள் முன்','2 days ago'],['katpadi','Bike',' ₹35','போன வாரம்','Last week']];
   go(shell(`<div class="mapwrap"><canvas class="map" id="map"></canvas>
      <div class="topbar"><div class="greet"><small>${g}</small><b>${esc(S.name||'Vellore')}</b></div>
        <button class="chipbtn" id="lg" aria-label="Language">${S.lang==='ta'?'EN':'தமிழ்'}</button></div>
-     ${CL?`<span class="nearby" id="nbc" ${NEAR.length?'':'hidden'}><i class="dot"></i> ${NEAR.length} ${t('nearby')}</span>`:`<span class="nearby"><i class="dot"></i>6 ${t('nearby')}</span>`}${zoomCtl(34)}</div>
+     ${CL?`<span class="nearby" id="nbc" ${NEAR.length?'':'hidden'}><i class="dot"></i> ${NEAR.length} ${t('nearby')}</span>`:`<span class="nearby"><i class="dot"></i>6 ${t('nearby')}</span>`}${zoomCtl(34)}${HP?`<div class="pin" id="hpin">${pinSvg('#1E8A5A')}</div><i class="pinshadow"></i><div class="hpinlbl" id="hpinlbl">${HPICK&&P.pick?L('Pickup · ','Pickup · ')+esc(pn('pick')):L('Pickup · உங்க இடம்','Pickup · your location')}</div>`:''}</div>
    <div class="sheet pad"><div class="grab"></div>
      ${RENTM?vrowHtml('rent')+rentHomeHtml():OUTM?vrowHtml('out')+outHomeHtml():`<div class="wherewrap"><button class="where" id="wh"><span>${t('where')}</span><i>${I.search}</i></button><button class="micbig" id="vmic" aria-label="${L('பேசி book பண்ணு','Book by voice')}">${I.mic.replace('stroke="#0B4A36"','stroke="#FFC21A"')}</button></div>
      ${fromLineHtml()}
@@ -945,10 +979,14 @@ function home(mode){
    </div>`),()=>{
      bindNav();
      if(CL)watchNear();
-     const m=makeMap(document.getElementById('map'),{cars:!CL,near:CL?()=>NEAR:undefined});
+     let hdrag=false;const hpin=document.getElementById('hpin');
+     const m=makeMap(document.getElementById('map'),{cars:!CL,near:CL?()=>NEAR:undefined,hide:['pick','fhome','fwork'],
+       ...(HP?{onStart(){if(hdrag)hpin.classList.add('lift')},onEnd(c){hpin.classList.remove('lift');if(!hdrag)return;hdrag=false;homePinEnd(c)}}:{})});
      m.fit(Object.keys(P).filter(k=>k!=='golden'&&!CUSTOM.includes(k)).map(k=>P[k]),30,60);
-     if(REALMAP){if(GOTPOS)m.setView(P.home.lat,P.home.lon,45000);locateMe()}
+     if(REALMAP){if(GOTPOS){const c=HPICK&&P.pick?P.pick:P.home;m.setView(c.lat,c.lon,45000)}locateMe()}
      bindZoom(m);
+     if(HP&&hpin){const mw=hpin.parentElement;mw.addEventListener('pointerdown',e=>{if(!e.target.closest('.zoomctl,.topbar,.nearby'))hdrag=true},true);
+       document.getElementById('loc').addEventListener('click',()=>{HPICK=null;S.from='home';const l=document.getElementById('hpinlbl');if(l)l.textContent=L('Pickup · உங்க இடம்','Pickup · your location')})}
      if(RENTM){app.querySelectorAll('[data-rp]').forEach(b=>b.onclick=()=>{RS.pkg=+b.dataset.rp;search()})}
      else document.getElementById('wh').onclick=()=>search();
      if(OUTM)app.querySelectorAll('[data-city]').forEach(b=>b.onclick=()=>pickCity(+b.dataset.city));
@@ -974,14 +1012,19 @@ function search(){
     if(RM){document.getElementById('nod').onclick=()=>{S.dest=null;rentFare()};document.getElementById('rpk').onclick=()=>home('rent')}
     const ls=document.getElementById('ls'),dr=document.getElementById('dr');
     const item=k=>`<button class="row" data-p="${k}"><span class="ic">${I[P[k].ic]}</span><div><b>${pn(k)}</b><small>${P[k].sub||''} · ${(REALMAP?hav(P[S.from],P[k])*1.35:route(S.from,k).km).toFixed(1)} ${t('km')}</small></div></button>`;
+    favLoad();
+    const favRow=k=>{const key=FAVK[k],q=P[key],ic=k==='home'?I.home:I.work;if(S.from===key)return '';
+      return q?`<div class="row favrow"><button class="favgo" data-p="${key}"><span class="ic">${ic}</span><div><b>${favName(k)}</b><small>${esc(q.addr||pn(key))}</small></div></button><button class="favedit" data-fav="${k}" aria-label="${L('மாற்று','Change')}">${X('edit',16)}</button></div>`
+        :`<button class="row" data-fav="${k}"><span class="ic">${ic}</span><div><b>${k==='home'?L('வீடு சேர்','Add Home'):L('வேலை இடம் சேர்','Add Work')}</b><small>${L('ஒரு தடவை pin பண்ணா போதும் · அடுத்த தடவை ஒரே tap','Pin it once · next time one tap')}</small></div></button>`};
     const pinRow=`<button class="row onmap" id="onmap"><span class="ic">${I.pin}</span><div><b>${t('onMap')}</b><small>${t('onMapSub')}</small></div></button>`;
     const render=()=>{const q=dr.value.trim().toLowerCase();const keys=Object.keys(P).filter(k=>k!=='home'&&k!==S.from&&!CUSTOM.includes(k));
       if(OM){const mm=CITIES.map((c,i)=>[c,i]).filter(([c])=>!q||(c.en+' '+c.ta).toLowerCase().includes(q));
         ls.innerHTML=pinRow+(mm.length?`<div class="tagline">${L('பிரபலமான ஊர்கள்','Popular destinations')}</div>`+mm.map(([c,i])=>cityRow(c,i)).join(''):'');
         ls.querySelectorAll('[data-city]').forEach(b=>b.onclick=()=>pickCity(+b.dataset.city));document.getElementById('onmap').onclick=()=>picker('drop');return}
-      if(!q){ls.innerHTML=`${pinRow}<div class="tagline">${t('fav')}</div>${['cmc','katpadi'].map(item).join('')}<div class="tagline">${t('popular')}</div>${keys.filter(k=>!['cmc','katpadi'].includes(k)).map(item).join('')}`}
+      if(!q){ls.innerHTML=`${pinRow}<div class="tagline">${t('fav')}</div>${favRow('home')}${favRow('work')}${['cmc','katpadi'].map(item).join('')}<div class="tagline">${t('popular')}</div>${keys.filter(k=>!['cmc','katpadi'].includes(k)).map(item).join('')}`}
       else{const mm=keys.filter(k=>(P[k].en+' '+P[k].ta+' '+(P[k].sub||'')).toLowerCase().includes(q));ls.innerHTML=pinRow+(mm.length?mm.map(item).join(''):`<p class="muted" style="padding:20px 0">${t('noMatch')}</p>`)}
       ls.querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>{S.dest=b.dataset.p;fareScreen()});
+      ls.querySelectorAll('[data-fav]').forEach(b=>b.onclick=()=>picker('fav-'+b.dataset.fav));
       document.getElementById('onmap').onclick=()=>picker('drop')};
     dr.oninput=()=>{render();if(REALMAP)liveSearch(dr.value)};render();setTimeout(()=>dr.focus(),300);
     document.getElementById('pu').onclick=()=>picker('pick');
@@ -991,16 +1034,16 @@ function search(){
 
 /* Exact-spot picker: map moves under a fixed centre pin */
 function picker(mode){
-  const isPick=mode==='pick';
-  const start=isPick?P[S.from]:(S.dest&&P[S.dest]?P[S.dest]:{lat:P.home.lat-.006,lon:P.home.lon+.002});
+  const isPick=mode==='pick',fk=/^fav-(home|work)$/.test(mode)?mode.slice(4):'';
+  const start=fk?(P[FAVK[fk]]||P.home):isPick?P[S.from]:(S.dest&&P[S.dest]?P[S.dest]:{lat:P.home.lat-.006,lon:P.home.lon+.002});
   go(`<section class="screen"><div class="mapwrap" style="min-height:0"><canvas class="map" id="map"></canvas>
-     <div class="topbar"><button class="chipbtn" id="bk" aria-label="Back">${I.back}</button><div class="greet"><small>${isPick?t('pickup'):t('dropLbl')}</small><b>${t(isPick?'pinPick':'pinDrop')}</b></div></div>
+     <div class="topbar"><button class="chipbtn" id="bk" aria-label="Back">${I.back}</button><div class="greet"><small>${fk?favName(fk):isPick?t('pickup'):t('dropLbl')}</small><b>${fk?L('Map-ஐ நகர்த்தி pin-ஐ சரியான இடத்துல வைங்க','Move the map to put the pin on the spot'):t(isPick?'pinPick':'pinDrop')}</b></div></div>
      <div class="hint" id="hint">${t('hint')}</div>
      <div class="pin" id="pin">${pinSvg(isPick?'#1E8A5A':'#0B4A36')}</div><i class="pinshadow"></i>
      ${zoomCtl(36)}</div>
-   <div class="pickcard pad"><span class="kind">${isPick?t('pickup'):t('dropLbl')}</span>
+   <div class="pickcard pad"><span class="kind">${fk?favName(fk):isPick?t('pickup'):t('dropLbl')}</span>
      <div class="addr" id="addr"><span class="ic">${I.pin}</span><div><b id="at">…</b><small id="as"></small></div></div>
-     <button class="btn ${isPick?'':'yellow'}" id="ok">${t(isPick?'confirmPick':'confirmDrop')}</button></div></section>`,()=>{
+     <button class="btn ${isPick?'':'yellow'}" id="ok">${fk?X('heart',18)+' '+L(`${favName(fk)}-ஆ சேமி`,`Save as ${favName(fk)}`):t(isPick?'confirmPick':'confirmDrop')}</button></div></section>`,()=>{
     const pin=document.getElementById('pin'),addr=document.getElementById('addr'),ok=document.getElementById('ok'),hint=document.getElementById('hint');
     let cur=null,touches=0;
     const show=c=>{const d=describe(c.lat,c.lon);document.getElementById('at').textContent=d.title;document.getElementById('as').textContent=d.sub.replace(/\s*·?\s*-?\d+\.\d+, -?\d+\.\d+$/,'');addr.classList.remove('loading');cur=c;ok.disabled=false;
@@ -1013,6 +1056,8 @@ function picker(mode){
     bindZoom(m);
     document.getElementById('bk').onclick=search;
     ok.onclick=async()=>{if(!cur)return;ok.disabled=true;
+      if(fk){const key=FAVK[fk];setCustom(key,cur);await geoConfirm(key,cur);favPut(fk,{lat:cur.lat,lon:cur.lon,ta:P[key].ta,en:P[key].en,sub:P[key].sub,addr:P[key].addr});favSave(fk);
+        toast(L(`${favName(fk)} சேமிச்சாச்சு`,`${favName(fk)} saved`));search();return}
       if(isPick){setCustom('pick',cur);await geoConfirm('pick',cur);S.from='pick';S.dest&&P[S.dest]||S.mode==='rent'&&RS.atFare?fareScreen():search();return}
       if(hav(cur,P[S.from])<.08){toast(t('tooClose'));ok.disabled=false;return}
       setCustom('drop',cur);await geoConfirm('drop',cur);S.dest='drop';fareScreen()};
@@ -1035,7 +1080,7 @@ function vehRows(r,mins){
     const so=CL&&!S.when&&!ADV.includes(v.id)&&a.ok&&a.eta==null&&!freeNear(v.id)?soonAt(v.id):0;
     const sub=so?`<span class="soon" data-soon="${v.id}">${X('clock',12)} ${L(`இப்போ ${v.ta} எல்லாம் பயணத்துல இருக்கு · சுமார் ${timeLabel(so)}-க்கு மேல கிடைக்கும்`,`All ${v.en}s are on trips · one should be free after about ${timeLabel(so)}`)}</span>`:a.ok&&a.eta==null?`<span class="seek">${S.logged?L('Book பண்ணா அருகில் உள்ள driver-ஐ தேடுவோம்','Book and we’ll find a nearby driver'):L('~'+mins+' நிமிட பயணம்','~'+mins+' min ride')}</span>`:a.ok?`${a.eta} ${t('away')} · Drop ${timeLabel(Date.now()+(a.eta+mins)*6e4)}`:`<span class="na">${L(`இப்போ அருகில் ${v.ta} இல்லை`,`No ${v.en} nearby right now`)}</span>`;
     return `<button class="veh ${S.veh===v.id?'sel':''} ${a.ok?'':'off'}" data-v="${v.id}"><span class="vi">${I[v.id]}</span>
-     <div><b>${v[S.lang]} <span class="muted" style="font-family:var(--body);font-size:13px;font-weight:600">· ${v.seats} ${t('seats')}</span></b><small>${sub}</small>${v.id===fast?`<span class="vtag">${X('bolt',12)} ${L('வேகமா வரும்','Fastest')}</span>`:''}</div>
+     <div><b>${v[S.lang]} <span class="muted" style="font-family:var(--body);font-size:13px;font-weight:600">· ${v.seats} ${t('seats')}</span></b><small>${sub}</small>${v.id===fast?`<span class="vtag">${X('bolt',12)} ${L('வேகமா வரும்','Fastest')}</span>`:''}${stFare(v)!=null?`<span class="vtag y">${X('pin',12)} ${L('Fixed கட்டணம்','Fixed fare')}</span>`:''}</div>
      <span class="price"><b>₹${f}</b></span></button>`}).join('');
 }
 function fareScreen(){
@@ -1050,9 +1095,9 @@ function fareScreen(){
    <div class="sheet fare-sheet pad"><div class="grab"></div>
      <div class="sec"><h3>${t('chooseRide')}</h3><div class="trip"><span class="pill">${r.km.toFixed(1)} ${t('km')}</span><span class="pill">~${mins} ${t('min')}</span></div></div>
      <div class="whenrow"><button class="chip ${S.when?'sel':''}" id="whenb">${I.clock} ${S.when?fmtWhen(S.when):L('இப்போ','Now')}</button>${S.when?`<button class="linkbtn" id="whenx">${L('இப்போவே போகணும்','Ride now instead')}</button>`:`<span class="muted" style="font-size:12.5px">${L('பின்னாடி போகணுமா? நேரம் தேர்வு பண்ணுங்க','Later? Pick a time')}</span>`}</div>
-     ${nightNow()?`<div class="nightnote" id="nightnote">${X('moon',14)} ${L(`இரவு கட்டணம் +${nightNow()}% சேர்ந்திருக்கு (${CFG.night.from}–${CFG.night.to})`,`Night charge +${nightNow()}% included (${CFG.night.from}–${CFG.night.to})`)}</div>`:''}
+     ${nightNow()&&stFare(VEH.find(v=>v.id===S.veh))==null?`<div class="nightnote" id="nightnote">${X('moon',14)} ${L(`இரவு கட்டணம் +${nightNow()}% சேர்ந்திருக்கு (${CFG.night.from}–${CFG.night.to})`,`Night charge +${nightNow()}% included (${CFG.night.from}–${CFG.night.to})`)}</div>`:''}
      <div style="display:flex;flex-direction:column;gap:10px" id="vs">${vehRows(r,mins)}</div>
-     ${autoNote()}
+     ${autoNote()}${credLine()}
      ${CL&&!S.when?`<div class="tippre"><div><b>${X('bulb')} ${L('Tip சேர்க்கவா? (விருப்பம்)','Add a tip? (optional)')}</b><small>${L('Tip சேர்த்தா driver சீக்கிரம் கிடைப்பார். முழுசா driver-க்கே.','Tips help you get a driver faster. All of it goes to the driver.')}</small></div>
        <div class="tiprow">${[0,10,20,30,40,50,60,70,80,90].map(x=>`<button class="chip ${(S.tip0||0)===x?'sel':''}" data-tip0="${x}">${x?'+₹'+x:L('இல்லை','None')}</button>`).join('')}</div></div>`:''}
      ${riderRow()}
@@ -1063,7 +1108,7 @@ function fareScreen(){
     const m=makeMap(document.getElementById('map'),{path:r.path,line:r.pts?()=>r.pts:undefined,near:CL?()=>NEAR:undefined});
     m.fit(r.pts||r.path.map(k=>P[k]),46,64);
     const upd=()=>{const v=VEH.find(x=>x.id===S.veh),a=vAvail(v),bb=document.getElementById('bookb');if(!bb)return;
-      const an=document.getElementById('autonote'),nn=document.getElementById('nightnote');if(an)an.style.display=v.id==='auto'?'':'none';if(nn)nn.style.display=v.id==='auto'?'none':'';
+      const an=document.getElementById('autonote'),nn=document.getElementById('nightnote');if(an)an.style.display=v.id==='auto'?'':'none';if(nn)nn.style.display=v.id==='auto'||stFare(v)!=null?'none':'';{const cl=document.getElementById('credline');if(cl)cl.outerHTML=credLine()}
       bb.disabled=!a.ok;bb.textContent=a.ok?`${S.when||ADV.includes(v.id)?L('Schedule பண்ணு','Schedule'):t('book')} ${v[S.lang]} · ₹${fare(v,r.km)}${CL&&!S.when&&S.tip0?' + ₹'+S.tip0+' tip':''}`:L(`இப்போ ${v.ta} இல்லை · வேற வண்டி தேர்வு பண்ணுங்க`,`No ${v.en} right now · pick another`)};upd();
     const bindV=()=>app.querySelectorAll('.veh').forEach(b=>b.onclick=()=>{S.veh=b.dataset.v;app.querySelectorAll('.veh').forEach(x=>x.classList.toggle('sel',x===b));upd()});bindV();
     if(CL)rideTimer=setInterval(()=>{const vs=document.getElementById('vs');if(!vs||document.querySelector('.modal'))return;const h=vehRows(r,mins);if(vs.dataset.h!==h){vs.innerHTML=h;vs.dataset.h=h;bindV();upd()}},4000);
@@ -1111,6 +1156,9 @@ function profile(){
   const dark=document.documentElement.dataset.theme==='dark';
   go(shell(`<div class="head pad"><h2>${t('me')}</h2></div><div class="body pad" style="padding-top:4px">
     <div class="prof"><span class="avatar">${esc((S.name||'V')[0].toUpperCase())}</span><div style="flex:1;min-width:0"><h3>${esc(S.name)}</h3><span class="muted">+91 ${S.phone}</span></div><button class="linkbtn" id="ed">${L('பெயர் மாற்று','Edit name')}</button></div>
+    ${CL&&refOn()&&/^[6-9]\d{9}$/.test(S.phone)&&window.VCTREF?(()=>{const a=refOn(),u='https://velloretaxi.app/?r='+VCTREF.code(S.phone),msg=L(`Vellore Taxi-ல ride book பண்ணுங்க. இந்த link-ல சேர்ந்து முதல் ride முடிச்சா நம்ம ரெண்டு பேருக்கும் ₹${a} தள்ளுபடி: ${u}`,`Book rides on Vellore Taxi. Join with this link and after your first ride we both get ₹${a} off: ${u}`);
+      return `<div class="refer" id="refcard"><div><b>${L('நண்பரை அழையுங்க','Invite a friend')}</b><small>${L(`அவங்க முதல் ride முடிச்சதும் உங்க ரெண்டு பேருக்கும் அடுத்த ride-ல ₹${a} தள்ளுபடி`,`When they finish their first ride, you both get ₹${a} off a ride`)}${CREDIT?` · ${L(`இப்போ உங்களுக்கு ₹${CREDIT}`,`You have ₹${CREDIT} now`)}`:''}</small></div>
+        <a class="btn sm wa" id="refwa" target="_blank" rel="noopener" href="https://wa.me/?text=${encodeURIComponent(msg)}">${X('chat',16)} WhatsApp</a></div>`})():''}
     <div class="sec"><h3>${L('அவசர தொடர்புகள்','Emergency contacts')}</h3><span class="sample">${EC.length}/3</span></div>
     <p class="muted" style="margin:0;font-size:13px">${L('Ride-ல SOS அழுத்தினா இவங்களுக்கு உங்க location-ஓட alert போகும்.','When you press SOS during a ride, they get an alert with your location.')}</p>
     ${EC.length?`<div class="recent">${EC.map((c,i)=>`<div class="row"><span class="ic">${I.shield}</span><div><b>${esc(c.name)}</b><small>${esc(c.rel)} · +91 ${c.phone}</small></div><button class="linkbtn" data-rm="${i}" style="color:var(--danger)">${L('நீக்கு','Remove')}</button></div>`).join('')}</div>`:''}
@@ -1325,6 +1373,19 @@ function cancelAsk(){
     m.querySelector('#wok').onclick=()=>{close();toast(L('சரி! Driver-ஐ தேடிட்டே இருக்கோம்','Great! Still looking for your driver'))};
     m.querySelector('#wno').onclick=()=>{close();setTimeout(cancelSheet,50)}});
 }
+/* a driver has accepted: before cancelling, say so and offer a call (owner 28 Nov) */
+function cancelDrvAsk(){
+  if(!R||!R.b||R.b.status!=='assigned'||!R.drv)return cancelSheet();
+  const here=!!R.b.arrivedAt,nm=esc((S.lang==='ta'?R.drv.ta:R.drv.en)||'Driver'),mn=!here&&R.dpos?etaMin(R.dpos,{lat:R.b.from.lat,lon:R.b.from.lon}):0;
+  modal(`<div class="xbig">${X(here?'pin':'clock',34)}</div><h3 style="text-align:center" id="cdask">${here?L(`${nm} உங்க pickup-ல காத்திருக்கார்`,`${nm} is waiting at your pickup`):L(`${nm} ஏற்கனவே உங்களை நோக்கி வந்துகிட்டு இருக்கார்`,`${nm} is already on the way to you`)}</h3>
+    <p style="margin:0;line-height:1.55;text-align:center">${here?L('ரத்து பண்றதுக்கு முன்னாடி ஒரு தடவை driver-ஐ அழைச்சு பேசலாமே.','Before you cancel, you could call the driver once.'):mn?L(`சுமார் ${mn} நிமிஷத்துல வந்துருவார். ஏதாவது சந்தேகம்னா driver-ஐ அழைங்க.`,`About ${mn} min away. Any doubt? Call the driver.`):L('ஏதாவது சந்தேகம்னா driver-ஐ அழைங்க.','Any doubt? Call the driver.')}</p>
+    <button class="btn" id="cdcall">${X('phone',18)} ${L('Driver-ஐ அழை','Call driver')}</button>
+    <button class="btn yellow" id="cdback">${L('சரி, காத்திருக்கேன்','OK, I will wait')}</button>
+    <button class="btn ghost" id="cdgo">${L('இல்ல, ரத்து பண்ணணும்','No, I want to cancel')}</button>`,(m,close)=>{
+    m.querySelector('#cdcall').onclick=()=>{close();callSheet()};
+    m.querySelector('#cdback').onclick=close;
+    m.querySelector('#cdgo').onclick=()=>{close();setTimeout(cancelSheet,50)}});
+}
 function cancelSheet(){
   const early=searchSecs()<WAITMIN;
   const rs=(S.lang==='ta'?['Driver ரொம்ப லேட்','Plan மாறிடுச்சு','Pickup இடம் தப்பு','தவறா book பண்ணிட்டேன்','வேற காரணம்']:['Driver is taking too long','Change of plans','Wrong pickup point','Booked by mistake','Other reason']).filter((r,i)=>!(early&&i===0));
@@ -1341,13 +1402,14 @@ function cancelSheet(){
 }
 
 function doneScreen(){
-  const base=R.v.base,dist=R.fare-base,now=Date.now(),PAY=R.fare+(R.boost||0);
+  const base=R.v.base,dist=R.fare-base,now=Date.now(),PAY=R.fare+(R.boost||0)-(R.disc||0);
   const qr=(()=>{let s='';for(let y=0;y<21;y++)for(let x=0;x<21;x++){if(((x*7+y*13+x*y)%5)<2)s+=`<rect x="${x*4}" y="${y*4}" width="4" height="4"/>`}return `<svg width="96" height="96" viewBox="0 0 84 84" fill="#0B4A36" aria-label="Sample QR">${s}</svg>`})();
   go(`<section class="screen"><div class="donehero pad"><span class="check">${I.tick}</span><h1 style="font-size:26px">${L('வந்து சேர்ந்தாச்சு!','You have arrived!')}</h1><span>${R.destName[S.lang]}</span></div>
    <div class="body pad" id="db">
      <div class="bill">${R.fx&&Array.isArray(R.fx.lines)?R.fx.lines.map(x=>`<div><span>${esc(x[S.lang]||x.en||'')}</span><span>₹${+x.amt||0}</span></div>`).join(''):`<div><span>${L('அடிப்படை கட்டணம்','Base fare')}</span><span>₹${base}</span></div>
        <div><span>${L(`தூரம் (${R.km.toFixed(1)} கி.மீ)`,`Distance (${R.km.toFixed(1)} km)`)}</span><span>₹${dist}</span></div>`}
        ${R.boost?`<div><span>${L('நீங்க சேர்த்த Tip','Tip you added')}</span><span>₹${R.boost}</span></div>`:''}
+       ${R.disc?`<div id="discln"><span>${L('நண்பர் referral தள்ளுபடி','Friend referral discount')}</span><span>−₹${R.disc}</span></div>`:''}
        <div class="tot"><span>${L('மொத்தம்','Total')}</span><span>₹${PAY}</span></div></div>
      <div id="paybox" style="display:flex;flex-direction:column;gap:12px">
        <span class="kind">${L('எப்படி பணம் கொடுக்கப் போறீங்க?','How will you pay?')}</span>
@@ -1378,7 +1440,7 @@ function doneScreen(){
     rate.querySelectorAll('[data-tag]').forEach(b=>b.onclick=()=>b.classList.toggle('sel'));
     rate.querySelectorAll('[data-tip]').forEach(b=>b.onclick=()=>{tip=tip===+b.dataset.tip?0:+b.dataset.tip;rate.querySelectorAll('[data-tip]').forEach(x=>x.classList.toggle('sel',+x.dataset.tip===tip))});
     const finish=()=>{cloudRate(stars,tip);recordTrip('done',{tip,stars});R=null;home()};
-    document.getElementById('sub').onclick=()=>{finish();toast(L('நன்றி! உங்க rating driver-க்கு போயிடுச்சு','Thanks! Your rating reached the driver'))};
+    document.getElementById('sub').onclick=()=>{const five=stars===5;finish();toast(L('நன்றி! உங்க rating driver-க்கு போயிடுச்சு','Thanks! Your rating reached the driver'));if(five)setTimeout(reviewAsk,900)};
     document.getElementById('skip').onclick=finish;
   });
 }
@@ -2091,7 +2153,7 @@ async function cloudBoot(){
   S.logged=true;save();await mapsWait();resumeActive()||home();return true;
 }
 async function loadProfile(){
-  try{const s=await F().getDoc(F().doc(CL.db,'users',CUID));if(!s.exists()||!s.data().joinedAt)F().setDoc(F().doc(CL.db,'users',CUID),{joinedAt:F().serverTimestamp()},{merge:true}).catch(()=>{});if(s.exists()){const d=s.data();if(d.name)S.name=d.name;if(!CL.user.phoneNumber&&d.phone)S.phone=String(d.phone).replace('+91','');if(Array.isArray(d.ec)){EC=d.ec;saveEc()}}}catch(e){}
+  try{const s=await F().getDoc(F().doc(CL.db,'users',CUID));if(!s.exists()||!s.data().joinedAt){const rp=refStored(),own=String(CL.user&&CL.user.phoneNumber||'').replace('+91','');F().setDoc(F().doc(CL.db,'users',CUID),{joinedAt:F().serverTimestamp(),...(rp&&rp!==own?{refBy:'+91'+rp}:{})},{merge:true}).catch(()=>{})}if(s.exists()){const d=s.data();if(d.name)S.name=d.name;if(!CL.user.phoneNumber&&d.phone)S.phone=String(d.phone).replace('+91','');if(Array.isArray(d.ec)){EC=d.ec;saveEc()}}}catch(e){}
 }
 function saveProfile(extra={}){if(!CL||!CUID)return;F().setDoc(F().doc(CL.db,'users',CUID),{name:S.name,phone:'+91'+S.phone,ec:EC,lang:S.lang==='en'?'en':'ta',updatedAt:F().serverTimestamp(),...extra},{merge:true}).catch(()=>{})}
 /* the customer's language also decides the language of their WhatsApp messages (server reads users/{uid}.lang) */
@@ -2102,19 +2164,19 @@ let PUBUNSUB=null;
 function watchPublic(){if(PUBUNSUB||CFGUNSUB||!CL)return;
   PUBUNSUB=F().onSnapshot(F().doc(CL.db,'public','prices'),s=>{if(!s.exists()||CFGUNSUB)return;const d=s.data();
     if(d.fares)VEH.forEach(v=>{const f=d.fares[v.id];if(f&&v.id!=='auto'){if(f.base!=null)v.base=+f.base;if(f.per!=null)v.per=+f.per;v.incl=+f.incl>0?+f.incl:undefined}});
-    CFG.area=d.area||null;CFG.night=d.night||null;try{applyTariff(d)}catch(e){}
+    CFG.area=d.area||null;CFG.night=d.night||null;CFG.grow=Array.isArray(d.stf)?{stf:d.stf}:null;try{applyTariff(d)}catch(e){}
     if(S.tab==='home'&&!S.logged&&!document.querySelector('.modal')&&document.getElementById('vs'))fareScreen()},()=>{})}
 function watchConfig(){
   if(PUBUNSUB){try{PUBUNSUB()}catch(e){}PUBUNSUB=null}
   if(CFGUNSUB)return;
   CFGUNSUB=F().onSnapshot(F().doc(CL.db,'config','app'),s=>{if(!s.exists())return;const d=s.data();
     if(d.fares)VEH.forEach(v=>{const f=d.fares[v.id];if(f&&v.id!=='auto'){if(f.base!=null)v.base=+f.base;if(f.per!=null)v.per=+f.per;v.incl=+f.incl>0?+f.incl:undefined}});
-    if(window.APPGET)APPGET.setPlay(d.play);CFG.area=d.area||null;CFG.upi=d.upi||'';CFG.office=d.office||'';CFG.push=d.push||null;CFG.night=d.night||null;CFG.privPhone=!!d.privPhone;CFG.serverPin=!!d.serverPin;CFG.comm=d.comm!=null?+d.comm:10;CFG.wait=d.wait||null;CFG.blocked=Array.isArray(d.blocked)?d.blocked:[];{const had=VEH.includes(BIKE);setBike(!!d.showBike);if(had!==VEH.includes(BIKE)&&S.tab==='home'&&document.querySelector('.vrow')&&!document.querySelector('.modal'))home(S.mode||undefined)}if(d.dispatch)Object.assign(DISPC,d.dispatch);applyTariff(d);
+    if(window.APPGET)APPGET.setPlay(d.play);CFG.area=d.area||null;CFG.grow=d.grow||null;CFG.upi=d.upi||'';CFG.office=d.office||'';CFG.push=d.push||null;CFG.night=d.night||null;CFG.privPhone=!!d.privPhone;CFG.serverPin=!!d.serverPin;CFG.comm=d.comm!=null?+d.comm:10;CFG.wait=d.wait||null;CFG.blocked=Array.isArray(d.blocked)?d.blocked:[];{const had=VEH.includes(BIKE);setBike(!!d.showBike);if(had!==VEH.includes(BIKE)&&S.tab==='home'&&document.querySelector('.vrow')&&!document.querySelector('.modal'))home(S.mode||undefined)}if(d.dispatch)Object.assign(DISPC,d.dispatch);applyTariff(d);
     // refresh the browser push token last: Android WebView has no window.Notification (the app uses native push),
     // and reading it there used to throw before the outstation prices and settings above were applied
     try{if(CUID&&!NATIVEC()&&pushReadyC()&&typeof Notification!=='undefined'&&Notification.permission==='granted')enablePushC(false)}catch(e){}},()=>{});
   F().getDoc(F().doc(CL.db,'blocked','+91'+S.phone)).then(x=>{MEBLK=x.exists()}).catch(()=>{}); // only my own entry is readable
-  watchWx();
+  watchWx();watchCredit();
   if(CUID)VCTCLK.sync(F(),F().doc(CL.db,'users',CUID)); // learn the server time once
   watchMyB();
 }
@@ -2175,7 +2237,7 @@ function takeContact(d){const c={custPhone:d.custPhone||null,riderPhone:d.rider&
   if(!CFG.privPhone)return c; // switched on by the owner after the new security rules are published (office → Settings)
   delete d.custPhone;if(d.rider)d.rider={name:String(d.rider.name||'')};return c}
 const saveContact=(id,c)=>F().setDoc(F().doc(CL.db,'bookings',id,'private','contact'),c);
-function localTar(v,km){const w=CFG.wait||{},np=nightV(v),o={t:'local',wait:v&&v.id==='auto'?FARE.AUTO_GOVT.wait:+w.rate||0,free:w.free!=null?+w.free:3};if(v&&v.id==='auto')o.govt='TN-GO366-2026';if(np&&v){o.night=np;o.nightAmt=fare(v,km)-fare0(v,km)}return o} // prices saved in the booking for the final bill
+function localTar(v,km){const w=CFG.wait||{},fx=stFare(v)!=null,np=fx?0:nightV(v),o={t:'local',wait:v&&v.id==='auto'?FARE.AUTO_GOVT.wait:+w.rate||0,free:w.free!=null?+w.free:3};if(v&&v.id==='auto')o.govt='TN-GO366-2026';if(fx)o.fixed=true;if(np&&v){o.night=np;o.nightAmt=fare(v,km)-fare0(v,km)}return o} // prices saved in the booking for the final bill
 async function cloudBook(){try{window.VCTF&&VCTF('book')}catch(e){};if(needLogin()||blockedStop())return;
   {const ar=localArea();if(ar.far&&!(ar.autoOk&&autoOnly()&&S.veh==='auto'))return areaAsk(ar)}
   const r=route(S.from,S.dest),v=VEH.find(x=>x.id===S.veh),f=fare(v,r.km);
@@ -2184,7 +2246,7 @@ async function cloudBook(){try{window.VCTF&&VCTF('book')}catch(e){};if(needLogin
   const pin=String(1000+Math.floor(Math.random()*9000));
   const trip=(r.pts||r.path.map(k=>P[k])).map(p=>({lat:p.lat,lon:p.lon}));
   const data={customerUid:CUID,custName:S.name,custPhone:'+91'+S.phone,src:'app',kind:'ride',from:placeOf(S.from),to:placeOf(S.dest),path:trip,
-    veh:v.id,vehTa:v.ta,vehEn:v.en,km:+r.km.toFixed(1),base:v.base,fare:f,pay:S.pay,status:'searching',when:VCTCLK.now(),rider:S.rider||null,tip:S.tip0||0,tariff:localTar(v,r.km),
+    veh:v.id,vehTa:v.ta,vehEn:v.en,km:+r.km.toFixed(1),base:v.base,fare:f,pay:S.pay,status:'searching',when:VCTCLK.now(),rider:S.rider||null,tip:S.tip0||0,tariff:localTar(v,r.km),...(discFor(f)>0?{disc:discFor(f)}:{}),
     createdAt:F().serverTimestamp(),updatedAt:F().serverTimestamp()};
   try{
     if(!CFG.serverPin)try{Object.assign(data,await VCTPIN.fields(pin))}catch(e){} // lets the driver check the PIN even if this phone goes offline
@@ -2193,7 +2255,7 @@ async function cloudBook(){try{window.VCTF&&VCTF('book')}catch(e){};if(needLogin
     await F().setDoc(F().doc(CL.db,'bookings',ref.id,'private','pin'),{pin});
     await saveContact(ref.id,ct);
     R={id:ref.id,v,km:r.km,path:r.path,fare:f,pay:S.pay,from:S.from,dest:S.dest,fromName:{ta:P[S.from].ta,en:P[S.from].en},destName:{ta:P[S.dest].ta,en:P[S.dest].en},
-       pin,trackId:ref.id.slice(0,8),trip,phase:'search',chat:[],drv:null,dpos:null,b:data,riderPh:ct.riderPhone,t0:Date.now(),boost:S.tip0||0};S.tip0=0;
+       pin,trackId:ref.id.slice(0,8),trip,phase:'search',chat:[],drv:null,dpos:null,b:data,riderPh:ct.riderPhone,t0:Date.now(),boost:S.tip0||0};S.tip0=0;HPICK=null;
     rememberRide();watchBooking();
   }catch(e){if(e&&e.code==='permission-denied'&&!MEBLK){F().getDoc(F().doc(CL.db,'blocked','+91'+S.phone)).then(x=>{if(x.exists()){MEBLK=true;blockedStop()}}).catch(()=>{})}
     toast(CL.errText(e,S.lang==='ta'));if(btn){btn.disabled=false;fareScreen()}}
@@ -2232,10 +2294,32 @@ R.lastTry=b.pinTry;
     if(R.phase!=='ride'||!document.getElementById('stB'))rideCloud();else rideCloudUpdate(true);
     return;
   }
-  if(b.status==='done'){try{window.VCTF&&VCTF('done')}catch(e){};stopWatch();forgetRide();R.fare=FARE.billOf(b);R.fx=b.fx||null;R.boost=+b.tip||0;R.pay=b.pay||R.pay;doneScreen();return}
+  if(b.status==='done'){try{window.VCTF&&VCTF('done')}catch(e){};stopWatch();forgetRide();R.fare=FARE.billOf(b);R.disc=b.discHeld?Math.max(0,Math.round(+b.disc||0)):0;R.fx=b.fx||null;R.boost=+b.tip||0;R.pay=b.pay||R.pay;doneScreen();return}
   if(b.status==='cancelled'&&!R.selfCancel&&/^driver/.test(b.cancelReason||'')&&!b.startedAt&&!OFK.includes(b.kind)&&(R.rebookN||0)<3){autoRebook(b);return}
   if(b.status==='cancelled'){stopWatch();forgetRide();if(!R.selfCancel){if(b.cancelReason&&b.cancelReason!=='customer'&&!/^(driver|noshow|custask)/.test(b.cancelReason))setTimeout(()=>sorrySheet(b.cancelReason),400);else toast(L('இந்த ride ரத்து ஆயிடுச்சு. மறுபடி book பண்ணுங்க','This ride was cancelled. Please book again'));recordTrip('cancelled',{reason:b.cancelReason||''})}R=null;home()}
 }
+/* still searching after 30 s: offer other vehicle types that have a driver ON nearby (owner 28 Nov) */
+const ALSOAT=30;
+function alsoTryList(){if(!R||!R.v||!R.b||(R.b.kind&&R.b.kind!=='ride')||R.b.dispatch||S.when)return [];const pu={lat:R.b.from.lat,lon:R.b.from.lon};
+  let vl=[];try{vl=vlist()}catch(e){return []}
+  return vl.filter(v=>v.id!==R.v.id&&!ADV.includes(v.id)).map(v=>{const ds=NEAR.filter(n=>n.fresh&&n.veh===v.id).map(n=>hav(n,pu)).filter(d=>d<=NEARKM);
+    return ds.length?{v,eta:Math.max(1,Math.round(Math.min(...ds)*1.35/20*60)+1),f:fare(v,R.km,R.from,R.dest)}:null}).filter(Boolean).sort((a,b)=>a.eta-b.eta).slice(0,3)}
+function alsoTryShow(){const el=document.getElementById('alsotry');if(!el||!R||R.phase!=='search')return;const ls=alsoTryList();
+  if(!ls.length){el.hidden=true;return}
+  const key=ls.map(x=>x.v.id+x.eta+x.f).join();if(el.dataset.k===key&&!el.hidden)return;el.dataset.k=key;
+  el.innerHTML=`<b>${L('வேற வண்டியும் பக்கத்துல இருக்கு','Other vehicles are nearby')}</b><div class="atrow">${ls.map(x=>`<button class="atb" data-sw="${x.v.id}"><span class="vi">${I[x.v.id]}</span><span><b>${x.v[S.lang]} · ₹${x.f}</b><small>${L(`~${x.eta} நிமி-ல வரும்`,`~${x.eta} min away`)}</small></span></button>`).join('')}</div>`;
+  el.hidden=false;el.querySelectorAll('[data-sw]').forEach(b=>b.onclick=()=>switchVeh(b.dataset.sw))}
+async function switchVeh(vid){if(!CL||!R||R.phase!=='search'||R.switching)return;const v=VEH.find(x=>x.id===vid);if(!v)return;R.switching=true;
+  const ref=F().doc(CL.db,'bookings',R.id);let ok=false;
+  try{ok=await F().runTransaction(CL.db,async tx=>{const d=await tx.get(ref);if(!d.exists()||d.data().status!=='searching')return false;
+    tx.update(ref,{status:'cancelled',cancelReason:'customer',updatedAt:F().serverTimestamp()});return true})}
+  catch(e){if(R)R.switching=false;toast(CL.errText(e,S.lang==='ta'));return}
+  if(!ok){if(R)R.switching=false;return} // a driver took it just now: the booking watcher shows the driver
+  const k={from:R.from,dest:R.dest,tip:R.boost||0,pay:R.pay,rider:R.b&&R.b.rider||null};
+  R.selfCancel=true;clearInterval(rideTimer);stopWatch();forgetRide();R=null;
+  S.from=k.from;S.dest=k.dest;S.veh=vid;S.tip0=Math.min(TIPMAX,k.tip);S.pay=k.pay||'cash';S.rider=k.rider;S.when=null;S.mode='';
+  toast(L(`${v.ta}-க்கு மாத்தி தேடுறோம்`,`Switched to ${v.en}. Finding a driver`));
+  await cloudBook()}
 const LROUND=60,LROUNDS=3,TIPMAX=200;let NODRV=null; // local search: 3 rounds of 1 min, then auto-cancel
 const tipNowTxt=()=>R&&R.boost?L(`இப்போ tip: <b>₹${R.boost}</b> · இன்னும் கூட்டலாம்`,`Tip now: <b>₹${R.boost}</b> · you can add more`):L('இன்னும் யாரும் எடுக்கல. Tip முழுசா driver-க்கே போகும்.','No one has accepted yet. The whole tip goes to the driver.');
 /* push: "driver found / arrived / trip started / done" alerts even when the app is closed. Works once the owner
@@ -2266,6 +2350,7 @@ function searchingCloud(){
        <small class="muted" id="sst">${R.rebooked?L('முந்தைய driver ரத்து செஞ்சார். மன்னிக்கவும் — வேற driver-ஐ தேடுறோம்…','Your previous driver cancelled. Sorry — finding another driver…'):L(`அருகில் இருக்கிற ${R.v.ta} drivers-க்கும் எங்க office-க்கும் request போயிடுச்சு`,`Request sent to nearby ${R.v.en} drivers and our office`)}</small></div></div>
      <div class="bar"><i style="animation-duration:60s"></i></div>
      <div class="rounds" id="rounds">${[1,2,3].map(i=>`<i data-r="${i}"></i>`).join('')}<span id="rlbl"></span></div>
+     <div class="alsotry" id="alsotry" hidden></div>
      <div class="tipbox" id="tipbox" ${R.boost?'':'hidden'}><b id="tiph">${L('Tip சேர்த்தா driver சீக்கிரம் கிடைப்பார்','Add a tip to get a driver faster')}</b>
        <small id="tipnow">${tipNowTxt()}</small>
        <div class="tiprow">${[10,20,30,40,50,60,70,80,90].map(x=>`<button class="chip" data-boost="${x}">+₹${x}</button>`).join('')}</div></div>
@@ -2279,6 +2364,7 @@ function searchingCloud(){
       toast(L(`Tip இப்போ ₹${v}. எல்லா drivers-க்கும் மறுபடி போகுது`,`Tip is now ₹${v}. Sent to drivers again`))});
     let lastR=0;const tick=()=>{const el=document.getElementById('sst');if(!el||!R||R.phase!=='search')return;const s=(Date.now()-(R.t0||Date.now()))/1000,rd=Math.min(LROUNDS,Math.floor(s/LROUND)+1);
       const tb=document.getElementById('tipbox');if(tb&&s>=20)tb.hidden=false;
+      if(s>=ALSOAT&&Math.floor(s)%5===0)alsoTryShow();
       app.querySelectorAll('#rounds i').forEach(x=>{const i=+x.dataset.r;x.className=i<rd?'done':i===rd?'on':''});
       const left=Math.max(0,Math.ceil(LROUNDS*LROUND-s)),rl=document.getElementById('rlbl');if(rl)rl.textContent=L(`சுற்று ${rd}/${LROUNDS} · ${Math.floor(left/60)}:${String(left%60).padStart(2,'0')}`,`Round ${rd}/${LROUNDS} · ${Math.floor(left/60)}:${String(left%60).padStart(2,'0')}`);
       if(rd!==lastR){if(lastR){const th=document.getElementById('tiph');if(th)th.textContent=rd===LROUNDS?L('கடைசி சுற்று! Tip சேர்த்தா driver கிடைக்க வாய்ப்பு அதிகம்','Last round! A tip improves your chances'):L('இன்னும் driver கிடைக்கல — மறுபடி தேடுறோம். Tip சேர்க்கவா?','No driver yet — searching again. Add a tip?');
@@ -2311,7 +2397,7 @@ ${L('Driver-கிட்ட இந்த PIN-ஐ சொல்லுங்க','T
       line:()=>{if(!R)return null;if(R.b.status==='ontrip')return R.trip;return R.dpos&&!R.b.arrivedAt?[R.dpos,pu]:null}};
     R.map=makeMap(document.getElementById('map'),o);R.mo=o;R.fitFor=null;
     rideCloudUpdate(true);rideTimer=setInterval(()=>rideCloudUpdate(false),1000);
-    document.getElementById('cx').onclick=cancelSheet;document.getElementById('sos').onclick=safetySheet;
+    document.getElementById('cx').onclick=cancelDrvAsk;document.getElementById('sos').onclick=safetySheet;
     app.querySelectorAll('.acts button').forEach(x=>x.onclick=()=>({call:callSheet,chat:chatSheet,share:shareTrip,safety:safetySheet})[x.dataset.a]());chatDot();
   });
 }
@@ -2336,6 +2422,18 @@ async function cloudCancel(reason){
   stopWatch();forgetRide();
 }
 function cloudPayChange(pm){if(CL&&R&&R.id)F().updateDoc(F().doc(CL.db,'bookings',R.id),{pay:pm,updatedAt:F().serverTimestamp()}).catch(()=>{})}
+/* 5★ ride → ask once for a Google review (Office → Settings → Growth link; never without a link).
+   Asked at most once in 30 days; never again after they open it. */
+const REVURL=u=>/^https:\/\/([a-z0-9-]+\.)*(google\.com|google\.co\.in|g\.page|goo\.gl)\/\S{3,}$/i.test(String(u||''));
+function reviewAsk(){try{const u=CFG.grow&&CFG.grow.review;if(!REVURL(u)||document.querySelector('.modal'))return;
+  const st=JSON.parse(localStorage.getItem('vct-rv')||'{}');if(st.done||(st.at&&Date.now()-st.at<30*864e5))return;
+  localStorage.setItem('vct-rv',JSON.stringify({at:Date.now()}));
+  modal(`<div class="xbig" id="rvask">${X('check',34)}</div><h3 style="text-align:center">${L('Google-ல ஒரு review போடுவீங்களா?','Would you review us on Google?')}</h3>
+    <p style="margin:0;line-height:1.55;text-align:center">${L('உங்க ஒரு review வேலூர்ல மத்தவங்களுக்கு நம்மள கண்டுபிடிக்க உதவும். ஒரு நிமிஷம் தான்.','One review helps others in Vellore find us. It takes a minute.')}</p>
+    <a class="btn yellow" id="rvgo" href="${esc(u)}" target="_blank" rel="noopener">${L('Review போடு','Write a review')}</a>
+    <button class="btn ghost" id="rvno">${L('இப்போ வேண்டாம்','Not now')}</button>`,(m,close)=>{
+    m.querySelector('#rvgo').onclick=()=>{try{localStorage.setItem('vct-rv',JSON.stringify({at:Date.now(),done:1}))}catch(e){}setTimeout(close,300)};
+    m.querySelector('#rvno').onclick=close})}catch(e){}}
 function cloudRate(stars,tip){if(CL&&R&&R.id&&(stars||tip))F().updateDoc(F().doc(CL.db,'bookings',R.id),{rating:stars||0,tip:(tip||0)+(R.boost||0),updatedAt:F().serverTimestamp()}).catch(()=>{})}
 function cloudTicket(x){
   if(!CL||!CUID)return;

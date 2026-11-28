@@ -79,6 +79,15 @@ service cloud.firestore {
     }
 
     // Customer profile (name, emergency contacts, saved places)
+    // referral credit (₹ off a later ride): written by the server only
+    match /credits/{ph} {
+      allow read: if isStaff() || (signedIn() && phone() == ph);
+      allow write: if false;
+    }
+    match /referrals/{uid} {
+      allow read: if isStaff();
+      allow write: if false;
+    }
     match /users/{uid} {
       allow read, write: if signedIn() && request.auth.uid == uid;
       allow read: if isStaff();
@@ -171,8 +180,9 @@ service cloud.firestore {
             && !isBlocked()
             && num(newData().fare, 1, 200000)
             && (!('tip' in newData()) || num(newData().tip, 0, 300))
+            && (!('disc' in newData()) || num(newData().disc, 0, 500))   // referral discount asked for; the server holds or drops it
             && !newData().keys().hasAny(['driverPhone', 'driverName', 'assignedAt', 'startedAt', 'doneAt', 'fareFinal', 'fx', 'comm', 'commLocal', 'pinOk', 'ledgerAt',
-                                             'fareFlag', 'fareWas', 'kmWas', 'limitWhy', 'cancelledBy', 'dispatchedBy', 'tariffFixed']));
+                                             'fareFlag', 'fareWas', 'kmWas', 'limitWhy', 'cancelledBy', 'dispatchedBy', 'tariffFixed', 'discHeld', 'discPaid', 'discBack']));
 
       allow update: if isOwner()
         // staff: dispatch work only (assign, re-open, start, cancel). Fare, bill, commission and payment: owner only.
@@ -268,7 +278,8 @@ service cloud.firestore {
       allow write: if isOwner() && (
         (doc == 'site' && newData().keys().hasOnly(['phone', 'driverPhone', 'whatsapp', 'email', 'address', 'places', 'updatedAt'])
           && (!('places' in newData()) || (newData().places is list && newData().places.size() <= 24)))
-        || (doc == 'prices' && newData().keys().hasOnly(['fares', 'out', 'rent', 'night', 'area', 'updatedAt'])));
+        || (doc == 'prices' && newData().keys().hasOnly(['fares', 'out', 'rent', 'night', 'area', 'stf', 'updatedAt'])
+            && (!('stf' in newData()) || (newData().stf is list && newData().stf.size() <= 40))));
     }
     match /siteImg/{id} {
       allow read: if true;

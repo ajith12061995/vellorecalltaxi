@@ -522,6 +522,7 @@ details.faq p{margin:0;padding:0 14px 14px;color:var(--muted);font-size:14px;lin
 .stpill.on i{background:#fff;animation:ping 1.4s infinite}
 .chipbtn.lowbal{background:#C23B3B;color:#fff}
 .wxline{display:flex;align-items:center;gap:8px;margin:8px 0 4px;padding:8px 12px;border-radius:12px;background:#EEF4FF;color:#1F3A5F;font-size:13px;font-weight:600;line-height:1.35}.wxline span{flex:1}.wxline small{flex:none;font-weight:400;font-size:9.5px;opacity:.6}.wxline.wx-hot{background:#FFF1DC;color:#6B3D00}
+.bonuscard{margin:8px 0;padding:10px 12px;border-radius:14px;background:#FFF4CC;color:#3D2E00}.bonuscard b{display:block;font-size:13.5px;line-height:1.35}.bonuscard .bbar{display:block;height:6px;border-radius:4px;background:rgba(0,0,0,.1);margin-top:7px;overflow:hidden}.bonuscard .bbar i{display:block;height:100%;background:#1E8A5A;border-radius:4px}
 .warn{background:rgba(194,59,59,.10);color:var(--danger);border-radius:14px;padding:10px 14px;font-size:13.5px;font-weight:600}
 .liveCard{display:flex;align-items:center;gap:14px;padding:14px;border-radius:18px;background:rgba(30,138,90,.10)}
 .liveCard b{font-family:var(--display);font-size:18px;display:block;color:var(--ok)}
@@ -1059,6 +1060,7 @@ function home(){setTimeout(demandHint,60);setTimeout(mineCheck,1500);
      ${OVL&&OVLCAN&&S.online&&OVLPWR===false?`<button class="warn" id="pwron" style="text-align:left;border:0;width:100%">${X('bolt')} ${L('Phone app-ஐ நிறுத்தாம இருக்க: இங்கே தொட்டு → Battery → "No restrictions" / "Allow background activity" தேர்வு பண்ணுங்க. Realme / Oppo / Vivo-ல "Auto launch"-உம் ON பண்ணுங்க.','So the phone never stops the app: tap → Battery → "No restrictions" / "Allow background activity". On Realme / Oppo / Vivo also turn on "Auto launch".')}</button>`:''}
      ${OVL&&OVL17&&S.online&&OVLFSI===false?`<button class="warn" id="fsion" style="text-align:left;border:0;width:100%">${X('bell')} ${L('Phone lock-ல இருந்தாலும் ride screen-ல வரணுமா? இங்கே தொட்டு "Full screen notifications" / "முழுத் திரை அறிவிப்பு" ON பண்ணுங்க','Show rides over the lock screen: tap and turn on "Full screen notifications"')}</button>`:''}
      ${S.online&&CL?`<p class="stayon" id="stayon">${X('check',14)} ${L('நீங்க OFF பண்ற வரை Online-லயே இருப்பீங்க. App-ஐ மூடினாலும், phone பேசினாலும் Offline ஆகாது.','You stay online until you switch OFF — even if you close the app or take a call.')}</p>`:''}${S.online&&CL&&!J?'<div id="demhint" hidden></div>':''}
+     ${bonusCard()}
      <div id="appget" hidden></div>
      ${upcHtml()}
      ${SHOW_SMGR?smgrHtml():''}
@@ -1262,11 +1264,14 @@ function tripEndSheet(after){
 }
 function collect(){
   const v=VEH.find(x=>x.id===me().veh),base=J.b&&J.b.base!=null?+J.b.base:v.base,dist=J.fare-base;let pm=J.pay,stars=0,paid=false;
-  const fin=J.id?finNow():null,COL=(fin?fin.total:J.fare)+(J.tip||0);
+  // a referral discount the server has held for this ride: the customer pays that much less, the office puts it in the driver's wallet
+  const DISC=J.b&&J.b.discHeld?Math.max(0,Math.round(+J.b.disc||0)):0;
+  const fin=J.id?finNow():null,COL=Math.max(0,(fin?fin.total:J.fare)+(J.tip||0)-DISC);
   go(`<section class="screen"><div class="donehero pad"><span class="check">${I.tick}</span><h1 style="font-size:26px">${L('Trip முடிஞ்சது!','Trip complete!')}</h1><span>${pn(J.from)} → ${pn(J.to)}</span></div>
    <div class="body pad">
     <div class="bill">${fin?fin.lines.map(x=>`<div><span>${esc(x[S.lang])}</span><span>${inr(x.amt)}</span></div>`).join(''):`<div><span>${L('அடிப்படை கட்டணம்','Base fare')}</span><span>${inr(base)}</span></div><div><span>${L(`தூரம் (${J.km.toFixed(1)} கி.மீ)`,`Distance (${J.km.toFixed(1)} km)`)}</span><span>${inr(dist)}</span></div>`}
       ${J.tip?`<div><span>${L('Customer tip','Customer tip')}</span><span>${inr(J.tip)}</span></div>`:''}
+      ${DISC?`<div id="discln"><span>${L('Referral தள்ளுபடி · உங்க wallet-ல Office போடும்','Referral discount · the office adds it to your wallet')}</span><span>−${inr(DISC)}</span></div>`:''}
       <div class="tot"><span>${L('Customer கொடுக்க வேண்டியது','Collect from customer')}</span><span>${inr(COL)}</span></div></div>
     ${fin?`<button class="linkbtn" id="adj" style="align-self:flex-start">＋ ${L('Toll / Parking / கி.மீ மாற்று','Toll / parking / change km')}</button>`:''}
     <div id="pay">
@@ -1522,7 +1527,7 @@ function ensurePush(){if(!CL||!CL.phone||!DME||!S.logged||document.getElementByI
 setInterval(()=>{try{ensurePush()}catch(e){}},30e3);
 let PUSHNOTED='';
 function pushNote(){if(PUSHWHY===PUSHNOTED)return;PUSHNOTED=PUSHWHY;try{localStorage.removeItem('vct_dev')}catch(e){}setTimeout(()=>{if(OVL)ovlPower();else devReport(NATIVE()?'app':'web')},500)}
-function applyMe(d){const pv=DME&&DME.veh;if(REQUNSUB&&pv&&d.veh&&pv!==d.veh){REQUNSUB();REQUNSUB=null;setTimeout(()=>{if(S.online)listenReq()},0)}DME={id:CL.phone,ta:d.name||'Driver',en:d.name||'Driver',plate:d.plate||'',model:d.model||'',veh:d.veh||'auto',rating:RATE||d.rating||5,docs:d.docs||null,blocked:!!d.blocked,upi:d.upi||'',svc:d.svc||null,prio:d.prio||'auto',year:+d.year||+((String(d.model||'').match(/\b(19|20)\d\d\b/)||[''])[0])||0,consent:d.consent||null,onl:!!d.online,fcm:String(d.fcm||''),sub:d.sub&&d.sub.until?{plan:String(d.sub.plan||''),price:+d.sub.price||0,from:CL.toMs(d.sub.from)||0,until:CL.toMs(d.sub.until)||0}:null};DS.wallet=+d.wallet||0}
+function applyMe(d){const pv=DME&&DME.veh;if(REQUNSUB&&pv&&d.veh&&pv!==d.veh){REQUNSUB();REQUNSUB=null;setTimeout(()=>{if(S.online)listenReq()},0)}DME={id:CL.phone,ta:d.name||'Driver',en:d.name||'Driver',plate:d.plate||'',model:d.model||'',veh:d.veh||'auto',rating:RATE||d.rating||5,docs:d.docs||null,blocked:!!d.blocked,upi:d.upi||'',svc:d.svc||null,prio:d.prio||'auto',year:+d.year||+((String(d.model||'').match(/\b(19|20)\d\d\b/)||[''])[0])||0,consent:d.consent||null,onl:!!d.online,fcm:String(d.fcm||''),bonusPaid:String(d.bonusPaid||''),sub:d.sub&&d.sub.until?{plan:String(d.sub.plan||''),price:+d.sub.price||0,from:CL.toMs(d.sub.from)||0,until:CL.toMs(d.sub.until)||0}:null};DS.wallet=+d.wallet||0}
 function watchMe(){UNS.push(F().onSnapshot(F().doc(CL.db,'drivers',CL.phone),s=>{const live=!(s.metadata&&s.metadata.fromCache);
   if(!s.exists()){if(live&&ME_CACHED){ME_CACHED=false;if(S.online)setOnline(false);stopAllD();DME=null;notDriver()}return}
   const before=DS.wallet;applyMe(s.data());setTimeout(ensurePush,3000);
@@ -1536,10 +1541,16 @@ let WXD=null;
 function wxHtmlD(){return CL?VCTWX.html(WXD,Date.now(),'driver',S.lang):''}
 function watchWxD(){UNS.push(F().onSnapshot(F().doc(CL.db,'config','weather'),s=>{WXD=s.exists()?s.data():null;const el=document.getElementById('wx');if(el)el.outerHTML=wxHtmlD()},()=>{}))}
 function watchCfgD(){UNS.push(F().onSnapshot(F().doc(CL.db,'config','app'),s=>{if(!s.exists())return;const d=s.data();
-  if(window.APPGET)APPGET.setPlay(d.play);if(d.comm!=null)COMM=+d.comm;if(d.minbal!=null)MINBAL=+d.minbal;CFGD.subs=d.subs||null;CFGD.upi=d.upi||'';CFGD.office=d.driverHelp||d.office||''; /* drivers call the driver help line when the office has set one */CFGD.serverComm=!!d.serverComm;CFGD.serverPin=!!d.serverPin;CFGD.reqConsent=!!d.reqConsent;CFGD.extNav=!!d.extNav;CFGD.rzp=!!d.rzp&&(!Array.isArray(d.rzpTesters)||!d.rzpTesters.length||d.rzpTesters.includes(CL&&CL.phone));CFGD.showFee=!!d.showFee;CFGD.wait=d.wait||null;CFGD.push=d.push||null;
+  if(window.APPGET)APPGET.setPlay(d.play);if(d.comm!=null)COMM=+d.comm;if(d.minbal!=null)MINBAL=+d.minbal;CFGD.subs=d.subs||null;CFGD.upi=d.upi||'';CFGD.office=d.driverHelp||d.office||''; /* drivers call the driver help line when the office has set one */CFGD.bonus=d.grow&&d.grow.bonus&&d.grow.bonus.on&&+d.grow.bonus.rides>0&&+d.grow.bonus.amt>0?{rides:+d.grow.bonus.rides,amt:+d.grow.bonus.amt}:null;CFGD.serverComm=!!d.serverComm;CFGD.serverPin=!!d.serverPin;CFGD.reqConsent=!!d.reqConsent;CFGD.extNav=!!d.extNav;CFGD.rzp=!!d.rzp&&(!Array.isArray(d.rzpTesters)||!d.rzpTesters.length||d.rzpTesters.includes(CL&&CL.phone));CFGD.showFee=!!d.showFee;CFGD.wait=d.wait||null;CFGD.push=d.push||null;
   {const na=Array.isArray(d.announce)?d.announce:[],top=na[0];const fresh=top&&(!ANN[0]||ANN[0].id!==top.id)&&top.t>seenAt();ANN=na;
    if(fresh&&ANN.length&&!J&&!document.querySelector('.modal')){beep();toast((top.title||L('Office அறிவிப்பு','Office notice')));if(S.tab==='home'&&document.getElementById('menu'))home()}}if(d.dispatch)Object.assign(DISP,d.dispatch);
   if(d.fares)VEH.forEach(v=>{const f=d.fares[v.id];if(f&&v.id!=='auto'){if(f.base!=null)v.base=+f.base;if(f.per!=null)v.per=+f.per;v.incl=+f.incl>0?+f.incl:undefined}})},()=>{}))}
+/* daily bonus (Office → Settings → Growth): today's done rides against the target; the office pays it */
+const istDayD=t=>new Date(t==null?Date.now():t).toLocaleDateString('en-CA',{timeZone:'Asia/Kolkata'});
+function bonusCard(){try{const b=CFGD.bonus;if(!b)return '';const day=istDayD(),n=DS.trips.filter(x=>istDayD(x.date)===day).length,m=me()||{};
+  const paid=m.bonusPaid===day,hit=n>=b.rides,pct=Math.min(100,Math.round(n/b.rides*100));
+  return `<div class="bonuscard" id="bonuscard"><div><b>${paid?L(`${inr(b.amt)} bonus wallet-ல சேர்ந்தாச்சு`,`${inr(b.amt)} bonus added to your wallet`):hit?L(`Target அடிச்சாச்சு! ${inr(b.amt)} bonus office போடுவாங்க`,`Target reached! The office will add ${inr(b.amt)}`):L(`இன்னைக்கு ${n}/${b.rides} ride · ${b.rides} முடிச்சா ${inr(b.amt)} bonus`,`Today ${n}/${b.rides} rides · ${inr(b.amt)} bonus at ${b.rides}`)}</b>
+    <i class="bbar"><i style="width:${pct}%"></i></i></div></div>`}catch(e){return ''}}
 let MYACT=null; // this driver's ride in progress, as last seen (watchMine)
 /* this driver's trips: newest 300 only (needs the index in firestore.indexes.json; without it, falls back to all trips) */
 function watchMine(full){const q=full?F().query(F().collection(CL.db,'bookings'),F().where('driverPhone','==',CL.phone))

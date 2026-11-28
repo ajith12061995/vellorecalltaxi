@@ -82,4 +82,18 @@ ok('km in base: office incl (0.5–10), else 1.5; same as server',()=>{
   assert.equal(SL.fareCheck({...b,fare:150},c,Date.UTC(2026,10,20,6,0)),null,'server accepts the 3 km base price');
   assert.ok(SL.fareCheck({...b,fare:100},c,Date.UTC(2026,10,20,6,0)),'server corrects a too-low fare');
   assert.equal(SL.fareLooksWrong({...b,fare:150},c.fares),false)});
+// station fixed fares (owner 28 Nov): client and server pick the same price, never on bad coordinates
+{const KAT={lat:12.9716,lon:79.1376},CMC={lat:12.9246,lon:79.1356};
+ const L=[{a:{k:'katpadi',...KAT},b:{k:'cmc',...CMC},veh:'auto',fare:120,both:true},{a:{k:'katpadi',...KAT},b:{k:'cmc',...CMC},veh:'mini',fare:180,both:false}];
+ const near=(p,dlat)=>({lat:p.lat+dlat,lon:p.lon});
+ ok('station fare: pickup and drop near the two places',()=>{assert.equal(F.stFare(L,'auto',near(KAT,.003),near(CMC,-.003)),120);assert.equal(F.stFare(L,'mini',KAT,CMC),180)});
+ ok('station fare: reverse only when "both"',()=>{assert.equal(F.stFare(L,'auto',CMC,KAT),120);assert.equal(F.stFare(L,'mini',CMC,KAT),null)});
+ ok('station fare: 0.6 km limit, other vehicle, empty list',()=>{assert.equal(F.stFare(L,'auto',near(KAT,.007),CMC),null);assert.equal(F.stFare(L,'sedan',KAT,CMC),null);assert.equal(F.stFare([],'auto',KAT,CMC),null);assert.equal(F.stFare(null,'auto',KAT,CMC),null)});
+ ok('station fare: bad coordinates or bad fare never match',()=>{assert.equal(F.stFare(L,'auto',{lat:12.97},CMC),null);assert.equal(F.stFare(L,'auto',{lat:'x',lon:79.1},CMC),null);assert.equal(F.stFare([{...L[0],fare:0}],'auto',KAT,CMC),null);assert.equal(F.stFare([{...L[0],a:null}],'auto',KAT,CMC),null)});
+ ok('station fare: client and server agree',()=>{for(const [v,a,b] of [['auto',KAT,CMC],['auto',CMC,KAT],['mini',CMC,KAT],['mini',near(KAT,.005),CMC],['auto',near(KAT,.0055),CMC],['sedan',KAT,CMC]])assert.equal(F.stFare(L,v,a,b),SL.stFare(L,v,a,b))});
+ const c={fares:{mini:{base:110,per:20}},grow:{stf:L}},bk={src:'app',kind:'ride',veh:'auto',from:KAT,to:CMC,km:6.5,tariff:{t:'local'}};
+ ok('server: fixed fare below the meter is accepted, not flagged',()=>{assert.equal(SL.fareCheck({...bk,fare:120},c,Date.UTC(2026,10,20,6,0)),null);assert.equal(SL.stFareOf({...bk,fare:120},c),120)});
+ ok('server: below the fixed fare is raised to it',()=>{const r=SL.fareCheck({...bk,fare:60},c,Date.UTC(2026,10,20,6,0));assert.equal(r.fare,120);assert.equal(r.night,0)});
+ ok('server: outstation / rental never use station fares',()=>{assert.equal(SL.stFareOf({...bk,tariff:{t:'out'}},c),null);assert.equal(SL.stFareOf({...bk,kind:'rental'},c),null)});
+}
 console.log(n,'fare tests passed');
