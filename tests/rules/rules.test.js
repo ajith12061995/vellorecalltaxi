@@ -286,15 +286,15 @@ test('recharge request: id u_<UTR>, the same UTR only once, screenshot with it; 
   await assertFails(setDoc(doc(as.drv(), 'recharges', 'u_401234567898'), { ...R('401234567898'), driverPhone: DRV2 }), 'not for another driver');
   // screenshot: only in the same write as the request
   const img = 'data:image/jpeg;base64,' + 'A'.repeat(1000);
-  const b = writeBatch(as.drv()); b.set(doc(as.drv(), 'recharges', 'u_501234567890'), R('501234567890', { proof: true })); b.set(doc(as.drv(), 'recharges', 'u_501234567890', 'proof', 'img'), { img, at: serverTimestamp() });
+  const dv = as.drv(); const b = writeBatch(dv); b.set(doc(dv, 'recharges', 'u_501234567890'), R('501234567890', { proof: true })); b.set(doc(dv, 'recharges', 'u_501234567890', 'proof', 'img'), { img, at: serverTimestamp() });
   await assertSucceeds(b.commit());
   await assertSucceeds(getDoc(doc(as.drv(), 'recharges', 'u_501234567890', 'proof', 'img')));
   await assertSucceeds(getDoc(doc(as.owner(), 'recharges', 'u_501234567890', 'proof', 'img')));
   await assertFails(getDoc(doc(as.drv2(), 'recharges', 'u_501234567890', 'proof', 'img')));
   await assertFails(setDoc(doc(as.drv(), 'recharges', 'u_401234567890', 'proof', 'img'), { img, at: serverTimestamp() }), 'no screenshot added later');
-  const b2 = writeBatch(as.drv()); b2.set(doc(as.drv(), 'recharges', 'u_601234567890'), R('601234567890')); b2.set(doc(as.drv(), 'recharges', 'u_601234567890', 'proof', 'img'), { img: 'data:image/png;base64,AAAA', at: serverTimestamp() });
+  const b2 = writeBatch(dv); b2.set(doc(dv, 'recharges', 'u_601234567890'), R('601234567890')); b2.set(doc(dv, 'recharges', 'u_601234567890', 'proof', 'img'), { img: 'data:image/png;base64,AAAA', at: serverTimestamp() });
   await assertFails(b2.commit(), 'JPEG only');
-  const b3 = writeBatch(as.drv()); b3.set(doc(as.drv(), 'recharges', 'u_701234567890'), R('701234567890')); b3.set(doc(as.drv(), 'recharges', 'u_701234567890', 'proof', 'img'), { img: 'data:image/jpeg;base64,' + 'A'.repeat(460000), at: serverTimestamp() });
+  const b3 = writeBatch(dv); b3.set(doc(dv, 'recharges', 'u_701234567890'), R('701234567890')); b3.set(doc(dv, 'recharges', 'u_701234567890', 'proof', 'img'), { img: 'data:image/jpeg;base64,' + 'A'.repeat(460000), at: serverTimestamp() });
   await assertFails(b3.commit(), 'too big');
   for (const who of ['owner', 'staff', 'drv']) await assertFails(setDoc(doc(as[who](), 'utrs', '401234567890'), { rechargeId: 'x' }), who + ' cannot write a UTR lock');
   await assertSucceeds(getDoc(doc(as.owner(), 'utrs', '401234567890')));
