@@ -38,6 +38,8 @@ async def main():
         await D.locator('#nxok').click();await pg.wait_for_timeout(1200)
         n1=await pg.evaluate("MOCK.store.get('bookings/n1')")
         check('Accept → that ride is assigned to this driver',n1['status']=='assigned' and n1.get('driverPhone')=='+919999900002',n1['status'])
+        sl=await pg.evaluate("(()=>{const d=MOCK.store.get('drivers/+919999900002')||{};return [d.act||'',d.nxt||'']})()")
+        check('the next ride is in one of the driver\'s two ride slots (same transaction)','n1' in sl,sl)
         check('card closed, current trip still running',await D.locator('#nextcard').count()==0 and await df.evaluate("J.id==='t1'&&NEXT&&NEXT.id==='n1'"))
         await df.evaluate("nextCheck()");await pg.wait_for_timeout(400)
         check('only one next ride at a time',await D.locator('#nextcard').count()==0)
@@ -61,6 +63,15 @@ async def main():
         await D.locator('#nxno').click();await pg.wait_for_timeout(500)
         await df.evaluate("nextCheck()");await pg.wait_for_timeout(500)
         check('Decline → not offered again',await D.locator('#nextcard').count()==0)
+        # one ride at a time: with a ride assigned and not started, the driver app refuses a second one ("busy")
+        r=await df.evaluate("""(async()=>{const t=Date.now();parent.MOCK.fs.setDoc({path:'bookings/za'},{status:'assigned',driverPhone:CL.phone,when:t});
+          parent.MOCK.fs.setDoc({path:'bookings/zb'},{status:'searching',when:t});const d=parent.MOCK.store.get('drivers/'+CL.phone);parent.MOCK.fs.setDoc({path:'drivers/'+CL.phone},{...d,act:'za',nxt:''});
+          try{await F().runTransaction(CL.db,async tx=>{const s=await tx.get(F().doc(CL.db,'bookings','zb'));const put=await takeSlot(tx,'zb',s.data());if(put)put()});return 'took'}catch(e){return e.message}})()""")
+        check('a second ride that has not started is refused with "busy"',r=='busy',r)
+        r=await df.evaluate("""(async()=>{parent.MOCK.fs.updateDoc({path:'bookings/za'},{status:'ontrip'});
+          try{await F().runTransaction(CL.db,async tx=>{const s=await tx.get(F().doc(CL.db,'bookings','zb'));const put=await takeSlot(tx,'zb',s.data());if(put)put()});return parent.MOCK.store.get('drivers/'+CL.phone).nxt}catch(e){return e.message}})()""")
+        check('while on a trip the next ride goes into the second slot',r=='zb',r)
+        check('busy message in Tamil and English',await df.evaluate("busyTxt().length>10"))
         check('no page errors',not errs,errs[:3])
         await b.close()
 asyncio.run(main())

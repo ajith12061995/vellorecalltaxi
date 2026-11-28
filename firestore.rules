@@ -24,6 +24,19 @@ service cloud.firestore {
     function changes()  { return request.resource.data.diff(resource.data).affectedKeys(); }
     function newData()  { return request.resource.data; }
     function num(v, lo, hi) { return v is number && v >= lo && v <= hi; }
+    // ---- one ride at a time (28 Nov load safety): a driver holds at most two open rides in drivers/{ph}.act / .nxt,
+    // and never two that have not started. A slot is free when it is empty or its booking is finished, cancelled,
+    // back to searching, someone else's, or a pre-booked ride more than 45 minutes away.
+    function bk(id)      { return /databases/$(database)/documents/bookings/$(id); }
+    function slotFree(id) { return id == '' || !exists(bk(id)) || get(bk(id)).data.get('driverPhone', '') != phone()
+                              || !(get(bk(id)).data.status in ['assigned', 'arrived', 'ontrip'])
+                              || futureRide(get(bk(id)).data); }
+    function futureRide(b) { return b.get('when', 0) is number && b.get('when', 0) > request.time.toMillis() + 2700000; }
+    function slotBusyOk(id) { return slotFree(id) || get(bk(id)).data.status == 'ontrip'; }   // the other slot: free, or the ride in progress
+    function slotTake(k, o) { return newData().get(k, '') is string && (newData().get(k, '') == '' || newData().get(k, '') == resource.data.get(k, '')
+                              || (slotFree(resource.data.get(k, '')) && slotBusyOk(resource.data.get(o, ''))
+                                  && getAfter(bk(newData().get(k, ''))).data.get('driverPhone', '') == phone()
+                                  && getAfter(bk(newData().get(k, ''))).data.status == 'assigned')); }
     function isBlocked() { return phone() != '' && exists(/databases/$(database)/documents/blocked/$(phone())); }
 
     // Fares, commission, UPI ID, office phone, dispatch timings — everyone logged in reads, only the owner edits
@@ -99,7 +112,8 @@ service cloud.firestore {
       allow create, delete: if isOwner();
       allow update: if isOwner() || (isStaff() && !changes().hasAny(['wallet', 'blocked', 'sub']))   // sub = subscription plan: server (buySub) or owner only
         || (signedIn() && phone() == ph
-            && changes().hasOnly(['online', 'lat', 'lon', 'updatedAt', 'wallet', 'fcm', 'fcmAt', 'consent', 'dev'])
+            && changes().hasOnly(['online', 'lat', 'lon', 'updatedAt', 'wallet', 'fcm', 'fcmAt', 'consent', 'dev', 'act', 'nxt', 'actAt'])
+            && (!('act' in changes()) || slotTake('act', 'nxt')) && (!('nxt' in changes()) || slotTake('nxt', 'act'))
             // the phone's own setup, shown to the office: app version, permissions — short values and server time only
             && (!('dev' in changes()) || (newData().dev is map && newData().dev.keys().hasOnly(['app', 'ovl', 'pwr', 'loc', 'notif', 'os', 'mk', 'at'])
                 && newData().dev.at == request.time
@@ -202,6 +216,10 @@ service cloud.firestore {
             && newData().status == 'assigned' && newData().driverPhone == phone()
             && get(/databases/$(database)/documents/drivers/$(phone())).data.get('blocked', false) != true
             && !(phone() in resource.data.get('exclude', []))
+            // the same write must put this ride in one of the driver's two slots (rules above), unless it is a pre-booking
+            && (futureRide(resource.data)
+                || getAfter(/databases/$(database)/documents/drivers/$(phone())).data.get('act', '') == id
+                || getAfter(/databases/$(database)/documents/drivers/$(phone())).data.get('nxt', '') == id)
             && changes().hasOnly(['status', 'driverPhone', 'driverName', 'plate', 'vehModel', 'assignedAt', 'updatedAt']))
         // driver: progress their own ride, one step at a time
         || (isDriver() && resource.data.driverPhone == phone()

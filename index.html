@@ -2224,7 +2224,7 @@ async function autoRebook(b){
   const ct2=takeContact(data);if(!ct)ct=ct2;
   const pin=String(1000+Math.floor(Math.random()*9000));
   try{if(!CFG.serverPin)try{Object.assign(data,await VCTPIN.fields(pin))}catch(e){} // lets the driver check the PIN even if this phone goes offline
-    const ref=await F().addDoc(F().collection(CL.db,'bookings'),data);await F().setDoc(F().doc(CL.db,'bookings',ref.id,'private','pin'),{pin});
+    const ref=await makeBooking(data,'rebook|'+old);await F().setDoc(F().doc(CL.db,'bookings',ref.id,'private','pin'),{pin});
     await saveContact(ref.id,ct);
     Object.assign(R,{id:ref.id,pin,trackId:ref.id.slice(0,8),phase:'search',drv:null,dpos:null,b:data,riderPh:ct.riderPhone,t0:Date.now(),rebookN:(R.rebookN||0)+1,rebooked:true,lastTry:null});
     rememberRide();watchBooking();
@@ -2238,6 +2238,17 @@ function takeContact(d){const c={custPhone:d.custPhone||null,riderPhone:d.rider&
   delete d.custPhone;if(d.rider)d.rider={name:String(d.rider.name||'')};return c}
 const saveContact=(id,c)=>F().setDoc(F().doc(CL.db,'bookings',id,'private','contact'),c);
 function localTar(v,km){const w=CFG.wait||{},fx=stFare(v)!=null,np=fx?0:nightV(v),o={t:'local',wait:v&&v.id==='auto'?FARE.AUTO_GOVT.wait:+w.rate||0,free:w.free!=null?+w.free:3};if(v&&v.id==='auto')o.govt='TN-GO366-2026';if(fx)o.fixed=true;if(np&&v){o.night=np;o.nightAmt=fare(v,km)-fare0(v,km)}return o} // prices saved in the booking for the final bill
+/* booking id made on this phone (UUID, never a counter): a double tap or a retry after a lost answer writes the same
+   document again — it can never become a second booking (28 Nov load safety) */
+const newBkId=()=>{try{if(crypto.randomUUID)return crypto.randomUUID()}catch(e){}const a=new Uint8Array(16);crypto.getRandomValues(a);a[6]=a[6]&15|64;a[8]=a[8]&63|128;
+  const h=[...a].map(x=>x.toString(16).padStart(2,'0')).join('');return `${h.slice(0,8)}-${h.slice(8,12)}-${h.slice(12,16)}-${h.slice(16,20)}-${h.slice(20)}`};
+let BKTRY=null; // {key,id}: the id of the booking being made now (same details → same id until it is saved)
+async function makeBooking(data,key){
+  if(!BKTRY||BKTRY.key!==key)BKTRY={key,id:newBkId()};const id=BKTRY.id,ref=F().doc(CL.db,'bookings',id);
+  try{await F().setDoc(ref,data)}
+  catch(e){let mine=false;for(let k=0;k<2&&!mine;k++){try{const s=await F().getDoc(ref);mine=s.exists()&&s.data().customerUid===CUID}catch(e2){}if(!mine&&!k)await new Promise(r=>setTimeout(r,600))} // saved before, only the answer was lost
+    if(!mine)throw e}
+  BKTRY=null;return ref}
 async function cloudBook(){try{window.VCTF&&VCTF('book')}catch(e){};if(needLogin()||blockedStop())return;
   {const ar=localArea();if(ar.far&&!(ar.autoOk&&autoOnly()&&S.veh==='auto'))return areaAsk(ar)}
   const r=route(S.from,S.dest),v=VEH.find(x=>x.id===S.veh),f=fare(v,r.km);
@@ -2251,7 +2262,7 @@ async function cloudBook(){try{window.VCTF&&VCTF('book')}catch(e){};if(needLogin
   try{
     if(!CFG.serverPin)try{Object.assign(data,await VCTPIN.fields(pin))}catch(e){} // lets the driver check the PIN even if this phone goes offline
     const ct=takeContact(data);
-    const ref=await F().addDoc(F().collection(CL.db,'bookings'),data);try{window.VCTF&&VCTF('booked')}catch(e){}
+    const ref=await makeBooking(data,['ride',S.from,S.dest,v.id,f].join('|'));try{window.VCTF&&VCTF('booked')}catch(e){}
     await F().setDoc(F().doc(CL.db,'bookings',ref.id,'private','pin'),{pin});
     await saveContact(ref.id,ct);
     R={id:ref.id,v,km:r.km,path:r.path,fare:f,pay:S.pay,from:S.from,dest:S.dest,fromName:{ta:P[S.from].ta,en:P[S.from].en},destName:{ta:P[S.dest].ta,en:P[S.dest].en},
@@ -2510,10 +2521,10 @@ async function cloudSchedule(rec){try{window.VCTF&&VCTF('book')}catch(e){};
   const v=VEH.find(x=>x.id===rec.veh.id)||VEH.find(x=>x.id==='auto');
   const to=(rec.kind==='schedule'||OFK.includes(rec.kind)&&rec.hasDrop)&&S.dest&&P[S.dest]?placeOf(S.dest):{key:null,ta:rec.to.ta,en:rec.to.en,lat:null,lon:null};
   let ph={};if(rec.pin&&!CFG.serverPin)try{ph=await VCTPIN.fields(rec.pin)}catch(e){}
-  try{const ref=await F().addDoc(F().collection(CL.db,'bookings'),{...ph,customerUid:CUID,custName:S.name,...(CFG.privPhone?{}:{custPhone:'+91'+S.phone}),src:'app',kind:rec.kind,
+  try{const ref=await makeBooking({...ph,customerUid:CUID,custName:S.name,...(CFG.privPhone?{}:{custPhone:'+91'+S.phone}),src:'app',kind:rec.kind,
       from:placeOf(S.from),to,path:[],veh:v.id,vehTa:v.ta,vehEn:v.en,km:rec.km||0,hrs:rec.hrs||null,otype:rec.otype||null,retAt:rec.ret||null,rider:S.rider?(CFG.privPhone?{name:String(S.rider.name||'')}:S.rider):null,base:v.base,fare:rec.fare,pay:rec.pay||'cash',note:rec.note||null,tariff:rec.tar||null,
       ...(OFK.includes(rec.kind)?{status:'searching',dispatch:rec.kind==='outstation'&&rec.otype==='one'?{review:true,openAt:null,reviewUntil:Date.now()+(DISPC.review||10)*60e3,gap:DISPC.gap,fall:DISPC.fall}:{openAt:Date.now()+DISPC.win*1000,gap:DISPC.gap,fall:DISPC.fall}}:{status:'scheduled'}),
-      when:rec.when,createdAt:F().serverTimestamp(),updatedAt:F().serverTimestamp()});
+      when:rec.when,createdAt:F().serverTimestamp(),updatedAt:F().serverTimestamp()},['sched',rec.kind,rec.when,v.id,S.from,S.dest].join('|'));
     try{window.VCTF&&VCTF('booked')}catch(e){}
     if(rec.pin)F().setDoc(F().doc(CL.db,'bookings',ref.id,'private','pin'),{pin:rec.pin}).catch(()=>{});
     await saveContact(ref.id,{custPhone:'+91'+S.phone,riderPhone:S.rider&&S.rider.phone?String(S.rider.phone):null});

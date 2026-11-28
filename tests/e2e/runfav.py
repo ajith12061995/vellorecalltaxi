@@ -72,6 +72,13 @@ async def main():
         await C.locator('#bookb').click();await pg.wait_for_timeout(2500)
         dbg=await cf.evaluate("[R&&R.phase,R&&R.v&&R.v.id,S.from,(document.querySelector('.modal')||{}).innerText||'',document.querySelector('h2,h3')&&document.querySelector('h2,h3').textContent]")
         check('booked sedan, searching',await cf.evaluate("!!(R&&R.phase==='search'&&R.v.id==='sedan')"),dbg)
+        rid=await cf.evaluate("R.id")
+        check('booking id made on the phone (UUID), not a server counter',__import__('re').fullmatch(r'[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}',rid or '') is not None,rid)
+        # a retry of the same booking (answer lost) writes the same document: still one booking
+        n0=await pg.evaluate("[...MOCK.store.keys()].filter(k=>/^bookings\\/[^/]+$/.test(k)).length")
+        await cf.evaluate(f"(async()=>{{BKTRY={{key:'x',id:'{rid}'}};await makeBooking({{...MOCK_B=parent.MOCK.store.get('bookings/{rid}')}},'x')}})()")
+        n1=await pg.evaluate("[...MOCK.store.keys()].filter(k=>/^bookings\\/[^/]+$/.test(k)).length")
+        check('retrying with the same id never makes a second booking',n0==n1,[n0,n1])
         check('no "also try" in the first 30 s',await cf.evaluate("document.getElementById('alsotry').hidden"))
         await cf.evaluate("R.t0=Date.now()-35000");await pg.wait_for_timeout(5500)
         at=' '.join((await C.locator('#alsotry').inner_text()).split()) if await cf.evaluate("!document.getElementById('alsotry').hidden") else ''

@@ -1475,7 +1475,7 @@ function assignSheet(b){
     let sel=list[0]&&list[0].d.id;
     m.querySelectorAll('[data-d]').forEach(x=>x.onclick=()=>{sel=x.dataset.d;m.querySelectorAll('[data-d]').forEach(y=>y.classList.toggle('sel',y===x))});
     m.querySelector('#asg').onclick=()=>{if(!sel)return;
-      if(CL){const d=drvById(sel);audit('assign',b.id,d?d.en+' · '+d.plate:'');const upd={driverPhone:d.id,driverName:d.en,plate:d.plate,vehModel:d.model,assignedAt:ts(),updatedAt:ts()};if(b.status==='searching')upd.status='assigned';cw(F().updateDoc(bkRef(b),upd));close();toast(L(`${d.ta}-க்கு ride அனுப்பியாச்சு`,`Sent to ${d.en}`));return}
+      if(CL){const d=drvById(sel);audit('assign',b.id,d?d.en+' · '+d.plate:'');const upd={driverPhone:d.id,driverName:d.en,plate:d.plate,vehModel:d.model,assignedAt:ts(),updatedAt:ts()};if(b.status==='searching')upd.status='assigned';cw(F().updateDoc(bkRef(b),upd).then(()=>officeSlot(d.id,b.id)));close();toast(L(`${d.ta}-க்கு ride அனுப்பியாச்சு`,`Sent to ${d.en}`));return}
       const d=drvById(sel),prev=drvById(b.driver);if(prev&&b.status==='assigned')prev.status='avail';
       b.driver=sel;if(b.status==='searching'){b.status='assigned';b.prog=0;d.status='pickup'}
       log(`${b.id} → ${d.ta} (${d.plate})`,`${b.id} → ${d.en} (${d.plate})`);saveDB();close();show();
@@ -1643,6 +1643,14 @@ function drivers(){
       const go=s=>{const a=parseInt(m.querySelector('#wa').value)||0;if(a<=0)return;if(CL){cw(F().updateDoc(F().doc(CL.db,'drivers',d.id),{wallet:F().increment(s*a),updatedAt:ts()}));close();return}d.wallet+=s*a;log(`${d.ta} wallet ${s>0?'+':'−'}${inr(a)} (office)`,`${d.en} wallet ${s>0?'+':'−'}${inr(a)} (office)`);saveDB();close();drivers()};
       m.querySelector('#wp').onclick=()=>go(1);m.querySelector('#wm').onclick=()=>go(-1)})});
 }
+/* the office gave a ride to a driver: mark it in the driver's free ride slot (act / nxt) so the driver app can't take a
+   second ride that has not started on top of it. Best effort — the office may still override when no slot is free. */
+function officeSlot(ph,id){if(!CL||!ph||!id)return;const dref=F().doc(CL.db,'drivers',ph);
+  F().runTransaction(CL.db,async tx=>{const ds=await tx.get(dref);if(!ds.exists())return;const dd=ds.data();
+    const free=async k=>{const x=String(dd[k]||'');if(!x)return true;if(x===id)return 'same';const s=await tx.get(F().doc(CL.db,'bookings',x));const o=s.exists()?s.data():null;
+      return !o||o.driverPhone!==ph||!['assigned','arrived','ontrip'].includes(o.status)};
+    const a=await free('act'),n=await free('nxt');if(a==='same'||n==='same')return;
+    const k=a?'act':n?'nxt':null;if(k)tx.update(dref,{[k]:id,actAt:ts()})}).catch(e=>console.warn('slot',e&&e.code))}
 function addDriver(){
   let veh='auto';
   modal(`<h3>${L('புது driver','Add a driver')}</h3>

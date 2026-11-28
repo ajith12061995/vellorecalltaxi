@@ -1,8 +1,9 @@
 // Firestore security rules tests (v2). Run: cd tests/rules && npm i && npm test   (needs Java for the emulator)
 import { initializeTestEnvironment, assertFails, assertSucceeds } from '@firebase/rules-unit-testing';
-import { doc, getDoc, setDoc, updateDoc, deleteDoc, addDoc, collection, serverTimestamp, increment, getDocs, query, where } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, deleteDoc, addDoc, collection, serverTimestamp, increment, getDocs, query, where, writeBatch, runTransaction } from 'firebase/firestore';
 import { readFileSync } from 'node:fs';
 import { test, before, after, beforeEach } from 'node:test';
+import assert from 'node:assert/strict';
 
 let env;
 const OWNER = '+918220201462', STAFF = '+919000000009', DRV = '+919999900002', DRV2 = '+919999900003', CUST = 'u-cust', CPH = '+919999900001';
@@ -88,15 +89,43 @@ test('customer cannot change fare or driver', async () => {
 test('customer cannot read another customer booking', async () => { await assertFails(getDoc(doc(as.other(), 'bookings', 'b2'))); });
 
 // ---- drivers
-test('driver accepts a searching ride', async () => {
-  await assertSucceeds(updateDoc(doc(as.drv(), 'bookings', 'b1'), { status: 'assigned', driverPhone: DRV, driverName: 'Test', assignedAt: serverTimestamp(), updatedAt: serverTimestamp() }));
+const accept = (db, id, ph, slot = 'act') => { const b = writeBatch(db);
+  b.update(doc(db, 'bookings', id), { status: 'assigned', driverPhone: ph, driverName: 'Test', assignedAt: serverTimestamp(), updatedAt: serverTimestamp() });
+  if (slot) b.update(doc(db, 'drivers', ph), { [slot]: id, actAt: serverTimestamp() }); return b.commit(); };
+test('driver accepts a searching ride (the ride goes into the driver\'s slot in the same write)', async () => {
+  await assertSucceeds(accept(as.drv(), 'b1', DRV));
+  assert.equal((await getDoc(doc(as.drv(), 'drivers', DRV))).data().act, 'b1');
+});
+test('one ride at a time: no accept without a slot; no second ride that has not started; one in progress + one next is fine', async () => {
+  await assertFails(updateDoc(doc(as.drv(), 'bookings', 'b1'), { status: 'assigned', driverPhone: DRV, updatedAt: serverTimestamp() }), 'accept without the slot');
+  await seed(async db => { await setDoc(doc(db, 'bookings', 'c1'), booking()); await setDoc(doc(db, 'bookings', 'c2'), booking()); await setDoc(doc(db, 'bookings', 'c3'), booking()); });
+  await assertSucceeds(accept(as.drv(), 'c1', DRV));
+  await assertFails(accept(as.drv(), 'c2', DRV, 'nxt'), 'second ride while the first has not started');
+  await assertFails(accept(as.drv(), 'c2', DRV, 'act'), 'overwrite the slot of a ride not started');
+  await assertSucceeds(updateDoc(doc(as.drv(), 'bookings', 'c1'), { status: 'ontrip', startedAt: serverTimestamp() }));
+  await assertSucceeds(accept(as.drv(), 'c2', DRV, 'nxt'), 'next ride while on a trip');
+  await assertFails(accept(as.drv(), 'c3', DRV, 'act'), 'a third ride');
+  await assertSucceeds(updateDoc(doc(as.drv(), 'bookings', 'c1'), { status: 'done', doneAt: serverTimestamp() }));
+  await assertFails(accept(as.drv(), 'c3', DRV, 'act'), 'next ride (not started) still holds');
+  await assertSucceeds(updateDoc(doc(as.drv(), 'bookings', 'c2'), { status: 'ontrip', startedAt: serverTimestamp() }));
+  await assertSucceeds(accept(as.drv(), 'c3', DRV, 'act'), 'finished slot is free again');
+});
+test('one ride at a time: a driver cannot point a slot at another driver\'s ride or a ride that is not theirs', async () => {
+  await assertFails(updateDoc(doc(as.drv(), 'drivers', DRV), { act: 'b2x' }));
+  await seed(db => setDoc(doc(db, 'bookings', 'o1'), booking({ status: 'assigned', driverPhone: '+919999900099' })));
+  await assertFails(updateDoc(doc(as.drv(), 'drivers', DRV), { act: 'o1' }));
+  await assertSucceeds(updateDoc(doc(as.drv(), 'drivers', DRV), { online: true }), 'other own fields still fine');
+});
+test('a pre-booking more than 45 minutes away needs no slot', async () => {
+  await seed(db => setDoc(doc(db, 'bookings', 'f1'), booking({ when: Date.now() + 3 * 3600e3 })));
+  await assertSucceeds(accept(as.drv(), 'f1', DRV, null));
 });
 test('blocked driver cannot accept', async () => {
-  await assertFails(updateDoc(doc(as.drv2(), 'bookings', 'b1'), { status: 'assigned', driverPhone: DRV2, updatedAt: serverTimestamp() }));
+  await assertFails(accept(as.drv2(), 'b1', DRV2));
 });
 test('driver who cancelled (exclude) cannot take it again', async () => {
   await seed(db => setDoc(doc(db, 'bookings', 'bx'), booking({ exclude: [DRV] })));
-  await assertFails(updateDoc(doc(as.drv(), 'bookings', 'bx'), { status: 'assigned', driverPhone: DRV, updatedAt: serverTimestamp() }));
+  await assertFails(accept(as.drv(), 'bx', DRV));
 });
 test('driver starts, finishes with final bill and commission', async () => {
   await assertSucceeds(updateDoc(doc(as.drv(), 'bookings', 'b2'), { status: 'ontrip', startedAt: serverTimestamp(), pinOk: true }));
